@@ -466,6 +466,37 @@ test('8B i18n: Czech mode greets in Czech, English mode in English (no "Good odp
   assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
 }, { state: fixtureState() });
 
+test('8B CRUD: every create form saves exactly one record through the redesigned UI', async ({ page }) => {
+  const forms = [
+    ['openFinanceForm("expense")', 'expenses'], ['openFinanceForm("income")', 'income'], ['openHabitForm()', 'habits'], ['openGoalForm()', 'goals'],
+    ['openWorkoutForm()', 'workouts'], ['openMealForm()', 'meals'], ['openNoteForm()', 'notes'], ['openJournalForm()', 'journal'], ['openEventForm()', 'events'],
+    ['openSleepForm()', 'sleepLog'], ['openWeightForm()', 'weightLog'], ['openStepsForm()', 'stepsLog'], ['openHeartRateForm()', 'heartRateLog'],
+    ['openActiveCaloriesForm()', 'activeCaloriesLog'], ['openVehicleForm()', 'vehicles'], ['openServiceForm("v1")', 'carServices'], ['openFuelForm("v1")', 'fuelEntries'],
+    ['openSubForm()', 'subscriptions'], ['openBudgetForm()', 'budgets'], ['openMilestoneForm("g_fit")', 'milestones'], ['openForm("task")', 'tasks'],
+  ];
+  const failures = [];
+  for (const [open, coll] of forms) {
+    await page.evaluate(() => closeSheets());
+    const before = await page.evaluate(c => S[c].length, coll);
+    await page.evaluate(o => eval(o), open);
+    await page.waitForTimeout(40);
+    // Fill every empty field the way a person would (text -> "QA x", numbers -> 5, times -> 07:00).
+    for (const h of await page.$$('.sheet input:not([type=checkbox]):not([type=file]):not(.hide), .sheet textarea')) {
+      const [type, val] = await h.evaluate(n => [n.type, n.value]);
+      if (val) continue;
+      if (type === 'number') await h.fill('5'); else if (type === 'time') await h.fill('07:00'); else if (type === 'date') continue; else await h.fill('QA ' + coll);
+    }
+    if (coll === 'budgets') await page.selectOption('#b_cat', 'Transport'); // one budget per category is an app rule; Food already has one
+    const save = page.locator('.sheet [id$="_save"]').first();
+    if (!(await save.count())) { failures.push(`${open}: no save button`); continue; }
+    await save.click();
+    await page.waitForTimeout(40);
+    const after = await page.evaluate(c => S[c].length, coll);
+    if (after !== before + 1) failures.push(`${open}: ${coll} ${before} -> ${after}`);
+  }
+  assert.deepEqual(failures, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

@@ -220,7 +220,8 @@ export function fingerprint(html) {
   }
   statements.sort((a, b) => a.hash.localeCompare(b.hash));
   const logicHash = h(JSON.stringify([logic, statements.map(s => s.hash)]));
-  const effectsHash = h(JSON.stringify(Object.entries(ui).map(([k, v]) => [k, v.effectsHash]).sort()));
+  // Summary over the global multiset of UI data effects (independent of which UI function holds them).
+  const effectsHash = h(Object.values(ui).flatMap(v => v.data).sort().join('|'));
   return { logicHash, effectsHash, effectful: [...effectful].sort(), logic, statements, ui };
 }
 

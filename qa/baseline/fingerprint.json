@@ -1,6 +1,6 @@
 {
  "logicHash": "67d404e670b0ab9f",
- "effectsHash": "5d0f480e5aff84b0",
+ "effectsHash": "f97ea3acaf1b0b0b",
  "effectful": [
   "applyCategoryAttrSkillBonus",
   "applyFinanceAttrSkillBonus",
