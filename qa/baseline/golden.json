@@ -867,6 +867,9 @@
   "plannerBlocks": [],
   "exerciseLibrary": [],
   "workoutTemplates": [],
+  "muscleProgress": {
+   "log": []
+  },
   "settings": {
    "theme": "dark",
    "onboarded": false,
@@ -1095,6 +1098,9 @@
    }
   ],
   "workoutTemplates": [],
+  "muscleProgress": {
+   "log": []
+  },
   "settings": {
    "theme": "dark",
    "onboarded": false,

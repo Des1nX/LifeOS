@@ -796,6 +796,18 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 @media(min-width:520px){.wk-feel-row{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .wk-feel{min-height:44px;justify-content:center;display:inline-flex;align-items:center;gap:6px}
 .wk-edit-result{margin-top:10px}
+.mu-intro{margin:0 2px 12px}
+#fitTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+#fitTabs .pill{padding-left:4px;padding-right:4px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:430px){#fitTabs .tab-ic{display:none}}
+.mu-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-2)}
+@media(min-width:600px){.mu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){.mu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mu-card{padding:14px 16px}
+.mu-lvl{font-weight:800;color:var(--color-accent);font-variant-numeric:tabular-nums}
+.mu-xp{margin:6px 0 6px;font-variant-numeric:tabular-nums;gap:8px;flex-wrap:wrap}
+.wk-muscles{margin-top:12px}
+.wk-muscles .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .ex-archived summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
 /* Phase 9: Daily Score */
 .ds-card{cursor:pointer}
@@ -1242,6 +1254,7 @@ function defaultState(){return{
   // in migrate(): seeded with bare names from their workout history; no schema bump. ----
   exerciseLibrary:[],
   workoutTemplates:[], // Phase 11A: plans for Start Workout (see templateSave)
+  muscleProgress:{log:[]}, // Phase 11A: Muscle XP ledger (see muscleAwardWorkout); totals/levels are derived
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -1398,6 +1411,11 @@ function migrate(state){
   merged.stepsLog=(merged.stepsLog||[]).map(migrateStepsEntry);
   merged.heartRateLog=(merged.heartRateLog||[]).map(migrateHeartRateEntry);
   merged.activeCaloriesLog=(merged.activeCaloriesLog||[]).map(migrateActiveCaloriesEntry);
+  // Phase 11A: Muscle XP ledger (a partially shaped value is repaired), then the one-time recovery of
+  // finished new-model workouts that have no log record yet (idempotent by key).
+  if(!merged.muscleProgress||typeof merged.muscleProgress!=='object') merged.muscleProgress={log:[]};
+  if(!Array.isArray(merged.muscleProgress.log)) merged.muscleProgress.log=[];
+  muscleRecover(merged);
   merged.schemaVersion=d.schemaVersion;
   return merged;
 }
@@ -4102,6 +4120,78 @@ function workoutSetFeeling(wid,feeling){
   w.result=Object.assign({},w.result,{feeling:feeling||null});
   return true;
 }
+/* ---- Phase 11A step 8: Muscle XP -- a parallel system, never read by Character XP, levels, RPG,
+   quests, achievements, Daily Score, PRs or Performance.
+   S.muscleProgress.log[] {key:'muscle:<workoutId>:<exerciseId>', workoutId, exerciseId, date, units,
+   baseXp, prXp, xp:{Group:granted}, ts} -- one record per exercise and finished workout; totals and
+   levels are always derived from it. A key that exists is never paid again (reload, render, edit,
+   export/import); deleting a workout keeps its records (no refund).
+   Per exercise and workout (all its entries together, done working sets only):
+     units: weight_reps/reps 1 per set; time/distance_time floor(sum seconds / 60); max 6
+     xp    = units x 10 + (15 if result.prs has a PR of this exercise, once)
+   split by the entry's muscle snapshot (en.muscles, copied from the library at Finish) with
+   largest-remainder rounding, then capped at 150 per muscle per workout date across all
+   workouts of that day. Legacy exercises[]-only workouts have no exerciseId -> never paid. ---- */
+const MUSCLE_XP_PER_UNIT=10, MUSCLE_XP_PR=15, MUSCLE_MAX_UNITS=6, MUSCLE_DAILY_CAP=150;
+function muscleUnits(measurement,sets){
+  if(measurement==='time'||measurement==='distance_time') return Math.min(MUSCLE_MAX_UNITS,Math.floor(sets.reduce((a,s)=>a+(Number(s.seconds)||0),0)/60));
+  return Math.min(MUSCLE_MAX_UNITS,sets.length);
+}
+function muscleSplit(total,muscles){
+  // integer split of `total` by percentage; the leftover points go to the largest fractional
+  // parts (ties: MUSCLE_GROUPS order), so the parts always add up to exactly `total`
+  const m=normalizeMuscles(muscles), gs=MUSCLE_GROUPS.filter(g=>m[g]);
+  if(!total||!gs.length) return {};
+  const raw=gs.map(g=>total*m[g]/100), out=raw.map(Math.floor);
+  let rest=total-out.reduce((a,b)=>a+b,0);
+  raw.map((v,i)=>[i,v-Math.floor(v)]).sort((a,b)=>b[1]-a[1]||a[0]-b[0]).forEach(([i])=>{ if(rest>0){ out[i]++; rest--; } });
+  return Object.fromEntries(gs.map((g,i)=>[g,out[i]]).filter(([,v])=>v>0));
+}
+function muscleSnapshot(w,st){
+  // copy the library mapping into every entry that has none yet (the historical mapping)
+  const lib=(st||S).exerciseLibrary||[];
+  (w.entries||[]).forEach(en=>{ if(!en.muscles){ const x=lib.find(r=>r.id===en.exerciseId); en.muscles=normalizeMuscles(x?x.muscles:{}); } });
+}
+function muscleAwardWorkout(w,st){
+  st=st||S;
+  if(!w||!isCompletedWorkout(w)||!Array.isArray(w.entries)) return [];
+  st.muscleProgress=st.muscleProgress||{log:[]}; const log=st.muscleProgress.log=st.muscleProgress.log||[];
+  muscleSnapshot(w,st);
+  const per=new Map(); // exerciseId -> {measurement, muscles, sets} in entry order
+  w.entries.forEach(en=>{ if(!en.exerciseId) return; const it=per.get(en.exerciseId)||{measurement:en.measurement,muscles:en.muscles,sets:[]}; it.sets.push(...workoutWorkingSets(en)); per.set(en.exerciseId,it); });
+  const prIds=new Set(((w.result&&w.result.prs)||[]).map(p=>p.exerciseId));
+  const used={}; log.filter(r=>r.date===w.date).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ used[g]=(used[g]||0)+v; }));
+  const added=[];
+  per.forEach((it,eid)=>{
+    const key=`muscle:${w.id}:${eid}`; if(log.some(r=>r.key===key)) return;
+    const units=muscleUnits(it.measurement,it.sets), baseXp=units*MUSCLE_XP_PER_UNIT, prXp=prIds.has(eid)?MUSCLE_XP_PR:0;
+    const xp={};
+    Object.entries(muscleSplit(baseXp+prXp,it.muscles)).forEach(([g,v])=>{ const room=Math.max(0,MUSCLE_DAILY_CAP-(used[g]||0)); const got=Math.min(v,room); if(got>0){ xp[g]=got; used[g]=(used[g]||0)+got; } });
+    const rec={key,workoutId:w.id,exerciseId:eid,date:w.date,units,baseXp,prXp,xp,ts:Date.now()};
+    log.push(rec); added.push(rec);
+  });
+  return added;
+}
+function muscleRecover(st){
+  // finished new-model workouts without their log records (e.g. finished before Muscle XP existed,
+  // or a crash between Finish and save): award once, in date / finish order
+  const done=completedWorkouts(st).filter(w=>Array.isArray(w.entries)).sort(workoutChronoCmp);
+  done.forEach(w=>muscleAwardWorkout(w,st));
+}
+function muscleTotals(st){
+  const t={}; ((st||S).muscleProgress&&(st||S).muscleProgress.log||[]).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ t[g]=(t[g]||0)+v; })); return t;
+}
+function muscleXpNeed(level){ return Math.round(100*Math.pow(level,1.2)); }
+function muscleLevelFromXp(xp){
+  // level 1 starts at 0 XP; going from level n to n+1 costs round(100 x n^1.2)
+  let level=1, into=Math.max(0,Number(xp)||0);
+  while(into>=muscleXpNeed(level)){ into-=muscleXpNeed(level); level++; }
+  return {xp:Math.max(0,Number(xp)||0),level,into,need:muscleXpNeed(level)};
+}
+function muscleOverview(st){ const t=muscleTotals(st); return MUSCLE_GROUPS.map(g=>Object.assign({group:g},muscleLevelFromXp(t[g]||0))); }
+function workoutMuscleXp(wid,st){
+  const t={}; ((st||S).muscleProgress&&(st||S).muscleProgress.log||[]).filter(r=>r.workoutId===wid).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ t[g]=(t[g]||0)+v; })); return t;
+}
 function workoutFinish(wid){
   // The moment a workout counts as done. The rewards below are exactly the ones the Log
   // Workout form grants for a new workout (80 XP STR + 20 VIT + the Phase 5 skill bonus), behind
@@ -4113,6 +4203,8 @@ function workoutFinish(wid){
   const idx=exerciseHistoryIndex();
   w.result=Object.assign({},w.result,{prs:workoutPRs(w,idx),at:w.finishedAt});
   w.result.performance=workoutPerformance(w,idx);
+  // Muscle XP (parallel system): historical muscle snapshot + one idempotent log record per exercise
+  muscleAwardWorkout(w);
   const key=`workout:${w.id}:${w.date}`;
   const granted=grantXp(80,'Workout: '+w.name,'STR',key);
   if(granted){
@@ -4136,7 +4228,7 @@ function workoutTotalReps(w){ if(Array.isArray(w.entries)) return w.entries.redu
      muscle percentages are ever invented for it)
    Old workouts keep their own exercises[] untouched; they relate to the library by name only. */
 const MUSCLE_GROUPS=['Chest','Back','Shoulders','Biceps','Triceps','Legs','Abs','Glutes','Forearms'];
-const MUSCLE_LABELS_CS={Chest:'Hrudník',Back:'Záda',Shoulders:'Ramena',Biceps:'Biceps',Triceps:'Triceps',Legs:'Nohy',Abs:'Břicho',Glutes:'Hýždě',Forearms:'Předloktí'};
+const MUSCLE_LABELS_CS={Chest:'Prsa',Back:'Záda',Shoulders:'Ramena',Biceps:'Biceps',Triceps:'Triceps',Legs:'Nohy',Abs:'Břicho',Glutes:'Hýždě',Forearms:'Předloktí'};
 const MEASUREMENTS=['weight_reps','reps','time','distance_time'];
 const MEASUREMENT_DEFAULT_INCREMENT={weight_reps:2.5,reps:1,time:5,distance_time:0};
 const EXERCISE_PRESETS=[
@@ -4344,8 +4436,8 @@ function uiMuscleChips(m){
   return ks.sort((a,b)=>m[b]-m[a]).map(g=>`<span class="chip">${escapeHtml(uiMuscleLabel(g))} ${m[g]} %</span>`).join('');
 }
 function uiFitnessTabs(){
-  return `<div class="period-selector" id="fitTabs" role="tablist">${[['workouts','🏋️'],['templates','📋'],['library','📚']].map(([k,ic])=>
-    `<button class="pill ${fitnessTab===k?'on':''}" data-k="${k}" role="tab" aria-selected="${fitnessTab===k}">${ic} ${k==='templates'?uiTplT(k):uiFitT(k)}</button>`).join('')}</div>`;
+  return `<div class="period-selector" id="fitTabs" role="tablist">${[['workouts','🏋️'],['templates','📋'],['library','📚'],['muscles','💪']].map(([k,ic])=>
+    `<button class="pill ${fitnessTab===k?'on':''}" data-k="${k}" role="tab" aria-selected="${fitnessTab===k}"><span class="tab-ic" aria-hidden="true">${ic}</span> ${k==='templates'?uiTplT(k):k==='muscles'?uiMuscT('tab'):uiFitT(k)}</button>`).join('')}</div>`;
 }
 function uiBindFitnessTabs(wrap){
   wrap.querySelectorAll('#fitTabs [data-k]').forEach(b=>b.onclick=()=>{ fitnessTab=b.dataset.k; render(); });
@@ -4846,7 +4938,7 @@ function openWorkoutSummary(w,granted){
     <div class="stat-grid cols-2">${tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`)}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
       ${reps?tile(uiWkT('sum_reps'),reps):''}${vol?tile(uiWkT('sum_vol'),`${uiNum(vol)}<small> kg</small>`):''}${tile(uiWkT('sum_ex'),w.entries.filter(en=>workoutWorkingSets(en).length).length)}</div>
     ${granted?`<div class="chip wk-xp">+80 ${uiWkT('xp')}</div>`:''}
-    <div data-slot="performance"${w.result&&w.result.performance?'':' hidden'}>${uiPerformanceBlock(w.result&&w.result.performance)}</div><div data-slot="feeling"></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
+    <div data-slot="performance"${w.result&&w.result.performance?'':' hidden'}>${uiPerformanceBlock(w.result&&w.result.performance)}</div>${uiMuscleSummary(w.id)}<div data-slot="feeling"></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
     <button class="btn" id="wkSumOk" style="margin-top:14px">${uiWkT('ok')}</button></div>`);
   inner.querySelector('[data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkSumFeel'));
   inner.querySelector('#wkSumOk').onclick=()=>{ closeSheets(); render(); };
@@ -4870,10 +4962,35 @@ function uiEntrySummaryRows(w){
   return (w.entries||[]).map(en=>{ const ws=workoutWorkingSets(en);
     return `<div class="ex-row"><span class="truncate"><b>${escapeHtml(en.name||'—')}</b></span><span class="num sub">${ws.length}× · ${escapeHtml(uiSetsText(en.measurement,ws))}</span></div>`; }).join('');
 }
+function uiMuscT(k){
+  const cs=uiLang()==='cs';
+  return (cs?{tab:'Svaly',intro:'Svaly získávají XP podle toho, jaké cviky a série trénuješ. Různé svaly proto mohou postupovat různým tempem.',
+    lvl:'Level',to_next:'do dalšího levelu',sum:'Svaly',none:'Zatím žádné Muscle XP — dokonči trénink s cviky, které mají nastavené svaly.'}
+    :{tab:'Muscles',intro:'Muscles earn XP from the exercises and sets you train, so different muscles can progress at different speeds.',
+    lvl:'Level',to_next:'to the next level',sum:'Muscles',none:'No Muscle XP yet — finish a workout with exercises that have muscles set.'})[k];
+}
+function uiMuscleName(g){ return uiMuscleLabel(g); }
+function renderFitnessMuscles(){
+  const ov=muscleOverview(), any=ov.some(m=>m.xp>0);
+  const wrap=el(`<div>${uiPageHead('Fitness','')}${uiFitnessTabs()}<p class="sub mu-intro">${uiMuscT('intro')}</p>
+    ${any?'':`<div class="card sub" style="margin-bottom:10px">${uiMuscT('none')}</div>`}<div class="mu-grid" id="muGrid"></div></div>`);
+  uiBindFitnessTabs(wrap);
+  ov.forEach(m=>wrap.querySelector('#muGrid').appendChild(el(`<div class="card mu-card" data-muscle-card="${m.group}">
+    <div class="between"><div class="item-title">${escapeHtml(uiMuscleName(m.group))}</div><span class="mu-lvl">${uiMuscT('lvl')} ${m.level}</span></div>
+    <div class="between sub mu-xp"><span><b>${uiNum(m.xp)}</b> XP</span><span>${uiNum(m.into)} / ${uiNum(m.need)} ${uiMuscT('to_next')}</span></div>
+    <div class="bar" role="progressbar" aria-label="${escapeHtml(uiMuscleName(m.group))}" aria-valuemin="0" aria-valuemax="${m.need}" aria-valuenow="${m.into}"><i style="width:${uiPct(m.into,m.need)}%"></i></div></div>`)));
+  return wrap;
+}
+function uiMuscleSummary(wid){
+  const t=workoutMuscleXp(wid), gs=MUSCLE_GROUPS.filter(g=>t[g]>0).sort((a,b)=>t[b]-t[a]);
+  if(!gs.length) return '';
+  return `<div class="wk-muscles"><div class="kicker">💪 ${uiMuscT('sum')}</div><div class="chips">${gs.map(g=>`<span class="chip" data-mxp="${g}">${escapeHtml(uiMuscleName(g))} +${t[g]} XP</span>`).join('')}</div></div>`;
+}
 function renderFitness(){
   if(uiWorkoutView){ const ws=renderWorkoutScreen(); if(ws) return ws; }
   if(fitnessTab==='library') return renderFitnessLibrary();
   if(fitnessTab==='templates') return renderFitnessTemplates();
+  if(fitnessTab==='muscles') return renderFitnessMuscles();
   const prs=exercisePRs();
   const cs=uiLang()==='cs';
   const L=cs?{t:'Fitness',add:'Zapsat trénink',week:'Tréninky tento týden',vol:'Objem tento týden',total:'Celkem tréninků',prs:'Osobní rekordy',hist:'Historie',min:'min',ex:'cviků',sets:'sérií',reps:'opak.',volume:'objem',none:'Zatím žádné tréninky',none_d:'Zapiš trénink a sleduj objem, série a osobní rekordy.'}

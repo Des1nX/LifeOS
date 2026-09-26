@@ -429,7 +429,8 @@ test('8B motion: Settings -> Animations off and prefers-reduced-motion disable d
 test('8B keyboard: Escape closes Quick Add, focus moves into the sheet, onboarding is not dismissable', async ({ page }) => {
   await page.focus('#fabBtn'); await page.keyboard.press('Enter');
   assert.equal(await page.locator('.sheet').count(), 1);
-  await page.waitForTimeout(80);
+  // openSheet() moves focus on a 30 ms timer; wait for it (a fixed 80 ms sleep was timing-sensitive under load)
+  await page.waitForFunction(() => !!document.activeElement.closest('.sheet'), null, { timeout: 2000 }).catch(() => {});
   assert.ok(await page.evaluate(() => !!document.activeElement.closest('.sheet')), 'focus inside sheet');
   assert.equal(await page.getAttribute('.sheet', 'role'), 'dialog');
   await page.keyboard.press('Escape');
@@ -2260,6 +2261,236 @@ test('11A UI: a workout without plan shows "—" (not rated); Performance/Feelin
       const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
         return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i) }; });
       if (r.over > 0 || r.sheetOver > 0 || r.dup.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+// ---------- Phase 11A step 8: Muscle XP + Svaly ----------
+const MX = (id, name, measurement, muscles) => ({ id, name, measurement, muscles, increment: 2.5, notes: '', archived: false, source: 'user', aliases: [], createdAt: NOW, updatedAt: NOW });
+const ML = [MX('mb', 'Bench press', 'weight_reps', { Chest: 70, Triceps: 20, Shoulders: 10 }), MX('mp', 'Pull-up', 'reps', { Back: 65, Biceps: 25, Forearms: 10 }),
+  MX('mk', 'Plank', 'time', { Abs: 80, Shoulders: 10, Glutes: 10 }), MX('mr', 'Running', 'distance_time', { Legs: 80, Glutes: 20 }),
+  MX('mc', 'Curl', 'weight_reps', { Biceps: 85, Forearms: 15 }), MX('ms', 'Squat', 'weight_reps', { Legs: 65, Glutes: 25, Abs: 10 }),
+  MX('mn', 'Unmapped', 'weight_reps', {}), MX('c1', 'Fly 1', 'weight_reps', { Chest: 100 }), MX('c2', 'Fly 2', 'weight_reps', { Chest: 100 }), MX('c3', 'Fly 3', 'weight_reps', { Chest: 100 })];
+const mxInit = page => page.evaluate(lib => { S.exerciseLibrary = lib; S.workouts = []; S.muscleProgress = { log: [] }; S.achievementsUnlocked.push('first_workout'); }, ML);
+// spec: [[exerciseId, [set, ...]], ...]; a set is {weight,reps,seconds,...}; done:true unless given
+let mxTick = 0;
+const mxFinish = async (page, spec, { date = TODAY, finish = true, name = 'M' } = {}) => {
+  await page.clock.setFixedTime(NOW + (++mxTick) * 60e3);
+  return page.evaluate(({ spec, date, finish, name }) => {
+    const w = workoutStart({ name }).workout; w.date = date;
+    spec.forEach(([eid, sets]) => { const en = workoutAddEntry(w.id, eid); en.sets = sets.map(s => Object.assign(workoutNewSet(null), { done: true }, s)); });
+    if (finish) workoutFinish(w.id);
+    return { id: w.id, xp: workoutMuscleXp(w.id), log: S.muscleProgress.log.filter(r => r.workoutId === w.id).map(({ ts, ...r }) => r) };
+  }, { spec, date, finish, name });
+};
+const B = n => Array.from({ length: n }, () => ({ weight: 60, reps: 8 }));
+const totals = page => page.evaluate(() => muscleTotals());
+
+test('11A muscle XP: 1 set = 10 XP by %, more sets, max 6 per exercise per workout (entries of one exercise combined)', async ({ page }) => {
+  await mxInit(page);
+  let r = await mxFinish(page, [['mb', B(1)]]);
+  assert.deepEqual(r.xp, { Chest: 7, Shoulders: 1, Triceps: 2 });
+  r = await mxFinish(page, [['mb', B(3)]]);
+  assert.deepEqual(r.xp, { Chest: 21, Shoulders: 3, Triceps: 6 }, '30 XP -> 21/6/3');
+  assert.deepEqual(r.log, [{ key: `muscle:${r.id}:mb`, workoutId: r.id, exerciseId: 'mb', date: TODAY, units: 3, baseXp: 30, prXp: 0, xp: { Chest: 21, Triceps: 6, Shoulders: 3 } }]);
+  r = await mxFinish(page, [['mb', B(8)]]);
+  assert.deepEqual([r.log[0].units, r.log[0].baseXp], [6, 60], 'max 6 sets');
+  r = await mxFinish(page, [['mb', B(4)], ['mp', [{ reps: 10 }]], ['mb', B(4)]]);
+  assert.deepEqual(r.log.map(x => [x.exerciseId, x.units]), [['mb', 6], ['mp', 1]], 'the limit is per exercise and workout, entries of the same exercise counted together');
+}, { state: fixtureState() });
+
+test('11A muscle XP: warm-ups, unfinished sets, active and discarded workouts never count', async ({ page }) => {
+  await mxInit(page);
+  let r = await mxFinish(page, [['mb', [{ weight: 100, reps: 5, warmup: true }, { weight: 60, reps: 8, done: false }, { weight: 60, reps: 8 }, { weight: 60, reps: 8, warmup: true, done: true }]]]);
+  assert.equal(r.log[0].units, 1, 'only the one done working set');
+  const act = await mxFinish(page, [['mb', B(5)]], { finish: false });
+  assert.deepEqual(act.log, [], 'active: nothing');
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(id => S.muscleProgress.log.some(x => x.workoutId === id), act.id), false, 'recovery at load skips the active workout');
+  await page.evaluate(id => workoutDiscard(id), act.id);
+  assert.equal(await page.evaluate(id => S.muscleProgress.log.some(x => x.workoutId === id), act.id), false, 'discarded: nothing');
+}, { state: fixtureState() });
+
+test('11A muscle XP: time and distance_time = floor(total seconds / 60), max 6; no time = 0; distance unused', async ({ page }) => {
+  await mxInit(page);
+  let r = await mxFinish(page, [['mk', [{ seconds: 50 }]]]);
+  assert.deepEqual([r.log[0].units, r.xp], [0, {}], 'a set without a full minute gives nothing');
+  r = await mxFinish(page, [['mk', [{ seconds: 45 }, { seconds: 45 }]]]);
+  assert.deepEqual([r.log[0].units, r.xp], [1, { Abs: 8, Shoulders: 1, Glutes: 1 }], '45 + 45 s = 90 s = 1 unit');
+  r = await mxFinish(page, [['mk', [{ seconds: 55 }]]]);
+  assert.deepEqual([r.log[0].units, r.log[0].prXp, r.xp], [0, 15, { Abs: 12, Shoulders: 2, Glutes: 1 }], 'literal rule: a time PR (55 s > 50 s) pays +15 even with 0 units - reported for confirmation');
+  r = await mxFinish(page, [['mk', [{ seconds: 600 }]]]);
+  assert.equal(r.log[0].units, 6);
+  r = await mxFinish(page, [['mr', [{ distance: 5, seconds: 1500 }]]]);
+  assert.deepEqual([r.log[0].units, r.xp], [6, { Legs: 48, Glutes: 12 }], '25 min run -> 60 XP');
+  r = await mxFinish(page, [['mr', [{ distance: 12, seconds: 150 }]]]);
+  assert.equal(r.log[0].units, 2, '2:30 -> 2 units, the 12 km play no role');
+  r = await mxFinish(page, [['mr', [{ distance: 5 }]]]);
+  assert.deepEqual([r.log[0].units, r.xp], [0, {}], 'no time -> 0');
+}, { state: fixtureState() });
+
+test('11A muscle XP: PR +15 once per exercise (Weight + Rep PR still +15), split by the same %', async ({ page }) => {
+  await mxInit(page);
+  await mxFinish(page, [['mb', [{ weight: 100, reps: 5 }]]], { date: '2026-09-20' });
+  let r = await mxFinish(page, [['mb', [{ weight: 110, reps: 5 }]]], { date: '2026-09-21' });
+  assert.deepEqual([r.log[0].prXp, r.xp], [15, { Chest: 18, Triceps: 5, Shoulders: 2 }], '25 XP: 17.5/5/2.5 -> 18/5/2');
+  r = await mxFinish(page, [['mb', [{ weight: 115, reps: 2 }, { weight: 110, reps: 7 }]]], { date: '2026-09-22' });
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.prs.length, r.id), 2, 'a Weight PR and a Rep PR');
+  assert.deepEqual([r.log[0].baseXp, r.log[0].prXp, r.xp], [20, 15, { Chest: 25, Triceps: 7, Shoulders: 3 }], 'still +15: 35 XP -> 24.5/7/3.5 -> 25/7/3');
+}, { state: fixtureState() });
+
+test('11A muscle XP: several exercises and muscle groups; largest-remainder rounding always adds up', async ({ page }) => {
+  await mxInit(page);
+  const r = await mxFinish(page, [['mb', B(3)], ['mp', [{ reps: 10 }, { reps: 8 }]], ['mc', B(1)], ['ms', B(2)]]);
+  assert.deepEqual(r.xp, { Chest: 21, Triceps: 6, Shoulders: 3, Back: 13, Biceps: 14, Forearms: 3, Legs: 13, Glutes: 5, Abs: 2 });
+  const sums = await page.evaluate(() => Array.from({ length: 200 }, (_, i) => { const m = {}; MUSCLE_GROUPS.forEach((g, j) => { if ((i + j) % 3) m[g] = (i * 7 + j * 13) % 50 + 1; });
+    const t = (i % 13) * 5 + 10; const s = muscleSplit(t, m); return Object.values(s).reduce((a, b) => a + b, 0) === t; }));
+  assert.ok(sums.every(Boolean), 'the parts always equal the total');
+  assert.deepEqual(await page.evaluate(() => [muscleSplit(10, { Biceps: 85, Forearms: 15 }), muscleSplit(10, { Chest: 1, Back: 1, Legs: 1 })]), [{ Biceps: 9, Forearms: 1 }, { Chest: 4, Back: 3, Legs: 3 }], 'ties go to the earlier muscle group');
+}, { state: fixtureState() });
+
+test('11A muscle XP: daily cap 150 per muscle - within a workout, shared across workouts of the day, other muscles and days unaffected', async ({ page }) => {
+  await mxInit(page);
+  let r = await mxFinish(page, [['c1', B(6)], ['c2', B(6)], ['c3', B(6)], ['mc', B(6)]]);
+  assert.deepEqual(r.log.map(x => [x.exerciseId, x.xp]), [['c1', { Chest: 60 }], ['c2', { Chest: 60 }], ['c3', { Chest: 30 }], ['mc', { Biceps: 51, Forearms: 9 }]], 'Chest stops at 150; Biceps untouched');
+  await mxInit(page);
+  const a = await mxFinish(page, [['c1', B(6)], ['c2', B(6)]], { date: '2026-09-22' });
+  const b = await mxFinish(page, [['c3', B(6)], ['mb', B(6)]], { date: '2026-09-22' });
+  const c = await mxFinish(page, [['c3', B(6)]], { date: '2026-09-23' });
+  assert.deepEqual(a.xp, { Chest: 120 });
+  assert.deepEqual(b.log.map(x => x.xp), [{ Chest: 30 }, { Triceps: 12, Shoulders: 6 }], 'second workout of the day: 30 Chest left, Chest part of the bench capped to 0, Triceps/Shoulders full');
+  assert.deepEqual(c.xp, { Chest: 60 }, 'a new day starts from zero');
+  assert.equal((await totals(page)).Chest, 210);
+}, { state: fixtureState() });
+
+test('11A muscle levels: round(100 x n^1.2) per level from level 1 at 0 XP; progress to the next level', async ({ page }) => {
+  const r = await page.evaluate(() => ({ need: [1, 2, 5, 10, 15, 20, 30].map(muscleXpNeed),
+    lv: [0, 99, 100, 329, 330, 1000].map(x => { const l = muscleLevelFromXp(x); return [l.level, l.into, l.need]; }) }));
+  assert.deepEqual(r.need, [100, 230, 690, 1585, 2578, 3641, 5923]);
+  assert.deepEqual(r.lv, [[1, 0, 100], [1, 99, 100], [2, 0, 230], [2, 229, 230], [3, 0, 374], [4, 296, 528]]);
+  await mxInit(page);
+  await page.evaluate(() => { S.muscleProgress.log.push({ key: 'x', workoutId: 'x', exerciseId: 'x', date: '2026-01-01', units: 0, baseXp: 0, prXp: 0, xp: { Legs: 412 }, ts: 1 }); fitnessTab = 'muscles'; view = 'fitness'; render(); });
+  const legs = await page.locator('[data-muscle-card="Legs"]').innerText();
+  assert.match(legs, /Nohy[\s\S]*Level 3[\s\S]*412\s*XP[\s\S]*82 \/ 374 do dalšího levelu/);
+  assert.equal(await page.locator('[data-muscle-card="Legs"] [role="progressbar"]').getAttribute('aria-valuenow'), '82');
+  assert.equal(await page.evaluate(() => S.totalXp) > 0, true);
+  assert.equal(await page.evaluate(() => levelFromXp(S.totalXp).level) >= 1, true, 'Character level helper untouched');
+}, { state: fixtureState() });
+
+test('11A muscle XP: idempotent - reload, render, editing, a second Finish, export/import; recovery rebuilds a missing log identically', async ({ page }) => {
+  await mxInit(page);
+  const w = await mxFinish(page, [['mb', B(3)], ['mp', [{ reps: 10 }]]]);
+  const t0 = await totals(page), n0 = await page.evaluate(() => S.muscleProgress.log.length);
+  const log0 = await page.evaluate(() => S.muscleProgress.log.map(({ ts, ...r }) => r));
+  await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  const backup = JSON.parse(readFileSync(file, 'utf8'));
+  assert.equal(backup.muscleProgress.log.length, n0, 'the log is part of the backup');
+  await reload(page);
+  for (const v of ['home', 'fitness', 'statistics', 'character']) await page.evaluate(v => { fitnessTab = 'muscles'; view = v; render(); }, v);
+  await page.evaluate(id => { const x = workoutFindById(id); workoutAddSet(x.id, x.entries[0].id, { done: true }); workoutFinish(id); muscleAwardWorkout(x); muscleRecover(S); }, w.id);
+  assert.deepEqual(await totals(page), t0, 'reload, renders, an edit (+1 done set), a second Finish and recovery pay nothing');
+  assert.equal(await page.evaluate(() => S.muscleProgress.log.length), n0);
+  await page.click('#settingsBtn');
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => workoutFindById(completedWorkouts(S)[0].id).entries[0].sets.length === 3);
+  assert.deepEqual(await totals(page), t0, 'import of the full backup: no double pay');
+  delete backup.muscleProgress;
+  await page.setInputFiles('#st_impFile', { name: 'nolog.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+  await page.waitForTimeout(300);
+  assert.deepEqual(await page.evaluate(() => S.muscleProgress.log.map(({ ts, ...r }) => r)), log0, 'a backup without the log is rebuilt once from its stored data and snapshots - identical');
+  assert.deepEqual(await totals(page), t0);
+}, { state: fixtureState() });
+
+test('11A muscle XP: history - legacy exercises[] never pay; a record with exerciseId and no log is recovered once; the mapping is a Finish snapshot', async ({ page }) => {
+  // legacy fixture workouts ("Bench press" 4x8, "Deadlift" 3x5) + a library that now maps those names -> still 0
+  await page.evaluate(() => { S.exerciseLibrary.forEach(x => { x.muscles = { Chest: 100 }; }); S.muscleProgress = { log: [] }; muscleRecover(S); });
+  assert.deepEqual(await page.evaluate(() => S.muscleProgress.log), [], 'no guessing from names');
+  const old = fixtureState(); old.exerciseLibrary = ML; old.muscleProgress = undefined;
+  old.workouts.push({ id: 'pre8', name: 'Before step 8', date: '2026-09-22', status: 'done', startedAt: NOW - 864e5, finishedAt: NOW - 864e5 + 3600e3, duration: '60', notes: '', exercises: [], createdAt: NOW - 864e5,
+    entries: [{ id: 'e1', exerciseId: 'mb', name: 'Bench press', measurement: 'weight_reps', target: null, notes: '', sets: [1, 2].map(i => ({ id: 's' + i, weight: 60, reps: 8, seconds: null, distance: null, rpe: null, warmup: false, done: true })) }], result: { prs: [] } });
+  await page.click('#settingsBtn');
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => S.workouts.some(w => w.id === 'pre8'));
+  const r = await page.evaluate(() => ({ log: S.muscleProgress.log.map(x => [x.workoutId, x.exerciseId, x.xp]), snap: workoutFindById('pre8').entries[0].muscles }));
+  assert.deepEqual(r.log, [['pre8', 'mb', { Chest: 14, Triceps: 4, Shoulders: 2 }]], 'only the record with an exerciseId; legacy rows 0');
+  assert.deepEqual(r.snap, { Chest: 70, Shoulders: 10, Triceps: 20 }, 'the mapping used is stored on the entry');
+  // later library change / archive / delete and editing the workout never change past XP; a new workout uses the new mapping
+  const t0 = await totals(page);
+  await page.evaluate(() => { exerciseSave({ name: 'Bench press', measurement: 'weight_reps', muscles: { Back: 100 } }, 'mb'); workoutUpdateSet('pre8', 'e1', 's1', { reps: 20 }); });
+  assert.deepEqual(await totals(page), t0);
+  assert.equal(await page.evaluate(() => exerciseDelete('mb')), 'archived');
+  await page.evaluate(() => { S.exerciseLibrary = S.exerciseLibrary.filter(x => x.id !== 'mb'); muscleRecover(S); });
+  assert.deepEqual(await totals(page), t0, 'archived, then removed from the library: history unchanged');
+  await page.evaluate(() => { S.exerciseLibrary.push(JSON.parse(JSON.stringify(Object.assign({}, S.exerciseLibrary[0], { id: 'mb', name: 'Bench press', muscles: { Back: 100 }, archived: false })))); });
+  const w = await mxFinish(page, [['mb', B(1)]]);
+  assert.deepEqual(w.xp, { Back: 10 }, 'new workout -> current mapping');
+  // deleting a finished workout keeps its Muscle XP (no refund)
+  const t1 = await totals(page);
+  await page.evaluate(() => { S.workouts = S.workouts.filter(x => x.id !== 'pre8'); muscleRecover(S); });
+  assert.deepEqual(await totals(page), t1);
+  assert.ok(await page.evaluate(() => S.muscleProgress.log.some(x => x.workoutId === 'pre8')), 'the log keeps the record');
+}, { state: fixtureState() });
+
+test('11A muscle XP is parallel: Character XP 80 + VIT/skill bonus, Daily Score, Performance, PRs, Feeling, quests and achievements unchanged', async ({ page }) => {
+  await mxInit(page);
+  await page.evaluate(() => S.rpg.skillTree.unlocked.push('fitness_training_1'));
+  const b = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT, log: S.xpLog.length }));
+  const w = await mxFinish(page, [['mb', B(3)], ['c1', B(6)]]);
+  const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT, log: S.xpLog.length }));
+  const newLog = await page.evaluate(n => S.xpLog.slice(n).map(e => [e.amount, e.reason]), b.log);
+  assert.deepEqual([a.xp - b.xp, a.VIT - b.VIT, newLog], [80, 20, [[80, 'Workout: M'], [0, 'Skill bonus: Training I']]], 'Character XP: the 80 XP entry (+ the existing 0-amount skill-bonus ledger entry), +20 VIT');
+  assert.ok(a.STR - b.STR > 0);
+  assert.ok(Object.keys(await totals(page)).length > 0);
+  // everything else is computed without reading the Muscle XP log: wipe or inflate it -> same results
+  const probe = () => page.evaluate(id => { const x = workoutFindById(id); return JSON.stringify([dailyScore(todayStr()), workoutPerformance(x), x.result.performance, workoutPRs(x), exercisePRs(), x.result.feeling,
+    [DAILY_QUESTS, WEEKLY_QUESTS].flat().map(q => [q.id, q.check(S), q.val(S)]), ACHV.map(ac => [ac.id, ac.cond(S)]), S.totalXp, levelFromXp(S.totalXp), S.attrs, S.rpg]); }, w.id);
+  const p0 = await probe();
+  await page.evaluate(() => { window.__log = S.muscleProgress.log; S.muscleProgress.log = [{ key: 'k', workoutId: 'k', exerciseId: 'k', date: todayStr(), units: 6, baseXp: 60, prXp: 0, xp: { Chest: 99999 }, ts: 1 }]; });
+  assert.equal(await probe(), p0);
+  await page.evaluate(id => { S.muscleProgress.log = window.__log; workoutSetFeeling(id, 'great'); }, w.id);
+  const t0 = await totals(page);
+  await page.evaluate(id => workoutSetFeeling(id, 'bad'), w.id);
+  assert.deepEqual(await totals(page), t0, 'Feeling never changes Muscle XP');
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.performance.score, w.id), JSON.parse(p0)[2].score);
+}, { state: fixtureState() });
+
+test('11A UI: Svaly tab lists all 9 muscle groups (Czech names, level, XP, progress) and the summary shows the earned Muscle XP', async ({ page }) => {
+  await mxInit(page);
+  await openWorkouts(page);
+  await page.click('#wkBlank');
+  await page.click('#wkAddEx'); await page.click('[data-pick="mb"]');
+  await setRow(page, 'Bench press', 0).locator('[data-f="weight"]').fill('60'); await setRow(page, 'Bench press', 0).locator('[data-f="reps"]').fill('8');
+  await entryCard(page, 'Bench press').locator('.wkAddSet').click(); await entryCard(page, 'Bench press').locator('.wkAddSet').click();
+  for (const i of [0, 1, 2]) await setRow(page, 'Bench press', i).locator('.ws-done').click();
+  await page.click('#wkFinish');
+  assert.match(await page.locator('#wkSummary .wk-muscles').innerText(), /SVALY[\s\S]*Prsa \+21 XP[\s\S]*Triceps \+6 XP[\s\S]*Ramena \+3 XP/i);
+  assert.match(await page.locator('#wkSummary').innerText(), /\+80 Character XP/, 'Character XP shown separately');
+  await page.click('#wkSumOk');
+  await page.click('#fitTabs [data-k="muscles"]');
+  assert.match(await appText(page), /Svaly získávají XP podle toho, jaké cviky a série trénuješ\. Různé svaly proto mohou postupovat různým tempem\./);
+  const names = await page.locator('.mu-card .item-title').allInnerTexts();
+  assert.deepEqual(names, ['Prsa', 'Záda', 'Ramena', 'Biceps', 'Triceps', 'Nohy', 'Břicho', 'Hýždě', 'Předloktí']);
+  assert.match(await page.locator('[data-muscle-card="Chest"]').innerText(), /Level 1[\s\S]*21\s*XP[\s\S]*21 \/ 100/);
+  // no summary block when nothing was earned
+  await page.evaluate(() => { closeSheets(); const w = workoutStart({}).workout; workoutAddEntry(w.id, 'mn').sets.forEach(s => Object.assign(s, { weight: 10, reps: 5, done: true })); const r = workoutFinish(w.id); openWorkoutSummary(r.workout, true); });
+  assert.equal(await page.locator('#wkSummary .wk-muscles').count(), 0, 'unmapped exercise: no Muscle XP, no block');
+}, { state: fixtureState() });
+
+test('11A UI: Svaly tab, 4 Fitness tabs and the summary with muscles fit 320-1440 px', async ({ page }) => {
+  await mxInit(page);
+  await mxFinish(page, [['mb', B(6)], ['mp', B(6)], ['mk', [{ seconds: 400 }]], ['mr', [{ distance: 5, seconds: 1500 }]], ['mc', B(6)], ['ms', B(6)]]);
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const k of ['muscles', 'summary', 'workouts']) {
+      await page.evaluate(k => { closeSheets(); uiWorkoutView = null; fitnessTab = k === 'muscles' ? 'muscles' : 'workouts'; view = 'fitness'; render(); if (k === 'summary') openWorkoutSummary(completedWorkouts(S).find(w => w.entries), true); }, k);
+      const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i), cards: document.querySelectorAll('.mu-card').length }; });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length || (k === 'muscles' && r.cards !== 9)) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
     }
   }
   assert.deepEqual(bad, []);
