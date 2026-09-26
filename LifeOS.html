@@ -705,6 +705,16 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .char-main .stat-grid.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:700px) and (max-width:1199px){.char-main .stat-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
+/* Phase 11A: Fitness 2.0 */
+.ex-card{padding:0}
+.ex-card .ex-open{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;font:inherit;padding:14px 16px;cursor:pointer;border-radius:inherit;min-height:44px}
+.ex-card .chips,.ex-cat-row .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip.is-muted{color:var(--sub)}
+.muscle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.muscle-in{display:flex;flex-direction:column;gap:2px;margin:0;font-size:var(--fs-caption);color:var(--sub)}
+.muscle-in input{margin:0;min-height:44px}
+.ex-arch-row{padding:6px 0;gap:8px}
+.ex-archived summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
 /* Phase 9: Daily Score */
 .ds-card{cursor:pointer}
 .ds-card .today-rows{gap:6px}
@@ -1146,6 +1156,9 @@ function defaultState(){return{
   // ---- Phase 10: Daily Planner time blocks (see plannerSaveBlock). Reaches old states/backups
   // through migrate()'s generic top-level fill-in: no schema bump. ----
   plannerBlocks:[],
+  // ---- Phase 11A: Fitness 2.0 exercise library (see exerciseSave). Old states/backups get it
+  // in migrate(): seeded with bare names from their workout history; no schema bump. ----
+  exerciseLibrary:[],
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -1251,6 +1264,9 @@ function migrate(state){
   merged.budgets=(merged.budgets||[]).map(migrateBudget);
   merged.subscriptions=(merged.subscriptions||[]).map(migrateSub);
   merged.workouts=(merged.workouts||[]).map(migrateWorkout);
+  // Phase 11A: a state that predates the exercise library gets one bare-name record per distinct
+  // exercise of its own history (no invented muscles); an existing library is only normalized.
+  merged.exerciseLibrary=Array.isArray(state&&state.exerciseLibrary)?merged.exerciseLibrary.map(migrateExercise):exerciseSeedFromHistory(merged.workouts);
   merged.meals=(merged.meals||[]).map(migrateMeal);
   merged.notes=(merged.notes||[]).map(migrateNote);
   merged.journal=(merged.journal||[]).map(migrateJournalEntry);
@@ -3636,14 +3652,238 @@ function exercisePRs(){
   }));
   return Object.values(prs).sort((a,b)=>b.weight-a.weight);
 }
+/* ---- Phase 11A: Fitness 2.0 -- exercise library + muscle groups ----
+   S.exerciseLibrary[] {id,name,measurement,muscles:{Group:pct},increment,notes,archived,source,createdAt,updatedAt}
+   - measurement: weight_reps | reps | time | distance_time (never assume every exercise uses kg)
+   - muscles: always stored normalized to a 100 % total over MUSCLE_GROUPS, or {} when unknown
+   - source: 'user' | 'preset' | 'history' (history = a bare name seeded from old workouts; no
+     muscle percentages are ever invented for it)
+   Old workouts keep their own exercises[] untouched; they relate to the library by name only. */
+const MUSCLE_GROUPS=['Chest','Back','Shoulders','Biceps','Triceps','Legs','Abs','Glutes','Forearms'];
+const MUSCLE_LABELS_CS={Chest:'Hrudník',Back:'Záda',Shoulders:'Ramena',Biceps:'Biceps',Triceps:'Triceps',Legs:'Nohy',Abs:'Břicho',Glutes:'Hýždě',Forearms:'Předloktí'};
+const MEASUREMENTS=['weight_reps','reps','time','distance_time'];
+const MEASUREMENT_DEFAULT_INCREMENT={weight_reps:2.5,reps:1,time:5,distance_time:0};
+const EXERCISE_PRESETS=[
+  {name:'Bench Press',measurement:'weight_reps',muscles:{Chest:70,Triceps:20,Shoulders:10}},
+  {name:'Incline Dumbbell Press',measurement:'weight_reps',muscles:{Chest:60,Shoulders:25,Triceps:15}},
+  {name:'Overhead Press',measurement:'weight_reps',muscles:{Shoulders:65,Triceps:25,Abs:10}},
+  {name:'Lateral Raise',measurement:'weight_reps',muscles:{Shoulders:100},increment:1},
+  {name:'Dips',measurement:'reps',muscles:{Chest:45,Triceps:45,Shoulders:10}},
+  {name:'Push-up',measurement:'reps',muscles:{Chest:60,Triceps:25,Shoulders:15}},
+  {name:'Triceps Pushdown',measurement:'weight_reps',muscles:{Triceps:100}},
+  {name:'Pull-up',measurement:'reps',muscles:{Back:65,Biceps:25,Forearms:10}},
+  {name:'Barbell Row',measurement:'weight_reps',muscles:{Back:70,Biceps:20,Forearms:10}},
+  {name:'Lat Pulldown',measurement:'weight_reps',muscles:{Back:70,Biceps:25,Forearms:5}},
+  {name:'Biceps Curl',measurement:'weight_reps',muscles:{Biceps:85,Forearms:15},increment:1},
+  {name:'Deadlift',measurement:'weight_reps',muscles:{Back:35,Legs:30,Glutes:25,Forearms:10},increment:5},
+  {name:'Squat',measurement:'weight_reps',muscles:{Legs:65,Glutes:25,Abs:10}},
+  {name:'Leg Press',measurement:'weight_reps',muscles:{Legs:75,Glutes:25},increment:5},
+  {name:'Romanian Deadlift',measurement:'weight_reps',muscles:{Legs:45,Glutes:35,Back:20}},
+  {name:'Hip Thrust',measurement:'weight_reps',muscles:{Glutes:75,Legs:25},increment:5},
+  {name:'Lunge',measurement:'weight_reps',muscles:{Legs:60,Glutes:40}},
+  {name:'Crunch',measurement:'reps',muscles:{Abs:100}},
+  {name:'Plank',measurement:'time',muscles:{Abs:80,Shoulders:10,Glutes:10}},
+  {name:"Farmer's Walk",measurement:'time',muscles:{Forearms:50,Back:20,Legs:20,Abs:10}},
+  {name:'Running',measurement:'distance_time',muscles:{Legs:80,Glutes:20}},
+];
+function exerciseKey(name){ return String(name||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function normalizeMuscles(m){
+  // Keep only known groups with a positive finite share, then scale to exactly 100 using
+  // largest-remainder rounding (integers, stable MUSCLE_GROUPS order). Nothing known -> {}.
+  const src=m&&typeof m==='object'?m:{};
+  const vals=MUSCLE_GROUPS.map(g=>{ const v=Number(src[g]); return [g,Number.isFinite(v)&&v>0?v:0]; }).filter(([,v])=>v>0);
+  const sum=vals.reduce((a,[,v])=>a+v,0);
+  if(!sum) return {};
+  const raw=vals.map(([g,v])=>[g,v/sum*100]);
+  const out=raw.map(([g,v])=>[g,Math.floor(v)]);
+  let rest=100-out.reduce((a,[,v])=>a+v,0);
+  raw.map(([g,v],i)=>[i,v-Math.floor(v)]).sort((a,b)=>b[1]-a[1]||a[0]-b[0]).forEach(([i])=>{ if(rest>0){ out[i][1]++; rest--; } });
+  return Object.fromEntries(out.filter(([,v])=>v>0));
+}
+function migrateExercise(x){
+  const r=Object.assign({name:'',measurement:'weight_reps',muscles:{},increment:null,notes:'',archived:false,source:'user',createdAt:Date.now()},x);
+  if(!MEASUREMENTS.includes(r.measurement)) r.measurement='weight_reps';
+  r.muscles=normalizeMuscles(r.muscles);
+  if(r.increment==null||!Number.isFinite(Number(r.increment))||Number(r.increment)<0) r.increment=MEASUREMENT_DEFAULT_INCREMENT[r.measurement];
+  else r.increment=Number(r.increment);
+  if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function exerciseSeedFromHistory(workouts){
+  // Old backups: one library record per distinct exercise name found in the workout history.
+  // Only the name is taken over -- measurement is the legacy sets x reps x kg shape, muscles stay
+  // unknown ({}) and the history records themselves are never modified.
+  const seen=new Map();
+  [...(workouts||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(w=>(w.exercises||[]).forEach(ex=>{
+    const name=String(ex.name||'').trim().replace(/\s+/g,' '); const k=exerciseKey(name);
+    if(k&&!seen.has(k)) seen.set(k,name);
+  }));
+  return [...seen.values()].map(name=>migrateExercise({id:uid(),name,measurement:'weight_reps',source:'history'}));
+}
+function exerciseFind(idOrName){
+  const lib=S.exerciseLibrary||[];
+  return lib.find(x=>x.id===idOrName)||lib.find(x=>!x.archived&&exerciseKey(x.name)===exerciseKey(idOrName))||null;
+}
+function exerciseValidate(f,id){
+  const e={};
+  const name=String(f.name||'').trim();
+  if(!name) e.name='required';
+  else if((S.exerciseLibrary||[]).some(x=>x.id!==id&&!x.archived&&exerciseKey(x.name)===exerciseKey(name))) e.name='duplicate';
+  if(!MEASUREMENTS.includes(f.measurement)) e.measurement='invalid';
+  if(f.increment!==''&&f.increment!=null&&!(Number.isFinite(Number(f.increment))&&Number(f.increment)>=0)) e.increment='invalid';
+  const m=f.muscles||{};
+  if(Object.keys(m).some(k=>!MUSCLE_GROUPS.includes(k))) e.muscles='invalid';
+  else if(Object.values(m).some(v=>v!==''&&v!=null&&!(Number.isFinite(Number(v))&&Number(v)>=0))) e.muscles='invalid';
+  return e;
+}
+function exerciseSave(f,id){
+  const errors=exerciseValidate(f,id);
+  if(Object.keys(errors).length) return {ok:false,errors};
+  S.exerciseLibrary=S.exerciseLibrary||[];
+  const fields={name:String(f.name).trim().replace(/\s+/g,' '),measurement:f.measurement,muscles:normalizeMuscles(f.muscles),
+    increment:f.increment===''||f.increment==null?MEASUREMENT_DEFAULT_INCREMENT[f.measurement]:Number(f.increment),notes:String(f.notes||''),updatedAt:Date.now()};
+  let x=id?S.exerciseLibrary.find(r=>r.id===id):null;
+  if(x) Object.assign(x,fields);
+  else { x=migrateExercise(Object.assign({id:uid(),source:f.source||'user',createdAt:Date.now()},fields)); S.exerciseLibrary.push(x); }
+  return {ok:true,exercise:x};
+}
+function exerciseInUse(id){
+  // A library record is "in use" once anything stores its id (templates / workout entries of
+  // later Phase 11A steps). Old workouts reference exercises by name only, so they never block.
+  const inEntries=S.workouts.some(w=>(w.entries||[]).some(en=>en.exerciseId===id));
+  const inTemplates=(S.workoutTemplates||[]).some(t=>(t.exercises||[]).some(te=>te.exerciseId===id));
+  return inEntries||inTemplates;
+}
+function exerciseDelete(id){
+  const x=(S.exerciseLibrary||[]).find(r=>r.id===id); if(!x) return null;
+  if(exerciseInUse(id)){ x.archived=true; x.updatedAt=Date.now(); return 'archived'; }
+  S.exerciseLibrary=S.exerciseLibrary.filter(r=>r.id!==id); return 'deleted';
+}
+function exerciseRestore(id){
+  const x=(S.exerciseLibrary||[]).find(r=>r.id===id); if(!x||!x.archived) return false;
+  if(S.exerciseLibrary.some(r=>r.id!==id&&!r.archived&&exerciseKey(r.name)===exerciseKey(x.name))) return false;
+  x.archived=false; x.updatedAt=Date.now(); return true;
+}
+function exerciseAddPreset(name){
+  const p=EXERCISE_PRESETS.find(q=>q.name===name); if(!p) return {ok:false,errors:{name:'invalid'}};
+  return exerciseSave({name:p.name,measurement:p.measurement,muscles:p.muscles,increment:p.increment!=null?p.increment:'',notes:'',source:'preset'});
+}
+let fitnessTab='workouts';
+function uiFitT(k){
+  const cs=uiLang()==='cs';
+  const T=cs?{workouts:'Tréninky',library:'Cviky',add_ex:'Cvik',catalog:'Z katalogu',lib_none:'Knihovna cviků je prázdná',lib_none_d:'Přidej vlastní cvik nebo si vyber z katalogu. Svaly a jejich podíl nastavíš u každého cviku.',
+    archived:'Archivované',restore:'Obnovit',muscles_unknown:'Svaly nevyplněné',from_history:'z historie',
+    weight_reps:'Váha × opakování',reps:'Opakování',time:'Čas',distance_time:'Vzdálenost + čas',
+    new_ex:'Nový cvik',edit_ex:'Upravit cvik',f_name:'Název',f_meas:'Typ měření',f_inc:'Krok progrese',f_muscles:'Zapojené svaly (%)',f_notes:'Poznámka',
+    sum:'Součet',sum_note:'Při uložení se podíly přepočítají na 100 %.',save:'Uložit cvik',del:'Smazat cvik',
+    e_required:'Vyplň název.',e_duplicate:'Cvik s tímto názvem už v knihovně je.',e_invalid:'Neplatná hodnota.',
+    saved:'Cvik uložen',deleted:'Cvik smazán',archived_t:'Cvik je použitý v trénincích — byl archivován, historie zůstává.',restored:'Cvik obnoven',restore_dup:'Aktivní cvik se stejným názvem už existuje.',
+    cat_t:'Katalog cviků',cat_d:'Přidá cvik s typickým rozložením svalů. Hodnoty můžeš později upravit.',cat_all:'Všechny cviky z katalogu už máš v knihovně.',add:'Přidat',added:'Přidáno do knihovny',
+    inc_unit:{weight_reps:'kg',reps:'opak.',time:'s',distance_time:''}}
+    :{workouts:'Workouts',library:'Exercises',add_ex:'Exercise',catalog:'From catalog',lib_none:'Your exercise library is empty',lib_none_d:'Add your own exercise or pick one from the catalog. Set the muscles and their share for each exercise.',
+    archived:'Archived',restore:'Restore',muscles_unknown:'Muscles not set',from_history:'from history',
+    weight_reps:'Weight × reps',reps:'Reps',time:'Time',distance_time:'Distance + time',
+    new_ex:'New exercise',edit_ex:'Edit exercise',f_name:'Name',f_meas:'Measurement',f_inc:'Progression step',f_muscles:'Muscles worked (%)',f_notes:'Notes',
+    sum:'Total',sum_note:'Shares are rescaled to 100 % on save.',save:'Save exercise',del:'Delete exercise',
+    e_required:'Enter a name.',e_duplicate:'An exercise with this name is already in the library.',e_invalid:'Invalid value.',
+    saved:'Exercise saved',deleted:'Exercise deleted',archived_t:'This exercise is used in workouts — it was archived, history stays.',restored:'Exercise restored',restore_dup:'An active exercise with the same name already exists.',
+    cat_t:'Exercise catalog',cat_d:'Adds an exercise with a typical muscle split. You can edit the values later.',cat_all:'Every catalog exercise is already in your library.',add:'Add',added:'Added to the library',
+    inc_unit:{weight_reps:'kg',reps:'reps',time:'s',distance_time:''}};
+  return T[k];
+}
+function uiMuscleLabel(g){ return uiLang()==='cs'?(MUSCLE_LABELS_CS[g]||g):g; }
+function uiMuscleChips(m){
+  const ks=Object.keys(m||{});
+  if(!ks.length) return `<span class="chip is-muted">${uiFitT('muscles_unknown')}</span>`;
+  return ks.sort((a,b)=>m[b]-m[a]).map(g=>`<span class="chip">${escapeHtml(uiMuscleLabel(g))} ${m[g]} %</span>`).join('');
+}
+function uiFitnessTabs(){
+  return `<div class="period-selector" id="fitTabs" role="tablist">${[['workouts','🏋️'],['library','📚']].map(([k,ic])=>
+    `<button class="pill ${fitnessTab===k?'on':''}" data-k="${k}" role="tab" aria-selected="${fitnessTab===k}">${ic} ${uiFitT(k)}</button>`).join('')}</div>`;
+}
+function uiBindFitnessTabs(wrap){
+  wrap.querySelectorAll('#fitTabs [data-k]').forEach(b=>b.onclick=()=>{ fitnessTab=b.dataset.k; render(); });
+}
+function renderFitnessLibrary(){
+  const lib=[...(S.exerciseLibrary||[])].sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+  const active=lib.filter(x=>!x.archived), archived=lib.filter(x=>x.archived);
+  const wrap=el(`<div>${uiPageHead('Fitness','',`<button class="btn sm" id="uiAddEx">＋ ${uiFitT('add_ex')}</button>`)}${uiFitnessTabs()}
+    <div class="row" style="margin:4px 0 10px"><button class="btn ghost sm" id="uiExCatalog">📖 ${uiFitT('catalog')}</button></div>
+    <div class="list" id="exLib"></div>
+    ${archived.length?`<details class="card ex-archived" style="margin-top:12px"><summary>${uiFitT('archived')} (${archived.length})</summary><div class="list" id="exArch" style="margin-top:8px"></div></details>`:''}
+  </div>`);
+  uiBindFitnessTabs(wrap);
+  const list=wrap.querySelector('#exLib');
+  if(!active.length){ const e=el(`<div class="card">${uiEmpty('📚',uiFitT('lib_none'),uiFitT('lib_none_d'),'＋ '+uiFitT('add_ex'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openExerciseForm(); list.appendChild(e); }
+  active.forEach(x=>{
+    const it=el(`<div class="card ex-card" data-ex="${x.id}"><button class="ex-open" aria-label="${uiFitT('edit_ex')}: ${escapeHtml(x.name)}">
+      <div class="between"><div class="item-title truncate">${escapeHtml(x.name)}</div><span class="sub">${uiFitT(x.measurement)}${x.source==='history'?' · '+uiFitT('from_history'):''}</span></div>
+      <div class="chips">${uiMuscleChips(x.muscles)}</div></button></div>`);
+    it.querySelector('.ex-open').onclick=()=>openExerciseForm(x);
+    list.appendChild(it);
+  });
+  archived.forEach(x=>{
+    const it=el(`<div class="between ex-arch-row" data-ex="${x.id}"><span class="truncate">${escapeHtml(x.name)}</span><button class="btn ghost sm exRestore">${uiFitT('restore')}</button></div>`);
+    it.querySelector('.exRestore').onclick=()=>{ if(exerciseRestore(x.id)){ scheduleSave(); render(); toast(uiFitT('restored')); } else toast(uiFitT('restore_dup')); };
+    wrap.querySelector('#exArch').appendChild(it);
+  });
+  wrap.querySelector('#uiAddEx').onclick=()=>openExerciseForm();
+  wrap.querySelector('#uiExCatalog').onclick=()=>openExerciseCatalog();
+  return wrap;
+}
+function openExerciseForm(existing){
+  const x=existing, m=x?x.muscles:{};
+  const meas=x?x.measurement:'weight_reps';
+  const inner=el(`<div><h3>${uiFitT(x?'edit_ex':'new_ex')}</h3>
+    <label for="ex_name">${uiFitT('f_name')}</label><input id="ex_name" value="${x?escapeHtml(x.name):''}" placeholder="Bench Press"><div class="field-error" hidden id="ex_name_err" role="alert"></div>
+    <label for="ex_meas">${uiFitT('f_meas')}</label><select id="ex_meas">${MEASUREMENTS.map(k=>`<option value="${k}" ${k===meas?'selected':''}>${uiFitT(k)}</option>`).join('')}</select>
+    <label for="ex_inc">${uiFitT('f_inc')} <span class="sub" id="ex_inc_unit">${uiFitT('inc_unit')[meas]}</span></label><input type="number" inputmode="decimal" min="0" step="any" id="ex_inc" value="${x?x.increment:MEASUREMENT_DEFAULT_INCREMENT[meas]}"><div class="field-error" hidden id="ex_inc_err" role="alert"></div>
+    <label>${uiFitT('f_muscles')}</label>
+    <div class="muscle-grid">${MUSCLE_GROUPS.map(g=>`<label class="muscle-in"><span>${escapeHtml(uiMuscleLabel(g))}</span><input type="number" inputmode="numeric" min="0" max="100" data-muscle="${g}" aria-label="${escapeHtml(uiMuscleLabel(g))} %" value="${m[g]||''}"></label>`).join('')}</div>
+    <div class="sub" id="ex_sum" aria-live="polite"></div><div class="field-error" hidden id="ex_muscles_err" role="alert"></div>
+    <label for="ex_notes">${uiFitT('f_notes')}</label><textarea id="ex_notes" rows="2">${x?escapeHtml(x.notes||''):''}</textarea>
+    <button class="btn" id="ex_save">${uiFitT('save')}</button>
+    ${x?`<button class="btn danger" id="ex_delete" style="margin-top:8px">${uiFitT('del')}</button>`:''}
+  </div>`);
+  const readMuscles=()=>Object.fromEntries([...inner.querySelectorAll('[data-muscle]')].filter(i=>i.value!=='').map(i=>[i.dataset.muscle,i.value]));
+  const showSum=()=>{ const sum=Object.values(readMuscles()).reduce((a,v)=>a+(Number(v)||0),0); inner.querySelector('#ex_sum').textContent=`${uiFitT('sum')}: ${sum} %${sum&&sum!==100?' · '+uiFitT('sum_note'):''}`; };
+  inner.querySelectorAll('[data-muscle]').forEach(i=>i.oninput=showSum); showSum();
+  inner.querySelector('#ex_meas').onchange=e=>{ const k=e.target.value; inner.querySelector('#ex_inc_unit').textContent=uiFitT('inc_unit')[k]; if(!x) inner.querySelector('#ex_inc').value=MEASUREMENT_DEFAULT_INCREMENT[k]; };
+  inner.querySelector('#ex_save').onclick=()=>{
+    const r=exerciseSave({name:inner.querySelector('#ex_name').value,measurement:inner.querySelector('#ex_meas').value,increment:inner.querySelector('#ex_inc').value,
+      muscles:readMuscles(),notes:inner.querySelector('#ex_notes').value},x?x.id:undefined);
+    ['name','increment','muscles'].forEach(k=>{ const n=inner.querySelector(`#ex_${k==='increment'?'inc':k}_err`); if(!n) return; const msg=r.ok||!r.errors[k]?'':uiFitT('e_'+r.errors[k]); n.textContent=msg; n.hidden=!msg; });
+    if(!r.ok) return;
+    scheduleSave(); closeSheets(); render(); toast(uiFitT('saved'));
+  };
+  if(x) inner.querySelector('#ex_delete').onclick=()=>{
+    if(!confirm(`${uiFitT('del')}: "${x.name}"?`)) return;
+    const res=exerciseDelete(x.id); scheduleSave(); closeSheets(); render(); toast(uiFitT(res==='archived'?'archived_t':'deleted'));
+  };
+  openSheet(inner);
+}
+function openExerciseCatalog(){
+  const have=new Set((S.exerciseLibrary||[]).filter(x=>!x.archived).map(x=>exerciseKey(x.name)));
+  const avail=EXERCISE_PRESETS.filter(p=>!have.has(exerciseKey(p.name)));
+  const inner=el(`<div><h3>${uiFitT('cat_t')}</h3><div class="sub" style="margin-bottom:10px">${uiFitT('cat_d')}</div>
+    ${avail.length?'':`<div class="sub">${uiFitT('cat_all')}</div>`}<div class="list" id="exCat"></div></div>`);
+  avail.forEach(p=>{
+    const it=el(`<div class="card ex-cat-row" data-preset="${escapeHtml(p.name)}"><div class="between"><div style="min-width:0"><div class="item-title truncate">${escapeHtml(p.name)}</div><div class="sub">${uiFitT(p.measurement)}</div></div>
+      <button class="btn sm catAdd" aria-label="${uiFitT('add')}: ${escapeHtml(p.name)}">＋ ${uiFitT('add')}</button></div><div class="chips">${uiMuscleChips(normalizeMuscles(p.muscles))}</div></div>`);
+    it.querySelector('.catAdd').onclick=()=>{ const r=exerciseAddPreset(p.name); if(r.ok){ it.remove(); scheduleSave(); render(); toast(uiFitT('added')); } };
+    inner.querySelector('#exCat').appendChild(it);
+  });
+  openSheet(inner);
+}
 function renderFitness(){
+  if(fitnessTab==='library') return renderFitnessLibrary();
   const prs=exercisePRs();
   const cs=uiLang()==='cs';
   const L=cs?{t:'Fitness',add:'Zapsat trénink',week:'Tréninky tento týden',vol:'Objem tento týden',total:'Celkem tréninků',prs:'Osobní rekordy',hist:'Historie',min:'min',ex:'cviků',sets:'sérií',reps:'opak.',volume:'objem',none:'Zatím žádné tréninky',none_d:'Zapiš trénink a sleduj objem, série a osobní rekordy.'}
     :{t:'Fitness',add:'Log workout',week:'Workouts this week',vol:'Volume this week',total:'Total workouts',prs:'Personal records',hist:'History',min:'min',ex:'exercises',sets:'sets',reps:'reps',volume:'volume',none:'No workouts yet',none_d:'Log a workout to track volume, sets and personal records.'};
   const ws=weekStart(), weekW=S.workouts.filter(w=>w.date>=ws);
   const weekVol=weekW.reduce((a,w)=>a+workoutVolume(w),0), target=S.dailyTargets.workoutsPerWeek||0;
-  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}
+  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}${uiFitnessTabs()}
     <div class="stat-grid cols-3">
       <div class="stat-card"><div class="stat-label">🗓️ ${L.week}</div><div class="stat-value">${weekW.length}${target?`<small>/${target}</small>`:''}</div>${target?`<div class="bar${weekW.length>=target?' is-success':''}"><i style="width:${uiPct(weekW.length,target)}%"></i></div>`:''}</div>
       <div class="stat-card"><div class="stat-label">🏋️ ${L.vol}</div><div class="stat-value">${uiNum(weekVol)}<small> kg</small></div></div>
@@ -3677,6 +3917,7 @@ function renderFitness(){
     list.appendChild(it);
   });
   wrap.querySelector('#addW').onclick=()=>openWorkoutForm();
+  uiBindFitnessTabs(wrap);
   return wrap;
 }
 function openWorkoutForm(existing){

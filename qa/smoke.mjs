@@ -1065,6 +1065,183 @@ test('10 invariants: a full planner session changes no XP/log/level/attributes/p
   assert.equal(await other(), o0, 'tasks, events, goals, workouts, habits unchanged');
 }, { state: fixtureState() });
 
+// ---------- Phase 11A step 1: exercise library + muscle groups ----------
+const EX = o => ({ name: 'Test lift', measurement: 'weight_reps', increment: '', muscles: {}, notes: '', ...o });
+const libSorted = s => [...s.exerciseLibrary].sort((a, b) => a.name.localeCompare(b.name));
+
+test('11A library: muscle percentages are normalized to exactly 100 % (unknown groups, negatives, empty dropped)', async ({ page }) => {
+  const n = m => page.evaluate(m => normalizeMuscles(m), m);
+  assert.deepEqual(await page.evaluate(() => MUSCLE_GROUPS), ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Glutes', 'Forearms']);
+  assert.deepEqual(await n({ Chest: 70, Triceps: 20, Shoulders: 10 }), { Chest: 70, Shoulders: 10, Triceps: 20 });
+  assert.deepEqual(await n({ Chest: 1, Triceps: 1, Shoulders: 1 }), { Chest: 34, Shoulders: 33, Triceps: 33 });
+  assert.deepEqual(await n({ Chest: '50', Back: 50, Legs: 50 }), { Chest: 34, Back: 33, Legs: 33 });
+  assert.deepEqual(await n({ Chest: 140, Triceps: 60 }), { Chest: 70, Triceps: 30 });
+  assert.deepEqual(await n({ Chest: 80, Quads: 20, Abs: -5, Glutes: 'x', Back: 0 }), { Chest: 100 }, 'unknown/negative/NaN/zero dropped');
+  assert.deepEqual(await n({}), {}); assert.deepEqual(await n(null), {}); assert.deepEqual(await n({ Chest: 0 }), {});
+  const sums = await page.evaluate(() => Array.from({ length: 300 }, (_, i) => {
+    const m = {}; MUSCLE_GROUPS.forEach((g, j) => { if ((i * 7 + j * 3) % 4) m[g] = ((i + 1) * (j + 3) * 37) % 97; });
+    const r = normalizeMuscles(m); const k = Object.keys(r); return k.length ? Object.values(r).reduce((a, b) => a + b, 0) : 100;
+  }));
+  assert.ok(sums.every(s => s === 100), 'every non-empty normalization sums to 100');
+  assert.ok(await page.evaluate(() => EXERCISE_PRESETS.every(p => Object.values(normalizeMuscles(p.muscles)).reduce((a, b) => a + b, 0) === 100 && MEASUREMENTS.includes(p.measurement))));
+});
+
+test('11A library: save validates (required, duplicate, measurement, increment, muscles); edit keeps the id; all 4 measurement types', async ({ page }) => {
+  const u0 = await untouchable(page);
+  const save = (f, id) => page.evaluate(({ f, id }) => { const r = exerciseSave(f, id); return JSON.parse(JSON.stringify(r)); }, { f, id });
+  const n0 = (await stateOf(page)).exerciseLibrary.length;
+  assert.deepEqual((await save(EX({ name: '  ' }))).errors, { name: 'required' });
+  assert.deepEqual((await save(EX({ name: ' bench  PRESS ' }))).errors, { name: 'duplicate' }, 'case/space-insensitive duplicate of the seeded "Bench press"');
+  assert.deepEqual((await save(EX({ measurement: 'kg' }))).errors, { measurement: 'invalid' });
+  assert.deepEqual((await save(EX({ increment: '-1' }))).errors, { increment: 'invalid' });
+  assert.deepEqual((await save(EX({ muscles: { Quads: 50 } }))).errors, { muscles: 'invalid' });
+  assert.deepEqual((await save(EX({ muscles: { Chest: -10 } }))).errors, { muscles: 'invalid' });
+  assert.equal((await stateOf(page)).exerciseLibrary.length, n0, 'invalid input saves nothing');
+  const made = {};
+  for (const [name, measurement, inc] of [['Pull-up X', 'reps', 1], ['Plank X', 'time', 5], ['Run X', 'distance_time', 0], ['Row X', 'weight_reps', 2.5]]) {
+    const r = await save(EX({ name, measurement, muscles: { Back: 2, Biceps: 1 } }));
+    assert.equal(r.ok, true); assert.equal(r.exercise.measurement, measurement); assert.equal(r.exercise.increment, inc, `default increment for ${measurement}`);
+    assert.deepEqual(r.exercise.muscles, { Back: 67, Biceps: 33 }); assert.equal(r.exercise.source, 'user'); assert.equal(r.exercise.archived, false);
+    made[name] = r.exercise.id;
+  }
+  const e = await save(EX({ name: 'Pull-up X2', measurement: 'reps', increment: '2', muscles: { Back: 60, Biceps: 30, Forearms: 10 }, notes: 'wide' }), made['Pull-up X']);
+  assert.equal(e.exercise.id, made['Pull-up X'], 'edit keeps id'); assert.equal(e.exercise.increment, 2); assert.equal(e.exercise.notes, 'wide');
+  assert.equal((await stateOf(page)).exerciseLibrary.length, n0 + 4);
+  assert.equal((await save(EX({ name: 'pull-up x2' }), made['Pull-up X'])).ok, true, 'renaming a record to its own name is not a duplicate');
+  assert.equal(await untouchable(page), u0, 'no XP / RPG / Daily Score change');
+}, { state: fixtureState() });
+
+test('11A migration: an old state gets bare exercise names from its history; workouts untouched; idempotent; existing library kept', async ({ page }) => {
+  const s = await stateOf(page); // fixture has no exerciseLibrary -> seeded at boot
+  assert.equal(s.schemaVersion, 8);
+  assert.deepEqual(libSorted(s).map(x => [x.name, x.measurement, x.source, x.muscles, x.archived]),
+    [['Bench press', 'weight_reps', 'history', {}, false], ['Deadlift', 'weight_reps', 'history', {}, false], ['Overhead press', 'weight_reps', 'history', {}, false]],
+    'names only - the old free-text muscle ("Chest") is never turned into invented percentages');
+  assert.deepEqual(s.workouts, fixtureState().workouts.map(w => ({ ...w })), 'workout history is not modified');
+  const r = await page.evaluate(() => {
+    const again = migrate(JSON.parse(JSON.stringify(S)));
+    const legacy = o => { const st = Object.assign(defaultState(), o); if (!('exerciseLibrary' in o)) delete st.exerciseLibrary; return st; };
+    const dupes = migrate(legacy({ tasks: [], workouts: [
+      { id: 'a', name: 'A', date: '2026-01-01', exercises: [{ name: ' squat ' }, { name: 'Squat' }, { name: 'SQUAT' }, { name: '' }] },
+      { id: 'b', name: 'B', date: '2026-01-02', exercises: [{ name: 'Front  squat' }] }, { id: 'c', name: 'C', date: '2026-01-03' }] }));
+    const kept = migrate(Object.assign(defaultState(), { tasks: [], exerciseLibrary: [], workouts: [{ id: 'a', name: 'A', date: '2026-01-01', exercises: [{ name: 'Squat' }] }] }));
+    const fixed = migrate(Object.assign(defaultState(), { tasks: [], exerciseLibrary: [{ id: 'x1', name: 'Odd', measurement: 'bogus', muscles: { Chest: 3, Back: 1, Nope: 5 } }] }));
+    const fresh = defaultState();
+    return { same: JSON.stringify(again.exerciseLibrary) === JSON.stringify(S.exerciseLibrary), dupes: dupes.exerciseLibrary.map(x => x.name), kept: kept.exerciseLibrary, fixed: fixed.exerciseLibrary[0], fresh: fresh.exerciseLibrary, wk: dupes.workouts[0].exercises.length };
+  });
+  assert.equal(r.same, true, 're-running migrate() keeps the same library (same ids)');
+  assert.deepEqual(r.dupes, ['squat', 'Front squat'], 'one record per distinct name (trimmed, case-insensitive), empty names skipped');
+  assert.equal(r.wk, 4, 'the old workout still has all 4 exercise rows');
+  assert.deepEqual(r.kept, [], 'a user who emptied the library does not get it re-seeded');
+  assert.equal(r.fixed.id, 'x1'); assert.equal(r.fixed.measurement, 'weight_reps'); assert.deepEqual(r.fixed.muscles, { Chest: 75, Back: 25 });
+  assert.deepEqual(r.fresh, [], 'a fresh install starts with an empty library');
+  // Old workouts still render and compute exactly as before.
+  await page.evaluate(() => { fitnessTab = 'workouts'; view = 'fitness'; render(); });
+  assert.match(await appText(page), /Push day/);
+  assert.deepEqual(await page.evaluate(() => S.workouts.map(w => [workoutVolume(w), workoutTotalSets(w), workoutTotalReps(w)])), [[3910, 7, 62], [2100, 3, 15]]);
+}, { state: fixtureState() });
+
+test('11A library: delete removes an unused exercise, archives one that is referenced by id; restore respects duplicates', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const a = exerciseSave({ name: 'Unused', measurement: 'reps', muscles: {} }).exercise;
+    const b = exerciseSave({ name: 'Used', measurement: 'weight_reps', muscles: { Chest: 1 } }).exercise;
+    S.workouts.push({ id: 'wx', name: 'New model', date: todayStr(), exercises: [], entries: [{ id: 'en1', exerciseId: b.id, sets: [] }] });
+    const out = { del: exerciseDelete(a.id), arch: exerciseDelete(b.id), missing: exerciseDelete('nope') };
+    out.gone = !S.exerciseLibrary.some(x => x.id === a.id);
+    out.archived = S.exerciseLibrary.find(x => x.id === b.id).archived;
+    out.findByName = exerciseFind('used'); out.findById = exerciseFind(b.id).id === b.id;
+    const c = exerciseSave({ name: 'Used', measurement: 'reps', muscles: {} });
+    out.newOk = c.ok; out.restoreBlocked = exerciseRestore(b.id);
+    exerciseDelete(c.exercise.id); out.restoreOk = exerciseRestore(b.id);
+    out.entryIntact = S.workouts.find(w => w.id === 'wx').entries[0].exerciseId === b.id;
+    return out;
+  });
+  assert.deepEqual(r, { del: 'deleted', arch: 'archived', missing: null, gone: true, archived: true, findByName: null, findById: true, newOk: true, restoreBlocked: false, restoreOk: true, entryIntact: true });
+}, { state: fixtureState() });
+
+test('11A UI: Fitness tabs, add exercise with muscles (normalized on save), validation errors, catalog, edit and delete', async ({ page }) => {
+  const u0 = await untouchable(page);
+  await page.evaluate(() => { fitnessTab = 'workouts'; view = 'fitness'; render(); });
+  await page.click('#fitTabs [data-k="library"]');
+  assert.equal(await page.locator('#exLib .ex-card').count(), 3, 'seeded names are listed');
+  assert.match(await page.locator('#exLib').innerText(), /Svaly nevyplněné/);
+  await page.click('#uiAddEx'); await page.click('#ex_save');
+  assert.equal(await page.locator('#ex_name_err').isVisible(), true);
+  assert.match(await page.locator('#ex_name_err').innerText(), /Vyplň název/);
+  await page.fill('#ex_name', 'bench press'); await page.click('#ex_save');
+  assert.match(await page.locator('#ex_name_err').innerText(), /už v knihovně/);
+  assert.equal((await stateOf(page)).exerciseLibrary.length, 3, 'nothing saved');
+  await page.fill('#ex_name', 'Chin-up'); await page.selectOption('#ex_meas', 'reps');
+  assert.equal(await page.inputValue('#ex_inc'), '1');
+  await page.fill('[data-muscle="Back"]', '50'); await page.fill('[data-muscle="Biceps"]', '50'); await page.fill('[data-muscle="Forearms"]', '50');
+  assert.match(await page.locator('#ex_sum').innerText(), /150 %.*100 %/);
+  await page.click('#ex_save');
+  let x = (await stateOf(page)).exerciseLibrary.find(e => e.name === 'Chin-up');
+  assert.deepEqual([x.measurement, x.increment, x.muscles], ['reps', 1, { Back: 34, Biceps: 33, Forearms: 33 }]);
+  assert.match(await page.locator(`[data-ex="${x.id}"]`).innerText(), /Záda 34 %/);
+  // catalog
+  await page.click('#uiExCatalog');
+  assert.equal(await page.locator('[data-preset="Bench Press"]').count(), 0, 'already in the library (case-insensitive) is not offered');
+  await page.click('[data-preset="Plank"] .catAdd');
+  await page.evaluate(() => closeSheets());
+  const plank = (await stateOf(page)).exerciseLibrary.find(e => e.name === 'Plank');
+  assert.deepEqual([plank.measurement, plank.source, plank.muscles], ['time', 'preset', { Shoulders: 10, Abs: 80, Glutes: 10 }]);
+  // edit: open the seeded Deadlift and give it muscles
+  const dl = (await stateOf(page)).exerciseLibrary.find(e => e.name === 'Deadlift');
+  await page.click(`[data-ex="${dl.id}"] .ex-open`);
+  await page.fill('[data-muscle="Back"]', '40'); await page.fill('[data-muscle="Legs"]', '40'); await page.fill('[data-muscle="Glutes"]', '20');
+  await page.click('#ex_save');
+  x = (await stateOf(page)).exerciseLibrary.find(e => e.id === dl.id);
+  assert.deepEqual([x.name, x.source, x.muscles], ['Deadlift', 'history', { Back: 40, Legs: 40, Glutes: 20 }]);
+  // delete (unused -> really deleted)
+  page.on('dialog', d => d.accept());
+  await page.click(`[data-ex="${dl.id}"] .ex-open`); await page.click('#ex_delete');
+  assert.equal((await stateOf(page)).exerciseLibrary.some(e => e.id === dl.id), false);
+  await page.click('#fitTabs [data-k="workouts"]');
+  assert.equal(await page.locator('#addW').count(), 1, 'workouts tab is back');
+  assert.equal(await untouchable(page), u0, 'no XP / RPG / Daily Score change');
+  assert.deepEqual((await stateOf(page)).workouts, fixtureState().workouts, 'workouts unchanged');
+}, { state: fixtureState() });
+
+test('11A UI: library, exercise form and catalog fit 320-1440 px without overflow; no duplicate ids', async ({ page }) => {
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const open of [null, 'form', 'catalog']) {
+      await page.evaluate(o => { closeSheets(); fitnessTab = 'library'; view = 'fitness'; render(); if (o === 'form') openExerciseForm(S.exerciseLibrary[0]); if (o === 'catalog') openExerciseCatalog(); }, open);
+      const r = await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
+        const sheet = document.querySelector('.sheet');
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: sheet ? sheet.scrollWidth - sheet.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i) };
+      });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length) bad.push(`${open || 'list'}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('11A data: library survives reload + export/import; old backup is seeded; reset empties it', async ({ page }) => {
+  await page.evaluate(() => { exerciseAddPreset('Pull-up'); });
+  await persist(page); await reload(page);
+  const lib = (await stateOf(page)).exerciseLibrary;
+  assert.equal(lib.length, 4);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).exerciseLibrary, lib);
+  await page.evaluate(() => { S.exerciseLibrary = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.exerciseLibrary.length === 4);
+  assert.deepEqual((await stateOf(page)).exerciseLibrary, lib, 'import restores it exactly (same ids)');
+  const old = fixtureState(); delete old.exerciseLibrary;
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => S.exerciseLibrary.length === 3 && S.exerciseLibrary.every(x => x.source === 'history'));
+  assert.equal((await stateOf(page)).schemaVersion, 8);
+  page.on('dialog', d => d.accept());
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  assert.deepEqual((await stateOf(page)).exerciseLibrary, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

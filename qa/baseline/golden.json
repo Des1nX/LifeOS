@@ -865,6 +865,7 @@
   "dailyScores": {},
   "dailyScoresSince": null,
   "plannerBlocks": [],
+  "exerciseLibrary": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
@@ -1077,6 +1078,20 @@
   "dailyScores": {},
   "dailyScoresSince": null,
   "plannerBlocks": [],
+  "exerciseLibrary": [
+   {
+    "name": "Squat",
+    "measurement": "weight_reps",
+    "muscles": {},
+    "increment": 2.5,
+    "notes": "",
+    "archived": false,
+    "source": "history",
+    "createdAt": "<time>",
+    "id": "<uid>",
+    "updatedAt": "<time>"
+   }
+  ],
   "settings": {
    "theme": "dark",
    "onboarded": false,
