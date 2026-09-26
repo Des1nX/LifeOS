@@ -1242,6 +1242,143 @@ test('11A data: library survives reload + export/import; old backup is seeded; r
   assert.deepEqual((await stateOf(page)).exerciseLibrary, []);
 }, { state: fixtureState() });
 
+// ---------- Phase 11A step 2: workout templates ----------
+const libIds = page => page.evaluate(() => {
+  ['Plank', 'Running', 'Pull-up'].forEach(n => exerciseAddPreset(n));
+  return Object.fromEntries(S.exerciseLibrary.map(x => [x.name, x.id]));
+});
+
+test('11A templates: validation per measurement type, normalization, edit keeps ids, delete; nothing else changes', async ({ page }) => {
+  const u0 = await untouchable(page); const w0 = JSON.stringify((await stateOf(page)).workouts);
+  const L = await libIds(page);
+  const save = (f, id) => page.evaluate(({ f, id }) => JSON.parse(JSON.stringify(templateSave(f, id))), { f, id });
+  const E = (exerciseId, o) => ({ exerciseId, sets: '3', repsMin: '8', repsMax: '12', weight: '', seconds: '', distance: '', rest: '', ...o });
+  assert.deepEqual((await save({ name: ' ', exercises: [] })).errors, { name: 'required', exercises: 'empty' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E('nope')] })).errors, { 'ex.0.exerciseId': 'required' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Bench press'], { sets: '0' })] })).errors, { 'ex.0.sets': 'invalid' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Bench press'], { sets: '21' })] })).errors, { 'ex.0.sets': 'invalid' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Bench press'], { sets: '2.5' })] })).errors, { 'ex.0.sets': 'invalid' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Bench press'], { repsMin: '10', repsMax: '8' })] })).errors, { 'ex.0.repsMax': 'range' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Pull-up'], { repsMin: '' })] })).errors, { 'ex.0.repsMin': 'invalid' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Bench press'], { weight: '-5' })] })).errors, { 'ex.0.weight': 'invalid' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Plank'])] })).errors, { 'ex.0.seconds': 'invalid' }, 'time needs seconds, reps are irrelevant');
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Running'], { sets: '1' })] })).errors, { 'ex.0.distance': 'required' });
+  assert.deepEqual((await save({ name: 'X', exercises: [E(L['Bench press'], { rest: '-1' })] })).errors, { 'ex.0.rest': 'invalid' });
+  assert.equal((await stateOf(page)).workoutTemplates.length, 0, 'invalid input saves nothing');
+  const r = await save({ name: ' Push A ', notes: 'n', exercises: [
+    E(L['Bench press'], { sets: '4', repsMin: '6', repsMax: '8', weight: '70', rest: '120' }),
+    E(L['Pull-up'], { repsMax: '', weight: '20' }),
+    E(L['Plank'], { sets: '2', seconds: '60', repsMin: '8', weight: '10' }),
+    E(L['Running'], { sets: '1', distance: '5', seconds: '' })] });
+  assert.equal(r.ok, true);
+  const t = r.template;
+  assert.equal(t.name, 'Push A');
+  const pick = te => [te.sets, te.repsMin, te.repsMax, te.weight, te.seconds, te.distance, te.rest];
+  assert.deepEqual(t.exercises.map(pick), [[4, 6, 8, 70, null, null, 120], [3, 8, 8, null, null, null, null], [2, null, null, null, 60, null, null], [1, null, null, null, null, 5, null]],
+    'numbers only; repsMax defaults to repsMin; fields of other measurement types are cleared (no kg on pull-ups/plank)');
+  const r2 = await save({ name: 'Push A2', notes: '', exercises: [t.exercises[1], { ...t.exercises[0], sets: 5 }] }, t.id);
+  assert.equal(r2.template.id, t.id);
+  assert.deepEqual(r2.template.exercises.map(te => te.id), [t.exercises[1].id, t.exercises[0].id], 'row ids survive reordering');
+  assert.equal(r2.template.exercises[1].sets, 5);
+  assert.deepEqual(await page.evaluate(id => templateSummary(templateFind(id)), t.id), { exercises: 2, sets: 8 });
+  // a library exercise used by a template is archived instead of deleted; the template still resolves it
+  const arch = await page.evaluate(id => [exerciseDelete(id), exerciseFind(id).name], L['Pull-up']);
+  assert.deepEqual(arch, ['archived', 'Pull-up']);
+  assert.equal(await page.evaluate(id => templateDelete(id), t.id), true);
+  assert.equal((await stateOf(page)).workoutTemplates.length, 0);
+  assert.equal(await untouchable(page), u0, 'no XP / RPG / Daily Score change');
+  assert.equal(JSON.stringify((await stateOf(page)).workouts), w0, 'workouts unchanged');
+}, { state: fixtureState() });
+
+test('11A UI: create, validate, reorder, edit and delete a template; fields follow the exercise measurement', async ({ page }) => {
+  const L = await libIds(page);
+  await page.evaluate(() => { fitnessTab = 'workouts'; view = 'fitness'; render(); });
+  await page.click('#fitTabs [data-k="templates"]');
+  assert.match(await appText(page), /Zatím žádné šablony/);
+  await page.click('#uiAddTpl');
+  await page.click('#tp_save');
+  assert.match(await page.locator('[data-err="name"]').innerText(), /Vyplň název/);
+  assert.match(await page.locator('.tp-row [data-ferr="exerciseId"]').innerText(), /Povinné/);
+  await page.fill('#tp_name', 'Full body');
+  const rows = page.locator('.tp-row');
+  await rows.nth(0).locator('.tp-ex').selectOption(L['Bench press']);
+  assert.deepEqual(await rows.nth(0).locator('[data-f]').evaluateAll(ns => ns.map(n => n.dataset.f)), ['sets', 'repsMin', 'repsMax', 'weight', 'rest']);
+  await rows.nth(0).locator('[data-f="weight"]').fill('70');
+  await page.click('#tp_addEx');
+  await rows.nth(1).locator('.tp-ex').selectOption(L['Plank']);
+  assert.deepEqual(await rows.nth(1).locator('[data-f]').evaluateAll(ns => ns.map(n => n.dataset.f)), ['sets', 'seconds', 'rest'], 'time exercise: no reps, no kg');
+  await rows.nth(1).locator('[data-f="seconds"]').fill('');
+  await page.click('#tp_save');
+  assert.match(await rows.nth(1).locator('[data-ferr="seconds"]').innerText(), /Neplatná/);
+  assert.equal(await rows.nth(1).locator('[data-f="seconds"]').getAttribute('aria-invalid'), 'true');
+  assert.equal((await stateOf(page)).workoutTemplates.length, 0, 'nothing saved');
+  await rows.nth(1).locator('[data-f="seconds"]').fill('45');
+  await rows.nth(1).locator('.tpUp').click();
+  await page.click('#tp_save');
+  let t = (await stateOf(page)).workoutTemplates[0];
+  assert.deepEqual(t.exercises.map(te => [te.exerciseId, te.sets, te.seconds, te.weight]), [[L['Plank'], 3, 45, null], [L['Bench press'], 3, null, 70]]);
+  assert.match(await page.locator(`[data-tpl="${t.id}"]`).innerText(), /2 cviků · 6 sérií[\s\S]*Plank · Bench press/);
+  await page.click(`[data-tpl="${t.id}"] .tpl-open`);
+  assert.equal(await page.inputValue('#tp_name'), 'Full body');
+  await rows.nth(0).locator('.tpRm').click();
+  await page.click('#tp_save');
+  t = (await stateOf(page)).workoutTemplates[0];
+  assert.deepEqual(t.exercises.map(te => te.exerciseId), [L['Bench press']]);
+  page.on('dialog', d => d.accept());
+  await page.click(`[data-tpl="${t.id}"] .tpl-open`); await page.click('#tp_delete');
+  assert.equal((await stateOf(page)).workoutTemplates.length, 0);
+}, { state: fixtureState() });
+
+test('11A UI: templates list and form fit 320-1440 px without overflow; no duplicate ids; empty library hint', async ({ page }) => {
+  await page.evaluate(() => {
+    exerciseAddPreset('Running'); exerciseAddPreset('Plank');
+    const id = n => exerciseFind(n).id;
+    templateSave({ name: 'A very long template name that should wrap or truncate nicely on a phone', exercises: [
+      { exerciseId: id('Bench press'), sets: 4, repsMin: 6, repsMax: 8, weight: 72.5, rest: 180 }, { exerciseId: id('Running'), sets: 1, distance: 5, seconds: 1500 },
+      { exerciseId: id('Plank'), sets: 3, seconds: 60 }, { exerciseId: id('Deadlift'), sets: 3, repsMin: 5 }] });
+  });
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const open of [null, 'form']) {
+      await page.evaluate(o => { closeSheets(); fitnessTab = 'templates'; view = 'fitness'; render(); if (o) openTemplateForm(S.workoutTemplates[0]); }, open);
+      const r = await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map(n => n.id); const sheet = document.querySelector('.sheet');
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: sheet ? sheet.scrollWidth - sheet.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i) };
+      });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length) bad.push(`${open || 'list'}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+  await page.evaluate(() => { closeSheets(); S.exerciseLibrary = []; openTemplateForm(); });
+  assert.match(await page.locator('.sheet').innerText(), /Nejdřív si přidej cviky/);
+  assert.equal(await page.locator('#tp_addEx').isDisabled(), true);
+  await page.click('#tp_golib');
+  assert.equal(await page.evaluate(() => fitnessTab), 'library');
+}, { state: fixtureState() });
+
+test('11A data: templates survive reload + export/import; old backup gets []; reset empties them', async ({ page }) => {
+  await page.evaluate(() => templateSave({ name: 'Pull', exercises: [{ exerciseId: exerciseFind('Deadlift').id, sets: 3, repsMin: 5 }] }));
+  await persist(page); await reload(page);
+  const tpls = (await stateOf(page)).workoutTemplates;
+  assert.equal(tpls.length, 1);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).workoutTemplates, tpls);
+  await page.evaluate(() => { S.workoutTemplates = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.workoutTemplates.length === 1);
+  assert.deepEqual((await stateOf(page)).workoutTemplates, tpls);
+  const old = fixtureState(); delete old.workoutTemplates;
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => Array.isArray(S.workoutTemplates) && S.workoutTemplates.length === 0);
+  page.on('dialog', d => d.accept());
+  await page.evaluate(() => templateSave({ name: 'x', exercises: [{ exerciseId: S.exerciseLibrary[0].id, sets: 1, repsMin: 1 }] }));
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  assert.deepEqual((await stateOf(page)).workoutTemplates, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

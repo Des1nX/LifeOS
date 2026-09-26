@@ -866,6 +866,7 @@
   "dailyScoresSince": null,
   "plannerBlocks": [],
   "exerciseLibrary": [],
+  "workoutTemplates": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
@@ -1092,6 +1093,7 @@
     "updatedAt": "<time>"
    }
   ],
+  "workoutTemplates": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
