@@ -1379,6 +1379,165 @@ test('11A data: templates survive reload + export/import; old backup gets []; re
   assert.deepEqual((await stateOf(page)).workoutTemplates, []);
 }, { state: fixtureState() });
 
+// ---------- Phase 11A step 3: active workout model ----------
+// A state with no workouts at all and a Fitness event today, so "a workout counts" is observable
+// in every consumer (quests, achievements, Daily Score, Home, Statistics, search, history).
+const noWorkoutState = () => {
+  const s = fixtureState(); s.workouts = []; s.achievementsUnlocked = ['first_task']; s.quests = [];
+  s.events.push({ id: 'ev_gym', title: 'Gym', description: '', date: TODAY, category: 'Fitness', start: '17:00', end: '18:00', location: '', recurring: 'none', reminder: '', linkedTaskId: '', linkedGoalId: '', linkedHabitId: '', createdAt: NOW });
+  return s;
+};
+const setupTpl = page => page.evaluate(() => {
+  exerciseAddPreset('Bench Press'); exerciseAddPreset('Deadlift'); exerciseAddPreset('Plank'); exerciseAddPreset('Pull-up');
+  const id = n => exerciseFind(n).id;
+  return templateSave({ name: 'Push A', exercises: [{ exerciseId: id('Bench press'), sets: 2, repsMin: 8, repsMax: 10, weight: 70 },
+    { exerciseId: id('Pull-up'), sets: 2, repsMin: 6 }, { exerciseId: id('Plank'), sets: 1, seconds: 60 }] }).template.id;
+});
+const consumers = page => page.evaluate(() => {
+  const ds = dailyScoreFitness(todayStr());
+  return { completed: completedWorkouts(S).length, ds: ds.score, dsWorkouts: ds.workouts, dq_workout: DAILY_QUESTS.find(q => q.id === 'dq_workout').check(S),
+    dq_log_val: DAILY_QUESTS.find(q => q.id === 'dq_log').val(S), wq: WEEKLY_QUESTS.find(q => q.id === 'wq_workouts').val(S),
+    ach: ACHV.find(a => a.id === 'first_workout').cond(S), achProg: ACHV.find(a => a.id === 'fitness_beast').progress(S),
+    stats: computeStats('week').fitness.count,
+    searchN: (searchGroups('Push A').find(g => g[2] === 'workout') || [])[3]?.length || 0, prs: exercisePRs().length };
+});
+
+test('11A active: isCompletedWorkout - active is not done, done is done, a record without status is done (old data untouched)', async ({ page }) => {
+  const r = await page.evaluate(() => [isCompletedWorkout({}), isCompletedWorkout({ status: 'done' }), isCompletedWorkout({ status: 'active' }), isCompletedWorkout(null),
+    completedWorkouts(S).map(w => w.id), S.workouts.map(w => 'status' in w)]);
+  assert.deepEqual(r, [true, true, false, false, ['w1', 'w2'], [false, false]], 'old workouts are interpreted as done and not rewritten');
+}, { state: fixtureState() });
+
+test('11A active: Start creates ONE active record in workouts[] from the template (copied plan); a second Start resumes it', async ({ page }) => {
+  const tid = await setupTpl(page);
+  const r = await page.evaluate(tid => { const a = workoutStart({ templateId: tid }); const b = workoutStart({ templateId: tid }); const c = workoutStart({}); return JSON.parse(JSON.stringify({ a, b, c, n: S.workouts.length })); }, tid);
+  const w = r.a.workout;
+  assert.equal(r.a.ok, true); assert.equal(w.status, 'active'); assert.equal(w.templateId, tid); assert.equal(w.date, TODAY); assert.deepEqual(w.exercises, []);
+  assert.deepEqual([r.b.ok, r.b.reason, r.b.workout.id, r.c.workout.id, r.n], [false, 'active_exists', w.id, w.id, 3], 'no duplicate active workout');
+  assert.deepEqual(w.entries.map(en => [en.name, en.measurement, en.sets.length, en.target.sets]), [['Bench press', 'weight_reps', 2, 2], ['Pull-up', 'reps', 2, 2], ['Plank', 'time', 1, 1]]);
+  assert.deepEqual(w.entries[0].sets.map(st => [st.weight, st.reps, st.done, st.warmup]), [[70, 8, false, false], [70, 8, false, false]], 'sets prefilled from the plan, not done');
+  assert.deepEqual(w.entries[1].sets[0].weight, null, 'no kg on a reps exercise');
+  assert.equal(w.entries[2].sets[0].seconds, 60);
+  // the plan is a copy: editing / deleting the template or the library exercise never rewrites the workout
+  await page.evaluate(tid => { const t = templateFind(tid); templateSave({ name: 'Changed', exercises: [t.exercises[0]] }, tid); exerciseSave({ name: 'Bench renamed', measurement: 'weight_reps', muscles: {} }, exerciseFind('Bench press').id); templateDelete(tid); }, tid);
+  const after = (await stateOf(page)).workouts.find(x => x.id === w.id);
+  assert.deepEqual(after.entries.map(en => en.name), ['Bench press', 'Pull-up', 'Plank']);
+  assert.equal(after.name, 'Push A');
+}, { state: fixtureState() });
+
+test('11A active: Start grants nothing and counts nowhere; Finish counts everywhere and pays the 80 XP exactly once', async ({ page }) => {
+  const tid = await setupTpl(page);
+  const u0 = await untouchable(page);
+  const c0 = await consumers(page);
+  assert.deepEqual([c0.completed, c0.ds, c0.dq_workout, c0.dq_log_val, c0.wq, c0.ach, c0.achProg, c0.stats, c0.searchN, c0.prs], [0, 0, false, 1, 0, false, 0, 0, 0, 0],
+    'baseline: Fitness planned today, nothing done (dq_log is already met by a meal)');
+  const wid = await page.evaluate(tid => { const w = workoutStart({ templateId: tid }).workout; const en = w.entries[0]; workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: true, weight: 72.5, reps: 8 }); return w.id; }, tid);
+  // everything that could react to it runs: quest check, achievements, all screens
+  await page.evaluate(() => { checkQuests(); checkAchievements(); for (const v of ['home', 'fitness', 'quests', 'statistics', 'character', 'calendar', 'planner', 'search']) { view = v; render(); } });
+  assert.deepEqual(await consumers(page), c0, 'an active workout is invisible to quests, achievements, Daily Score, stats, search and PRs');
+  assert.equal(await untouchable(page), u0, 'Start: no Character XP, no quest, no achievement, no Daily Score change');
+  const x0 = await page.evaluate(() => ({ xp: S.totalXp, str: S.attrs.STR, vit: S.attrs.VIT, log: S.xpLog.length }));
+  const fin = await page.evaluate(wid => JSON.parse(JSON.stringify(workoutFinish(wid))), wid);
+  assert.equal(fin.ok, true); assert.equal(fin.granted, true);
+  const x1 = await page.evaluate(wid => ({ xp: S.totalXp, str: S.attrs.STR, vit: S.attrs.VIT, log: S.xpLog.length, wk: S.xpLog.filter(e => e.key === `workout:${wid}:${todayStr()}`),
+    ach: S.achievementsUnlocked.includes('first_workout') }), wid);
+  assert.equal(x1.wk.length, 1); assert.equal(x1.wk[0].amount, 80); assert.equal(x1.wk[0].reason, 'Workout: Push A');
+  assert.equal(x1.ach, true, 'Finish runs the normal achievement check: Beast Mode (first workout) unlocks now');
+  assert.equal(x1.xp - x0.xp, 80 + 20, '80 workout XP + 20 from the Beast Mode achievement'); assert.equal(x1.vit - x0.vit, 20);
+  const w = (await stateOf(page)).workouts.find(z => z.id === wid);
+  assert.equal(w.status, 'done'); assert.ok(w.finishedAt >= w.startedAt); assert.equal(w.duration, '1');
+  await page.evaluate(() => { checkQuests(); checkAchievements(); });
+  const c1 = await consumers(page);
+  assert.deepEqual([c1.completed, c1.ds, c1.dsWorkouts, c1.dq_workout, c1.wq, c1.ach, c1.achProg, c1.stats, c1.searchN], [1, 100, 1, true, 1, true, 10, 1, 1], 'after Finish it counts everywhere');
+  // exactly once: a second Finish (or a replay of the ledger key) pays nothing
+  const x2 = await page.evaluate(wid => { const r = workoutFinish(wid); const g = grantXp(80, 'Workout: Push A', 'STR', `workout:${wid}:${todayStr()}`); return { r, g, xp: S.totalXp, vit: S.attrs.VIT }; }, wid);
+  assert.deepEqual(x2.r, { ok: false }); assert.ok(!x2.g);
+  assert.equal(x2.vit, x1.vit);
+  // quest XP comes from the (unchanged) quest rules, not from Finish itself
+  assert.ok(await page.evaluate(() => S.quests.some(q => q.questId === 'dq_workout')));
+}, { state: noWorkoutState() });
+
+test('11A active: Finish pays exactly what the Log Workout form pays (same XP, attributes and skill bonus)', async ({ page }) => {
+  const tid = await setupTpl(page);
+  const delta = async fn => page.evaluate(async fn => {
+    const b = { xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT };
+    await (new Function('tid', fn))(window.__tid);
+    return { xp: S.totalXp - b.xp, STR: S.attrs.STR - b.STR, VIT: S.attrs.VIT - b.VIT };
+  }, fn);
+  // first_workout is pre-unlocked so neither path also pays the one-off achievement XP
+  await page.evaluate(tid => { window.__tid = tid; S.rpg.skillTree.unlocked.push('fitness_training_1'); S.achievementsUnlocked.push('first_workout'); }, tid);
+  const viaFinish = await delta('const w = workoutStart({ templateId: tid }).workout; workoutFinish(w.id);');
+  await page.evaluate(() => { closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; render(); });
+  const b = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
+  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.click('#w_save');
+  const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
+  const viaForm = { xp: a.xp - b.xp, STR: a.STR - b.STR, VIT: a.VIT - b.VIT };
+  assert.deepEqual(viaFinish, viaForm);
+  assert.deepEqual([viaFinish.xp, viaFinish.VIT], [80, 20], '80 Character XP and +20 VIT (STR also includes the Training I skill bonus)');
+}, { state: noWorkoutState() });
+
+test('11A active: an active workout survives reload and is resumed (same id, same values); discard removes it without any reward', async ({ page }) => {
+  const tid = await setupTpl(page);
+  const wid = await page.evaluate(tid => {
+    const w = workoutStart({ templateId: tid }).workout; const en = w.entries[1];
+    workoutUpdateSet(w.id, en.id, en.sets[0].id, { reps: 12, done: true }); workoutAddSet(w.id, en.id, { warmup: true });
+    workoutAddEntry(w.id, exerciseFind('Deadlift').id); return w.id;
+  }, tid);
+  const before = (await stateOf(page)).workouts.find(w => w.id === wid);
+  await persist(page); await reload(page);
+  const r = await page.evaluate(() => { const a = activeWorkout(); const again = workoutStart({}); return JSON.parse(JSON.stringify({ a, again: again.workout.id, n: S.workouts.filter(w => w.status === 'active').length })); });
+  assert.deepEqual(r.a, before, 'identical after reload');
+  assert.equal(r.again, wid); assert.equal(r.n, 1);
+  assert.deepEqual(r.a.entries.map(en => en.name), ['Bench press', 'Pull-up', 'Plank', 'Deadlift']);
+  assert.deepEqual(r.a.entries[1].sets.map(s => [s.reps, s.done, s.warmup]), [[12, true, false], [6, false, false], [6, false, true]]);
+  const u0 = await untouchable(page);
+  assert.equal(await page.evaluate(wid => workoutDiscard(wid), wid), true);
+  assert.equal(await page.evaluate(() => activeWorkout()), null);
+  assert.equal(await untouchable(page), u0);
+  assert.equal(await page.evaluate(() => workoutDiscard('w1')), false, 'a done workout is never discarded this way');
+}, { state: fixtureState() });
+
+test('11A active: volume/sets/reps of new workouts count only done working sets; legacy workouts unchanged; set edits are typed', async ({ page }) => {
+  const tid = await setupTpl(page);
+  const r = await page.evaluate(tid => {
+    const w = workoutStart({ templateId: tid }).workout; const [b, p, pl] = w.entries;
+    workoutUpdateSet(w.id, b.id, b.sets[0].id, { done: true, weight: '80', reps: '8' });
+    workoutUpdateSet(w.id, b.id, b.sets[1].id, { done: false, weight: 80, reps: 8 });                // not done
+    const wu = workoutAddSet(w.id, b.id, { warmup: true, done: true, weight: 40, reps: 10 });      // warm-up
+    workoutUpdateSet(w.id, p.id, p.sets[0].id, { done: true, reps: 10 }); workoutUpdateSet(w.id, p.id, p.sets[1].id, { done: true, reps: 'x' });
+    workoutUpdateSet(w.id, pl.id, pl.sets[0].id, { done: true, seconds: 75 });
+    const st = b.sets[0];
+    return { vol: workoutVolume(w), sets: workoutTotalSets(w), reps: workoutTotalReps(w), types: [typeof st.weight, typeof st.reps, p.sets[1].reps], wu: wu.warmup,
+      legacy: S.workouts.filter(x => !x.entries).map(x => [workoutVolume(x), workoutTotalSets(x), workoutTotalReps(x)]) };
+  }, tid);
+  assert.deepEqual(r, { vol: 640, sets: 4, reps: 18, types: ['number', 'number', null], wu: true, legacy: [[3910, 7, 62], [2100, 3, 15]] });
+}, { state: fixtureState() });
+
+test('11A active: the Fitness page lists only finished workouts; export/import keeps an active workout; old backups count as done', async ({ page }) => {
+  const tid = await setupTpl(page);
+  await page.evaluate(tid => workoutStart({ templateId: tid }), tid);
+  await page.evaluate(() => { fitnessTab = 'workouts'; view = 'fitness'; render(); });
+  const t = await appText(page);
+  assert.ok(!/Push A/.test(t), 'the active workout is not in the history list');
+  assert.match(t, /Pull day/);
+  await page.evaluate(() => { view = 'home'; render(); });
+  assert.ok(!/Push A/.test(await appText(page)));
+  await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  const wk = (await stateOf(page)).workouts;
+  await page.evaluate(() => { S.workouts = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.workouts.length === 3);
+  assert.deepEqual((await stateOf(page)).workouts, wk);
+  assert.equal(await page.evaluate(() => activeWorkout().name), 'Push A');
+  const old = fixtureState();
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => S.workouts.length === 2);
+  assert.deepEqual(await page.evaluate(() => [completedWorkouts(S).length, activeWorkout(), S.workouts.some(w => 'status' in w)]), [2, null, false]);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

@@ -956,8 +956,8 @@ const ACHV=[
  {id:'five_habits',title:'Creature of Habit',desc:'Track 5 different habits',rarity:'Common',xp:40,cond:s=>s.habits.length>=5,progress:s=>Math.min(100,Math.round(s.habits.length/5*100))},
  {id:'money_tracker',title:'Money Maker',desc:'Log your first finance entry',rarity:'Common',xp:20,cond:s=>s.expenses.length+s.income.length>=1,progress:s=>(s.expenses.length+s.income.length>=1)?100:0},
  {id:'saver',title:'Savings Streak',desc:'Log income exceeding expenses in a month',rarity:'Uncommon',xp:80,cond:s=>monthBalance(s)>0,progress:s=>monthBalance(s)>0?100:0},
- {id:'first_workout',title:'Beast Mode',desc:'Log your first workout',rarity:'Common',xp:20,cond:s=>s.workouts.length>=1,progress:s=>s.workouts.length>=1?100:0},
- {id:'fitness_beast',title:'Fitness Beast',desc:'Log 10 workouts',rarity:'Rare',xp:150,cond:s=>s.workouts.length>=10,progress:s=>Math.min(100,Math.round(s.workouts.length/10*100))},
+ {id:'first_workout',title:'Beast Mode',desc:'Log your first workout',rarity:'Common',xp:20,cond:s=>completedWorkouts(s).length>=1,progress:s=>completedWorkouts(s).length>=1?100:0},
+ {id:'fitness_beast',title:'Fitness Beast',desc:'Log 10 workouts',rarity:'Rare',xp:150,cond:s=>completedWorkouts(s).length>=10,progress:s=>Math.min(100,Math.round(completedWorkouts(s).length/10*100))},
  {id:'first_meal',title:'Nourished',desc:'Log your first meal',rarity:'Common',xp:15,cond:s=>s.meals.length>=1,progress:s=>s.meals.length>=1?100:0},
  {id:'hydrated',title:'Hydration Hero',desc:'Hit your water target in a day',rarity:'Uncommon',xp:40,cond:s=>waterToday(s)>=s.nutritionTargets.water,progress:s=>Math.min(100,Math.round(waterToday(s)/s.nutritionTargets.water*100))},
  {id:'first_note',title:'Knowledge Seeker',desc:'Create your first note',rarity:'Common',xp:15,cond:s=>s.notes.length>=1,progress:s=>s.notes.length>=1?100:0},
@@ -2494,11 +2494,12 @@ function renderHome(){
     // --- Fitness snapshot: real workout history only; nothing shown/fabricated without data. ---
     fitness: ()=>{
       if(W.fitness===false) return null;
-      const todayWorkout=S.workouts.find(w=>w.date===todayStr());
-      const sorted=[...S.workouts].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+      const done=completedWorkouts(S);
+      const todayWorkout=done.find(w=>w.date===todayStr());
+      const sorted=[...done].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
       const last=sorted[0];
-      const fitc=el(`<div class="card snap${S.workouts.length?'':' is-empty'}" data-nav="fitness" role="button" tabindex="0"><div class="snap-k">🏋️ ${uiT('fitness')}</div></div>`);
-      if(!S.workouts.length){
+      const fitc=el(`<div class="card snap${done.length?'':' is-empty'}" data-nav="fitness" role="button" tabindex="0"><div class="snap-k">🏋️ ${uiT('fitness')}</div></div>`);
+      if(!done.length){
         fitc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
         if(todayWorkout) fitc.appendChild(el(`<div class="snap-v">${uiNum(workoutVolume(todayWorkout))} <small>kg</small></div><div class="snap-s">${escapeHtml(todayWorkout.name)}</div>`));
@@ -3650,14 +3651,103 @@ function openFinanceForm(kind,existing){
 }
 
 /* ---- Fitness module ---- */
-function workoutVolume(w){ return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0),0); }
-function workoutTotalSets(w){ return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0),0); }
-function workoutTotalReps(w){ return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0),0); }
+/* ---- Phase 11A: active workout model. The one workout history stays S.workouts[]: a started
+   workout is a normal record there with status:'active', and becomes status:'done' on Finish.
+   Old records have no status and count as done (never rewritten). Everything that treats a
+   workout as absolved (quests, achievements, Daily Score, Home, Statistics, PRs, history,
+   search) reads through isCompletedWorkout()/completedWorkouts() -- one shared rule.
+   New records keep exercises:[] and store the detail in entries[]:
+     entry {id,exerciseId,name,measurement,target:{sets,repsMin,repsMax,weight,seconds,distance,rest}|null,
+            notes,sets:[{id,weight,reps,seconds,distance,rpe,warmup,done}]}
+   name/measurement/target are copies taken at start, so editing or deleting the library
+   exercise or the template later never rewrites history. ---- */
+function isCompletedWorkout(w){ return !!w&&w.status!=='active'; }
+function completedWorkouts(s){ return ((s||S).workouts||[]).filter(isCompletedWorkout); }
+function activeWorkout(){ return (S.workouts||[]).find(w=>w.status==='active')||null; }
+function workoutWorkingSets(en){ return ((en&&en.sets)||[]).filter(st=>st.done&&!st.warmup); }
+function workoutNewSet(target,o){
+  const t=target||{};
+  return Object.assign({id:uid(),weight:t.weight!=null?t.weight:null,reps:t.repsMin!=null?t.repsMin:null,seconds:t.seconds!=null?t.seconds:null,
+    distance:t.distance!=null?t.distance:null,rpe:null,warmup:false,done:false},o||{});
+}
+function workoutNewEntry(exerciseId,target){
+  const x=exerciseFind(exerciseId); if(!x) return null;
+  const tg=target?{sets:target.sets,repsMin:target.repsMin,repsMax:target.repsMax,weight:target.weight,seconds:target.seconds,distance:target.distance,rest:target.rest}:null;
+  const n=tg&&Number(tg.sets)>0?Number(tg.sets):1;
+  return {id:uid(),exerciseId:x.id,name:x.name,measurement:x.measurement,target:tg,notes:'',sets:Array.from({length:n},()=>workoutNewSet(tg))};
+}
+function workoutStart(opts){
+  // At most one active workout: starting again (e.g. after leaving the screen) resumes it.
+  const o=opts||{};
+  const cur=activeWorkout();
+  if(cur) return {ok:false,reason:'active_exists',workout:cur};
+  const t=o.templateId?templateFind(o.templateId):null;
+  const cs=uiLang()==='cs';
+  const w={id:uid(),name:String(o.name||(t&&t.name)||(cs?'Trénink':'Workout')).trim(),date:o.date||todayStr(),status:'active',
+    startedAt:Date.now(),finishedAt:null,templateId:t?t.id:'',plannerBlockId:o.plannerBlockId||'',duration:'',notes:'',exercises:[],
+    entries:t?t.exercises.map(te=>workoutNewEntry(te.exerciseId,te)).filter(Boolean):[],createdAt:Date.now()};
+  S.workouts.push(w);
+  return {ok:true,workout:w};
+}
+function workoutFindById(id){ return (S.workouts||[]).find(w=>w.id===id)||null; }
+function workoutAddEntry(wid,exerciseId){
+  const w=workoutFindById(wid); if(!w||!Array.isArray(w.entries)) return null;
+  const en=workoutNewEntry(exerciseId,null); if(!en) return null;
+  w.entries.push(en); return en;
+}
+function workoutRemoveEntry(wid,entryId){
+  const w=workoutFindById(wid); if(!w||!Array.isArray(w.entries)) return false;
+  const n=w.entries.length; w.entries=w.entries.filter(en=>en.id!==entryId); return w.entries.length<n;
+}
+function workoutAddSet(wid,entryId,o){
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId); if(!en) return null;
+  const last=en.sets[en.sets.length-1];
+  const st=workoutNewSet(null,Object.assign(last?{weight:last.weight,reps:last.reps,seconds:last.seconds,distance:last.distance}:{},o||{}));
+  en.sets.push(st); return st;
+}
+function workoutRemoveSet(wid,entryId,setId){
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId); if(!en) return false;
+  const n=en.sets.length; en.sets=en.sets.filter(st=>st.id!==setId); return en.sets.length<n;
+}
+function workoutUpdateSet(wid,entryId,setId,patch){
+  // Only the set's own values; numbers are stored as numbers, empty as null.
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId); const st=en&&en.sets.find(s=>s.id===setId); if(!st) return null;
+  ['weight','reps','seconds','distance','rpe'].forEach(k=>{ if(patch&&k in patch){ const v=patch[k]; st[k]=v===''||v==null||!Number.isFinite(Number(v))?null:Number(v); } });
+  ['warmup','done'].forEach(k=>{ if(patch&&k in patch) st[k]=!!patch[k]; });
+  return st;
+}
+function workoutDiscard(wid){
+  // Throwing away an unfinished workout: nothing was granted for it, so nothing to undo.
+  const w=workoutFindById(wid); if(!w||w.status!=='active') return false;
+  S.workouts=S.workouts.filter(x=>x.id!==wid); return true;
+}
+function workoutFinish(wid){
+  // The moment a workout counts as done. The rewards below are exactly the ones the Log
+  // Workout form grants for a new workout (80 XP STR + 20 VIT + the Phase 5 skill bonus), behind
+  // the same idempotent workout:<id>:<date> ledger key -- so they can only ever be paid once.
+  const w=workoutFindById(wid); if(!w||w.status!=='active') return {ok:false};
+  w.status='done'; w.finishedAt=Date.now();
+  if(!w.duration) w.duration=String(Math.max(1,Math.round((w.finishedAt-(w.startedAt||w.finishedAt))/60000)));
+  const key=`workout:${w.id}:${w.date}`;
+  const granted=grantXp(80,'Workout: '+w.name,'STR',key);
+  if(granted){
+    S.attrs.VIT=(S.attrs.VIT||0)+20;
+    applyWorkoutAttrSkillBonus(key);
+  }
+  checkAchievements();
+  return {ok:true,workout:w,granted:!!granted};
+}
+function workoutVolume(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+(en.measurement==='weight_reps'?workoutWorkingSets(en).reduce((b,st)=>b+(Number(st.weight)||0)*(Number(st.reps)||0),0):0),0);
+  return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0),0); }
+function workoutTotalSets(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+workoutWorkingSets(en).length,0);
+  return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0),0); }
+function workoutTotalReps(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+(en.measurement==='weight_reps'||en.measurement==='reps'?workoutWorkingSets(en).reduce((b,st)=>b+(Number(st.reps)||0),0):0),0);
+  return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0),0); }
 function exercisePRs(){
   // Always computed fresh from S.workouts — never a stored/cached flag — so editing or
   // deleting a workout automatically recomputes the correct PR, with no stale-PR risk.
   const prs={};
-  S.workouts.forEach(w=>(w.exercises||[]).forEach(ex=>{
+  completedWorkouts(S).forEach(w=>(w.exercises||[]).forEach(ex=>{
     const name=(ex.name||'').trim(); if(!name) return;
     const weight=Number(ex.weight)||0;
     if(!prs[name]||weight>prs[name].weight) prs[name]={weight,reps:Number(ex.reps)||0,date:w.date,name};
@@ -4063,13 +4153,14 @@ function renderFitness(){
   const cs=uiLang()==='cs';
   const L=cs?{t:'Fitness',add:'Zapsat trénink',week:'Tréninky tento týden',vol:'Objem tento týden',total:'Celkem tréninků',prs:'Osobní rekordy',hist:'Historie',min:'min',ex:'cviků',sets:'sérií',reps:'opak.',volume:'objem',none:'Zatím žádné tréninky',none_d:'Zapiš trénink a sleduj objem, série a osobní rekordy.'}
     :{t:'Fitness',add:'Log workout',week:'Workouts this week',vol:'Volume this week',total:'Total workouts',prs:'Personal records',hist:'History',min:'min',ex:'exercises',sets:'sets',reps:'reps',volume:'volume',none:'No workouts yet',none_d:'Log a workout to track volume, sets and personal records.'};
-  const ws=weekStart(), weekW=S.workouts.filter(w=>w.date>=ws);
+  const done=completedWorkouts(S);
+  const ws=weekStart(), weekW=done.filter(w=>w.date>=ws);
   const weekVol=weekW.reduce((a,w)=>a+workoutVolume(w),0), target=S.dailyTargets.workoutsPerWeek||0;
   const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}${uiFitnessTabs()}
     <div class="stat-grid cols-3">
       <div class="stat-card"><div class="stat-label">🗓️ ${L.week}</div><div class="stat-value">${weekW.length}${target?`<small>/${target}</small>`:''}</div>${target?`<div class="bar${weekW.length>=target?' is-success':''}"><i style="width:${uiPct(weekW.length,target)}%"></i></div>`:''}</div>
       <div class="stat-card"><div class="stat-label">🏋️ ${L.vol}</div><div class="stat-value">${uiNum(weekVol)}<small> kg</small></div></div>
-      <div class="stat-card"><div class="stat-label">📈 ${L.total}</div><div class="stat-value">${S.workouts.length}</div></div>
+      <div class="stat-card"><div class="stat-label">📈 ${L.total}</div><div class="stat-value">${done.length}</div></div>
     </div>
     ${prs.length?`<div class="section-header"><h3>🏆 ${L.prs}</h3></div><div class="pr-strip" id="prList"></div>`:''}
     <div class="section-header"><h3>${L.hist}</h3></div><div class="list" id="wList"></div>
@@ -4079,7 +4170,7 @@ function renderFitness(){
     prs.slice(0,8).forEach(pr=>prList.appendChild(el(`<div class="pr-card"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${pr.weight}<small> kg</small></div><div class="sub">× ${pr.reps} · ${fmtDate(pr.date)}</div></div>`)));
   }
   const list=wrap.querySelector('#wList');
-  const sorted=[...S.workouts].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const sorted=[...done].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!sorted.length){ const e=el(`<div class="card">${uiEmpty('🏋️',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openWorkoutForm(); list.appendChild(e); }
   sorted.forEach(w=>{
     const vol=workoutVolume(w);
@@ -4676,14 +4767,14 @@ function allHabitsDoneToday(s){const list=habitsActiveList(s);return list.length
 function loggedFinanceToday(s){const d=todayStr();return s.expenses.some(e=>e.date===d)||s.income.some(i=>i.date===d);}
 function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function tasksCompletedThisWeek(s){const ws=weekStart();return s.tasks.filter(t=>t.done && t.dueDate && t.dueDate>=ws).length;}
-function workoutsThisWeek(s){const ws=weekStart();return s.workouts.filter(w=>w.date>=ws).length;}
+function workoutsThisWeek(s){const ws=weekStart();return completedWorkouts(s).filter(w=>w.date>=ws).length;}
 function habitsWithActivityThisWeekCount(s){const ws=weekStart();return habitsActiveList(s).filter(h=>(h.completions||[]).some(d=>d>=ws)).length;}
 function weeklyHabitTarget(s){return habitsActiveList(s).length;}
 const DAILY_QUESTS=[
  {id:'dq_tasks',title:'Complete 3 tasks today',xp:50,attr:'FOC',check:s=>tasksCompletedToday(s)>=3,max:3,val:s=>Math.min(3,tasksCompletedToday(s))},
  {id:'dq_habits',title:'Complete all active habits',xp:50,attr:'DEX',check:s=>allHabitsDoneToday(s),max:1,val:s=>allHabitsDoneToday(s)?1:0},
- {id:'dq_log',title:'Log a workout, meal or finance entry',xp:20,attr:'VIT',check:s=>s.workouts.some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s),max:1,val:s=>(s.workouts.some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s))?1:0},
- {id:'dq_workout',title:'Complete 1 workout today',xp:40,attr:'STR',check:s=>s.workouts.some(w=>w.date===todayStr()),max:1,val:s=>s.workouts.some(w=>w.date===todayStr())?1:0},
+ {id:'dq_log',title:'Log a workout, meal or finance entry',xp:20,attr:'VIT',check:s=>completedWorkouts(s).some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s),max:1,val:s=>(completedWorkouts(s).some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s))?1:0},
+ {id:'dq_workout',title:'Complete 1 workout today',xp:40,attr:'STR',check:s=>completedWorkouts(s).some(w=>w.date===todayStr()),max:1,val:s=>completedWorkouts(s).some(w=>w.date===todayStr())?1:0},
  {id:'dq_nutrition',title:'Log at least one meal today',xp:20,attr:'VIT',check:s=>s.meals.some(m=>m.date===todayStr()),max:1,val:s=>s.meals.some(m=>m.date===todayStr())?1:0},
 ];
 const WEEKLY_QUESTS=[
@@ -5057,7 +5148,7 @@ function computeStats(period){
   const {level,into,need}=levelFromXp(S.totalXp);
 
   // Fitness
-  const workoutsInPeriod=S.workouts.filter(w=>w.date>=since);
+  const workoutsInPeriod=completedWorkouts(S).filter(w=>w.date>=since);
   const fitness={
     count:workoutsInPeriod.length,
     sets:workoutsInPeriod.reduce((a,w)=>a+workoutTotalSets(w),0),
@@ -5185,7 +5276,7 @@ function renderStats(){
     ['Workouts',st.fitness.count],['Sets',st.fitness.sets],['Reps',st.fitness.reps],
     ['Total volume',st.fitness.volume],['Total duration (min)',st.fitness.duration],['Personal records (all-time)',st.fitness.prs.length],
   ])));
-  body.appendChild(el(chartCard(uiL('Workout volume'),chartValuesForLog(S.workouts,statsPeriod,w=>workoutVolume(w)),null,{})));
+  body.appendChild(el(chartCard(uiL('Workout volume'),chartValuesForLog(completedWorkouts(S),statsPeriod,w=>workoutVolume(w)),null,{})));
 
   body.appendChild(el(statCard('Nutrition',[
     ['Avg calories/day (logged)',Math.round(st.nutrition.avgCalories)],['Avg protein (g)',Math.round(st.nutrition.avgProtein)],
@@ -5291,7 +5382,7 @@ function searchGroups(q){
       .map(i=>({title:i.description||i.category||'Income',meta:fmtDate(i.date),obj:i}))],
     ['Subscriptions','💳','subscription', S.subscriptions.filter(s=>searchMatch([s.name,s.category,s.notes],q))
       .map(s=>({title:s.name,meta:s.category||'',obj:s}))],
-    ['Workouts','🏋️','workout', S.workouts.filter(w=>searchMatch([w.name,w.notes,...(w.exercises||[]).map(ex=>ex.name)],q))
+    ['Workouts','🏋️','workout', completedWorkouts(S).filter(w=>searchMatch([w.name,w.notes,...(w.exercises||[]).map(ex=>ex.name),...(w.entries||[]).map(en=>en.name)],q))
       .map(w=>({title:w.name,meta:fmtDate(w.date),obj:w}))],
     ['Meals','🍽️','meal', S.meals.filter(m=>searchMatch([m.name,m.notes,m.type],q))
       .map(m=>({title:m.name,meta:fmtDate(m.date),obj:m}))],
@@ -5513,7 +5604,7 @@ function dailyScoreSleep(D){
 // (same "stored date or next occurrence" rule as the calendar). Unplanned workouts = bonus info.
 function dailyScoreFitness(D){
   const planned=S.events.some(e=>e.category==='Fitness'&&(e.date===D||eventUpcomingDate(e)===D));
-  const workouts=S.workouts.filter(w=>w.date===D).length;
+  const workouts=completedWorkouts(S).filter(w=>w.date===D).length;
   if(!planned) return {score:null,reason:'not_planned',bonus:workouts>0,workouts};
   return {score:workouts>0?100:0,planned:true,workouts};
 }
