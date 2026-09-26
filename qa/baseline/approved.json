@@ -8,12 +8,12 @@
   "dailyScoreHabitNeeded": "17bf9a382b52bdec",
   "dailyScoreHabits": "8580f8957b9daebb",
   "dailyScoreCalorieBand": "5c1109defee6e13a",
-  "dailyScoreNutrition": "0c1bcee9dbc871d3",
+  "dailyScoreNutrition": "7e373436ac3c7313",
   "dailyScoreSleepBand": "24089c26e2c026d1",
   "dailyScoreSleep": "54db549da39beb13",
   "dailyScoreFitness": "ec90a72648e9e4ef",
   "dailyScoreGoals": "763c964355d3b3ce",
-  "dailyScore": "b05a0436a0e42c5e",
+  "dailyScore": "e75a29623b48330b",
   "defaultState": "5453858aad058527",
   "finalizeDailyScores": "48ba5ee8e70505c0"
  },
@@ -45,6 +45,28 @@
   },
   {
    "reason": "Phase 9 step 3: Daily Score snapshots - defaultState gains dailyScores/dailyScoresSince, finalizeDailyScores(), render() stores finished days",
+   "logic": [
+    "defaultState",
+    "DAILY_SCORE_ALGO",
+    "DAILY_SCORE_WEIGHTS",
+    "DAILY_SCORE_PRIORITY_WEIGHT",
+    "dailyScoreLabelKey",
+    "dailyScoreTasks",
+    "dailyScoreHabitNeeded",
+    "dailyScoreHabits",
+    "dailyScoreCalorieBand",
+    "dailyScoreNutrition",
+    "dailyScoreSleepBand",
+    "dailyScoreSleep",
+    "dailyScoreFitness",
+    "dailyScoreGoals",
+    "finalizeDailyScores",
+    "dailyScore"
+   ],
+   "at": "2026-09-26"
+  },
+  {
+   "reason": "Phase 9: Stravování - water part N/A when untracked, live vs closed-day calories (user decision)",
    "logic": [
     "defaultState",
     "DAILY_SCORE_ALGO",

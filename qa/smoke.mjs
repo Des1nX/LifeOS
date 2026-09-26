@@ -555,24 +555,81 @@ test('9 Daily Score: habits only - scheduled, counters, bad habits, weekly neces
   assert.equal(onlyInactive.areas.habits.score, null, 'nothing required today -> N/A');
 });
 
-test('9 Daily Score: nutrition uses real targets, symmetric calorie band never rewards under-eating', async ({ page }) => {
-  const targets = { calories: 2000, protein: 100, carbs: 250, fat: 70, water: 2000 };
-  const meal = (kcal, p) => ({ id: 'm' + kcal, name: 'm', type: 'Lunch', date: TODAY, calories: String(kcal), protein: String(p), carbs: '0', fat: '0', servings: 1 });
-  const water = ml => ({ id: 'w' + ml, date: TODAY, amount: ml });
-  const perfect = await dsRun(page, { nutritionTargets: targets, meals: [meal(2000, 100)], waterLog: [water(2000)] });
-  assert.equal(perfect.areas.nutrition.score, 100);
-  const edge = await dsRun(page, { nutritionTargets: targets, meals: [meal(1800, 100)], waterLog: [water(2000)] });
-  assert.equal(edge.areas.nutrition.parts.calories, 100, '90 % is inside the band');
-  const starving = await dsRun(page, { nutritionTargets: targets, meals: [meal(600, 100)], waterLog: [water(2000)] });
-  assert.equal(starving.areas.nutrition.parts.calories, 0, '30 % of target scores 0 calories');
-  assert.ok(starving.areas.nutrition.score < 50);
-  const over = await dsRun(page, { nutritionTargets: targets, meals: [meal(3000, 100)], waterLog: [water(2000)] });
-  assert.equal(over.areas.nutrition.parts.calories, 0, '150 % of target scores 0 calories');
-  const servings = await dsRun(page, { nutritionTargets: targets, meals: [{ ...meal(1000, 50), servings: 2 }], waterLog: [water(2000)] });
-  assert.equal(servings.areas.nutrition.score, 100, 'servings multiply like nutriTotals()');
-  assert.equal((await dsRun(page, { nutritionTargets: targets })).areas.nutrition.score, null, 'no data -> N/A');
+// Stravování: one area (weight 15) made of calories 60 / protein 25 / water 15.
+const NT = { calories: 2000, protein: 100, carbs: 250, fat: 70, water: 2000 };
+const meal = (kcal, p, date = TODAY, q = 1) => ({ id: 'm' + kcal + date, name: 'm', type: 'Lunch', date, calories: String(kcal), protein: String(p), carbs: '0', fat: '0', servings: q });
+const water = (ml, date = TODAY) => ({ id: 'w' + ml + date, date, amount: ml });
+
+test('9 Stravování: one main area (no separate water area) combining calories + protein + water', async ({ page }) => {
+  const r = await dsRun(page, { nutritionTargets: NT, meals: [meal(1800, 80)], waterLog: [water(1000)] });
+  assert.deepEqual(Object.keys(r.areas).sort(), ['fitness', 'goals', 'habits', 'nutrition', 'sleep', 'tasks'], 'no water area');
+  const n = r.areas.nutrition;
+  // live today: calories 90, protein 80, water 50 -> (60*90 + 25*80 + 15*50)/100 = 81.5 -> 82
+  assert.deepEqual(n.parts, { calories: 90, protein: 80, water: 50 });
+  assert.equal(n.score, 82); assert.equal(n.mode, 'live');
+  await page.evaluate(() => { view = 'home'; render(); });
+  const rows = await page.$$eval('[data-ds="card"] .ds-row', ns => ns.map(n => n.dataset.area));
+  assert.deepEqual(rows, ['tasks', 'habits', 'nutrition', 'sleep', 'fitness']);
+  assert.match(await page.locator('[data-ds="card"] .ds-row[data-area="nutrition"] span').innerText(), /Stravování/);
+});
+
+test('9 Stravování: water not logged = N/A (not 0) and its weight re-normalizes to calories/protein', async ({ page }) => {
+  const n = (await dsRun(page, { nutritionTargets: NT, meals: [meal(1800, 80)] })).areas.nutrition;
+  assert.equal(n.parts.water, null, 'untracked water is N/A');
+  // (60*90 + 25*80) / 85 = 87.06 -> 87 (would be 74 if water counted as 0)
+  assert.equal(n.score, 87);
+});
+
+test('9 Stravování: water alone can score the area; nothing logged = N/A', async ({ page }) => {
+  const n = (await dsRun(page, { nutritionTargets: NT, waterLog: [water(1500)] })).areas.nutrition;
+  assert.deepEqual(n.parts, { calories: null, protein: null, water: 75 });
+  assert.equal(n.score, 75, 'no penalty for missing calories/protein');
+  const none = await dsRun(page, { nutritionTargets: NT });
+  assert.equal(none.areas.nutrition.score, null); assert.equal(none.areas.nutrition.reason, 'no_data');
   assert.equal((await dsRun(page, { nutritionTargets: { calories: 0, protein: 0, water: 0 }, meals: [meal(500, 10)] })).areas.nutrition.reason, 'no_targets');
 });
+
+test('9 Stravování: today calories are live progress (capped, no bonus); a finished day uses the 90-110 % band', async ({ page }) => {
+  const live = async kcal => (await dsRun(page, { nutritionTargets: NT, meals: [meal(kcal, 100)] })).areas.nutrition.parts.calories;
+  assert.equal(await live(600), 30, 'midday 30 % is progress, not under-eating');
+  assert.equal(await live(2000), 100);
+  assert.equal(await live(3000), 100, 'over target: capped, no bonus');
+  const D = dayOff(-1);
+  const closed = async kcal => (await dsRun(page, { nutritionTargets: NT, meals: [meal(kcal, 100, D)] }, D)).areas.nutrition;
+  assert.equal((await closed(600)).parts.calories, 0, '30 % on a finished day scores 0');
+  assert.equal((await closed(600)).mode, 'closed');
+  assert.equal((await closed(1800)).parts.calories, 100, '90 % inside the band');
+  assert.equal((await closed(2200)).parts.calories, 100, '110 % inside the band');
+  assert.equal((await closed(1400)).parts.calories, 50, '70 % -> halfway between 50 % and 90 %');
+  assert.equal((await closed(3000)).parts.calories, 0, '150 % scores 0');
+  const q = await dsRun(page, { nutritionTargets: NT, meals: [meal(1000, 50, D, 2)] }, D);
+  assert.equal(q.areas.nutrition.score, 100, 'servings multiply like nutriTotals()');
+});
+
+test('9 Stravování: its total weight stays 15 whatever the internal re-normalization', async ({ page }) => {
+  const tasks0 = [T('a')]; // tasks area = 0 (weight 30)
+  const waterOnly = await dsRun(page, { tasks: tasks0, nutritionTargets: NT, waterLog: [water(2000)] });
+  const full = await dsRun(page, { tasks: tasks0, nutritionTargets: NT, meals: [meal(2000, 100)], waterLog: [water(2000)] });
+  const mealsOnly = await dsRun(page, { tasks: tasks0, nutritionTargets: NT, meals: [meal(2000, 100)] });
+  for (const r of [waterOnly, full, mealsOnly]) { assert.equal(r.areas.nutrition.score, 100); assert.equal(r.score, 33, '(30*0 + 15*100)/45'); }
+});
+
+test('9 Stravování: a snapshot of a finished day uses the closed-day band', async ({ page }) => {
+  // fixture today: 1150/2400 kcal (48 %) -> live 48, closed 0
+  const live = await page.evaluate(d => dailyScore(d).areas.nutrition.parts.calories, TODAY);
+  assert.equal(live, 48);
+  await page.clock.setFixedTime(NOW + 86400000); await page.evaluate(() => render());
+  const snap = (await stateOf(page)).dailyScores[TODAY];
+  assert.equal(snap.areas.nutrition.mode, 'closed'); assert.equal(snap.areas.nutrition.parts.calories, 0); assert.equal(snap.algo, 1);
+}, { state: fixtureState() });
+
+test('9 UI: Stravování detail lists calories/protein/water and "nesledováno" for untracked water', async ({ page }) => {
+  await page.evaluate(() => { S.waterLog = []; view = 'home'; render(); });
+  await page.click('[data-ds="card"]');
+  const t = await page.locator('[data-ds="detail"] .ds-area[data-area="nutrition"]').innerText();
+  assert.match(t, /Stravování/); assert.match(t, /Kalorie\s*48 %/); assert.match(t, /Protein\s*47 %/); assert.match(t, /Voda\s*nesledováno/);
+  assert.match(t, /průběžný postup/);
+}, { state: fixtureState() });
 
 test('9 Daily Score: sleep band 7-9 h, longer duplicate wins, no entry = N/A', async ({ page }) => {
   const sl = (id, bed, wake, date = TODAY) => ({ id, date, bedtime: bed, wake, quality: '3', notes: '' });
@@ -641,7 +698,11 @@ test('9 history: a finished day is snapshotted once, immutable, and XP/RPG data 
   const s1 = await stateOf(page);
   const snap = s1.dailyScores[TODAY];
   assert.ok(snap, 'snapshot written');
-  assert.equal(snap.score, live.score); assert.equal(snap.algo, 1); assert.equal(snap.label, live.label);
+  // The snapshot is the closed-day result (live and finished day may differ by design: calories
+  // are live progress during the day, the 90-110 % band once the day is over).
+  const closed = await page.evaluate(d => dailyScore(d), TODAY);
+  assert.equal(snap.score, closed.score); assert.equal(snap.algo, 1); assert.equal(snap.label, closed.label);
+  for (const k of ['tasks', 'habits', 'sleep', 'fitness']) assert.deepEqual(snap.areas[k], live.areas[k], `${k} unchanged between live and closed`);
   assert.deepEqual(Object.keys(snap.areas).sort(), ['fitness', 'habits', 'nutrition', 'sleep', 'tasks']);
   // Only the new day's quest/achievement checks may run on boot of a new day - render() alone must not
   // touch RPG data. (Quests are only checked on boot/Quests screen, not here.)
