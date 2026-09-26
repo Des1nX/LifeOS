@@ -10,6 +10,8 @@
 //         .textContent or .style.*). HTML template text is ignored, so restyling markup does not
 //         move this hash. A change here is a FAIL -- the UI must keep doing exactly the same
 //         things to the data.
+//         Navigation-only effects (view/filter/current-id state, render(), searchNavigate(), opening
+//         another UI form or screen) are tracked separately and only reported for REVIEW.
 //       - "shape": the whole function with HTML template text blanked. A change here is only a
 //         REVIEW note (e.g. a querySelector string or a new ${} expression changed).
 //
@@ -31,7 +33,12 @@ const UI_NAMES = new Set([
   'goalOptions', 'savedFoodOptions', 'closeSheets',
 ]);
 const LOGIC_OVERRIDES = new Set(['openDB']); // IndexedDB, not a form
-const isUiName = n => !LOGIC_OVERRIDES.has(n) && (UI_NAMES.has(n) || /^(render|open)[A-Z]/.test(n));
+// New Phase 8B presentation helpers must be named ui*/UI_* so they are classified as UI.
+const isUiName = n => !LOGIC_OVERRIDES.has(n) && (UI_NAMES.has(n) || /^(render|open|ui)[A-Z]/.test(n) || /^UI_/.test(n));
+// Screen-navigation state. Changing where a button leads, or adding a shortcut that opens an
+// existing form/screen, is UI; these effects are reported for REVIEW but never FAIL.
+const NAV_STATE = new Set(['view', 'taskFilter', 'goalFilter', 'statsPeriod', 'healthTab', 'calOffset', 'noteSearch', 'currentHabitId', 'currentGoalId']);
+const NAV_CALLS = new Set(['render', 'searchNavigate']);
 
 // Assigning to these only changes presentation / wires a handler; the handler body itself is
 // still walked, so what it does to the data is captured.
@@ -146,11 +153,12 @@ function collectEffects(fnNode, src, effectful) {
     if (!n || typeof n !== 'object' || typeof n.type !== 'string') return;
     if (n.type === 'CallExpression') {
       const c = n.callee;
-      if (c.type === 'Identifier' && effectful.has(c.name)) add(n, 'call');
+      if (c.type === 'Identifier' && (NAV_CALLS.has(c.name) || (isUiName(c.name) && effectful.has(c.name)))) add(n, 'nav');
+      else if (c.type === 'Identifier' && effectful.has(c.name)) add(n, 'call');
       else if (c.type === 'MemberExpression' && MUTATING_METHODS.has(propName(c)) && touchesState(c.object)) add(n, 'mutate');
       else if (c.type === 'MemberExpression' && propName(c) === 'assign' && c.object.name === 'Object' && n.arguments[0] && n.arguments[0].type !== 'ObjectExpression' && touchesState(n.arguments[0])) add(n, 'assign');
     } else if (n.type === 'AssignmentExpression') {
-      if (!isDomSink(n.left) && touchesState(n.left)) add(n, 'set');
+      if (!isDomSink(n.left) && touchesState(n.left)) add(n, n.left.type === 'Identifier' && NAV_STATE.has(n.left.name) ? 'nav' : 'set');
     } else if (n.type === 'UpdateExpression' || (n.type === 'UnaryExpression' && n.operator === 'delete')) {
       if (touchesState(n.argument)) add(n, 'set');
     }
@@ -192,7 +200,8 @@ export function fingerprint(html) {
     if (name && isUiName(name)) {
       const effects = collectEffects(stmt, src, effectful);
       ui[name] = {
-        effectsHash: h(effects.map(e => e.why + ':' + e.hash).sort().join('|')),
+        effectsHash: h(effects.filter(e => e.why !== 'nav').map(e => e.why + ':' + e.hash).sort().join('|')),
+        navHash: h(effects.filter(e => e.why === 'nav').map(e => e.hash).sort().join('|')),
         shapeHash: h(canon(stmt, true)),
         effects: effects.map(e => `${e.why} ${e.src}  #${e.hash.slice(0, 8)}`),
       };
@@ -226,6 +235,9 @@ function compare(base, cur) {
     if (b.effectsHash !== c.effectsHash) {
       const gone = b.effects.filter(e => !c.effects.includes(e)), added = c.effects.filter(e => !b.effects.includes(e));
       fails.push(`UI effects changed in ${k}:` + gone.map(e => `\n    - ${e}`).join('') + added.map(e => `\n    + ${e}`).join(''));
+    } else if (b.navHash !== c.navHash) {
+      const nb = b.effects.filter(e => e.startsWith('nav ')), nc = c.effects.filter(e => e.startsWith('nav '));
+      reviews.push(`UI navigation changed (data effects identical): ${k}` + nb.filter(e => !nc.includes(e)).map(e => `\n    - ${e}`).join('') + nc.filter(e => !nb.includes(e)).map(e => `\n    + ${e}`).join(''));
     } else if (b.shapeHash !== c.shapeHash) reviews.push(`UI structure changed (effects identical): ${k}`);
   }
   return { fails, reviews };
