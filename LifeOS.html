@@ -705,6 +705,185 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .char-main .stat-grid.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:700px) and (max-width:1199px){.char-main .stat-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
+/* Phase 11A: Fitness 2.0 */
+.ex-card{padding:0}
+.ex-card .ex-open{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;font:inherit;padding:14px 16px;cursor:pointer;border-radius:inherit;min-height:44px}
+.ex-card .chips,.ex-cat-row .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip.is-muted{color:var(--sub)}
+.muscle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.muscle-in{display:flex;flex-direction:column;gap:2px;margin:0;font-size:var(--fs-caption);color:var(--sub)}
+.muscle-in input{margin:0;min-height:44px}
+.ex-arch-row{padding:6px 0;gap:8px}
+.tpl-card{padding:0}
+.tpl-card .tpl-open{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;font:inherit;padding:14px 16px;cursor:pointer;border-radius:inherit;min-height:44px}
+.tpl-names{margin-top:6px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tp-row{padding:10px;margin-bottom:8px;border-radius:14px;background:var(--card2);border:1px solid var(--line)}
+.tp-head{display:grid;grid-template-columns:minmax(0,1fr) 40px 40px 40px;gap:6px;align-items:center}
+.tp-head select{margin:0;min-height:44px}
+.tp-head .iconbtn,.tp-head .delbtn{width:40px;min-width:40px;height:44px}
+.tp-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;margin-top:8px}
+.tp-f{display:flex;flex-direction:column;gap:2px;margin:0;font-size:var(--fs-caption);color:var(--sub);min-width:0}
+.tp-f input{margin:0;min-height:44px;min-width:0}
+.tp-f .field-error,.tp-row>.field-error{margin:2px 0 0}
+.tpl-actions{display:flex;justify-content:flex-end;padding:0 16px 14px}
+/* Phase 11A: active workout -- a "live" surface built from the 8B card/btn/bar tokens */
+@keyframes livePulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent2) 60%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent2);margin-right:7px;flex:none;animation:livePulse 1.6s infinite}
+.wk-live{border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 16%,var(--card)),var(--card) 70%);box-shadow:var(--glow)}
+.wk-live-k{display:flex;align-items:center;font-size:var(--fs-caption);font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--accent2);font-variant-numeric:tabular-nums}
+.wk-live .bar{margin-top:8px}
+.wk-resume .item-title{font-size:18px;margin:6px 0 2px}
+.wk-resume .btn{margin-top:12px}
+.wk-title{margin:10px 0 4px;font-size:var(--fs-h2);overflow-wrap:anywhere}
+.wk-startcard .kicker{margin-bottom:8px}
+.wk-tpl-row{gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.wk-tpl-list .wk-tpl-row:last-child{border-bottom:0;margin-bottom:8px}
+.wk-hint{margin:10px 2px}
+.wk-screen>.btn{margin-top:10px}
+.wk-entry{padding:14px}
+.wk-entry-head{gap:8px}
+.wk-meta{display:flex;flex-direction:column;gap:3px;margin:8px 0 10px;font-size:var(--fs-body-sm);font-variant-numeric:tabular-nums}
+.wk-meta .kicker{display:inline;margin-right:4px}
+.ws-row{display:grid;gap:6px;align-items:center;margin-bottom:6px;border-radius:12px}
+.ws-c1{grid-template-columns:44px minmax(0,1fr) 52px 36px}
+.ws-c2{grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) 52px 36px}
+.ws-head{font-size:var(--fs-micro);color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.ws-head span{text-align:center}
+.ws-row .ws-in{margin:0;min-height:52px;font-size:18px;font-weight:700;text-align:center;padding:8px 6px;min-width:0}
+.ws-num{min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-weight:800;font-size:16px;cursor:pointer}
+.ws-row.is-wu .ws-num{background:var(--color-warning-muted);color:var(--warn);border-color:transparent}
+.ws-row.is-wu .ws-in{opacity:.85}
+.ws-done{min-height:52px;border-radius:14px;border:2px solid color-mix(in srgb,var(--sub) 45%,var(--line));background:transparent;color:transparent;font-size:22px;font-weight:900;cursor:pointer}
+.ws-row.is-done .ws-done{background:var(--accent2);border-color:var(--accent2);color:#04241a;animation:checkPop .28s ease}
+.ws-row.is-done .ws-in{background:var(--color-success-muted);border-color:transparent}
+.ws-rm{min-height:44px;border:0;background:none;color:var(--sub);font-size:15px;cursor:pointer;border-radius:10px}
+.wk-entry-actions{margin-top:4px}
+.wk-entry-actions .btn{flex:1 1 100px}
+.wk-foot{margin-top:10px}
+.wk-finish{min-height:58px;font-size:17px}
+.wk-edit-head .btn.sm{width:auto}
+.wk-pick{gap:6px}
+.wk-pick-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.wk-sum-top{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.wk-sum-top h3{margin:0}
+.wk-sum-ic{font-size:30px}
+.wk-xp{margin-top:12px}
+.wk-snap-live{display:flex;align-items:center;color:var(--accent2);font-weight:700}
+.cf-sheet p{margin:6px 0 16px}
+.wk-suggestion{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding:10px 12px;border-radius:12px;background:var(--color-accent-muted);border:1px dashed color-mix(in srgb,var(--accent) 45%,var(--line))}
+.wk-suggestion[hidden]{display:none}
+.wk-sug-txt{min-width:0;flex:1 1 180px}
+.wk-sug-main{color:var(--color-accent);font-size:var(--fs-body)}
+.wk-suggestion .btn{flex:0 0 auto}
+.wk-prs{margin-top:12px;padding:12px;border-radius:14px;background:var(--gold-muted);border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line))}
+.wk-pr-row{gap:8px;padding:4px 0;font-size:var(--fs-body-sm)}
+.wk-pr-row .num{font-weight:750;white-space:nowrap}
+.wk-card-prs,.wk-card-perf{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wk-perf{margin-top:12px;padding:14px;border-radius:14px;background:var(--card2);border:1px solid var(--line)}
+.wk-perf.is-na{color:var(--sub)}
+.wk-perf-top{display:flex;gap:14px;align-items:center;margin-bottom:10px}
+.wk-perf-score{font-size:40px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;color:var(--color-accent)}
+.wk-perf-label{font-weight:750;font-size:var(--fs-body)}
+.wk-perf-label.is-excellent,.wk-perf-label.is-good{color:var(--accent2)}
+.wk-perf-label.is-fair{color:var(--warn)}
+.wk-perf-label.is-weak{color:var(--danger)}
+.wk-perf-part{font-size:var(--fs-body-sm);margin-top:6px}
+.wk-perf-part .bar{margin-top:3px;height:5px}
+.wk-perf-part.is-na{color:var(--sub)}
+.wk-perf-pr{margin-top:8px;font-size:var(--fs-body-sm)}
+.wk-feeling{margin-top:12px}
+.wk-feel-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px}
+@media(min-width:520px){.wk-feel-row{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.wk-feel{min-height:44px;justify-content:center;display:inline-flex;align-items:center;gap:6px}
+.wk-edit-result{margin-top:10px}
+.wk-plan-line{margin-bottom:4px}
+.wk-card-perf .chip{white-space:normal}
+.mu-intro{margin:0 2px 12px}
+.pl-type{display:flex;gap:6px;margin-bottom:12px}
+.pl-type .pill{flex:1;min-height:44px;justify-content:center}
+.pl-wk-head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+.pl-wk-head .btn{margin-top:4px}
+.pl-wk-head .helper-text{width:100%;margin:4px 0 0}
+.pl-block .plWkStart{position:absolute;right:4px;top:4px;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;background:var(--accent-grad);color:#fff;border:none;font-size:13px}
+.pl-block.is-workout .pl-open{padding-right:42px}
+.plan-row.plan-wk{cursor:default}
+.plan-row .plan-open{background:none;border:0;color:inherit;font:inherit;text-align:left;min-height:44px;cursor:pointer;padding:0}
+.wk-sched{margin-bottom:2px}
+#fitTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+#fitTabs .pill{padding-left:4px;padding-right:4px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:430px){#fitTabs .tab-ic{display:none}}
+.mu-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-2)}
+@media(min-width:600px){.mu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){.mu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mu-card{padding:14px 16px}
+.mu-lvl{font-weight:800;color:var(--color-accent);font-variant-numeric:tabular-nums}
+.mu-xp{margin:6px 0 6px;font-variant-numeric:tabular-nums;gap:8px;flex-wrap:wrap}
+.wk-muscles{margin-top:12px}
+.wk-muscles .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ex-archived summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
+/* Phase 9: Daily Score */
+.ds-card{cursor:pointer}
+.ds-card .today-rows{gap:6px}
+.ds-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;font-size:var(--fs-caption);font-weight:650}
+.ds-row>b{font-variant-numeric:tabular-nums;font-size:var(--fs-caption)}
+.ds-row .bar{grid-column:1/3;height:4px;margin-top:2px}
+.ds-row.is-na{color:var(--sub)}
+.ds-row.is-na>b{font-weight:600}
+.ds-counts{margin-top:2px}
+.ring.lg{width:104px;height:104px}.ring.lg::before{width:86px;height:86px}.ring.lg>span{font-size:28px}
+.ds-areas{display:flex;flex-direction:column;gap:8px}
+.ds-detail .section-header h3{font-size:13px;margin:0}
+.ds-area{padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.ds-area.is-na{opacity:.85}
+.ds-area .sub{line-height:1.45}
+.ds-parts{display:flex;flex-direction:column;gap:4px;margin:2px 0 8px}
+.ds-part{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;color:var(--text);font-size:var(--fs-body-sm)}
+.ds-part>b{font-variant-numeric:tabular-nums}
+.ds-part>small{grid-column:1/3;color:var(--sub);font-size:var(--fs-caption)}
+@media(max-width:374px){.ring.lg{width:88px;height:88px}.ring.lg::before{width:72px;height:72px}.ring.lg>span{font-size:24px}}
+
+.ds-hist{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;height:104px}
+.ds-bar{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;padding:0;border:none;background:none;cursor:pointer;min-width:0;color:var(--sub);font-size:10px;font-variant-numeric:tabular-nums}
+.ds-bar i{display:block;width:100%;max-width:26px;border-radius:5px 5px 2px 2px;min-height:0}
+.ds-bar.is-empty{cursor:default}
+.ds-bar.is-empty::before{content:'';display:block;width:60%;max-width:14px;border-top:2px dotted var(--line);margin-top:auto}
+.ds-bar.is-live span{color:var(--accent);font-weight:800}
+.ds-bar:disabled{opacity:1}
+
+/* Phase 10: Daily Planner */
+.pl-daybar{display:flex;align-items:center;gap:10px;padding:10px}
+.pl-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
+.pl-day b{font-size:16px}
+.pl-todaybtn{margin:-4px 0 12px}
+.pl-allday{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pl-timeline{padding:12px 10px 16px 6px;--pl-gutter:52px}
+.pl-grid{position:relative}
+.pl-hour{position:absolute;left:0;right:0;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);height:0}
+.pl-hour span{position:absolute;left:4px;top:-8px;font-size:var(--fs-micro);color:var(--sub);font-variant-numeric:tabular-nums;background:var(--card);padding-right:4px}
+.pl-now{position:absolute;left:var(--pl-gutter);right:0;height:2px;background:var(--danger);z-index:3}
+.pl-now::before{content:'';position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--danger)}
+.pl-block{position:absolute;display:flex;align-items:flex-start;gap:6px;padding:6px 6px 6px 8px;border-radius:12px;overflow:hidden;min-width:0;z-index:2;
+  background:color-mix(in srgb,var(--pl-c,var(--accent)) 16%,var(--card2));border:1px solid color-mix(in srgb,var(--pl-c,var(--accent)) 40%,var(--line));box-shadow:inset 3px 0 0 var(--pl-c,var(--accent))}
+.pl-block.is-done{opacity:.7}
+.pl-block.is-done .pl-t{text-decoration:line-through;text-decoration-color:var(--sub)}
+.pl-block.is-event{background:transparent;border:1.5px dashed var(--line);box-shadow:none;flex-direction:column;gap:2px;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.pl-block .check{width:26px;height:26px;margin-top:1px;flex:none}
+.pl-open{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;background:none;border:none;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;min-height:32px}
+.pl-t{font-weight:700;font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block}
+.pl-m{font-size:var(--fs-caption);color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.pl-chips .chip{font-size:10.5px;padding:2px 7px}
+.pl-block.is-compact .pl-open{flex-direction:row;align-items:baseline;gap:6px}
+.plan-list{display:flex;flex-direction:column;gap:2px}
+.plan-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;padding:4px 2px;border:none;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.plan-row:last-child{border-bottom:none}
+.plan-row b{font-variant-numeric:tabular-nums;color:var(--accent);font-size:var(--fs-body-sm)}
+.plan-row.is-done span{text-decoration:line-through;color:var(--sub)}
+@media(min-width:900px){.pl-timeline{--pl-gutter:64px;padding:16px}}
+
+.task-plan{margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+.plan-card{margin-bottom:var(--sp-2)}
+
 /* Calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal-nav{margin-bottom:10px}
@@ -872,8 +1051,8 @@ const ACHV=[
  {id:'five_habits',title:'Creature of Habit',desc:'Track 5 different habits',rarity:'Common',xp:40,cond:s=>s.habits.length>=5,progress:s=>Math.min(100,Math.round(s.habits.length/5*100))},
  {id:'money_tracker',title:'Money Maker',desc:'Log your first finance entry',rarity:'Common',xp:20,cond:s=>s.expenses.length+s.income.length>=1,progress:s=>(s.expenses.length+s.income.length>=1)?100:0},
  {id:'saver',title:'Savings Streak',desc:'Log income exceeding expenses in a month',rarity:'Uncommon',xp:80,cond:s=>monthBalance(s)>0,progress:s=>monthBalance(s)>0?100:0},
- {id:'first_workout',title:'Beast Mode',desc:'Log your first workout',rarity:'Common',xp:20,cond:s=>s.workouts.length>=1,progress:s=>s.workouts.length>=1?100:0},
- {id:'fitness_beast',title:'Fitness Beast',desc:'Log 10 workouts',rarity:'Rare',xp:150,cond:s=>s.workouts.length>=10,progress:s=>Math.min(100,Math.round(s.workouts.length/10*100))},
+ {id:'first_workout',title:'Beast Mode',desc:'Log your first workout',rarity:'Common',xp:20,cond:s=>completedWorkouts(s).length>=1,progress:s=>completedWorkouts(s).length>=1?100:0},
+ {id:'fitness_beast',title:'Fitness Beast',desc:'Log 10 workouts',rarity:'Rare',xp:150,cond:s=>completedWorkouts(s).length>=10,progress:s=>Math.min(100,Math.round(completedWorkouts(s).length/10*100))},
  {id:'first_meal',title:'Nourished',desc:'Log your first meal',rarity:'Common',xp:15,cond:s=>s.meals.length>=1,progress:s=>s.meals.length>=1?100:0},
  {id:'hydrated',title:'Hydration Hero',desc:'Hit your water target in a day',rarity:'Uncommon',xp:40,cond:s=>waterToday(s)>=s.nutritionTargets.water,progress:s=>Math.min(100,Math.round(waterToday(s)/s.nutritionTargets.water*100))},
  {id:'first_note',title:'Knowledge Seeker',desc:'Create your first note',rarity:'Common',xp:15,cond:s=>s.notes.length>=1,progress:s=>s.notes.length>=1?100:0},
@@ -1075,6 +1254,19 @@ function defaultState(){return{
   dailyTargets:{workoutsPerWeek:3, tasksPerDay:3, habitsPerDay:1},
   // ---- Phase 6: idempotency ledger for browser notifications (see sendBrowserNotification) ----
   notificationLog:[], // {key,ts}
+  // ---- Phase 9: Daily Score history. Today is always computed live by dailyScore(); a finished
+  // day is stored once as an immutable snapshot {score,label,algo,areas,finalizedAt}. Snapshots
+  // start at dailyScoresSince (the first day the feature ran) -- no estimated history. New keys
+  // reach old states/backups through migrate()'s generic top-level fill-in: no schema bump. ----
+  dailyScores:{}, dailyScoresSince:null,
+  // ---- Phase 10: Daily Planner time blocks (see plannerSaveBlock). Reaches old states/backups
+  // through migrate()'s generic top-level fill-in: no schema bump. ----
+  plannerBlocks:[],
+  // ---- Phase 11A: Fitness 2.0 exercise library (see exerciseSave). Old states/backups get it
+  // in migrate(): seeded with bare names from their workout history; no schema bump. ----
+  exerciseLibrary:[],
+  workoutTemplates:[], // Phase 11A: plans for Start Workout (see templateSave)
+  muscleProgress:{log:[]}, // Phase 11A: Muscle XP ledger (see muscleAwardWorkout); totals/levels are derived
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -1180,6 +1372,9 @@ function migrate(state){
   merged.budgets=(merged.budgets||[]).map(migrateBudget);
   merged.subscriptions=(merged.subscriptions||[]).map(migrateSub);
   merged.workouts=(merged.workouts||[]).map(migrateWorkout);
+  // Phase 11A: a state that predates the exercise library gets one bare-name record per distinct
+  // exercise of its own history (no invented muscles); an existing library is only normalized.
+  merged.exerciseLibrary=Array.isArray(state&&state.exerciseLibrary)?merged.exerciseLibrary.map(migrateExercise):exerciseSeedFromHistory(merged.workouts);
   merged.meals=(merged.meals||[]).map(migrateMeal);
   merged.notes=(merged.notes||[]).map(migrateNote);
   merged.journal=(merged.journal||[]).map(migrateJournalEntry);
@@ -1228,6 +1423,11 @@ function migrate(state){
   merged.stepsLog=(merged.stepsLog||[]).map(migrateStepsEntry);
   merged.heartRateLog=(merged.heartRateLog||[]).map(migrateHeartRateEntry);
   merged.activeCaloriesLog=(merged.activeCaloriesLog||[]).map(migrateActiveCaloriesEntry);
+  // Phase 11A: Muscle XP ledger (a partially shaped value is repaired), then the one-time recovery of
+  // finished new-model workouts that have no log record yet (idempotent by key).
+  if(!merged.muscleProgress||typeof merged.muscleProgress!=='object') merged.muscleProgress={log:[]};
+  if(!Array.isArray(merged.muscleProgress.log)) merged.muscleProgress.log=[];
+  muscleRecover(merged);
   merged.schemaVersion=d.schemaVersion;
   return merged;
 }
@@ -1712,8 +1912,10 @@ function render(){
   app.innerHTML='';
   const map={home:renderHome,tasks:renderTasks,habits:renderHabits,goals:renderGoals,character:renderCharacter,
     more:renderMore,finance:renderFinance,fitness:renderFitness,nutrition:renderNutrition,notes:renderNotes,journal:renderJournal,
-    car:renderCar,subscriptions:renderSubs,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
+    car:renderCar,subscriptions:renderSubs,planner:renderPlanner,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
+  // Phase 9: store finished days' Daily Score snapshots (no-op unless a day has ended).
+  if(finalizeDailyScores()) scheduleSave();
   app.appendChild(map[view]());
   // Phase 8B presentation: entrance animation only when the screen actually changes (not on the
   // 60 s refresh or after a tap on the same screen), motion follows Settings → Animations.
@@ -1759,22 +1961,323 @@ function progressCard(){
 }
 // "Today" block of the HUD: daily progress ring + tasks/habits/XP rows (same counts as above).
 function uiTodayCard(){
+  // Phase 9: the Today card shows the live Daily Score (dailyScore(todayStr())) -- never XP.
   const todayTasks=S.tasks.filter(t=>t.dueDate===todayStr()||(!t.dueDate&&!t.done));
   const doneToday=todayTasks.filter(t=>t.done).length;
   const activeHabits=S.habits.filter(h=>h.active!==false);
   const doneHabits=activeHabits.filter(h=>isDayComplete(h,todayStr())).length;
-  const dayPct=uiPct(doneToday+doneHabits,todayTasks.length+activeHabits.length);
-  const row=(ic,label,v,max,cls)=>`<div class="today-row"><span aria-hidden="true">${ic}</span><span>${label}</span><b>${v}/${max}</b><div class="bar ${cls||''}"><i style="width:${uiPct(v,max)}%"></i></div></div>`;
-  return el(`<section class="card" aria-label="${uiT('today_progress')}">
+  const r=dailyScore(todayStr());
+  const card=el(`<section class="card ds-card" data-ds="card" role="button" tabindex="0" aria-label="Daily Score ${r.score==null?'—':r.score}">
     <div class="today-grid">
-      <div class="ring" style="--p:${dayPct}" role="img" aria-label="${uiT('today_progress')} ${dayPct}%"><span>${dayPct}%</span></div>
+      ${uiDsRing(r.score,'')}
       <div class="today-rows">
-        <div class="kicker">${uiT('today_progress')}</div>
-        ${row('✅',uiT('tasks'),doneToday,todayTasks.length,'is-success')}
-        ${row('🔥',uiT('habits'),doneHabits,activeHabits.length,'is-success')}
+        <div class="between"><span class="kicker">Daily Score</span>${r.score!=null?`<span class="chip ${uiDsTone(r.score)}">${uiDsLabel(r.label)}</span>`:''}</div>
+        ${r.score==null?`<div class="sub">${uiDsT('nothing')}</div>`:uiDsAreaRows(r,true)}
+        <div class="sub ds-counts">✅ ${doneToday}/${todayTasks.length} · 🔥 ${doneHabits}/${activeHabits.length}</div>
       </div>
     </div>
   </section>`);
+  card.onclick=()=>uiOpenDailyScore(todayStr());
+  card.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); card.onclick(); } };
+  return card;
+}
+
+// ---- Phase 10: Daily Planner presentation ----
+let uiPlannerDay=null;
+const UI_PL={
+  cs:{title:'Plánovač',add:'Blok',new:'Nový blok',edit:'Upravit blok',today:'Dnes',prev:'Předchozí den',next:'Další den',
+    blocks:'bloků',planned:'naplánováno',done:'hotovo',empty_t:'Den je zatím prázdný',empty_d:'Naplánuj si, kdy co uděláš — úkol, trénink nebo učení.',
+    from_cal:'Z kalendáře',allday:'celý den',task:'Úkol',goal:'Cíl',workout:'Trénink',none:'Žádný',complete:'Označit blok jako splněný',uncomplete:'Zrušit splnění bloku',
+    f_title:'Název',f_date:'Datum',f_start:'Začátek',f_end:'Konec',f_cat:'Kategorie',f_task:'Propojený úkol',f_goal:'Propojený cíl',f_workout:'Propojený trénink',
+    f_desc:'Popis',f_notes:'Poznámky',save:'Uložit blok',saved:'Blok uložen',updated:'Blok upraven',deleted:'Blok smazán',del:'Smazat blok',confirm_del:'Smazat tento blok?',
+    e_required:'Vyplň název',e_invalid:'Neplatná hodnota',e_order:'Konec musí být po začátku',task_done:'úkol hotový',missing:'smazáno',
+    plan:'Naplánovat',plan_hint:'Úkol zůstane beze změny — vznikne jen plánovací blok.',scheduled:'Naplánováno',todays_plan:'Dnešní plán',open:'Plánovač',
+    calendar_hint:'Události z kalendáře jsou jen pro kontext a nekopírují se.',block_done:'splněno',
+    f_type:'Typ',type_general:'Blok',type_workout:'Trénink',f_tpl:'Šablona tréninku',tpl_pick:'Vyber šablonu',tpl_missing:'Šablona není dostupná',no_tpls:'Zatím nemáš žádnou šablonu — vytvoř ji ve Fitness → Šablony.',e_tpl:'Vyber šablonu',
+    start_wk:'Spustit trénink',continue_wk:'Pokračovat',wk_active:'Probíhá',wk_done:'Trénink dokončen',wk_active_t:'Trénink už probíhá',wk_active_q:'Máš rozpracovaný trénink',scheduled_for:'Naplánováno na',wk_hint:'Blok a trénink se dokončují zvlášť.'},
+  en:{title:'Planner',add:'Block',new:'New block',edit:'Edit block',today:'Today',prev:'Previous day',next:'Next day',
+    blocks:'blocks',planned:'planned',done:'done',empty_t:'Nothing planned yet',empty_d:'Plan when you will do things — a task, a workout or study time.',
+    from_cal:'From calendar',allday:'all day',task:'Task',goal:'Goal',workout:'Workout',none:'None',complete:'Mark block as done',uncomplete:'Mark block as not done',
+    f_title:'Title',f_date:'Date',f_start:'Start',f_end:'End',f_cat:'Category',f_task:'Linked task',f_goal:'Linked goal',f_workout:'Linked workout',
+    f_desc:'Description',f_notes:'Notes',save:'Save block',saved:'Block saved',updated:'Block updated',deleted:'Block deleted',del:'Delete block',confirm_del:'Delete this block?',
+    e_required:'Title required',e_invalid:'Invalid value',e_order:'End must be after start',task_done:'task done',missing:'deleted',
+    plan:'Schedule',plan_hint:'The task stays unchanged — only a planner block is created.',scheduled:'Scheduled',todays_plan:"Today's plan",open:'Planner',
+    calendar_hint:'Calendar events are shown for context only and are not copied.',block_done:'done',
+    f_type:'Type',type_general:'Block',type_workout:'Workout',f_tpl:'Workout template',tpl_pick:'Pick a template',tpl_missing:'Template not available',no_tpls:'No templates yet — create one in Fitness → Templates.',e_tpl:'Pick a template',
+    start_wk:'Start workout',continue_wk:'Continue',wk_active:'In progress',wk_done:'Workout finished',wk_active_t:'A workout is already in progress',wk_active_q:'You have a workout in progress',scheduled_for:'Scheduled for',wk_hint:'The block and the workout are completed separately.'},
+};
+function uiPlT(k){ return (UI_PL[uiLang()]||UI_PL.cs)[k]; }
+function uiPlDur(min){ const h=Math.floor(min/60), m=min%60; return h?`${h} h${m?` ${m} min`:''}`:`${m} min`; }
+function uiPlColor(cat){ const c=CATS[cat]; return c&&ATTRS[c.a]?ATTRS[c.a].c:'var(--accent)'; }
+function uiPlIcon(b){ return (CATS[b.category]||{}).ic||'🗓️'; }
+function uiTaskBlocks(t){ return (S.plannerBlocks||[]).filter(b=>b.taskId===t.id).sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime)); }
+function uiTaskNextBlock(t){ const today=todayStr(); return uiTaskBlocks(t).find(b=>b.date>=today)||null; }
+function uiTaskPlanBlock(t){
+  const bl=uiTaskBlocks(t);
+  return `<div class="task-plan"><button class="btn ghost" id="f_plan">🗓️ ${uiPlT('plan')}</button>${bl.length?`<div class="sub" style="margin-top:8px">${uiPlT('scheduled')}:</div><div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">${bl.map(b=>`<button class="chip" data-plan-day="${b.date}">🗓️ ${fmtDate(b.date)} ${b.startTime}–${b.endTime}${b.completed?' ✓':''}</button>`).join('')}</div>`:''}</div>`;
+}
+// Home: compact "Today's plan" (inside the existing Today's Tasks widget -- no new widget key).
+function uiTodaysPlanCard(){
+  const bl=plannerBlocksOn(todayStr());
+  if(!bl.length) return null;
+  const c=el(`<div class="card plan-card" data-plan="home"><div class="between" style="margin-bottom:4px"><span class="kicker">🗓️ ${uiPlT('todays_plan')}</span><button class="action section-open" style="background:none;border:none;color:var(--accent);font-weight:650;min-height:44px;cursor:pointer">${uiPlT('open')} ›</button></div>
+    <div class="plan-list">${bl.slice(0,5).map(b=>{ if(b.workoutTemplateId){ const wi=uiPlannerWorkoutInfo(b);
+      return `<div class="plan-row plan-wk${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><button class="plan-open truncate">🏋️ ${escapeHtml(wi.t?wi.t.name:b.title)}</button>${wi.st==='active'?`<button class="btn sm planWkGo">▶ ${uiPlT('continue_wk')}</button>`:wi.st==='done'?`<span class="chip is-success" data-wk-done>${uiLang()==='cs'?'Dokončeno':'Finished'}</span>`:(b.completed?'<span class="chip is-success">✓</span>':'<span></span>')}</div>`; }
+      return `<button class="plan-row${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><span class="truncate">${uiPlIcon(b)} ${escapeHtml(b.title)}</span>${b.completed?'<span class="chip is-success">✓</span>':'<span></span>'}</button>`; }).join('')}</div>
+    ${bl.length>5?`<div class="sub" style="margin-top:4px">+${bl.length-5}</div>`:''}</div>`);
+  c.querySelectorAll('button').forEach(b=>b.onclick=()=>uiOpenPlanner(todayStr()));
+  c.querySelectorAll('.planWkGo').forEach(b=>b.onclick=e=>{ e.stopPropagation(); uiGoActiveWorkout(); });
+  return c;
+}
+function uiOpenPlanner(D){ uiPlannerDay=D||todayStr(); view='planner'; render(); window.scrollTo(0,0); }
+function uiGoActiveWorkout(){ closeSheets(); uiWorkoutView={mode:'active'}; fitnessTab='workouts'; view='fitness'; render(); window.scrollTo(0,0); }
+function uiPlannerStartWorkout(b){
+  const r=plannerStartWorkout(b.id);
+  if(r.ok){ scheduleSave(); uiGoActiveWorkout(); return; }
+  if(r.reason==='active_exists'){
+    if(r.workout.plannerBlockId===b.id){ uiGoActiveWorkout(); return; }
+    closeSheets(); uiConfirmSheet({title:uiPlT('wk_active_t'),text:`${uiPlT('wk_active_q')} „${r.workout.name}“.`,ok:uiPlT('continue_wk')},uiGoActiveWorkout); return;
+  }
+  toast(uiPlT('tpl_missing'));
+}
+// the block's workout part: template name (or "not available"), informative state, start/continue action
+function uiPlannerWorkoutInfo(b){
+  const t=templateFind(b.workoutTemplateId), st=plannerBlockWorkoutState(b);
+  return {t,st,tplChip:t?`<span class="chip">📋 ${escapeHtml(t.name)}</span>`:`<span class="chip is-muted" data-tpl-missing>📋 ${uiPlT('tpl_missing')}</span>`,
+    stChip:st==='active'?`<span class="chip is-warn">● ${uiPlT('wk_active')}</span>`:st==='done'?`<span class="chip is-success" data-wk-done>🏋️ ${uiPlT('wk_done')}</span>`:'',
+    action:st==='active'?uiPlT('continue_wk'):(t?uiPlT('start_wk'):'')};
+}
+function renderPlanner(){
+  const D=uiPlannerDay||todayStr(), today=todayStr();
+  const blocks=plannerBlocksOn(D), sum=plannerDaySummary(D);
+  const evs=uiEventsOn(D), timedEvs=evs.filter(e=>plannerTimeToMin(e.start)!=null), allDay=evs.filter(e=>plannerTimeToMin(e.start)==null);
+  const dayLabel=(()=>{ try{ const s=new Date(D+'T00:00').toLocaleDateString(uiLocale(),{weekday:'long',day:'numeric',month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return fmtDate(D); } })();
+  const wrap=el(`<div class="planner">${uiPageHead(uiPlT('title'),'',`<button class="btn sm" id="uiAddBlock">＋ ${uiPlT('add')}</button>`)}
+    <section class="card pl-daybar">
+      <button class="iconbtn" id="plPrev" aria-label="${uiPlT('prev')}">‹</button>
+      <div class="pl-day"><b>${dayLabel}</b><span class="sub">${sum.planned} ${uiPlT('blocks')} · ${uiPlDur(sum.plannedMin)} ${uiPlT('planned')} · ${sum.completed} ${uiPlT('done')}</span></div>
+      <button class="iconbtn" id="plNext" aria-label="${uiPlT('next')}">›</button>
+    </section>
+    ${D!==today?`<button class="btn ghost sm pl-todaybtn" id="plToday">${uiPlT('today')}</button>`:''}
+    ${allDay.length?`<div class="pl-allday">${allDay.map(e=>`<span class="chip is-muted">📅 ${escapeHtml(e.title)} · ${uiPlT('allday')}</span>`).join('')}</div>`:''}
+    <div id="plBody"></div>
+    ${evs.length?`<p class="helper-text" style="margin-top:10px">${uiPlT('calendar_hint')}</p>`:''}
+  </div>`);
+  wrap.querySelector('#uiAddBlock').onclick=()=>openPlannerForm(null,{date:D});
+  wrap.querySelector('#plPrev').onclick=()=>uiOpenPlanner(addDays(D,-1));
+  wrap.querySelector('#plNext').onclick=()=>uiOpenPlanner(addDays(D,1));
+  const tb=wrap.querySelector('#plToday'); if(tb) tb.onclick=()=>uiOpenPlanner(today);
+  const body=wrap.querySelector('#plBody');
+  if(!blocks.length&&!timedEvs.length){
+    const e=el(`<div class="card">${uiEmpty('🗓️',uiPlT('empty_t'),uiPlT('empty_d'),'＋ '+uiPlT('add'))}</div>`);
+    e.querySelector('.emptyCta').onclick=()=>openPlannerForm(null,{date:D});
+    body.appendChild(e); return wrap;
+  }
+  // Timeline: 06:00–22:00 by default, widened to include every block/event of the day.
+  const items=[...blocks.map(b=>({id:b.id,start:plannerTimeToMin(b.startTime),end:plannerTimeToMin(b.endTime),b})),
+    ...timedEvs.map(e=>{ const s0=plannerTimeToMin(e.start), e0=plannerTimeToMin(e.end); return {id:'ev_'+e.id,start:s0,end:e0!=null&&e0>s0?e0:Math.min(1440,s0+60),ev:e}; })];
+  let from=6*60, to=22*60;
+  items.forEach(it=>{ from=Math.min(from,Math.floor(it.start/60)*60); to=Math.max(to,Math.ceil(it.end/60)*60); });
+  const PX=1.1, lay=plannerLayout(items);
+  const tl=el(`<section class="card pl-timeline" aria-label="${dayLabel}"><div class="pl-grid" id="plTimeline" style="height:${Math.round((to-from)*PX)}px"></div></section>`);
+  const grid=tl.querySelector('#plTimeline');
+  for(let h=from;h<=to;h+=60) grid.appendChild(el(`<div class="pl-hour" style="top:${Math.round((h-from)*PX)}px"><span>${plannerMinToTime(Math.min(h,1439)).replace('23:59','24:00')}</span></div>`));
+  if(D===today){ const n=new Date(), nm=n.getHours()*60+n.getMinutes(); if(nm>=from&&nm<=to) grid.appendChild(el(`<div class="pl-now" style="top:${Math.round((nm-from)*PX)}px" aria-hidden="true"></div>`)); }
+  items.forEach(it=>{
+    const L=lay[it.id], top=Math.round((it.start-from)*PX), h=Math.max(44,Math.round((it.end-it.start)*PX));
+    const pos=`top:${top}px;height:${h}px;left:calc(var(--pl-gutter) + (100% - var(--pl-gutter)) * ${L.col} / ${L.cols});width:calc((100% - var(--pl-gutter)) / ${L.cols} - 4px)`;
+    if(it.ev){
+      const e=it.ev;
+      const n=el(`<button class="pl-block is-event" style="${pos}" data-event="${e.id}" aria-label="${uiPlT('from_cal')}: ${escapeHtml(e.title)}"><span class="pl-t">📅 ${escapeHtml(e.title)}</span><span class="pl-m">${formatTimeDisplay(e.start)}${e.end?'–'+formatTimeDisplay(e.end):''} · ${uiPlT('from_cal')}</span></button>`);
+      n.onclick=()=>{ uiCalDay=D; uiCalMode='month'; view='calendar'; render(); window.scrollTo(0,0); };
+      grid.appendChild(n); return;
+    }
+    const b=it.b, lk=plannerLinks(b), compact=h<64;
+    const linkTxt=[lk.task?` · ${uiPlT('task')}: ${escapeHtml(lk.task.title)}${lk.task.done?' ('+uiPlT('task_done')+')':''}`:'',lk.goal?` · ${uiPlT('goal')}: ${escapeHtml(lk.goal.title)}`:'',lk.workout?` · ${uiPlT('workout')}: ${escapeHtml(lk.workout.name)}`:''].join('');
+    const chips=[lk.task?`<span class="chip ${lk.task.done?'is-success':''}">✅ ${escapeHtml(lk.task.title)}${lk.task.done?' · '+uiPlT('task_done'):''}</span>`:(b.taskId?`<span class="chip is-muted">✅ ${uiPlT('missing')}</span>`:''),
+      lk.goal?`<span class="chip">🎯 ${escapeHtml(lk.goal.title)}</span>`:'', lk.workout?`<span class="chip">🏋️ ${escapeHtml(lk.workout.name)}</span>`:''].filter(Boolean).join('');
+    const wi=b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+    const n=el(`<div class="pl-block${b.completed?' is-done':''}${compact?' is-compact':''}${wi?' is-workout':''}" style="${pos};--pl-c:${uiPlColor(b.category)}" data-block="${b.id}">
+      <button class="check plCheck ${b.completed?'done':''}" aria-pressed="${b.completed}" aria-label="${uiPlT(b.completed?'uncomplete':'complete')}: ${escapeHtml(b.title)}">${b.completed?'✓':''}</button>
+      <button class="pl-open" aria-label="${uiPlT('edit')}: ${escapeHtml(b.title)}${linkTxt}"><span class="pl-t">${uiPlIcon(b)} ${escapeHtml(b.title)}${compact&&lk.task&&lk.task.done?' <span title="'+uiPlT('task_done')+'">✅</span>':''}</span><span class="pl-m">${b.startTime}–${b.endTime}${compact?'':' · '+uiPlDur(plannerDuration(b))}</span>${!compact&&(chips||wi)?`<span class="pl-chips">${wi?wi.tplChip+wi.stChip:''}${chips}</span>`:''}</button>
+      ${wi&&wi.action?`<button class="iconbtn plWkStart" aria-label="${wi.action}: ${escapeHtml(b.title)}">▶</button>`:''}
+    </div>`);
+    n.querySelector('.plCheck').onclick=(ev)=>{ ev.stopPropagation(); plannerToggleCompleted(b.id); render(); };
+    n.querySelector('.pl-open').onclick=()=>openPlannerForm(b);
+    const ws=n.querySelector('.plWkStart'); if(ws) ws.onclick=(ev)=>{ ev.stopPropagation(); uiPlannerStartWorkout(b); };
+    grid.appendChild(n);
+  });
+  body.appendChild(tl);
+  return wrap;
+}
+function openPlannerForm(existing,preset){
+  const b=existing, p=Object.assign({},preset||{});
+  const today=todayStr(), date=b?b.date:(p.date||today);
+  let start=b?b.startTime:p.startTime, end=b?b.endTime:p.endTime;
+  if(!start){ const n=new Date(); const m=date===today?Math.min(22*60,(n.getHours()+1)*60):9*60; start=plannerMinToTime(m); end=plannerMinToTime(Math.min(1439,m+60)); }
+  const cur=b||p;
+  const taskOpts=S.tasks.filter(t=>!t.done||t.id===cur.taskId).map(t=>`<option value="${t.id}" ${t.id===cur.taskId?'selected':''}>${escapeHtml(t.title)}${t.dueDate?' · '+fmtDate(t.dueDate):''}</option>`).join('');
+  const goalOpts=S.goals.filter(g=>g.status==='Active'||g.id===cur.goalId).map(g=>`<option value="${g.id}" ${g.id===cur.goalId?'selected':''}>${escapeHtml(g.title)}</option>`).join('');
+  const wkOpts=[...S.workouts].sort((a,c)=>(c.date||'').localeCompare(a.date||'')).filter((w,i)=>i<30||w.id===cur.workoutId).map(w=>`<option value="${w.id}" ${w.id===cur.workoutId?'selected':''}>${escapeHtml(w.name)} · ${fmtDate(w.date)}</option>`).join('');
+  const tplId=cur.workoutTemplateId||'', tpls=[...(S.workoutTemplates||[])].sort((x,y)=>x.name.localeCompare(y.name,uiLocale()));
+  const tplOpts=`<option value="">${uiPlT('tpl_pick')}</option>${tplId&&!templateFind(tplId)?`<option value="${escapeHtml(tplId)}" selected>${uiPlT('tpl_missing')}</option>`:''}${tpls.map(t=>`<option value="${t.id}" ${t.id===tplId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}`;
+  const wi=b&&b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+  const inner=el(`<div class="pl-form"><h3>${uiPlT(b?'edit':'new')}</h3>
+    ${p.taskId&&!b?`<p class="helper-text" style="margin:-6px 0 12px">${uiPlT('plan_hint')}</p>`:''}
+    ${wi?`<div class="pl-wk-head">${wi.tplChip}${wi.stChip}${wi.action?`<button class="btn" id="pb_startwk">▶ ${wi.action}</button>`:''}<p class="helper-text">${uiPlT('wk_hint')}</p></div>`:''}
+    <label>${uiPlT('f_type')}</label><div class="seg pl-type" role="group" aria-label="${uiPlT('f_type')}"><button type="button" class="pill ${tplId?'':'on'}" data-pbtype="general" aria-pressed="${!tplId}">🗓️ ${uiPlT('type_general')}</button><button type="button" class="pill ${tplId?'on':''}" data-pbtype="workout" aria-pressed="${!!tplId}">🏋️ ${uiPlT('type_workout')}</button></div>
+    <div id="pb_tplRow" ${tplId?'':'hidden'}><label for="pb_tpl">${uiPlT('f_tpl')}</label>${tpls.length||tplId?`<select id="pb_tpl">${tplOpts}</select>`:`<p class="helper-text" id="pb_notpl">${uiPlT('no_tpls')}</p><select id="pb_tpl" hidden>${tplOpts}</select>`}<div class="field-error" data-err="workoutTemplateId"></div></div>
+    <label for="pb_title">${uiPlT('f_title')}</label><input id="pb_title" value="${escapeHtml(cur.title||'')}" autocomplete="off"><div class="field-error" data-err="title"></div>
+    <label for="pb_date">${uiPlT('f_date')}</label><input type="date" id="pb_date" value="${date}"><div class="field-error" data-err="date"></div>
+    <div class="grid2"><div><label for="pb_start">${uiPlT('f_start')}</label><input type="time" id="pb_start" value="${start}" step="300"><div class="field-error" data-err="startTime"></div></div>
+      <div><label for="pb_end">${uiPlT('f_end')}</label><input type="time" id="pb_end" value="${end}" step="300"><div class="field-error" data-err="endTime"></div></div></div>
+    <label for="pb_cat">${uiPlT('f_cat')}</label><select id="pb_cat"><option value="">${uiPlT('none')}</option>${catOptions()}</select>
+    <label for="pb_task">${uiPlT('f_task')}</label><select id="pb_task"><option value="">${uiPlT('none')}</option>${taskOpts}</select>
+    <label for="pb_goal">${uiPlT('f_goal')}</label><select id="pb_goal"><option value="">${uiPlT('none')}</option>${goalOpts}</select>
+    <label for="pb_workout">${uiPlT('f_workout')}</label><select id="pb_workout"><option value="">${uiPlT('none')}</option>${wkOpts}</select>
+    <label for="pb_desc">${uiPlT('f_desc')}</label><textarea id="pb_desc" rows="2">${escapeHtml(cur.description||'')}</textarea>
+    <label for="pb_notes">${uiPlT('f_notes')}</label><textarea id="pb_notes" rows="2">${escapeHtml(cur.notes||'')}</textarea>
+    <button class="btn" id="pb_save">${uiPlT('save')}</button>
+    ${b?`<button class="btn danger" id="pb_delete" style="margin-top:8px">${uiPlT('del')}</button>`:''}
+  </div>`);
+  inner.querySelector('#pb_cat').value=cur.category||'';
+  inner.querySelectorAll('.field-error').forEach(n=>n.hidden=true);
+  let pbType=tplId?'workout':'general';
+  const tplSel=inner.querySelector('#pb_tpl'), titleIn=inner.querySelector('#pb_title');
+  let autoTitle=tplId&&templateFind(tplId)&&titleIn.value===templateFind(tplId).name;
+  inner.querySelectorAll('[data-pbtype]').forEach(btn=>btn.onclick=()=>{
+    pbType=btn.dataset.pbtype;
+    inner.querySelectorAll('[data-pbtype]').forEach(x=>{ const on=x===btn; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
+    inner.querySelector('#pb_tplRow').hidden=pbType!=='workout';
+    if(pbType==='workout'&&!inner.querySelector('#pb_cat').value) inner.querySelector('#pb_cat').value='Fitness';
+  });
+  tplSel.onchange=()=>{ const t=templateFind(tplSel.value); if(t&&(!titleIn.value.trim()||autoTitle)){ titleIn.value=t.name; autoTitle=true; } };
+  titleIn.addEventListener('input',()=>{ autoTitle=false; });
+  const sw=inner.querySelector('#pb_startwk'); if(sw) sw.onclick=()=>uiPlannerStartWorkout(b);
+  inner.querySelector('#pb_save').onclick=()=>{
+    const tplErr=inner.querySelector('[data-err="workoutTemplateId"]');
+    if(pbType==='workout'&&!tplSel.value){ tplErr.hidden=false; tplErr.textContent=uiPlT('e_tpl'); tplSel.setAttribute('aria-invalid','true'); if(!tplSel.hidden) tplSel.focus(); return; }
+    tplErr.hidden=true; tplSel.removeAttribute('aria-invalid');
+    const fields={title:inner.querySelector('#pb_title').value,date:inner.querySelector('#pb_date').value,startTime:inner.querySelector('#pb_start').value,endTime:inner.querySelector('#pb_end').value,workoutTemplateId:pbType==='workout'?tplSel.value:'',
+      category:inner.querySelector('#pb_cat').value,taskId:inner.querySelector('#pb_task').value,goalId:inner.querySelector('#pb_goal').value,workoutId:inner.querySelector('#pb_workout').value,
+      description:inner.querySelector('#pb_desc').value,notes:inner.querySelector('#pb_notes').value};
+    const r=plannerSaveBlock(fields,b);
+    const idOf={title:'pb_title',date:'pb_date',startTime:'pb_start',endTime:'pb_end'};
+    Object.keys(idOf).forEach(k=>{ const inp=inner.querySelector('#'+idOf[k]), msg=inner.querySelector(`[data-err="${k}"]`); const code=r.errors[k];
+      inp.classList.toggle('invalid',!!code); inp.setAttribute('aria-invalid',code?'true':'false'); msg.hidden=!code; msg.textContent=code?uiPlT(code==='required'?'e_required':code==='end_before_start'?'e_order':'e_invalid'):''; });
+    if(!r.ok){ const first=inner.querySelector('.invalid'); if(first) first.focus(); return; }
+    closeSheets(); uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved'));
+  };
+  const del=inner.querySelector('#pb_delete');
+  if(del) del.onclick=()=>{ if(!confirm(uiPlT('confirm_del'))) return; plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); };
+  openSheet(inner);
+}
+// ---- Phase 9: Daily Score presentation (reads dailyScore()/S.dailyScores only) ----
+const UI_DS={
+  cs:{nothing:'Dnes zatím není co hodnotit',live:'průběžné',excellent:'Výborný den',good:'Dobrý den',solid:'Solidní den',weaker:'Slabší den',tough:'Náročný den',
+    tasks:'Úkoly',habits:'Návyky',nutrition:'Stravování',sleep:'Spánek',fitness:'Fitness',goals:'Cíle',na:'N/A',
+    why:'Proč toto skóre',weights:'Váhy: Úkoly 30 · Návyky 30 · Stravování 15 · Spánek 15 · Fitness 10. Oblasti N/A se nezapočítávají.',
+    separate:'Daily Score je oddělené od XP — nemění level, atributy ani odměny.',nothing_d:'Skóre vznikne, jakmile bude pro den něco relevantního: naplánovaný úkol, návyk na dnešek, zapsané jídlo, spánek nebo naplánovaný trénink.',
+    snap:'uložený snímek dne'},
+  en:{nothing:'Nothing to score yet today',live:'live',excellent:'Excellent day',good:'Good day',solid:'Solid day',weaker:'Weaker day',tough:'Tough day',
+    tasks:'Tasks',habits:'Habits',nutrition:'Nutrition',sleep:'Sleep',fitness:'Fitness',goals:'Goals',na:'N/A',
+    why:'Why this score',weights:'Weights: Tasks 30 · Habits 30 · Nutrition 15 · Sleep 15 · Fitness 10. N/A areas are not counted.',
+    separate:'Daily Score is separate from XP — it never changes level, attributes or rewards.',nothing_d:'A score appears as soon as something is relevant for the day: a planned task, a habit due today, a logged meal, sleep or a planned workout.',
+    snap:'stored day snapshot'},
+};
+function uiDsT(k){ return (UI_DS[uiLang()]||UI_DS.cs)[k]; }
+function uiDsLabel(key){ return key?uiDsT(key):''; }
+function uiDsTone(score){ return score==null?'is-muted':score>=75?'is-success':score>=50?'':'is-warn'; }
+function uiDsRing(score,cls){
+  const c=score==null?'var(--line)':score>=75?'var(--accent2)':score>=50?'var(--accent)':'var(--warn)';
+  return `<div class="ring ${cls||''}" style="--p:${score==null?0:score};--c:${c}" role="img" aria-label="Daily Score ${score==null?'—':score+' / 100'}"><span>${score==null?'—':score}</span></div>`;
+}
+const UI_DS_AREAS=['tasks','habits','nutrition','sleep','fitness'];
+function uiDsAreaRows(r,compact){
+  return UI_DS_AREAS.map(k=>{ const a=r.areas[k]; const na=a.score==null;
+    return `<div class="ds-row${na?' is-na':''}" data-area="${k}"><span>${uiDsT(k)}</span><b>${na?uiDsT('na'):a.score+' %'}</b>${compact?'':''}<div class="bar${na?'':' '+(a.score>=75?'is-success':a.score>=50?'':'is-warn')}"><i style="width:${na?0:a.score}%"></i></div></div>`;
+  }).join('');
+}
+// One plain-language reason per area -- always shown in the detail, including for N/A.
+function uiDsReason(k,a){
+  const cs=uiLang()==='cs';
+  if(k==='tasks'){
+    if(a.score==null) return (cs?'Na tento den nebyly naplánované žádné úkoly.':'No tasks were planned for this day.')+(a.openOverdue?` ${cs?`(${a.openOverdue} po termínu z dřívějška se nezapočítává.)`:`(${a.openOverdue} older overdue not counted.)`}`:'');
+    return (cs?`${a.done} z ${a.total} hotovo, váženo prioritou (Urgent 2×, High 1,5×).`:`${a.done} of ${a.total} done, weighted by priority (Urgent 2×, High 1.5×).`)
+      +(a.lateDone?` ${cs?`Včetně ${a.lateDone} úkolu po termínu dokončeného v tento den.`:`Includes ${a.lateDone} overdue task completed that day.`}`:'')
+      +(a.openOverdue?` ${cs?`${a.openOverdue} starší po termínu se nezapočítává.`:`${a.openOverdue} older overdue not counted.`}`:'');
+  }
+  if(k==='habits'){
+    if(a.score==null) return (cs?'Na tento den nebyl naplánovaný žádný návyk.':'No habit was due this day.')+(a.pending?` ${cs?`${a.pending} zlozvyk čeká na záznam.`:`${a.pending} bad habit not logged yet.`}`:'');
+    return (cs?`${a.done} z ${a.total} splněno (počítadla se počítají poměrem).`:`${a.done} of ${a.total} done (counters count proportionally).`)+(a.pending?` ${cs?`${a.pending} zlozvyk zatím bez záznamu — nepočítá se.`:`${a.pending} bad habit not logged yet — not counted.`}`:'');
+  }
+  if(k==='nutrition'){
+    if(a.score==null) return a.reason==='no_targets'?(cs?'Nejsou nastavené cíle stravování.':'No nutrition targets set.'):(cs?'Žádné jídlo ani voda zapsané — nehodnotí se.':'No meals or water logged — not scored.');
+    const p=a.parts||{}, nt=cs?'nesledováno':'not tracked';
+    const line=(label,v,detail)=>`<span class="ds-part"><span>${label}</span><b>${v==null?nt:v+' %'}</b>${v!=null&&detail?`<small>${detail}</small>`:''}</span>`;
+    return `<span class="ds-parts">${line(cs?'Kalorie':'Calories',p.calories,a.caloriesTarget?`${uiNum(a.calories)}/${uiNum(a.caloriesTarget)} kcal`:'')}${line('Protein',p.protein,a.proteinTarget?`${a.protein}/${a.proteinTarget} g`:'')}${line(cs?'Voda':'Water',p.water,a.waterTarget?`${uiNum(a.water)}/${uiNum(a.waterTarget)} ml`:'')}</span>`
+      +(a.mode==='live'?(cs?'Dnes se kalorie počítají jako průběžný postup k cíli; uzavřený den používá pásmo 90–110 %.':'Today calories count as progress toward the target; a finished day uses the 90–110 % band.'):(cs?'Kalorie jsou nejlepší v pásmu 90–110 % cíle.':'Calories score best within 90–110 % of target.'))
+      +(p.water==null?` ${cs?'Nesledované části se nezapočítávají.':'Untracked parts are not counted.'}`:'');
+  }
+  if(k==='sleep'){
+    if(a.score==null) return cs?'Spánek pro tento den není zapsaný.':'No sleep logged for this day.';
+    return `${String(a.hours).replace('.',cs?',':'.')} h${a.quality?` · ${cs?'kvalita':'quality'} ${a.quality}/5`:''}. ${cs?'Plné skóre v rozmezí 7–9 h.':'Full score between 7 and 9 h.'}`;
+  }
+  if(k==='fitness'){
+    if(a.score==null) return (cs?'Dnes nebyl naplánovaný trénink — nehodnotí se.':'No workout was planned — not scored.')+(a.bonus?` 💪 ${cs?'Bonus: trénink zapsán (mimo skóre).':'Bonus: workout logged (outside the score).'}`:'');
+    return a.workouts?(cs?'Naplánovaný trénink je splněný.':'The planned workout is done.'):(cs?'Trénink byl naplánovaný v kalendáři, ale není zapsaný.':'A workout was planned in the calendar but not logged.');
+  }
+  return '';
+}
+// Last n days: finished days from snapshots only (never recomputed), today live.
+function uiDsHistory(n){
+  const today=todayStr(), out=[];
+  for(let i=n-1;i>=0;i--){ const d=addDays(today,-i);
+    if(d===today){ const r=dailyScore(d); out.push({date:d,score:r.score,live:true}); }
+    else { const sn=S.dailyScores&&S.dailyScores[d]; out.push({date:d,score:sn?sn.score:null,live:false}); } }
+  return out;
+}
+function uiDsStatsCard(){
+  const cs=uiLang()==='cs';
+  const today=dailyScore(todayStr());
+  const snaps=Object.entries(S.dailyScores||{}).filter(([d,v])=>v&&v.score!=null&&d<todayStr());
+  const avgOf=days=>{ const from=addDays(todayStr(),-days); const xs=snaps.filter(([d])=>d>=from).map(([,v])=>v.score); return xs.length?Math.round(xs.reduce((a,b)=>a+b,0)/xs.length):null; };
+  const best=snaps.reduce((b,x)=>!b||x[1].score>b[1].score?x:b,null);
+  const hist=uiDsHistory(7);
+  const card=el(`<section class="card ds-stats" data-ds="stats">
+    <div class="section-header" style="margin-top:0"><h3>Daily Score</h3><span class="sub">${cs?'odděleno od XP':'separate from XP'}</span></div>
+    <div class="today-grid" style="margin-bottom:12px">${uiDsRing(today.score,'sm')}<div><div class="kicker">${cs?'Dnes':'Today'} · ${uiDsT('live')}</div><div class="hud-name" style="font-size:17px">${today.score==null?uiDsT('nothing'):uiDsLabel(today.label)}</div></div></div>
+    <div class="stat-grid cols-3">
+      <div class="stat-card"><div class="stat-label">${cs?'Průměr 7 dní':'7-day avg'}</div><div class="stat-value">${avgOf(7)??'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">${cs?'Průměr 30 dní':'30-day avg'}</div><div class="stat-value">${avgOf(30)??'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">${cs?'Nejlepší den':'Best day'}</div><div class="stat-value">${best?best[1].score:'—'}</div>${best?`<div class="stat-sub">${fmtDate(best[0])}</div>`:''}</div>
+    </div>
+    <div class="kicker" style="margin:4px 0 8px">${cs?'Posledních 7 dní':'Last 7 days'}</div>
+    <div class="ds-hist" role="list">${hist.map(h=>`<button class="ds-bar${h.score==null?' is-empty':''}${h.live?' is-live':''}" role="listitem" data-day="${h.date}" ${h.score==null?'disabled':''} aria-label="${fmtDate(h.date)}: ${h.score==null?(cs?'bez skóre':'no score'):h.score}"><i style="height:${h.score==null?0:Math.max(4,h.score)}%;background:${h.score==null?'transparent':h.score>=75?'var(--accent2)':h.score>=50?'var(--accent)':'var(--warn)'}"></i><span>${h.score==null?'':h.score+' · '}${h.date.slice(8)}.</span></button>`).join('')}</div>
+    <p class="helper-text" style="margin:10px 0 0">${snaps.length?(cs?`Uložené dny: ${snaps.length}. Dny bez relevantních aktivit zůstávají prázdné, nepočítají se jako 0.`:`Stored days: ${snaps.length}. Days without relevant activity stay empty, never counted as 0.`):(cs?`Historie se ukládá od ${fmtDate(S.dailyScoresSince||todayStr())}. První uložený den se objeví po jeho skončení.`:`History is stored since ${fmtDate(S.dailyScoresSince||todayStr())}. The first day appears once it has ended.`)}</p>
+  </section>`);
+  card.querySelectorAll('.ds-bar[data-day]:not([disabled])').forEach(b=>b.onclick=()=>uiOpenDailyScore(b.dataset.day));
+  return card;
+}
+function uiOpenDailyScore(D){
+  const snap=D<todayStr()&&S.dailyScores?S.dailyScores[D]:null;
+  const r=snap?{score:snap.score,label:snap.label,areas:Object.assign({goals:{score:null,milestones:[]}},snap.areas)}:dailyScore(D);
+  const isToday=D===todayStr();
+  const ms=(r.areas.goals&&r.areas.goals.milestones)||[];
+  const content=el(`<div class="ds-detail" data-ds="detail">
+    <h3>Daily Score</h3>
+    <div class="sub" style="margin:-8px 0 14px">${fmtDate(D)}${isToday?' · '+uiDsT('live'):snap?' · '+uiDsT('snap'):''}</div>
+    <div class="today-grid" style="margin-bottom:14px">${uiDsRing(r.score,'lg')}
+      <div>${r.score==null?`<div class="hud-name" style="font-size:18px">${uiDsT('nothing')}</div><p class="sub" style="margin-top:6px">${uiDsT('nothing_d')}</p>`:`<div class="hud-name" style="font-size:20px">${uiDsLabel(r.label)}</div><div class="sub num" style="margin-top:2px">${r.score} / 100</div>`}</div>
+    </div>
+    <div class="section-header" style="margin-top:4px"><h3>${uiDsT('why')}</h3></div>
+    <div class="ds-areas">${UI_DS_AREAS.map(k=>{ const a=r.areas[k]||{score:null}; return `<div class="ds-area${a.score==null?' is-na':''}" data-area="${k}"><div class="between"><b>${uiDsT(k)}</b><span class="chip ${uiDsTone(a.score)}">${a.score==null?uiDsT('na'):a.score+' %'}</span></div>${a.score!=null?`<div class="bar${a.score>=75?' is-success':a.score>=50?'':' is-warn'}" style="margin:8px 0 6px"><i style="width:${a.score}%"></i></div>`:''}<div class="sub">${uiDsReason(k,a)}</div></div>`; }).join('')}
+      ${ms.length?`<div class="ds-area is-na" data-area="goals"><div class="between"><b>${uiDsT('goals')}</b><span class="chip is-muted">${uiDsT('na')}</span></div><div class="sub">🚩 ${ms.map(escapeHtml).join(', ')}</div></div>`:''}
+    </div>
+    <p class="helper-text" style="margin:12px 0 0">${uiDsT('weights')}</p>
+    <p class="helper-text" style="margin:4px 0 0">${uiDsT('separate')}</p>
+  </div>`);
+  openSheet(content);
 }
 function uiGreeting(){
   const h=new Date().getHours();
@@ -1830,10 +2333,10 @@ const UI_I18N={
     more:'Více', productivity:'Produktivita', body:'Tělo', money:'Peníze', life:'Život', system:'Systém',
     m_goals:'Cíle', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Výživa', m_notes:'Poznámky', m_journal:'Deník', m_car:'Auto',
     m_subscriptions:'Předplatné', m_calendar:'Kalendář', m_quests:'Výpravy', m_statistics:'Statistiky', m_search:'Hledat', m_health:'Zdraví',
-    m_character:'Postava', m_settings:'Nastavení',
+    m_character:'Postava', m_settings:'Nastavení', m_planner:'Plánovač',
     // quick add
     quick_add:'Rychlé přidání', qa_task:'Úkol', qa_habit:'Návyk', qa_goal:'Cíl', qa_expense:'Výdaj', qa_income:'Příjem', qa_workout:'Trénink',
-    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování',
+    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování', qa_planner:'Blok plánu',
     // onboarding
     ob_step:'Krok {n} ze 6', skip:'Přeskočit', next_btn:'Pokračovat', back_btn:'Zpět', start_sample:'Začít s ukázkovými daty', finish:'Začít s prázdným profilem',
     // toasts
@@ -1877,9 +2380,9 @@ const UI_I18N={
     more:'More', productivity:'Productivity', body:'Body', money:'Money', life:'Life', system:'System',
     m_goals:'Goals', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Nutrition', m_notes:'Notes', m_journal:'Journal', m_car:'Car',
     m_subscriptions:'Subscriptions', m_calendar:'Calendar', m_quests:'Quests', m_statistics:'Statistics', m_search:'Search', m_health:'Health',
-    m_character:'Character', m_settings:'Settings',
+    m_character:'Character', m_settings:'Settings', m_planner:'Planner',
     quick_add:'Quick Add', qa_task:'Task', qa_habit:'Habit', qa_goal:'Goal', qa_expense:'Expense', qa_income:'Income', qa_workout:'Workout',
-    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel',
+    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel', qa_planner:'Planner block',
     ob_step:'Step {n} of 6', skip:'Skip', next_btn:'Continue', back_btn:'Back', start_sample:'Start with sample data', finish:'Start with an empty profile',
     toast_n_achievements:'{n} achievements unlocked', toast_n_quests:'{n} quests completed', toast_n_rewards:'{n} rewards',
     theme_to_light:'Switch to light theme', theme_to_dark:'Switch to dark theme',
@@ -1959,7 +2462,7 @@ const UI_PHRASES_CS={
   // notes / journal / search
   'Untitled':'Bez názvu','Pin':'Připnout','Unpin':'Odepnout','Unfavorite':'Odebrat z oblíbených','This month':'Tento měsíc','Search':'Hledat','Type at least 2 characters.':'Napiš aspoň 2 znaky.','No results.':'Žádné výsledky.',
   'Notes':'Poznámky','Journal':'Deník','Quests':'Výpravy','Subscriptions':'Předplatné','Events':'Události','Milestones':'Milníky','Meals':'Jídla','Vehicles':'Vozidla','Achievements':'Úspěchy',
-  'Could not load your data':'Nepodařilo se načíst data',
+  'Could not load your data':'Nepodařilo se načíst data', 'Planner':'Plánovač',
   // placeholders / misc form text
   'Exercise':'Cvik','Muscle':'Sval','Rest':'Pauza','Exercises':'Cviky','+ Add Exercise':'+ Přidat cvik','No goal':'Bez cíle','— pick to autofill —':'— vyber pro doplnění —','optional':'nepovinné',
   'e.g. Finish report':'např. Dokončit report','e.g. Card, Cash':'např. Karta, Hotovost','e.g. Chicken & rice':'např. Kuře s rýží','e.g. Dentist appointment':'např. Zubař',
@@ -2075,6 +2578,7 @@ function renderHome(){
       const todayTasks=S.tasks.filter(t=>!t.done && (t.dueDate===todayStr()||!t.dueDate)).slice(0,5);
       const tc=el(`<section>${sectionHead(uiT('todays_tasks'),uiT('see_all'),'tasks')}<div class="list" id="hTasks"></div></section>`);
       const tl=tc.querySelector('#hTasks');
+      const plan=uiTodaysPlanCard(); if(plan) tl.appendChild(plan); // Phase 10
       if(!todayTasks.length){ const e=el(`<div class="card">${uiEmpty('🌤️',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openForm('task'); tl.appendChild(e); }
       todayTasks.forEach(t=>tl.appendChild(taskItem(t)));
       return tc;
@@ -2139,17 +2643,20 @@ function renderHome(){
     // --- Fitness snapshot: real workout history only; nothing shown/fabricated without data. ---
     fitness: ()=>{
       if(W.fitness===false) return null;
-      const todayWorkout=S.workouts.find(w=>w.date===todayStr());
-      const sorted=[...S.workouts].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+      const done=completedWorkouts(S);
+      const todayWorkout=done.find(w=>w.date===todayStr());
+      const sorted=[...done].sort((a,b)=>workoutChronoCmp(b,a));
       const last=sorted[0];
-      const fitc=el(`<div class="card snap${S.workouts.length?'':' is-empty'}" data-nav="fitness" role="button" tabindex="0"><div class="snap-k">🏋️ ${uiT('fitness')}</div></div>`);
-      if(!S.workouts.length){
+      const fitc=el(`<div class="card snap${done.length?'':' is-empty'}" data-nav="fitness" role="button" tabindex="0"><div class="snap-k">🏋️ ${uiT('fitness')}</div></div>`);
+      if(!done.length){
         fitc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
         if(todayWorkout) fitc.appendChild(el(`<div class="snap-v">${uiNum(workoutVolume(todayWorkout))} <small>kg</small></div><div class="snap-s">${escapeHtml(todayWorkout.name)}</div>`));
         else fitc.appendChild(el(`<div class="snap-v" style="font-size:15px">${uiT('no_workout_today')}</div>`));
         if(last) fitc.appendChild(el(`<div class="snap-s">${uiT('last')}: ${escapeHtml(last.name)} · ${fmtDate(last.date)}</div>`));
       }
+      const act=activeWorkout();
+      if(act) fitc.appendChild(el(`<div class="snap-s wk-snap-live"><span class="live-dot" aria-hidden="true"></span>${uiWkT('active_t')}: ${escapeHtml(act.name)}</div>`));
       fitc.onclick=()=>{view='fitness';render();};
       fitc.style.cursor='pointer';
       return fitc;
@@ -2230,11 +2737,13 @@ function taskItem(t){
   const linkedGoal=t.goalId?S.goals.find(g=>g.id===t.goalId):null;
   const shownXp=t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10); // display of the same rule the check handler uses
   const overdue=!t.done&&t.dueDate&&t.dueDate<todayStr();
+  const planned=uiTaskNextBlock(t); // Phase 10: earliest planner block for this task from today on
   const meta=[
     t.priority?`<span class="chip ${t.priority==='Urgent'?'is-danger':t.priority==='High'?'is-warn':'is-muted'}">${uiPrioLabel(t.priority)}</span>`:'',
     t.dueDate?`<span class="${overdue?'chip is-danger':''}">📅 ${uiDueLabel(t.dueDate)}</span>`:'',
     t.category?`<span>${escapeHtml(t.category)}</span>`:'',
     linkedGoal?`<button class="chip linkGoal">🎯 ${escapeHtml(linkedGoal.title)}</button>`:'',
+    planned?`<button class="chip planLink" aria-label="${uiPlT('scheduled')}: ${fmtDate(planned.date)} ${planned.startTime}">🗓️ ${planned.date===todayStr()?'':fmtDate(planned.date)+' '}${planned.startTime}</button>`:'',
     t.done?'':`<span class="xp-tag">+${shownXp} XP</span>`,
   ].filter(Boolean).join(' ');
   const it=el(`<div class="item task-item" data-prio="${t.done?'':escapeHtml(t.priority||'')}">
@@ -2265,6 +2774,7 @@ function taskItem(t){
   };
   it.querySelector('.editBtn').onclick=()=>openTaskEditForm(t);
   const lg=it.querySelector('.linkGoal'); if(lg) lg.onclick=(ev)=>{ev.stopPropagation();searchNavigate('goal',linkedGoal);};
+  const pl=it.querySelector('.planLink'); if(pl) pl.onclick=(ev)=>{ ev.stopPropagation(); uiOpenPlanner(planned.date); };
   it.querySelector('.delbtn').onclick=()=>{S.tasks=S.tasks.filter(x=>x.id!==t.id);scheduleSave();render();};
   return it;
 }
@@ -2289,6 +2799,7 @@ function openTaskEditForm(t){
     <label>Goal</label><select id="f_goal">${goalOptions(t.goalId)}</select>
     <label>XP reward</label><input type="number" id="f_xp" min="0" value="${t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10)}">
     <button class="btn" id="f_save">Save Changes</button>
+    ${uiTaskPlanBlock(t)}
   </div>`);
   inner.querySelector('#f_cat').value=t.category||'';
   inner.querySelector('#f_pri').value=t.priority||'Medium';
@@ -2300,6 +2811,9 @@ function openTaskEditForm(t){
     t.xpReward=parseFloat(inner.querySelector('#f_xp').value)||0;
     scheduleSave();closeSheets();render();toast('Task updated');
   };
+  // Phase 10: schedule this task in the planner (creates a linked block; the task is not changed).
+  inner.querySelector('#f_plan').onclick=()=>{ closeSheets(); openPlannerForm(null,{taskId:t.id,title:t.title,category:t.category,date:t.dueDate&&t.dueDate>=todayStr()?t.dueDate:todayStr()}); };
+  inner.querySelectorAll('[data-plan-day]').forEach(b=>b.onclick=()=>{ closeSheets(); uiOpenPlanner(b.dataset.planDay); });
   openSheet(inner);
 }
 
@@ -3102,6 +3616,7 @@ function renderMore(){
     {v:'car',ic:'🚗',label:'Car'},
     {v:'subscriptions',ic:'💳',label:'Subscriptions'},
     {v:'calendar',ic:'📅',label:'Calendar'},
+    {v:'planner',ic:'🗓️',label:'Planner'},
     {v:'quests',ic:'📜',label:'Quests'},
     {v:'statistics',ic:'📊',label:'Statistics'},
     {v:'search',ic:'🔎',label:'Search'},
@@ -3110,7 +3625,7 @@ function renderMore(){
     {v:'settings',ic:'⚙️',label:'Settings'},
   ];
   // Phase 8B: same 15 destinations, grouped into sections.
-  const groups=[['productivity',['goals','calendar','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
+  const groups=[['productivity',['planner','calendar','goals','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
     ['money',['finance','subscriptions']],['life',['car']],['system',['statistics','character','settings']]];
   const g=wrap.querySelector('#moreGrid');
   groups.forEach(([gk,keys])=>{
@@ -3118,7 +3633,7 @@ function renderMore(){
     const grid=sec.querySelector('.more-grid');
     keys.map(k=>items.find(it=>it.v===k)).forEach(it=>{
       const b=el(`<button class="qopt" data-v="${it.v}"><span class="ic" aria-hidden="true">${it.ic}</span>${uiT('m_'+it.v)||it.label}</button>`);
-      b.onclick=()=>{view=it.v;render();window.scrollTo(0,0);};
+      b.onclick=()=>{ if(it.v==='planner') uiPlannerDay=todayStr(); view=it.v;render();window.scrollTo(0,0);};
       grid.appendChild(b);
     });
     g.appendChild(sec);
@@ -3287,54 +3802,1302 @@ function openFinanceForm(kind,existing){
 }
 
 /* ---- Fitness module ---- */
-function workoutVolume(w){ return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0),0); }
-function workoutTotalSets(w){ return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0),0); }
-function workoutTotalReps(w){ return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0),0); }
+/* ---- Phase 11A: active workout model. The one workout history stays S.workouts[]: a started
+   workout is a normal record there with status:'active', and becomes status:'done' on Finish.
+   Old records have no status and count as done (never rewritten). Everything that treats a
+   workout as absolved (quests, achievements, Daily Score, Home, Statistics, PRs, history,
+   search) reads through isCompletedWorkout()/completedWorkouts() -- one shared rule.
+   New records keep exercises:[] and store the detail in entries[]:
+     entry {id,exerciseId,name,measurement,target:{sets,repsMin,repsMax,weight,seconds,distance,rest}|null,
+            notes,sets:[{id,weight,reps,seconds,distance,rpe,warmup,done}]}
+   name/measurement/target are copies taken at start, so editing or deleting the library
+   exercise or the template later never rewrites history. ---- */
+function isCompletedWorkout(w){ return !!w&&w.status!=='active'; }
+function completedWorkouts(s){ return ((s||S).workouts||[]).filter(isCompletedWorkout); }
+function activeWorkout(){ return (S.workouts||[]).find(w=>w.status==='active')||null; }
+function workoutWorkingSets(en){ return ((en&&en.sets)||[]).filter(st=>st.done&&!st.warmup); }
+function workoutNewSet(target,o){
+  const t=target||{};
+  return Object.assign({id:uid(),weight:t.weight!=null?t.weight:null,reps:t.repsMin!=null?t.repsMin:null,seconds:t.seconds!=null?t.seconds:null,
+    distance:t.distance!=null?t.distance:null,rpe:null,warmup:false,done:false},o||{});
+}
+function workoutNewEntry(exerciseId,target){
+  const x=exerciseFind(exerciseId); if(!x) return null;
+  const tg=target?{sets:target.sets,repsMin:target.repsMin,repsMax:target.repsMax,weight:target.weight,seconds:target.seconds,distance:target.distance,rest:target.rest}:null;
+  const n=tg&&Number(tg.sets)>0?Number(tg.sets):1;
+  return {id:uid(),exerciseId:x.id,name:x.name,measurement:x.measurement,target:tg,notes:'',sets:Array.from({length:n},()=>workoutNewSet(tg))};
+}
+function workoutStart(opts){
+  // At most one active workout: starting again (e.g. after leaving the screen) resumes it.
+  const o=opts||{};
+  const cur=activeWorkout();
+  if(cur) return {ok:false,reason:'active_exists',workout:cur};
+  const t=o.templateId?templateFind(o.templateId):null;
+  const cs=uiLang()==='cs';
+  const w={id:uid(),name:String(o.name||(t&&t.name)||(cs?'Trénink':'Workout')).trim(),date:o.date||todayStr(),status:'active',
+    startedAt:Date.now(),finishedAt:null,templateId:t?t.id:'',plannerBlockId:o.plannerBlockId||'',duration:'',notes:'',exercises:[],
+    entries:t?t.exercises.map(te=>workoutNewEntry(te.exerciseId,te)).filter(Boolean):[],createdAt:Date.now()};
+  // the plan as it was at Start (Performance still counts a planned exercise removed from the workout)
+  w.plan=w.entries.filter(en=>en.target).map(en=>({exerciseId:en.exerciseId,name:en.name,measurement:en.measurement,target:en.target}));
+  S.workouts.push(w);
+  return {ok:true,workout:w};
+}
+function workoutFindById(id){ return (S.workouts||[]).find(w=>w.id===id)||null; }
+function workoutAddEntry(wid,exerciseId){
+  const w=workoutFindById(wid); if(!w||!Array.isArray(w.entries)) return null;
+  const en=workoutNewEntry(exerciseId,null); if(!en) return null;
+  w.entries.push(en); return en;
+}
+function workoutRemoveEntry(wid,entryId){
+  const w=workoutFindById(wid); if(!w||!Array.isArray(w.entries)) return false;
+  const n=w.entries.length; w.entries=w.entries.filter(en=>en.id!==entryId); return w.entries.length<n;
+}
+function workoutAddSet(wid,entryId,o){
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId); if(!en) return null;
+  const last=en.sets[en.sets.length-1];
+  const st=workoutNewSet(null,Object.assign(last?{weight:last.weight,reps:last.reps,seconds:last.seconds,distance:last.distance}:{},o||{}));
+  en.sets.push(st); return st;
+}
+function workoutRemoveSet(wid,entryId,setId){
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId); if(!en) return false;
+  const n=en.sets.length; en.sets=en.sets.filter(st=>st.id!==setId); return en.sets.length<n;
+}
+function workoutUpdateSet(wid,entryId,setId,patch){
+  // Only the set's own values; numbers are stored as numbers, empty as null.
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId); const st=en&&en.sets.find(s=>s.id===setId); if(!st) return null;
+  ['weight','reps','seconds','distance','rpe'].forEach(k=>{ if(patch&&k in patch){ const v=patch[k]; st[k]=v===''||v==null||!Number.isFinite(Number(v))?null:Number(v); } });
+  ['warmup','done'].forEach(k=>{ if(patch&&k in patch) st[k]=!!patch[k]; });
+  return st;
+}
+function workoutDiscard(wid){
+  // Throwing away an unfinished workout: nothing was granted for it, so nothing to undo.
+  const w=workoutFindById(wid); if(!w||w.status!=='active') return false;
+  S.workouts=S.workouts.filter(x=>x.id!==wid); return true;
+}
+/* ---- Phase 11A step 5: exercise history + PR engine (always derived from S.workouts, never cached).
+   Order: workouts are compared by when they happened -- date, then finishedAt/startedAt/createdAt,
+   then id -- never by their position in S.workouts (import/editing cannot reorder "previous").
+   Identity: new entries by exerciseId. Legacy exercises[] rows by exact normalized name
+   (exerciseKey: trim, single spaces, lowercase -- no fuzzy matching), resolved in this order:
+     1. a name the library exercise was renamed from (x.aliases),
+     2. the current name of a library exercise,
+     3. a name stored in new entries of exactly one exercise,
+     otherwise the name forms its own history group.
+   A legacy row "4 x 8 @ 80" reads as four working sets of 80 kg x 8 (the record is not rewritten).
+   Only finished workouts and only done, non-warm-up sets ever enter a history. ---- */
+function workoutChronoCmp(a,b){
+  const t=w=>Number(w.finishedAt||w.startedAt||w.createdAt||0);
+  return (a.date||'').localeCompare(b.date||'')||(t(a)-t(b))||String(a.id).localeCompare(String(b.id));
+}
+function prNum(v){ return v===''||v==null||!Number.isFinite(Number(v))?null:Number(v); }
+function exerciseHistoryIndex(){
+  const lib=S.exerciseLibrary||[];
+  const groups=new Map();
+  const ensure=(id,name,measurement)=>{ if(!groups.has(id)) groups.set(id,{id,name,measurement,sessions:[]}); return groups.get(id); };
+  lib.forEach(x=>ensure(x.id,x.name,x.measurement));
+  const ws=completedWorkouts(S).slice().sort(workoutChronoCmp);
+  // legacy-name ownership (see the header comment); a name claimed by two exercises at the same tier is skipped at that tier
+  const claim=(m,k,id)=>{ if(!k) return; if(!m.has(k)) m.set(k,id); else if(m.get(k)!==id) m.set(k,null); };
+  const byAlias=new Map(), byName=new Map(), byEntry=new Map();
+  lib.forEach(x=>(x.aliases||[]).forEach(k=>claim(byAlias,k,x.id)));
+  lib.filter(x=>!x.archived).forEach(x=>claim(byName,exerciseKey(x.name),x.id));
+  lib.filter(x=>x.archived).forEach(x=>{ const k=exerciseKey(x.name); if(!byName.has(k)) byName.set(k,x.id); });
+  ws.forEach(w=>(w.entries||[]).forEach(en=>{ if(en.exerciseId){ ensure(en.exerciseId,en.name,en.measurement); claim(byEntry,exerciseKey(en.name),en.exerciseId); } }));
+  const legacyOwner=(k,name)=>byAlias.get(k)||byName.get(k)||byEntry.get(k)||ensure('name:'+k,name,'weight_reps').id;
+  ws.forEach((w,order)=>{
+    const per=new Map();
+    const add=(gid,measurement,sets)=>{ if(!sets.length) return; const s=per.get(gid)||{measurement,sets:[]}; s.sets.push(...sets); per.set(gid,s); };
+    if(Array.isArray(w.entries)) w.entries.forEach(en=>{ if(en.exerciseId) add(en.exerciseId,en.measurement,workoutWorkingSets(en).map(s=>({weight:prNum(s.weight),reps:prNum(s.reps),seconds:prNum(s.seconds),distance:prNum(s.distance),rpe:prNum(s.rpe)}))); });
+    else (w.exercises||[]).forEach(ex=>{
+      const name=String(ex.name||'').trim().replace(/\s+/g,' '), k=exerciseKey(name), n=Math.max(0,Math.floor(Number(ex.sets)||0));
+      if(!k||!n) return;
+      add(legacyOwner(k,name),'weight_reps',Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null,rpe:prNum(ex.rpe)})));
+    });
+    per.forEach((v,gid)=>groups.get(gid).sessions.push({workoutId:w.id,date:w.date,order,measurement:v.measurement,sets:v.sets}));
+  });
+  groups.legacyOwner=legacyOwner;
+  return groups;
+}
+function exerciseHistoryGroup(idx,exerciseId,name){
+  if(exerciseId&&idx.has(exerciseId)) return idx.get(exerciseId);
+  const k=exerciseKey(name); if(!k) return null;
+  const gid=idx.legacyOwner(k,String(name).trim()); return idx.get(gid)||null;
+}
+function exerciseSessionPRs(measurement,cur,prior){
+  // cur: this session's working sets; prior: working sets of every EARLIER session with the same
+  // measurement. No prior sets -> first performance -> no PR. At most one (the best) PR per type.
+  const out=[];
+  const best=(arr,cmp)=>arr.slice().sort(cmp)[0];
+  if(measurement==='weight_reps'){
+    const P=prior.filter(p=>p.reps>=1&&p.weight!=null), C=cur.filter(c=>c.reps>=1&&c.weight!=null);
+    if(!P.length||!C.length) return out;
+    const maxW=Math.max(...P.map(p=>p.weight));
+    const heavy=(a,b)=>b.weight-a.weight||b.reps-a.reps;
+    const w=best(C.filter(c=>c.weight>maxW),heavy);
+    if(w) out.push({type:'weight',weight:w.weight,reps:w.reps,prevWeight:maxW});
+    // more reps at a weight already lifted before (a heavier-than-ever set is the weight PR above)
+    const r=best(C.filter(c=>c.weight<=maxW&&!P.some(p=>p.weight>=c.weight&&p.reps>=c.reps)),heavy);
+    if(r) out.push({type:'reps',weight:r.weight,reps:r.reps,prevReps:Math.max(...P.filter(p=>p.weight>=r.weight).map(p=>p.reps))});
+  } else if(measurement==='reps'){
+    const P=prior.filter(p=>p.reps>=1), C=cur.filter(c=>c.reps>=1);
+    if(!P.length||!C.length) return out;
+    const maxR=Math.max(...P.map(p=>p.reps)), c=Math.max(...C.map(x=>x.reps));
+    if(c>maxR) out.push({type:'reps',reps:c,prevReps:maxR});
+  } else if(measurement==='time'){
+    const P=prior.filter(p=>p.seconds>0), C=cur.filter(c=>c.seconds>0);
+    if(!P.length||!C.length) return out;
+    const maxS=Math.max(...P.map(p=>p.seconds)), c=Math.max(...C.map(x=>x.seconds));
+    if(c>maxS) out.push({type:'time',seconds:c,prevSeconds:maxS});
+  } else if(measurement==='distance_time'){
+    const P=prior.filter(p=>p.distance>0), C=cur.filter(c=>c.distance>0);
+    if(P.length&&C.length){
+      const maxD=Math.max(...P.map(p=>p.distance));
+      const d=best(C.filter(c=>c.distance>maxD),(a,b)=>b.distance-a.distance||(a.seconds||Infinity)-(b.seconds||Infinity));
+      if(d) out.push({type:'distance',distance:d.distance,seconds:d.seconds,prevDistance:maxD});
+      // pace: covered at least as far as before, faster than every earlier effort of >= that distance
+      const P2=P.filter(p=>p.seconds>0), C2=C.filter(c=>c.seconds>0&&c.distance<=maxD);
+      const pc=best(C2.filter(c=>P2.some(p=>p.distance>=c.distance)&&!P2.some(p=>p.distance>=c.distance&&p.seconds<=c.seconds)),(a,b)=>a.seconds/a.distance-b.seconds/b.distance);
+      if(pc) out.push({type:'pace',distance:pc.distance,seconds:pc.seconds,prevSeconds:Math.min(...P2.filter(p=>p.distance>=pc.distance).map(p=>p.seconds))});
+    }
+  }
+  return out;
+}
+function exerciseGroupPRs(g){
+  // every PR event of one exercise, oldest first
+  const ev=[];
+  g.sessions.forEach((s,i)=>{
+    const prior=g.sessions.slice(0,i).filter(p=>p.measurement===s.measurement).flatMap(p=>p.sets);
+    exerciseSessionPRs(s.measurement,s.sets,prior).forEach(pr=>ev.push(Object.assign({exerciseId:g.id,name:g.name,measurement:s.measurement,date:s.date,workoutId:s.workoutId},pr)));
+  });
+  return ev;
+}
+function workoutPRs(w,idx){
+  // PRs of one finished workout against the CURRENT history (dynamic). The snapshot taken at
+  // Finish lives in w.result.prs and is never rewritten.
+  if(!w||!isCompletedWorkout(w)) return [];
+  idx=idx||exerciseHistoryIndex();
+  const out=[];
+  idx.forEach(g=>exerciseGroupPRs(g).forEach(e=>{ if(e.workoutId===w.id) out.push(e); }));
+  return out;
+}
 function exercisePRs(){
-  // Always computed fresh from S.workouts — never a stored/cached flag — so editing or
-  // deleting a workout automatically recomputes the correct PR, with no stale-PR risk.
-  const prs={};
-  S.workouts.forEach(w=>(w.exercises||[]).forEach(ex=>{
-    const name=(ex.name||'').trim(); if(!name) return;
-    const weight=Number(ex.weight)||0;
-    if(!prs[name]||weight>prs[name].weight) prs[name]={weight,reps:Number(ex.reps)||0,date:w.date,name};
+  // Current records for the Fitness strip / Statistics: per exercise and PR type, the latest PR
+  // event in the history (a first performance is never a record). Newest first.
+  const out=[];
+  exerciseHistoryIndex().forEach(g=>{
+    const latest={}; exerciseGroupPRs(g).forEach(e=>{ latest[e.type]=e; });
+    Object.values(latest).forEach(e=>out.push(e));
+  });
+  return out.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.name.localeCompare(b.name));
+}
+function exerciseSessionMetrics(measurement,sets){
+  // work + best set by measurement: weight_reps sum(kg x reps) / heaviest; reps sum / max;
+  // time sum seconds / longest; distance_time sum km (+ sum seconds) / longest.
+  const S0=sets||[], sum=f=>S0.reduce((a,s)=>a+(Number(s[f])||0),0);
+  if(measurement==='weight_reps') return {work:S0.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0),best:S0.slice().sort((a,b)=>(b.weight||0)-(a.weight||0)||(b.reps||0)-(a.reps||0))[0]||null};
+  if(measurement==='reps') return {work:sum('reps'),best:S0.slice().sort((a,b)=>(b.reps||0)-(a.reps||0))[0]||null};
+  if(measurement==='time') return {work:sum('seconds'),best:S0.slice().sort((a,b)=>(b.seconds||0)-(a.seconds||0))[0]||null};
+  return {work:sum('distance'),seconds:sum('seconds'),best:S0.slice().sort((a,b)=>(b.distance||0)-(a.distance||0))[0]||null};
+}
+function exerciseHistoryBefore(exerciseId,name,w,idx){
+  // The previous relevant session of an exercise for workout w (or the latest one when w is not
+  // finished yet): its working sets, best set and work, by the session's measurement.
+  idx=idx||exerciseHistoryIndex();
+  const g=exerciseHistoryGroup(idx,exerciseId,name); if(!g) return null;
+  const mine=w?g.sessions.find(s=>s.workoutId===w.id):null;
+  const before=mine?g.sessions.filter(s=>s.order<mine.order):g.sessions.filter(s=>!w||s.workoutId!==w.id);
+  const prev=before[before.length-1]; if(!prev) return null;
+  const m=exerciseSessionMetrics(prev.measurement,prev.sets);
+  return {workoutId:prev.workoutId,date:prev.date,measurement:prev.measurement,sets:prev.sets,best:m.best,work:m.work,seconds:m.seconds};
+}
+/* ---- Phase 11A step 6: progressive overload suggestion (a proposal only). Inputs: the entry's
+   plan copy (target), the exercise's progression step, and the working sets of the previous
+   finished session (warm-ups never; historical RPE when present). Never uses feeling,
+   Performance, Muscle XP or Character XP. Applying it only prefills unfinished working sets of
+   the current workout (workoutApplySuggestion) -- templates and history are never touched.
+   Rules (weight_reps with a template rep range repsMin..repsMax), on the sets at last time's top weight W:
+     below:    every set < repsMin            -> repeat W with last reps (neutral wording)
+     hold:     any set RPE >= 9.5             -> repeat W with last reps (no weight increase)
+     increase: every set >= repsMax           -> W + step, repsMin
+     reps:     otherwise                      -> W, +1 rep on the weakest set (capped at repsMax)
+   weight_reps without a range (no template): W, +1 rep on the weakest set (RPE >= 9.5 -> hold).
+   reps: +1 rep on the weakest set.  time: + step seconds on the weakest set.
+   No history: the plan itself (kind 'plan') when there is one.  distance_time: none. ---- */
+const SUGGEST_RPE_HOLD=9.5;
+function exerciseSuggestion(en,w,idx){
+  if(!en||en.measurement==='distance_time') return null;
+  const t=en.target||null;
+  const lib=(S.exerciseLibrary||[]).find(x=>x.id===en.exerciseId);
+  const step=Number(lib&&lib.increment)>0?Number(lib.increment):MEASUREMENT_DEFAULT_INCREMENT[en.measurement];
+  const h=exerciseHistoryBefore(en.exerciseId,en.name,w,idx);
+  const last=h&&h.measurement===en.measurement?h.sets:null;
+  const nWork=(en.sets||[]).filter(s=>!s.warmup).length;
+  const n=nWork||(t&&Number(t.sets))||(last?last.length:0)||1;
+  const fromLast=f=>Array.from({length:n},(_,i)=>last[Math.min(i,last.length-1)][f]);
+  const bumpWeakest=(arr,by,cap)=>{
+    const out=arr.slice(); let k=-1;
+    out.forEach((v,i)=>{ if((cap==null||v<cap)&&(k<0||v<out[k])) k=i; });
+    if(k>=0) out[k]=cap==null?out[k]+by:Math.min(cap,out[k]+by);
+    return {values:out,changed:k>=0};
+  };
+  const base={exerciseId:en.exerciseId,measurement:en.measurement,step,basisWorkoutId:h?h.workoutId:null};
+  if(!last){
+    if(!t) return null;
+    if(en.measurement==='time'&&t.seconds!=null) return Object.assign(base,{kind:'plan',sets:Array.from({length:n},()=>({seconds:t.seconds}))});
+    if((en.measurement==='weight_reps'||en.measurement==='reps')&&t.repsMin!=null)
+      return Object.assign(base,{kind:'plan',sets:Array.from({length:n},()=>en.measurement==='reps'?{reps:t.repsMin}:{weight:t.weight,reps:t.repsMin})});
+    return null;
+  }
+  if(en.measurement==='reps'){
+    const r=bumpWeakest(fromLast('reps').map(v=>Number(v)||0),1,null);
+    return Object.assign(base,{kind:'reps',sets:r.values.map(v=>({reps:v}))});
+  }
+  if(en.measurement==='time'){
+    const r=bumpWeakest(fromLast('seconds').map(v=>Number(v)||0),step,null);
+    return Object.assign(base,{kind:'time',sets:r.values.map(v=>({seconds:v}))});
+  }
+  // weight_reps: judge the sets done at last time's top weight
+  const W=Math.max(...last.map(s=>Number(s.weight)||0));
+  const top=last.filter(s=>(Number(s.weight)||0)===W);
+  const reps=Array.from({length:n},(_,i)=>Number(top[Math.min(i,top.length-1)].reps)||0);
+  const rpeHigh=top.some(s=>s.rpe!=null&&s.rpe>=SUGGEST_RPE_HOLD);
+  const ranged=t&&t.repsMin!=null&&t.repsMax!=null;
+  const same=kind=>Object.assign(base,{kind,weight:W,sets:reps.map(r=>({weight:W,reps:r}))});
+  if(ranged&&top.every(s=>(Number(s.reps)||0)<t.repsMin)) return same('below');
+  if(rpeHigh) return same('hold');
+  if(ranged&&top.every(s=>(Number(s.reps)||0)>=t.repsMax)){
+    const nw=Math.round((W+step)*1000)/1000;
+    return Object.assign(base,{kind:'increase',weight:nw,prevWeight:W,sets:Array.from({length:n},()=>({weight:nw,reps:t.repsMin}))});
+  }
+  const r=bumpWeakest(reps,1,ranged?t.repsMax:null);
+  return Object.assign(base,{kind:ranged?'reps':'baseline',weight:W,sets:r.values.map(v=>({weight:W,reps:v}))});
+}
+function workoutApplySuggestion(wid,entryId,sug){
+  // Prefill only this workout's unfinished working sets (done sets and warm-ups are kept);
+  // missing working sets are added. No XP, no template or history change.
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId);
+  if(!en||!sug||!Array.isArray(sug.sets)) return false;
+  let work=en.sets.filter(s=>!s.warmup);
+  while(work.length<sug.sets.length){ en.sets.push(workoutNewSet(null)); work=en.sets.filter(s=>!s.warmup); }
+  sug.sets.forEach((v,i)=>{ const st=work[i]; if(!st||st.done) return; ['weight','reps','seconds'].forEach(f=>{ if(f in v) st[f]=v[f]==null?null:Number(v[f]); }); });
+  return true;
+}
+function exerciseLastPerformance(exerciseId,name,excludeWorkoutId){
+  const h=exerciseHistoryBefore(exerciseId,name,excludeWorkoutId?{id:excludeWorkoutId}:null);
+  return h?{date:h.date,workoutId:h.workoutId,measurement:h.measurement,sets:h.sets}:null;
+}
+/* ---- Phase 11A step 7: Workout Performance (a snapshot stored at Finish in w.result.performance;
+   never recomputed after edits) and Feeling (separate; never part of any score).
+   score = min(100, round(100 * sum(weight_i * part_i) / sum(weight_i) + prBonus)) over AVAILABLE parts
+     plan   (40): sum over planned exercises of min(done working sets, planned sets) / sum of planned sets
+     target (35): mean over done working sets of planned exercises of the per-set factor
+                  weight_reps min(1,reps/repsMin) x min(1,kg/targetKg) (only the factors that have a target),
+                  reps min(1,reps/repsMin), time min(1,s/targetS), distance_time min(1,km/targetKm)
+     prev   (25): mean over exercises done now AND having an earlier session of the per-exercise score
+                  f(change): > +0.5 % -> 1, within +-0.5 % -> 0.85, drop -> max(0.2, 0.85 - 3 x drop)
+                  change of total work: weight_reps sum(kg x reps) (sum reps if both are 0 kg), reps sum,
+                  time sum s, distance_time sum km (pace when the distance is equal)
+     prBonus: +5 per PR in result.prs, max +10
+   A part without data is N/A and its weight is shared by the others. The plan is the template copy
+   taken at Start (w.plan; older active records: entries with a target); without a template, the
+   latest earlier finished workout with the same name (exerciseKey) is the implicit plan -- its done
+   working sets per exercise are both the planned count and the per-set targets. No plan -> no score. ---- */
+const PERFORMANCE_WEIGHTS={plan:40,target:35,prev:25};
+const FEELINGS=['bad','normal','good','great'];
+function performanceLabelKey(score){ return score==null?null:score>=95?'excellent':score>=85?'good':score>=70?'fair':'weak'; }
+function performanceCompareScore(ch){ return ch>0.005?1:ch>=-0.005?0.85:Math.max(0.2,0.85-3*(-ch)); }
+function performanceChange(measurement,cur,prev){
+  const sum=(a,f)=>a.reduce((x,s)=>x+(Number(s[f])||0),0);
+  const ratio=(c,p)=>p>0?c/p-1:(c>0?1:0);
+  if(measurement==='weight_reps'){
+    const cw=exerciseSessionMetrics('weight_reps',cur).work, pw=exerciseSessionMetrics('weight_reps',prev).work;
+    return pw>0||cw>0?ratio(cw,pw):ratio(sum(cur,'reps'),sum(prev,'reps'));
+  }
+  if(measurement==='reps') return ratio(sum(cur,'reps'),sum(prev,'reps'));
+  if(measurement==='time') return ratio(sum(cur,'seconds'),sum(prev,'seconds'));
+  const cd=sum(cur,'distance'), pd=sum(prev,'distance'), ch=ratio(cd,pd);
+  if(Math.abs(ch)<=0.005){ const cs=sum(cur,'seconds'), ps=sum(prev,'seconds'); if(cs>0&&ps>0) return ps/cs-1; } // same distance: faster = better
+  return ch;
+}
+function workoutPlanItems(w,idx){
+  // [{gid, measurement, sets (planned count), targets:[per-set target] | target}] + source
+  const gidOf=(eid,name)=>{ const g=exerciseHistoryGroup(idx,eid,name); return g?g.id:(eid||'name:'+exerciseKey(name)); };
+  const tpl=Array.isArray(w.plan)&&w.plan.length?w.plan:(w.entries||[]).filter(en=>en.target).map(en=>({exerciseId:en.exerciseId,name:en.name,measurement:en.measurement,target:en.target}));
+  if(tpl.length) return {source:'template',workoutId:null,items:tpl.map(p=>({gid:gidOf(p.exerciseId,p.name),measurement:p.measurement,sets:Number(p.target&&p.target.sets)||0,target:p.target}))};
+  const k=exerciseKey(w.name);
+  const prev=completedWorkouts(S).filter(x=>x.id!==w.id&&exerciseKey(x.name)===k&&workoutChronoCmp(x,w)<0).sort(workoutChronoCmp).pop();
+  if(!prev) return {source:null,workoutId:null,items:[]};
+  const per=new Map();
+  const add=(gid,measurement,sets)=>{ if(!sets.length) return; const it=per.get(gid)||{gid,measurement,targets:[]}; it.targets.push(...sets); per.set(gid,it); };
+  if(Array.isArray(prev.entries)) prev.entries.forEach(en=>add(gidOf(en.exerciseId,en.name),en.measurement,workoutWorkingSets(en).map(s=>({weight:prNum(s.weight),reps:prNum(s.reps),seconds:prNum(s.seconds),distance:prNum(s.distance)}))));
+  else (prev.exercises||[]).forEach(ex=>{ const n=Math.max(0,Math.floor(Number(ex.sets)||0)); if(n&&exerciseKey(ex.name)) add(gidOf(null,ex.name),'weight_reps',Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null}))); });
+  return {source:'previous',workoutId:prev.id,items:[...per.values()].map(it=>Object.assign(it,{sets:it.targets.length}))};
+}
+function performanceSetFactor(measurement,st,t){
+  // null = this set has no target to be judged against (N/A, not 0)
+  if(!t) return null;
+  const f=[];
+  const tr=t.repsMin!=null?t.repsMin:t.reps;
+  if(measurement==='weight_reps'){
+    if(tr>0) f.push(Math.min(1,(Number(st.reps)||0)/tr));
+    if(t.weight>0) f.push(Math.min(1,(Number(st.weight)||0)/t.weight));
+  } else if(measurement==='reps'){ if(tr>0) f.push(Math.min(1,(Number(st.reps)||0)/tr)); }
+  else if(measurement==='time'){ if(t.seconds>0) f.push(Math.min(1,(Number(st.seconds)||0)/t.seconds)); }
+  else if(t.distance>0) f.push(Math.min(1,(Number(st.distance)||0)/t.distance));
+  return f.length?f.reduce((a,b)=>a*b,1):null;
+}
+function workoutPerformance(w,idx){
+  idx=idx||exerciseHistoryIndex();
+  const plan=workoutPlanItems(w,idx);
+  if(!plan.items.length) return {score:null,label:null,parts:{plan:null,target:null,prev:null},prBonus:0,planSource:null,planWorkoutId:null};
+  // this workout's done working sets per exercise group
+  const cur=new Map();
+  (w.entries||[]).forEach(en=>{ const g=exerciseHistoryGroup(idx,en.exerciseId,en.name); const gid=g?g.id:en.exerciseId; const ws=workoutWorkingSets(en);
+    const it=cur.get(gid)||{measurement:en.measurement,exerciseId:en.exerciseId,name:en.name,sets:[]}; it.sets.push(...ws); cur.set(gid,it); });
+  const plannedSets=plan.items.reduce((a,it)=>a+it.sets,0);
+  const planPart=plannedSets?plan.items.reduce((a,it)=>a+Math.min(it.sets,((cur.get(it.gid)||{}).sets||[]).length),0)/plannedSets:null;
+  const factors=[];
+  plan.items.forEach(it=>{ const c=cur.get(it.gid); if(!c) return;
+    c.sets.forEach((st,i)=>{ const t=it.targets?it.targets[Math.min(i,it.targets.length-1)]:it.target; const f=performanceSetFactor(it.measurement,st,t); if(f!=null) factors.push(f); }); });
+  const targetPart=factors.length?factors.reduce((a,b)=>a+b,0)/factors.length:null;
+  const cmp=[];
+  cur.forEach(c=>{ if(!c.sets.length) return; const h=exerciseHistoryBefore(c.exerciseId,c.name,w,idx); if(!h||h.measurement!==c.measurement) return;
+    cmp.push(performanceCompareScore(performanceChange(c.measurement,c.sets,h.sets))); });
+  const prevPart=cmp.length?cmp.reduce((a,b)=>a+b,0)/cmp.length:null;
+  const parts={plan:planPart,target:targetPart,prev:prevPart};
+  const keys=Object.keys(parts).filter(k=>parts[k]!=null);
+  const prs=(w.result&&Array.isArray(w.result.prs))?w.result.prs.length:workoutPRs(w,idx).length;
+  const prBonus=Math.min(10,5*prs);
+  const base=100*keys.reduce((a,k)=>a+PERFORMANCE_WEIGHTS[k]*parts[k],0)/keys.reduce((a,k)=>a+PERFORMANCE_WEIGHTS[k],0);
+  const score=Math.min(100,Math.round(base+prBonus));
+  const pct=v=>v==null?null:Math.round(v*100);
+  return {score,label:performanceLabelKey(score),parts:{plan:pct(planPart),target:pct(targetPart),prev:pct(prevPart)},prBonus,planSource:plan.source,planWorkoutId:plan.workoutId};
+}
+function workoutSetFeeling(wid,feeling){
+  // Optional, changeable any time; stored with the result, never read by any calculation.
+  const w=workoutFindById(wid); if(!w||!isCompletedWorkout(w)) return false;
+  if(feeling!=null&&!FEELINGS.includes(feeling)) return false;
+  w.result=Object.assign({},w.result,{feeling:feeling||null});
+  return true;
+}
+/* ---- Phase 11A step 8: Muscle XP -- a parallel system, never read by Character XP, levels, RPG,
+   quests, achievements, Daily Score, PRs or Performance.
+   S.muscleProgress.log[] {key:'muscle:<workoutId>:<exerciseId>', workoutId, exerciseId, date, units,
+   baseXp, prXp, xp:{Group:granted}, ts} -- one record per exercise and finished workout; totals and
+   levels are always derived from it. A key that exists is never paid again (reload, render, edit,
+   export/import); deleting a workout keeps its records (no refund).
+   Per exercise and workout (all its entries together, done working sets only):
+     units: weight_reps/reps 1 per set; time/distance_time floor(sum seconds / 60); max 6
+     xp    = units x 10 + (15 if result.prs has a PR of this exercise and units >= 1, once)
+   split by the entry's muscle snapshot (en.muscles, copied from the library at Finish) with
+   largest-remainder rounding, then capped at 150 per muscle per workout date across all
+   workouts of that day. Legacy exercises[]-only workouts have no exerciseId -> never paid. ---- */
+const MUSCLE_XP_PER_UNIT=10, MUSCLE_XP_PR=15, MUSCLE_MAX_UNITS=6, MUSCLE_DAILY_CAP=150;
+function muscleUnits(measurement,sets){
+  if(measurement==='time'||measurement==='distance_time') return Math.min(MUSCLE_MAX_UNITS,Math.floor(sets.reduce((a,s)=>a+(Number(s.seconds)||0),0)/60));
+  return Math.min(MUSCLE_MAX_UNITS,sets.length);
+}
+function muscleSplit(total,muscles){
+  // integer split of `total` by percentage; the leftover points go to the largest fractional
+  // parts (ties: MUSCLE_GROUPS order), so the parts always add up to exactly `total`
+  const m=normalizeMuscles(muscles), gs=MUSCLE_GROUPS.filter(g=>m[g]);
+  if(!total||!gs.length) return {};
+  const raw=gs.map(g=>total*m[g]/100), out=raw.map(Math.floor);
+  let rest=total-out.reduce((a,b)=>a+b,0);
+  raw.map((v,i)=>[i,v-Math.floor(v)]).sort((a,b)=>b[1]-a[1]||a[0]-b[0]).forEach(([i])=>{ if(rest>0){ out[i]++; rest--; } });
+  return Object.fromEntries(gs.map((g,i)=>[g,out[i]]).filter(([,v])=>v>0));
+}
+function muscleSnapshot(w,st){
+  // copy the library mapping into every entry that has none yet (the historical mapping)
+  const lib=(st||S).exerciseLibrary||[];
+  (w.entries||[]).forEach(en=>{ if(!en.muscles){ const x=lib.find(r=>r.id===en.exerciseId); en.muscles=normalizeMuscles(x?x.muscles:{}); } });
+}
+function muscleAwardWorkout(w,st){
+  st=st||S;
+  if(!w||!isCompletedWorkout(w)||!Array.isArray(w.entries)) return [];
+  st.muscleProgress=st.muscleProgress||{log:[]}; const log=st.muscleProgress.log=st.muscleProgress.log||[];
+  muscleSnapshot(w,st);
+  const per=new Map(); // exerciseId -> {measurement, muscles, sets} in entry order
+  w.entries.forEach(en=>{ if(!en.exerciseId) return; const it=per.get(en.exerciseId)||{measurement:en.measurement,muscles:en.muscles,sets:[]}; it.sets.push(...workoutWorkingSets(en)); per.set(en.exerciseId,it); });
+  const prIds=new Set(((w.result&&w.result.prs)||[]).map(p=>p.exerciseId));
+  const used={}; log.filter(r=>r.date===w.date).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ used[g]=(used[g]||0)+v; }));
+  const added=[];
+  per.forEach((it,eid)=>{
+    const key=`muscle:${w.id}:${eid}`; if(log.some(r=>r.key===key)) return;
+    // the PR bonus needs real counted work: 0 units -> no base XP and no PR XP
+    const units=muscleUnits(it.measurement,it.sets), baseXp=units*MUSCLE_XP_PER_UNIT, prXp=units>0&&prIds.has(eid)?MUSCLE_XP_PR:0;
+    const xp={};
+    Object.entries(muscleSplit(baseXp+prXp,it.muscles)).forEach(([g,v])=>{ const room=Math.max(0,MUSCLE_DAILY_CAP-(used[g]||0)); const got=Math.min(v,room); if(got>0){ xp[g]=got; used[g]=(used[g]||0)+got; } });
+    const rec={key,workoutId:w.id,exerciseId:eid,date:w.date,units,baseXp,prXp,xp,ts:Date.now()};
+    log.push(rec); added.push(rec);
+  });
+  return added;
+}
+function muscleRecover(st){
+  // finished new-model workouts without their log records (e.g. finished before Muscle XP existed,
+  // or a crash between Finish and save): award once, in date / finish order
+  const done=completedWorkouts(st).filter(w=>Array.isArray(w.entries)).sort(workoutChronoCmp);
+  done.forEach(w=>muscleAwardWorkout(w,st));
+}
+function muscleTotals(st){
+  const t={}; ((st||S).muscleProgress&&(st||S).muscleProgress.log||[]).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ t[g]=(t[g]||0)+v; })); return t;
+}
+function muscleXpNeed(level){ return Math.round(100*Math.pow(level,1.2)); }
+function muscleLevelFromXp(xp){
+  // level 1 starts at 0 XP; going from level n to n+1 costs round(100 x n^1.2)
+  let level=1, into=Math.max(0,Number(xp)||0);
+  while(into>=muscleXpNeed(level)){ into-=muscleXpNeed(level); level++; }
+  return {xp:Math.max(0,Number(xp)||0),level,into,need:muscleXpNeed(level)};
+}
+function muscleOverview(st){ const t=muscleTotals(st); return MUSCLE_GROUPS.map(g=>Object.assign({group:g},muscleLevelFromXp(t[g]||0))); }
+function workoutMuscleXp(wid,st){
+  const t={}; ((st||S).muscleProgress&&(st||S).muscleProgress.log||[]).filter(r=>r.workoutId===wid).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ t[g]=(t[g]||0)+v; })); return t;
+}
+function workoutFinish(wid){
+  // The moment a workout counts as done. The rewards below are exactly the ones the Log
+  // Workout form grants for a new workout (80 XP STR + 20 VIT + the Phase 5 skill bonus), behind
+  // the same idempotent workout:<id>:<date> ledger key -- so they can only ever be paid once.
+  const w=workoutFindById(wid); if(!w||w.status!=='active') return {ok:false};
+  w.status='done'; w.finishedAt=Date.now();
+  if(!w.duration) w.duration=String(Math.max(1,Math.round((w.finishedAt-(w.startedAt||w.finishedAt))/60000)));
+  // Snapshot of the PRs at the moment of finishing (never rewritten; current records stay dynamic).
+  const idx=exerciseHistoryIndex();
+  w.result=Object.assign({},w.result,{prs:workoutPRs(w,idx),at:w.finishedAt});
+  w.result.performance=workoutPerformance(w,idx);
+  // Muscle XP (parallel system): historical muscle snapshot + one idempotent log record per exercise
+  muscleAwardWorkout(w);
+  const key=`workout:${w.id}:${w.date}`;
+  const granted=grantXp(80,'Workout: '+w.name,'STR',key);
+  if(granted){
+    S.attrs.VIT=(S.attrs.VIT||0)+20;
+    applyWorkoutAttrSkillBonus(key);
+  }
+  checkAchievements();
+  return {ok:true,workout:w,granted:!!granted};
+}
+function workoutVolume(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+(en.measurement==='weight_reps'?workoutWorkingSets(en).reduce((b,st)=>b+(Number(st.weight)||0)*(Number(st.reps)||0),0):0),0);
+  return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0),0); }
+function workoutTotalSets(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+workoutWorkingSets(en).length,0);
+  return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0),0); }
+function workoutTotalReps(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+(en.measurement==='weight_reps'||en.measurement==='reps'?workoutWorkingSets(en).reduce((b,st)=>b+(Number(st.reps)||0),0):0),0);
+  return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0),0); }
+/* ---- Phase 11A: Fitness 2.0 -- exercise library + muscle groups ----
+   S.exerciseLibrary[] {id,name,measurement,muscles:{Group:pct},increment,notes,archived,source,createdAt,updatedAt}
+   - measurement: weight_reps | reps | time | distance_time (never assume every exercise uses kg)
+   - muscles: always stored normalized to a 100 % total over MUSCLE_GROUPS, or {} when unknown
+   - source: 'user' | 'preset' | 'history' (history = a bare name seeded from old workouts; no
+     muscle percentages are ever invented for it)
+   Old workouts keep their own exercises[] untouched; they relate to the library by name only. */
+const MUSCLE_GROUPS=['Chest','Back','Shoulders','Biceps','Triceps','Legs','Abs','Glutes','Forearms'];
+const MUSCLE_LABELS_CS={Chest:'Prsa',Back:'Záda',Shoulders:'Ramena',Biceps:'Biceps',Triceps:'Triceps',Legs:'Nohy',Abs:'Břicho',Glutes:'Hýždě',Forearms:'Předloktí'};
+const MEASUREMENTS=['weight_reps','reps','time','distance_time'];
+const MEASUREMENT_DEFAULT_INCREMENT={weight_reps:2.5,reps:1,time:5,distance_time:0};
+const EXERCISE_PRESETS=[
+  {name:'Bench Press',measurement:'weight_reps',muscles:{Chest:70,Triceps:20,Shoulders:10}},
+  {name:'Incline Dumbbell Press',measurement:'weight_reps',muscles:{Chest:60,Shoulders:25,Triceps:15}},
+  {name:'Overhead Press',measurement:'weight_reps',muscles:{Shoulders:65,Triceps:25,Abs:10}},
+  {name:'Lateral Raise',measurement:'weight_reps',muscles:{Shoulders:100},increment:1},
+  {name:'Dips',measurement:'reps',muscles:{Chest:45,Triceps:45,Shoulders:10}},
+  {name:'Push-up',measurement:'reps',muscles:{Chest:60,Triceps:25,Shoulders:15}},
+  {name:'Triceps Pushdown',measurement:'weight_reps',muscles:{Triceps:100}},
+  {name:'Pull-up',measurement:'reps',muscles:{Back:65,Biceps:25,Forearms:10}},
+  {name:'Barbell Row',measurement:'weight_reps',muscles:{Back:70,Biceps:20,Forearms:10}},
+  {name:'Lat Pulldown',measurement:'weight_reps',muscles:{Back:70,Biceps:25,Forearms:5}},
+  {name:'Biceps Curl',measurement:'weight_reps',muscles:{Biceps:85,Forearms:15},increment:1},
+  {name:'Deadlift',measurement:'weight_reps',muscles:{Back:35,Legs:30,Glutes:25,Forearms:10},increment:5},
+  {name:'Squat',measurement:'weight_reps',muscles:{Legs:65,Glutes:25,Abs:10}},
+  {name:'Leg Press',measurement:'weight_reps',muscles:{Legs:75,Glutes:25},increment:5},
+  {name:'Romanian Deadlift',measurement:'weight_reps',muscles:{Legs:45,Glutes:35,Back:20}},
+  {name:'Hip Thrust',measurement:'weight_reps',muscles:{Glutes:75,Legs:25},increment:5},
+  {name:'Lunge',measurement:'weight_reps',muscles:{Legs:60,Glutes:40}},
+  {name:'Crunch',measurement:'reps',muscles:{Abs:100}},
+  {name:'Plank',measurement:'time',muscles:{Abs:80,Shoulders:10,Glutes:10}},
+  {name:"Farmer's Walk",measurement:'time',muscles:{Forearms:50,Back:20,Legs:20,Abs:10}},
+  {name:'Running',measurement:'distance_time',muscles:{Legs:80,Glutes:20}},
+];
+function exerciseKey(name){ return String(name||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function normalizeMuscles(m){
+  // Keep only known groups with a positive finite share, then scale to exactly 100 using
+  // largest-remainder rounding (integers, stable MUSCLE_GROUPS order). Nothing known -> {}.
+  const src=m&&typeof m==='object'?m:{};
+  const vals=MUSCLE_GROUPS.map(g=>{ const v=Number(src[g]); return [g,Number.isFinite(v)&&v>0?v:0]; }).filter(([,v])=>v>0);
+  const sum=vals.reduce((a,[,v])=>a+v,0);
+  if(!sum) return {};
+  const raw=vals.map(([g,v])=>[g,v/sum*100]);
+  const out=raw.map(([g,v])=>[g,Math.floor(v)]);
+  let rest=100-out.reduce((a,[,v])=>a+v,0);
+  raw.map(([g,v],i)=>[i,v-Math.floor(v)]).sort((a,b)=>b[1]-a[1]||a[0]-b[0]).forEach(([i])=>{ if(rest>0){ out[i][1]++; rest--; } });
+  return Object.fromEntries(out.filter(([,v])=>v>0));
+}
+function migrateExercise(x){
+  const r=Object.assign({name:'',measurement:'weight_reps',muscles:{},increment:null,notes:'',archived:false,source:'user',aliases:[],createdAt:Date.now()},x);
+  if(!MEASUREMENTS.includes(r.measurement)) r.measurement='weight_reps';
+  r.muscles=normalizeMuscles(r.muscles);
+  if(r.increment==null||!Number.isFinite(Number(r.increment))||Number(r.increment)<0) r.increment=MEASUREMENT_DEFAULT_INCREMENT[r.measurement];
+  else r.increment=Number(r.increment);
+  if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function exerciseSeedFromHistory(workouts){
+  // Old backups: one library record per distinct exercise name found in the workout history.
+  // Only the name is taken over -- measurement is the legacy sets x reps x kg shape, muscles stay
+  // unknown ({}) and the history records themselves are never modified.
+  const seen=new Map();
+  [...(workouts||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(w=>(w.exercises||[]).forEach(ex=>{
+    const name=String(ex.name||'').trim().replace(/\s+/g,' '); const k=exerciseKey(name);
+    if(k&&!seen.has(k)) seen.set(k,name);
   }));
-  return Object.values(prs).sort((a,b)=>b.weight-a.weight);
+  return [...seen.values()].map(name=>migrateExercise({id:uid(),name,measurement:'weight_reps',source:'history'}));
+}
+function exerciseFind(idOrName){
+  const lib=S.exerciseLibrary||[];
+  return lib.find(x=>x.id===idOrName)||lib.find(x=>!x.archived&&exerciseKey(x.name)===exerciseKey(idOrName))||null;
+}
+function exerciseValidate(f,id){
+  const e={};
+  const name=String(f.name||'').trim();
+  if(!name) e.name='required';
+  else if((S.exerciseLibrary||[]).some(x=>x.id!==id&&!x.archived&&exerciseKey(x.name)===exerciseKey(name))) e.name='duplicate';
+  if(!MEASUREMENTS.includes(f.measurement)) e.measurement='invalid';
+  if(f.increment!==''&&f.increment!=null&&!(Number.isFinite(Number(f.increment))&&Number(f.increment)>=0)) e.increment='invalid';
+  const m=f.muscles||{};
+  if(Object.keys(m).some(k=>!MUSCLE_GROUPS.includes(k))) e.muscles='invalid';
+  else if(Object.values(m).some(v=>v!==''&&v!=null&&!(Number.isFinite(Number(v))&&Number(v)>=0))) e.muscles='invalid';
+  return e;
+}
+function exerciseSave(f,id){
+  const errors=exerciseValidate(f,id);
+  if(Object.keys(errors).length) return {ok:false,errors};
+  S.exerciseLibrary=S.exerciseLibrary||[];
+  const fields={name:String(f.name).trim().replace(/\s+/g,' '),measurement:f.measurement,muscles:normalizeMuscles(f.muscles),
+    increment:f.increment===''||f.increment==null?MEASUREMENT_DEFAULT_INCREMENT[f.measurement]:Number(f.increment),notes:String(f.notes||''),updatedAt:Date.now()};
+  let x=id?S.exerciseLibrary.find(r=>r.id===id):null;
+  if(x){
+    // A rename keeps the old name as an alias, so legacy history stored by name stays attached.
+    const oldK=exerciseKey(x.name), newK=exerciseKey(fields.name);
+    if(oldK!==newK) fields.aliases=[...new Set([...(x.aliases||[]),oldK])].filter(k=>k&&k!==newK);
+    Object.assign(x,fields);
+  }
+  else { x=migrateExercise(Object.assign({id:uid(),source:f.source||'user',createdAt:Date.now()},fields)); S.exerciseLibrary.push(x); }
+  return {ok:true,exercise:x};
+}
+function exerciseInUse(id){
+  // A library record is "in use" once anything stores its id (templates / workout entries of
+  // later Phase 11A steps). Old workouts reference exercises by name only, so they never block.
+  const inEntries=S.workouts.some(w=>(w.entries||[]).some(en=>en.exerciseId===id));
+  const inTemplates=(S.workoutTemplates||[]).some(t=>(t.exercises||[]).some(te=>te.exerciseId===id));
+  return inEntries||inTemplates;
+}
+function exerciseDelete(id){
+  const x=(S.exerciseLibrary||[]).find(r=>r.id===id); if(!x) return null;
+  if(exerciseInUse(id)){ x.archived=true; x.updatedAt=Date.now(); return 'archived'; }
+  S.exerciseLibrary=S.exerciseLibrary.filter(r=>r.id!==id); return 'deleted';
+}
+function exerciseRestore(id){
+  const x=(S.exerciseLibrary||[]).find(r=>r.id===id); if(!x||!x.archived) return false;
+  if(S.exerciseLibrary.some(r=>r.id!==id&&!r.archived&&exerciseKey(r.name)===exerciseKey(x.name))) return false;
+  x.archived=false; x.updatedAt=Date.now(); return true;
+}
+function exerciseAddPreset(name){
+  const p=EXERCISE_PRESETS.find(q=>q.name===name); if(!p) return {ok:false,errors:{name:'invalid'}};
+  return exerciseSave({name:p.name,measurement:p.measurement,muscles:p.muscles,increment:p.increment!=null?p.increment:'',notes:'',source:'preset'});
+}
+/* ---- Phase 11A: workout templates (plans only -- a template never changes a workout, and a
+   workout never changes its template). S.workoutTemplates[] {id,name,notes,exercises:[
+   {id,exerciseId,sets,repsMin,repsMax,weight,seconds,distance,rest,notes}],createdAt,updatedAt}
+   Which target fields apply depends on the library exercise's measurement:
+     weight_reps: sets, repsMin..repsMax, weight (kg, optional)   reps: sets, repsMin..repsMax
+     time: sets, seconds                                          distance_time: sets, distance (km) and/or seconds */
+const TEMPLATE_MAX_SETS=20;
+function tplNum(v){ if(v===''||v==null) return null; const n=Number(v); return Number.isFinite(n)?n:NaN; }
+function templateTargetFields(measurement){
+  return {weight_reps:['sets','repsMin','repsMax','weight'],reps:['sets','repsMin','repsMax'],time:['sets','seconds'],distance_time:['sets','distance','seconds']}[measurement]||[];
+}
+function templateNormalizeExercise(te){
+  // Numbers only; fields that do not belong to the exercise's measurement are cleared (null).
+  const x=exerciseFind(te.exerciseId); const fields=templateTargetFields(x?x.measurement:'');
+  const out={id:te.id||uid(),exerciseId:te.exerciseId,sets:null,repsMin:null,repsMax:null,weight:null,seconds:null,distance:null,rest:tplNum(te.rest),notes:String(te.notes||'')};
+  fields.forEach(f=>{ out[f]=tplNum(te[f]); });
+  if(fields.includes('repsMin')&&out.repsMax==null) out.repsMax=out.repsMin;
+  return out;
+}
+function templateValidate(f){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  const exs=f.exercises||[];
+  if(!exs.length) e.exercises='empty';
+  exs.forEach((te,i)=>{
+    const x=te.exerciseId?(S.exerciseLibrary||[]).find(r=>r.id===te.exerciseId):null;
+    if(!x){ e[`ex.${i}.exerciseId`]='required'; return; }
+    const n=templateNormalizeExercise(te), int=v=>Number.isInteger(v);
+    if(!(int(n.sets)&&n.sets>=1&&n.sets<=TEMPLATE_MAX_SETS)) e[`ex.${i}.sets`]='invalid';
+    if(x.measurement==='weight_reps'||x.measurement==='reps'){
+      if(!(int(n.repsMin)&&n.repsMin>=1)) e[`ex.${i}.repsMin`]='invalid';
+      else if(!(int(n.repsMax)&&n.repsMax>=n.repsMin)) e[`ex.${i}.repsMax`]='range';
+    }
+    if(x.measurement==='weight_reps'&&n.weight!=null&&!(n.weight>=0)) e[`ex.${i}.weight`]='invalid';
+    if(x.measurement==='time'&&!(int(n.seconds)&&n.seconds>=1)) e[`ex.${i}.seconds`]='invalid';
+    if(x.measurement==='distance_time'){
+      if(n.distance!=null&&!(n.distance>0)) e[`ex.${i}.distance`]='invalid';
+      if(n.seconds!=null&&!(int(n.seconds)&&n.seconds>=1)) e[`ex.${i}.seconds`]='invalid';
+      if(n.distance==null&&n.seconds==null) e[`ex.${i}.distance`]='required';
+    }
+    if(n.rest!=null&&!(int(n.rest)&&n.rest>=0)) e[`ex.${i}.rest`]='invalid';
+  });
+  return e;
+}
+function templateSave(f,id){
+  const errors=templateValidate(f);
+  if(Object.keys(errors).length) return {ok:false,errors};
+  S.workoutTemplates=S.workoutTemplates||[];
+  const fields={name:String(f.name).trim(),notes:String(f.notes||''),exercises:f.exercises.map(templateNormalizeExercise),updatedAt:Date.now()};
+  let t=id?S.workoutTemplates.find(r=>r.id===id):null;
+  if(t) Object.assign(t,fields);
+  else { t=Object.assign({id:uid(),createdAt:Date.now()},fields); S.workoutTemplates.push(t); }
+  return {ok:true,template:t};
+}
+function templateDelete(id){
+  // Workouts started from it keep their own copy of the plan (and a dangling-safe templateId).
+  const n=(S.workoutTemplates||[]).length;
+  S.workoutTemplates=(S.workoutTemplates||[]).filter(t=>t.id!==id);
+  return S.workoutTemplates.length<n;
+}
+function templateFind(id){ return (S.workoutTemplates||[]).find(t=>t.id===id)||null; }
+function templateSummary(t){
+  const exs=(t&&t.exercises)||[];
+  return {exercises:exs.length,sets:exs.reduce((a,te)=>a+(Number(te.sets)||0),0)};
+}
+let fitnessTab='workouts';
+function uiFitT(k){
+  const cs=uiLang()==='cs';
+  const T=cs?{workouts:'Tréninky',library:'Cviky',add_ex:'Cvik',catalog:'Z katalogu',lib_none:'Knihovna cviků je prázdná',lib_none_d:'Přidej vlastní cvik nebo si vyber z katalogu. Svaly a jejich podíl nastavíš u každého cviku.',
+    archived:'Archivované',restore:'Obnovit',muscles_unknown:'Svaly nevyplněné',from_history:'z historie',
+    weight_reps:'Váha × opakování',reps:'Opakování',time:'Čas',distance_time:'Vzdálenost + čas',
+    new_ex:'Nový cvik',edit_ex:'Upravit cvik',f_name:'Název',f_meas:'Typ měření',f_inc:'Krok progrese',f_muscles:'Zapojené svaly (%)',f_notes:'Poznámka',
+    sum:'Součet',sum_note:'Při uložení se podíly přepočítají na 100 %.',save:'Uložit cvik',del:'Smazat cvik',
+    e_required:'Vyplň název.',e_duplicate:'Cvik s tímto názvem už v knihovně je.',e_invalid:'Neplatná hodnota.',
+    saved:'Cvik uložen',deleted:'Cvik smazán',archived_t:'Cvik je použitý v trénincích — byl archivován, historie zůstává.',restored:'Cvik obnoven',restore_dup:'Aktivní cvik se stejným názvem už existuje.',
+    cat_t:'Katalog cviků',cat_d:'Přidá cvik s typickým rozložením svalů. Hodnoty můžeš později upravit.',cat_all:'Všechny cviky z katalogu už máš v knihovně.',add:'Přidat',added:'Přidáno do knihovny',
+    inc_unit:{weight_reps:'kg',reps:'opak.',time:'s',distance_time:''}}
+    :{workouts:'Workouts',library:'Exercises',add_ex:'Exercise',catalog:'From catalog',lib_none:'Your exercise library is empty',lib_none_d:'Add your own exercise or pick one from the catalog. Set the muscles and their share for each exercise.',
+    archived:'Archived',restore:'Restore',muscles_unknown:'Muscles not set',from_history:'from history',
+    weight_reps:'Weight × reps',reps:'Reps',time:'Time',distance_time:'Distance + time',
+    new_ex:'New exercise',edit_ex:'Edit exercise',f_name:'Name',f_meas:'Measurement',f_inc:'Progression step',f_muscles:'Muscles worked (%)',f_notes:'Notes',
+    sum:'Total',sum_note:'Shares are rescaled to 100 % on save.',save:'Save exercise',del:'Delete exercise',
+    e_required:'Enter a name.',e_duplicate:'An exercise with this name is already in the library.',e_invalid:'Invalid value.',
+    saved:'Exercise saved',deleted:'Exercise deleted',archived_t:'This exercise is used in workouts — it was archived, history stays.',restored:'Exercise restored',restore_dup:'An active exercise with the same name already exists.',
+    cat_t:'Exercise catalog',cat_d:'Adds an exercise with a typical muscle split. You can edit the values later.',cat_all:'Every catalog exercise is already in your library.',add:'Add',added:'Added to the library',
+    inc_unit:{weight_reps:'kg',reps:'reps',time:'s',distance_time:''}};
+  return T[k];
+}
+function uiMuscleLabel(g){ return uiLang()==='cs'?(MUSCLE_LABELS_CS[g]||g):g; }
+function uiMuscleChips(m){
+  const ks=Object.keys(m||{});
+  if(!ks.length) return `<span class="chip is-muted">${uiFitT('muscles_unknown')}</span>`;
+  return ks.sort((a,b)=>m[b]-m[a]).map(g=>`<span class="chip">${escapeHtml(uiMuscleLabel(g))} ${m[g]} %</span>`).join('');
+}
+function uiFitnessTabs(){
+  return `<div class="period-selector" id="fitTabs" role="tablist">${[['workouts','🏋️'],['templates','📋'],['library','📚'],['muscles','💪']].map(([k,ic])=>
+    `<button class="pill ${fitnessTab===k?'on':''}" data-k="${k}" role="tab" aria-selected="${fitnessTab===k}"><span class="tab-ic" aria-hidden="true">${ic}</span> ${k==='templates'?uiTplT(k):k==='muscles'?uiMuscT('tab'):uiFitT(k)}</button>`).join('')}</div>`;
+}
+function uiBindFitnessTabs(wrap){
+  wrap.querySelectorAll('#fitTabs [data-k]').forEach(b=>b.onclick=()=>{ fitnessTab=b.dataset.k; render(); });
+}
+function renderFitnessLibrary(){
+  const lib=[...(S.exerciseLibrary||[])].sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+  const active=lib.filter(x=>!x.archived), archived=lib.filter(x=>x.archived);
+  const wrap=el(`<div>${uiPageHead('Fitness','',`<button class="btn sm" id="uiAddEx">＋ ${uiFitT('add_ex')}</button>`)}${uiFitnessTabs()}
+    <div class="row" style="margin:4px 0 10px"><button class="btn ghost sm" id="uiExCatalog">📖 ${uiFitT('catalog')}</button></div>
+    <div class="list" id="exLib"></div>
+    ${archived.length?`<details class="card ex-archived" style="margin-top:12px"><summary>${uiFitT('archived')} (${archived.length})</summary><div class="list" id="exArch" style="margin-top:8px"></div></details>`:''}
+  </div>`);
+  uiBindFitnessTabs(wrap);
+  const list=wrap.querySelector('#exLib');
+  if(!active.length){ const e=el(`<div class="card">${uiEmpty('📚',uiFitT('lib_none'),uiFitT('lib_none_d'),'＋ '+uiFitT('add_ex'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openExerciseForm(); list.appendChild(e); }
+  active.forEach(x=>{
+    const it=el(`<div class="card ex-card" data-ex="${x.id}"><button class="ex-open" aria-label="${uiFitT('edit_ex')}: ${escapeHtml(x.name)}">
+      <div class="between"><div class="item-title truncate">${escapeHtml(x.name)}</div><span class="sub">${uiFitT(x.measurement)}${x.source==='history'?' · '+uiFitT('from_history'):''}</span></div>
+      <div class="chips">${uiMuscleChips(x.muscles)}</div></button></div>`);
+    it.querySelector('.ex-open').onclick=()=>openExerciseForm(x);
+    list.appendChild(it);
+  });
+  archived.forEach(x=>{
+    const it=el(`<div class="between ex-arch-row" data-ex="${x.id}"><span class="truncate">${escapeHtml(x.name)}</span><button class="btn ghost sm exRestore">${uiFitT('restore')}</button></div>`);
+    it.querySelector('.exRestore').onclick=()=>{ if(exerciseRestore(x.id)){ scheduleSave(); render(); toast(uiFitT('restored')); } else toast(uiFitT('restore_dup')); };
+    wrap.querySelector('#exArch').appendChild(it);
+  });
+  wrap.querySelector('#uiAddEx').onclick=()=>openExerciseForm();
+  wrap.querySelector('#uiExCatalog').onclick=()=>openExerciseCatalog();
+  return wrap;
+}
+function openExerciseForm(existing){
+  const x=existing, m=x?x.muscles:{};
+  const meas=x?x.measurement:'weight_reps';
+  const inner=el(`<div><h3>${uiFitT(x?'edit_ex':'new_ex')}</h3>
+    <label for="ex_name">${uiFitT('f_name')}</label><input id="ex_name" value="${x?escapeHtml(x.name):''}" placeholder="Bench Press"><div class="field-error" hidden id="ex_name_err" role="alert"></div>
+    <label for="ex_meas">${uiFitT('f_meas')}</label><select id="ex_meas">${MEASUREMENTS.map(k=>`<option value="${k}" ${k===meas?'selected':''}>${uiFitT(k)}</option>`).join('')}</select>
+    <label for="ex_inc">${uiFitT('f_inc')} <span class="sub" id="ex_inc_unit">${uiFitT('inc_unit')[meas]}</span></label><input type="number" inputmode="decimal" min="0" step="any" id="ex_inc" value="${x?x.increment:MEASUREMENT_DEFAULT_INCREMENT[meas]}"><div class="field-error" hidden id="ex_inc_err" role="alert"></div>
+    <label>${uiFitT('f_muscles')}</label>
+    <div class="muscle-grid">${MUSCLE_GROUPS.map(g=>`<label class="muscle-in"><span>${escapeHtml(uiMuscleLabel(g))}</span><input type="number" inputmode="numeric" min="0" max="100" data-muscle="${g}" aria-label="${escapeHtml(uiMuscleLabel(g))} %" value="${m[g]||''}"></label>`).join('')}</div>
+    <div class="sub" id="ex_sum" aria-live="polite"></div><div class="field-error" hidden id="ex_muscles_err" role="alert"></div>
+    <label for="ex_notes">${uiFitT('f_notes')}</label><textarea id="ex_notes" rows="2">${x?escapeHtml(x.notes||''):''}</textarea>
+    <button class="btn" id="ex_save">${uiFitT('save')}</button>
+    ${x?`<button class="btn danger" id="ex_delete" style="margin-top:8px">${uiFitT('del')}</button>`:''}
+  </div>`);
+  const readMuscles=()=>Object.fromEntries([...inner.querySelectorAll('[data-muscle]')].filter(i=>i.value!=='').map(i=>[i.dataset.muscle,i.value]));
+  const showSum=()=>{ const sum=Object.values(readMuscles()).reduce((a,v)=>a+(Number(v)||0),0); inner.querySelector('#ex_sum').textContent=`${uiFitT('sum')}: ${sum} %${sum&&sum!==100?' · '+uiFitT('sum_note'):''}`; };
+  inner.querySelectorAll('[data-muscle]').forEach(i=>i.oninput=showSum); showSum();
+  inner.querySelector('#ex_meas').onchange=e=>{ const k=e.target.value; inner.querySelector('#ex_inc_unit').textContent=uiFitT('inc_unit')[k]; if(!x) inner.querySelector('#ex_inc').value=MEASUREMENT_DEFAULT_INCREMENT[k]; };
+  inner.querySelector('#ex_save').onclick=()=>{
+    const r=exerciseSave({name:inner.querySelector('#ex_name').value,measurement:inner.querySelector('#ex_meas').value,increment:inner.querySelector('#ex_inc').value,
+      muscles:readMuscles(),notes:inner.querySelector('#ex_notes').value},x?x.id:undefined);
+    ['name','increment','muscles'].forEach(k=>{ const n=inner.querySelector(`#ex_${k==='increment'?'inc':k}_err`); if(!n) return; const msg=r.ok||!r.errors[k]?'':uiFitT('e_'+r.errors[k]); n.textContent=msg; n.hidden=!msg; });
+    if(!r.ok) return;
+    scheduleSave(); closeSheets(); render(); toast(uiFitT('saved'));
+  };
+  if(x) inner.querySelector('#ex_delete').onclick=()=>{
+    if(!confirm(`${uiFitT('del')}: "${x.name}"?`)) return;
+    const res=exerciseDelete(x.id); scheduleSave(); closeSheets(); render(); toast(uiFitT(res==='archived'?'archived_t':'deleted'));
+  };
+  openSheet(inner);
+}
+function openExerciseCatalog(){
+  const have=new Set((S.exerciseLibrary||[]).filter(x=>!x.archived).map(x=>exerciseKey(x.name)));
+  const avail=EXERCISE_PRESETS.filter(p=>!have.has(exerciseKey(p.name)));
+  const inner=el(`<div><h3>${uiFitT('cat_t')}</h3><div class="sub" style="margin-bottom:10px">${uiFitT('cat_d')}</div>
+    ${avail.length?'':`<div class="sub">${uiFitT('cat_all')}</div>`}<div class="list" id="exCat"></div></div>`);
+  avail.forEach(p=>{
+    const it=el(`<div class="card ex-cat-row" data-preset="${escapeHtml(p.name)}"><div class="between"><div style="min-width:0"><div class="item-title truncate">${escapeHtml(p.name)}</div><div class="sub">${uiFitT(p.measurement)}</div></div>
+      <button class="btn sm catAdd" aria-label="${uiFitT('add')}: ${escapeHtml(p.name)}">＋ ${uiFitT('add')}</button></div><div class="chips">${uiMuscleChips(normalizeMuscles(p.muscles))}</div></div>`);
+    it.querySelector('.catAdd').onclick=()=>{ const r=exerciseAddPreset(p.name); if(r.ok){ it.remove(); scheduleSave(); render(); toast(uiFitT('added')); } };
+    inner.querySelector('#exCat').appendChild(it);
+  });
+  openSheet(inner);
+}
+function uiTplT(k){
+  const cs=uiLang()==='cs';
+  const T=cs?{templates:'Šablony',add:'Šablona',none:'Zatím žádné šablony',none_d:'Šablona je plán tréninku: cviky, série a cílová opakování nebo čas. Z šablony pak spustíš trénink.',
+    need_lib:'Nejdřív si přidej cviky do knihovny.',go_lib:'Otevřít cviky',new_t:'Nová šablona',edit_t:'Upravit šablonu',f_name:'Název',f_notes:'Poznámka',ex:'Cviky',add_ex:'+ Přidat cvik',pick:'Vyber cvik',
+    sets:'Série',repsMin:'Opak. od',repsMax:'Opak. do',weight:'kg',seconds:'Sekundy',distance:'km',rest:'Pauza (s)',up:'Posunout nahoru',down:'Posunout dolů',remove:'Odebrat cvik',
+    save:'Uložit šablonu',del:'Smazat šablonu',saved:'Šablona uložena',deleted:'Šablona smazána',n_ex:'cviků',n_sets:'sérií',archived_ex:'archivovaný',
+    e_required:'Povinné.',e_invalid:'Neplatná hodnota.',e_range:'„Do“ musí být aspoň „od“.',e_empty:'Přidej aspoň jeden cvik.',e_name:'Vyplň název.'}
+    :{templates:'Templates',add:'Template',none:'No templates yet',none_d:'A template is a workout plan: exercises, sets and target reps or time. Start a workout from it.',
+    need_lib:'Add exercises to your library first.',go_lib:'Open exercises',new_t:'New template',edit_t:'Edit template',f_name:'Name',f_notes:'Notes',ex:'Exercises',add_ex:'+ Add exercise',pick:'Pick an exercise',
+    sets:'Sets',repsMin:'Reps from',repsMax:'Reps to',weight:'kg',seconds:'Seconds',distance:'km',rest:'Rest (s)',up:'Move up',down:'Move down',remove:'Remove exercise',
+    save:'Save template',del:'Delete template',saved:'Template saved',deleted:'Template deleted',n_ex:'exercises',n_sets:'sets',archived_ex:'archived',
+    e_required:'Required.',e_invalid:'Invalid value.',e_range:'"To" must be at least "from".',e_empty:'Add at least one exercise.',e_name:'Enter a name.'};
+  return T[k];
+}
+function renderFitnessTemplates(){
+  const tpls=[...(S.workoutTemplates||[])].sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+  const wrap=el(`<div>${uiPageHead('Fitness','',`<button class="btn sm" id="uiAddTpl">＋ ${uiTplT('add')}</button>`)}${uiFitnessTabs()}<div class="list" id="tplList"></div></div>`);
+  uiBindFitnessTabs(wrap);
+  const list=wrap.querySelector('#tplList');
+  if(!tpls.length){ const e=el(`<div class="card">${uiEmpty('📋',uiTplT('none'),uiTplT('none_d'),'＋ '+uiTplT('add'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openTemplateForm(); list.appendChild(e); }
+  tpls.forEach(t=>{
+    const sm=templateSummary(t);
+    const names=t.exercises.map(te=>{ const x=exerciseFind(te.exerciseId); return escapeHtml(x?x.name:'—'); }).join(' · ');
+    const it=el(`<div class="card tpl-card" data-tpl="${t.id}"><button class="tpl-open" aria-label="${uiTplT('edit_t')}: ${escapeHtml(t.name)}">
+      <div class="between"><div class="item-title truncate">${escapeHtml(t.name)}</div><span class="sub">${sm.exercises} ${uiTplT('n_ex')} · ${sm.sets} ${uiTplT('n_sets')}</span></div>
+      <div class="sub tpl-names">${names}</div></button>
+      <div class="tpl-actions"><button class="btn sm tplStart" aria-label="${uiWkT('start')}: ${escapeHtml(t.name)}">▶ ${uiWkT('start')}</button></div></div>`);
+    it.querySelector('.tpl-open').onclick=()=>openTemplateForm(t);
+    it.querySelector('.tplStart').onclick=()=>uiStartWorkout({templateId:t.id});
+    list.appendChild(it);
+  });
+  wrap.querySelector('#uiAddTpl').onclick=()=>openTemplateForm();
+  return wrap;
+}
+function openTemplateForm(existing){
+  const t=existing;
+  const active=(S.exerciseLibrary||[]).filter(x=>!x.archived).sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+  const inner=el(`<div><h3>${uiTplT(t?'edit_t':'new_t')}</h3>
+    <label for="tp_name">${uiTplT('f_name')}</label><input id="tp_name" value="${t?escapeHtml(t.name):''}" placeholder="Push A"><div class="field-error" hidden data-err="name"></div>
+    <label for="tp_notes">${uiTplT('f_notes')}</label><textarea id="tp_notes" rows="2">${t?escapeHtml(t.notes||''):''}</textarea>
+    <label>${uiTplT('ex')}</label>
+    ${active.length?'':`<div class="sub" style="margin-bottom:8px">${uiTplT('need_lib')} <button class="btn ghost sm" id="tp_golib">${uiTplT('go_lib')}</button></div>`}
+    <div id="tpRows"></div><div class="field-error" hidden data-err="exercises"></div>
+    <button class="btn ghost" id="tp_addEx" style="margin-bottom:10px" ${active.length?'':'disabled'}>${uiTplT('add_ex')}</button>
+    <button class="btn" id="tp_save">${uiTplT('save')}</button>
+    ${t?`<button class="btn danger" id="tp_delete" style="margin-top:8px">${uiTplT('del')}</button>`:''}
+  </div>`);
+  const rowsEl=inner.querySelector('#tpRows');
+  const fieldHtml=(f,v)=>`<label class="tp-f"><span>${uiTplT(f)}</span><input type="number" inputmode="${f==='weight'||f==='distance'?'decimal':'numeric'}" min="0" step="any" data-f="${f}" value="${v==null?'':v}"><span class="field-error" hidden data-ferr="${f}"></span></label>`;
+  function drawFields(row,te){
+    const x=(S.exerciseLibrary||[]).find(r=>r.id===row.querySelector('.tp-ex').value);
+    const fs=x?[...templateTargetFields(x.measurement),'rest']:[];
+    const defs={sets:3,repsMin:8,repsMax:12,seconds:x&&x.measurement==='time'?60:null};
+    row.querySelector('.tp-fields').innerHTML=fs.map(f=>fieldHtml(f,te&&te[f]!=null?te[f]:(te?null:defs[f]))).join('');
+  }
+  function addRow(te){
+    const row=el(`<div class="tp-row">
+      <div class="tp-head"><select class="tp-ex" aria-label="${uiTplT('pick')}"><option value="">${uiTplT('pick')}</option></select>
+        <button type="button" class="iconbtn ghost-ic tpUp" aria-label="${uiTplT('up')}">↑</button><button type="button" class="iconbtn ghost-ic tpDown" aria-label="${uiTplT('down')}">↓</button><button type="button" class="delbtn tpRm" aria-label="${uiTplT('remove')}">✕</button></div>
+      <span class="field-error" hidden data-ferr="exerciseId"></span><div class="tp-fields"></div></div>`);
+    const sel=row.querySelector('.tp-ex');
+    const opts=[...active];
+    const cur=te&&(S.exerciseLibrary||[]).find(r=>r.id===te.exerciseId);
+    if(cur&&cur.archived) opts.unshift(cur); // keep an archived exercise the template already uses
+    opts.forEach(x=>sel.appendChild(el(`<option value="${x.id}">${escapeHtml(x.name)}${x.archived?' ('+uiTplT('archived_ex')+')':''}</option>`)));
+    if(cur) sel.value=cur.id;
+    sel.onchange=()=>drawFields(row,null);
+    row.querySelector('.tpRm').onclick=()=>row.remove();
+    row.querySelector('.tpUp').onclick=()=>{ if(row.previousElementSibling) rowsEl.insertBefore(row,row.previousElementSibling); };
+    row.querySelector('.tpDown').onclick=()=>{ if(row.nextElementSibling) rowsEl.insertBefore(row.nextElementSibling,row); };
+    if(te&&te.id) row.dataset.id=te.id;
+    rowsEl.appendChild(row); drawFields(row,te);
+    return row;
+  }
+  (t?t.exercises:[]).forEach(addRow);
+  if(!t&&active.length) addRow(null);
+  inner.querySelector('#tp_addEx').onclick=()=>{ const r=addRow(null); r.querySelector('.tp-ex').focus(); };
+  const goLib=inner.querySelector('#tp_golib'); if(goLib) goLib.onclick=()=>{ closeSheets(); fitnessTab='library'; render(); };
+  const readRows=()=>[...rowsEl.querySelectorAll('.tp-row')].map(row=>{
+    const te={id:row.dataset.id||undefined,exerciseId:row.querySelector('.tp-ex').value};
+    row.querySelectorAll('[data-f]').forEach(inp=>{ te[inp.dataset.f]=inp.value; });
+    return te;
+  });
+  inner.querySelector('#tp_save').onclick=()=>{
+    const f={name:inner.querySelector('#tp_name').value,notes:inner.querySelector('#tp_notes').value,exercises:readRows()};
+    const r=templateSave(f,t?t.id:undefined);
+    inner.querySelectorAll('.field-error').forEach(n=>{ n.hidden=true; n.textContent=''; });
+    inner.querySelectorAll('[aria-invalid]').forEach(n=>n.removeAttribute('aria-invalid'));
+    if(r.ok){ scheduleSave(); closeSheets(); render(); toast(uiTplT('saved')); return; }
+    const show=(n,msg)=>{ if(n){ n.textContent=msg; n.hidden=false; } };
+    if(r.errors.name) show(inner.querySelector('[data-err="name"]'),uiTplT('e_name'));
+    if(r.errors.exercises) show(inner.querySelector('[data-err="exercises"]'),uiTplT('e_empty'));
+    const rows=[...rowsEl.querySelectorAll('.tp-row')];
+    Object.entries(r.errors).forEach(([k,code])=>{
+      const m=/^ex\.(\d+)\.(\w+)$/.exec(k); if(!m) return;
+      const row=rows[+m[1]]; if(!row) return;
+      show(row.querySelector(`[data-ferr="${m[2]}"]`),uiTplT('e_'+code));
+      const inp=m[2]==='exerciseId'?row.querySelector('.tp-ex'):row.querySelector(`[data-f="${m[2]}"]`); if(inp) inp.setAttribute('aria-invalid','true');
+    });
+  };
+  if(t) inner.querySelector('#tp_delete').onclick=()=>{
+    if(!confirm(`${uiTplT('del')}: "${t.name}"?`)) return;
+    templateDelete(t.id); scheduleSave(); closeSheets(); render(); toast(uiTplT('deleted'));
+  };
+  openSheet(inner);
+}
+/* ---- Phase 11A step 4: active workout UI. Presentation only -- every change goes through the
+   workout* model functions above; Finish/Discard are the only places that change status. ---- */
+let uiWorkoutView=null; // null | {mode:'active'} | {mode:'edit',id}
+let uiWkTimer=null;
+const WS_FIELDS={weight_reps:['weight','reps'],reps:['reps'],time:['seconds'],distance_time:['distance','seconds']};
+function uiWkT(k){
+  const cs=uiLang()==='cs';
+  const T=cs?{live:'Probíhá',cont:'Pokračovat',active_t:'Rozpracovaný trénink',start_t:'Začít trénink',blank:'Prázdný trénink',start:'Start',
+    no_tpl:'Šablona ti připraví cviky a série. Nebo začni prázdný trénink a cviky přidávej průběžně.',make_tpl:'Vytvořit šablonu',
+    back:'Zpět na Fitness',finish:'Dokončit trénink',finish_sm:'Dokončit',discard:'Zahodit trénink',add_ex:'+ Přidat cvik',add_set:'+ Série',add_wu:'+ Rozcvička',
+    plan:'Plán',last:'Minule',sug:'Doporučení',sug_apply:'Použít doporučení',sug_done:'Odpovídá',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
+    sets_done:'sérií hotovo',rm_set:'Odebrat sérii',rm_ex:'Odebrat cvik',toggle_wu:'přepnout rozcvičku',mark_done:'označit jako hotovou',
+    name:'Název',notes:'Poznámka',date:'Datum',duration:'Délka (min)',edit_t:'Upravit trénink',save_back:'Hotovo',
+    empty_t:'Prázdný trénink',empty_q:'Tento trénink nemá žádnou dokončenou sérii. Opravdu ho chceš dokončit?',cancel:'Zrušit',
+    discard_q:'Zahodit rozpracovaný trénink? Nic se neuloží a nezapočítá.',discarded:'Trénink zahozen',resumed:'Pokračuješ v rozpracovaném tréninku',
+    pick_ex:'Přidat cvik',lib:'Z knihovny',catalog:'Z katalogu',lib_empty:'Knihovna cviků je prázdná.',no_ex:'Zatím žádné cviky — přidej první.',
+    rm_ex_q:'Odebrat cvik z tréninku?',sum_t:'Trénink dokončen',sum_dur:'Délka',sum_sets:'Série',sum_reps:'Opakování',sum_vol:'Objem',sum_ex:'Cviky',min:'min',ok:'Hotovo',
+    xp:'Character XP',started:'Začátek'}
+    :{live:'In progress',cont:'Continue',active_t:'Workout in progress',start_t:'Start a workout',blank:'Empty workout',start:'Start',
+    no_tpl:'A template prepares exercises and sets for you. Or start an empty workout and add exercises as you go.',make_tpl:'Create a template',
+    back:'Back to Fitness',finish:'Finish workout',finish_sm:'Finish',discard:'Discard workout',add_ex:'+ Add exercise',add_set:'+ Set',add_wu:'+ Warm-up',
+    plan:'Plan',last:'Last',sug:'Suggestion',sug_apply:'Use suggestion',sug_done:'Matches',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
+    sets_done:'sets done',rm_set:'Remove set',rm_ex:'Remove exercise',toggle_wu:'toggle warm-up',mark_done:'mark as done',
+    name:'Name',notes:'Notes',date:'Date',duration:'Duration (min)',edit_t:'Edit workout',save_back:'Done',
+    empty_t:'Empty workout',empty_q:'This workout has no completed set. Do you really want to finish it?',cancel:'Cancel',
+    discard_q:'Discard the workout in progress? Nothing is saved or counted.',discarded:'Workout discarded',resumed:'Continuing your workout in progress',
+    pick_ex:'Add exercise',lib:'From your library',catalog:'From the catalog',lib_empty:'Your exercise library is empty.',no_ex:'No exercises yet — add the first one.',
+    rm_ex_q:'Remove this exercise from the workout?',sum_t:'Workout finished',sum_dur:'Duration',sum_sets:'Sets',sum_reps:'Reps',sum_vol:'Volume',sum_ex:'Exercises',min:'min',ok:'Done',
+    xp:'Character XP',started:'Started'};
+  return T[k];
+}
+function uiFmtSec(s){ s=Math.round(Number(s)||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`; }
+function uiFmtNum(v){ return v==null||v===''?'':Number(v).toLocaleString(uiLocale(),{maximumFractionDigits:2}); }
+function uiPlanText(m,t){
+  if(!t) return '';
+  const n=Number(t.sets)||0, reps=t.repsMin!=null?(t.repsMax!=null&&t.repsMax!==t.repsMin?`${t.repsMin}–${t.repsMax}`:`${t.repsMin}`):'';
+  if(m==='weight_reps') return `${n} × ${reps}${t.weight!=null?` @ ${uiFmtNum(t.weight)} kg`:''}`;
+  if(m==='reps') return `${n} × ${reps}`;
+  if(m==='time') return `${n} × ${uiFmtSec(t.seconds)}`;
+  const parts=[t.distance!=null?`${uiFmtNum(t.distance)} km`:'',t.seconds!=null?uiFmtSec(t.seconds):''].filter(Boolean).join(' · ');
+  return n>1?`${n} × ${parts}`:parts;
+}
+function uiSetsText(m,sets){
+  if(!sets||!sets.length) return '';
+  if(m==='weight_reps'){
+    const w0=sets[0].weight;
+    return sets.every(s=>s.weight===w0)?`${uiFmtNum(w0||0)} kg × ${sets.map(s=>s.reps||0).join(', ')}`:sets.map(s=>`${uiFmtNum(s.weight||0)}×${s.reps||0}`).join(', ');
+  }
+  if(m==='reps') return sets.map(s=>s.reps||0).join(', ');
+  if(m==='time') return sets.map(s=>uiFmtSec(s.seconds)).join(', ');
+  return sets.map(s=>[s.distance!=null?`${uiFmtNum(s.distance)} km`:'',s.seconds!=null?uiFmtSec(s.seconds):''].filter(Boolean).join(' · ')).join(', ');
+}
+function uiWkProgress(w){
+  const planned=(w.entries||[]).reduce((a,en)=>a+en.sets.filter(s=>!s.warmup).length,0);
+  return {done:workoutTotalSets(w),planned};
+}
+function uiEnsureWkTimer(){
+  if(uiWkTimer) return;
+  uiWkTimer=setInterval(()=>{
+    const els=document.querySelectorAll('[data-elapsed]');
+    if(!els.length){ clearInterval(uiWkTimer); uiWkTimer=null; return; }
+    els.forEach(e=>{ e.textContent=uiFmtSec((Date.now()-Number(e.dataset.elapsed))/1000); });
+  },1000);
+}
+function uiConfirmSheet(o,onOk){
+  const inner=el(`<div class="cf-sheet"><h3>${escapeHtml(o.title)}</h3><p class="sub">${escapeHtml(o.text)}</p>
+    <div class="btn-row"><button class="btn ghost" id="cf_cancel">${escapeHtml(o.cancel||uiWkT('cancel'))}</button><button class="btn${o.danger?' danger':''}" id="cf_ok">${escapeHtml(o.ok)}</button></div></div>`);
+  inner.querySelector('#cf_cancel').onclick=()=>closeSheets();
+  inner.querySelector('#cf_ok').onclick=()=>{ closeSheets(); onOk(); };
+  return openSheet(inner);
+}
+function uiStartWorkout(opts){
+  const r=workoutStart(opts||{});
+  if(!r.ok) toast(uiWkT('resumed')); else scheduleSave();
+  uiWorkoutView={mode:'active'}; fitnessTab='workouts'; view='fitness'; render(); window.scrollTo(0,0);
+}
+function uiWorkoutStartPanel(){
+  const a=activeWorkout();
+  if(a){
+    const p=uiWkProgress(a);
+    const c=el(`<div class="card wk-live wk-resume" id="wkResume"><div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiWkT('active_t')}</div>
+      <div class="item-title truncate">${escapeHtml(a.name)}</div>
+      ${(()=>{ const pb=a.plannerBlockId&&(S.plannerBlocks||[]).find(x=>x.id===a.plannerBlockId); return pb?`<div class="sub wk-sched">🗓️ ${uiPlT('scheduled_for')}: ${pb.startTime} – ${escapeHtml(pb.title)}</div>`:''; })()}
+      <div class="sub">${uiWkT('started')} ${fmtDate(a.date)} · <span data-elapsed="${a.startedAt}">${uiFmtSec((Date.now()-a.startedAt)/1000)}</span> · ${p.done}/${p.planned} ${uiWkT('sets_done')}</div>
+      <button class="btn" id="wkContinue">▶ ${uiWkT('cont')}</button></div>`);
+    c.querySelector('#wkContinue').onclick=()=>{ uiWorkoutView={mode:'active'}; render(); window.scrollTo(0,0); };
+    uiEnsureWkTimer();
+    return c;
+  }
+  const tpls=[...(S.workoutTemplates||[])].sort((x,y)=>x.name.localeCompare(y.name,uiLocale()));
+  const c=el(`<div class="card wk-startcard" id="wkStartCard"><div class="kicker">${uiWkT('start_t')}</div>
+    <div class="list wk-tpl-list"></div>
+    ${tpls.length?'':`<div class="sub" style="margin:4px 0 10px">${uiWkT('no_tpl')}</div>`}
+    <div class="btn-row"><button class="btn ghost" id="wkBlank">＋ ${uiWkT('blank')}</button>${tpls.length?'':`<button class="btn ghost" id="wkMakeTpl">📋 ${uiWkT('make_tpl')}</button>`}</div></div>`);
+  const list=c.querySelector('.wk-tpl-list');
+  tpls.forEach(t=>{
+    const sm=templateSummary(t);
+    const r=el(`<div class="between wk-tpl-row" data-start-tpl="${t.id}"><div style="min-width:0"><div class="item-title truncate">${escapeHtml(t.name)}</div><div class="sub">${sm.exercises} ${uiTplT('n_ex')} · ${sm.sets} ${uiTplT('n_sets')}</div></div>
+      <button class="btn sm wkStartTpl" aria-label="${uiWkT('start')}: ${escapeHtml(t.name)}">▶ ${uiWkT('start')}</button></div>`);
+    r.querySelector('.wkStartTpl').onclick=()=>uiStartWorkout({templateId:t.id});
+    list.appendChild(r);
+  });
+  c.querySelector('#wkBlank').onclick=()=>uiStartWorkout({});
+  const mk=c.querySelector('#wkMakeTpl'); if(mk) mk.onclick=()=>{ fitnessTab='templates'; render(); openTemplateForm(); };
+  return c;
+}
+function uiWorkoutSetRow(w,en,st,workIdx,ph){
+  const fs=WS_FIELDS[en.measurement]||['reps'];
+  const num=st.warmup?uiWkT('wu'):String(workIdx);
+  const inputs=fs.map(f=>`<input type="number" inputmode="${f==='weight'||f==='distance'?'decimal':'numeric'}" min="0" step="any" class="ws-in" data-f="${f}"
+    aria-label="${uiWkT('set')} ${num}: ${uiWkT(f==='weight'?'kg':f)}" value="${st[f]==null?'':st[f]}" placeholder="${ph&&ph[f]!=null?ph[f]:''}">`).join('');
+  const row=el(`<div class="ws-row ws-c${fs.length}${st.done?' is-done':''}${st.warmup?' is-wu':''}" data-set="${st.id}">
+    <button type="button" class="ws-num" aria-pressed="${st.warmup}" aria-label="${uiWkT('set')} ${num}: ${uiWkT('toggle_wu')}">${num}</button>
+    ${inputs}
+    <button type="button" class="ws-done" aria-pressed="${st.done}" aria-label="${uiWkT('set')} ${num}: ${uiWkT('mark_done')}">✓</button>
+    <button type="button" class="ws-rm" aria-label="${uiWkT('rm_set')} ${num}">✕</button></div>`);
+  row.querySelectorAll('.ws-in').forEach(inp=>inp.oninput=()=>{ workoutUpdateSet(w.id,en.id,st.id,{[inp.dataset.f]:inp.value}); scheduleSave(); });
+  row.querySelector('.ws-num').onclick=()=>{ workoutUpdateSet(w.id,en.id,st.id,{warmup:!st.warmup}); scheduleSave(); uiRedrawEntry(w,en,'.ws-num',st.id); };
+  row.querySelector('.ws-done').onclick=()=>{
+    const patch={done:!st.done};
+    // Ticking an untouched set adopts the values shown as placeholders (plan or last time).
+    if(!st.done&&ph) fs.forEach(f=>{ if(st[f]==null&&ph[f]!=null) patch[f]=ph[f]; });
+    workoutUpdateSet(w.id,en.id,st.id,patch); scheduleSave(); uiRedrawEntry(w,en,'.ws-done',st.id);
+  };
+  row.querySelector('.ws-rm').onclick=()=>{ workoutRemoveSet(w.id,en.id,st.id); scheduleSave(); uiRedrawEntry(w,en,null,null); };
+  return row;
+}
+function uiSuggestionText(sug){
+  const cs=uiLang()==='cs', one=a=>a.every(v=>v===a[0])?String(a[0]):a.join(', ');
+  const reps=sug.sets.map(x=>x.reps), secs=sug.sets.map(x=>uiFmtSec(x.seconds));
+  let main='', note='';
+  if(sug.measurement==='weight_reps'){
+    const ws=sug.sets.map(x=>x.weight);
+    main=(sug.kind==='increase'?'↑ ':'')+(ws.every(v=>v===ws[0])?(ws[0]!=null?`${uiFmtNum(ws[0])} kg × `:'× ')+one(reps):sug.sets.map(x=>`${uiFmtNum(x.weight)}×${x.reps}`).join(', '));
+    note={increase:cs?`Minule všechny série na horní hranici rozsahu. +${uiFmtNum(sug.step)} kg.`:`Last time every set reached the top of the range. +${uiFmtNum(sug.step)} kg.`,
+      reps:cs?'Stejná váha, +1 opakování směrem k horní hranici.':'Same weight, +1 rep towards the top of the range.',
+      baseline:cs?'Stejná váha, +1 opakování.':'Same weight, +1 rep.',
+      below:cs?`Zkus příště zopakovat ${uiFmtNum(sug.weight)} kg a postupně se vrátit k cílovému rozsahu.`:`Try repeating ${uiFmtNum(sug.weight)} kg and work back towards the target range.`,
+      hold:cs?'Minule to bylo náročné (RPE 9,5+). Zkus stejnou váhu i opakování.':'Last time was very hard (RPE 9.5+). Try the same weight and reps.',
+      plan:cs?'Podle plánu — zatím bez historie.':'From the plan — no history yet.'}[sug.kind]||'';
+  } else if(sug.measurement==='reps'){
+    main=`${sug.kind==='plan'?'':'↑ '}${one(reps)} ${cs?'opak.':'reps'}`; note=sug.kind==='plan'?(cs?'Podle plánu — zatím bez historie.':'From the plan — no history yet.'):(cs?'+1 opakování.':'+1 rep.');
+  } else {
+    main=`${sug.kind==='plan'?'':'↑ '}${one(secs)}`; note=sug.kind==='plan'?(cs?'Podle plánu — zatím bez historie.':'From the plan — no history yet.'):`+${uiFmtNum(sug.step)} s.`;
+  }
+  return {main,note};
+}
+function uiSuggestionApplied(en,sug){
+  const work=en.sets.filter(x=>!x.warmup);
+  return sug.sets.every((v,i)=>{ const st=work[i]; return st&&(st.done||Object.keys(v).every(f=>(st[f]==null?null:Number(st[f]))===(v[f]==null?null:Number(v[f])))); });
+}
+function uiWorkoutEntryCard(w,en){
+  const last=exerciseLastPerformance(en.exerciseId,en.name,w.id);
+  const fs=WS_FIELDS[en.measurement]||['reps'];
+  const lastWork=last?last.sets:[];
+  const t=en.target||{};
+  const phFor=i=>{
+    const l=lastWork.length?lastWork[Math.min(i,lastWork.length-1)]:null;
+    const o={}; fs.forEach(f=>{ const tv=f==='reps'?t.repsMin:t[f]; o[f]=tv!=null?tv:(l&&l[f]!=null?l[f]:null); }); return o;
+  };
+  const card=el(`<div class="card wk-entry" data-entry="${en.id}">
+    <div class="between wk-entry-head"><div style="min-width:0"><div class="item-title truncate">${escapeHtml(en.name)}</div><div class="sub">${uiFitT(en.measurement)}</div></div>
+      <button type="button" class="delbtn wkRmEx" aria-label="${uiWkT('rm_ex')}: ${escapeHtml(en.name)}">✕</button></div>
+    <div class="wk-meta">${en.target?`<div><span class="kicker">${uiWkT('plan')}</span> ${escapeHtml(uiPlanText(en.measurement,en.target))}</div>`:''}
+      ${last?`<div class="wk-last"><span class="kicker">${uiWkT('last')}</span> ${escapeHtml(uiSetsText(last.measurement,last.sets))} <span class="sub">· ${fmtDate(last.date)}</span></div>`:''}
+      <div class="wk-suggestion" data-slot="suggestion" hidden></div></div>
+    <div class="ws-row ws-c${fs.length} ws-head" aria-hidden="true"><span>${uiWkT('set')}</span>${fs.map(f=>`<span>${uiWkT(f==='weight'?'kg':f)}</span>`).join('')}<span>✓</span><span></span></div>
+    <div class="ws-list"></div>
+    <div class="btn-row wk-entry-actions"><button type="button" class="btn ghost sm wkAddSet">${uiWkT('add_set')}</button><button type="button" class="btn ghost sm wkAddWu">${uiWkT('add_wu')}</button></div>
+  </div>`);
+  // Suggestion: only while the workout is in progress; a proposal the user applies explicitly.
+  const sug=w.status==='active'?exerciseSuggestion(en,w):null;
+  // a no-history "plan" suggestion that the prefilled sets already match adds nothing -> not shown
+  if(sug&&!(sug.kind==='plan'&&uiSuggestionApplied(en,sug))){
+    const slot=card.querySelector('[data-slot="suggestion"]'), tx=uiSuggestionText(sug), done=uiSuggestionApplied(en,sug);
+    slot.hidden=false;
+    slot.innerHTML=`<div class="wk-sug-txt"><span class="kicker">${uiWkT('sug')}</span> <b class="wk-sug-main">${escapeHtml(tx.main)}</b><div class="sub">${escapeHtml(tx.note)}</div></div>
+      <button type="button" class="btn sm ${done?'ghost':''} wkApplySug" ${done?'disabled':''}>${done?'✓ '+uiWkT('sug_done'):uiWkT('sug_apply')}</button>`;
+    slot.querySelector('.wkApplySug').onclick=()=>{ workoutApplySuggestion(w.id,en.id,sug); scheduleSave(); uiRedrawEntry(w,en,'.wkApplySug',null); };
+  }
+  const list=card.querySelector('.ws-list');
+  let wi=0;
+  en.sets.forEach(st=>{ const idx=st.warmup?0:++wi; list.appendChild(uiWorkoutSetRow(w,en,st,idx,st.warmup?null:phFor(idx-1))); });
+  card.querySelector('.wkAddSet').onclick=()=>{ workoutAddSet(w.id,en.id,{}); scheduleSave(); uiRedrawEntry(w,en,'.wkAddSet',null); };
+  card.querySelector('.wkAddWu').onclick=()=>{
+    const st=workoutAddSet(w.id,en.id,{warmup:true,weight:null,reps:null,seconds:null,distance:null});
+    // a warm-up belongs before the working sets
+    en.sets.splice(en.sets.indexOf(st),1); const firstWork=en.sets.findIndex(s=>!s.warmup); en.sets.splice(firstWork<0?en.sets.length:firstWork,0,st);
+    scheduleSave(); uiRedrawEntry(w,en,'.wkAddWu',null);
+  };
+  card.querySelector('.wkRmEx').onclick=()=>uiConfirmSheet({title:en.name,text:uiWkT('rm_ex_q'),ok:uiWkT('rm_ex'),danger:true},()=>{ workoutRemoveEntry(w.id,en.id); scheduleSave(); render(); });
+  return card;
+}
+function uiRedrawEntry(w,en,focusSel,setId){
+  // Re-draw one exercise card in place (keeps scroll position and the rest of the screen).
+  const old=document.querySelector(`[data-entry="${en.id}"]`);
+  const fresh=workoutFindById(w.id); const e2=fresh&&(fresh.entries||[]).find(x=>x.id===en.id);
+  if(!old||!e2){ render(); return; }
+  const card=uiWorkoutEntryCard(fresh,e2); old.replaceWith(card);
+  const f=focusSel&&(setId?card.querySelector(`[data-set="${setId}"] ${focusSel}`):card.querySelector(focusSel)); if(f) f.focus({preventScroll:true});
+  const p=uiWkProgress(fresh), pe=document.getElementById('wkProg');
+  if(pe){ pe.textContent=`${p.done}/${p.planned}`; const bar=document.getElementById('wkBar'); if(bar) bar.style.width=uiPct(p.done,p.planned||1)+'%'; }
+}
+function renderWorkoutScreen(){
+  const edit=uiWorkoutView&&uiWorkoutView.mode==='edit';
+  const w=edit?workoutFindById(uiWorkoutView.id):activeWorkout();
+  if(!w||!Array.isArray(w.entries)||(edit&&w.status==='active')){ uiWorkoutView=null; return null; }
+  const p=uiWkProgress(w);
+  const head=edit
+    ?`<div class="card wk-edit-head"><button class="btn ghost sm" id="wkBack">← ${uiWkT('back')}</button><h2 style="margin:10px 0 8px">${uiWkT('edit_t')}</h2>
+        <div class="grid2"><div><label for="wk_date">${uiWkT('date')}</label><input type="date" id="wk_date" value="${w.date}"></div>
+        <div><label for="wk_dur">${uiWkT('duration')}</label><input type="number" inputmode="numeric" min="0" id="wk_dur" value="${escapeHtml(String(w.duration||''))}"></div></div></div>`
+    :`<div class="card wk-live" id="wkLive"><div class="between"><button class="btn ghost sm" id="wkBack" aria-label="${uiWkT('back')}">←</button>
+        <div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiWkT('live')} · <span data-elapsed="${w.startedAt}">${uiFmtSec((Date.now()-w.startedAt)/1000)}</span></div>
+        <button class="btn sm" id="wkFinishTop">${uiWkT('finish_sm')}</button></div>
+        <h2 class="wk-title">${escapeHtml(w.name)}</h2>
+        <div class="between sub"><span><b id="wkProg">${p.done}/${p.planned}</b> ${uiWkT('sets_done')}</span></div>
+        <div class="bar${p.planned&&p.done>=p.planned?' is-success':''}"><i id="wkBar" style="width:${uiPct(p.done,p.planned||1)}%"></i></div></div>`;
+  const wrap=el(`<div class="wk-screen">${head}
+    <div class="sub wk-hint">${uiWkT('wu_hint')}</div>
+    <div class="list" id="wkEntries"></div>
+    <button class="btn ghost" id="wkAddEx">${uiWkT('add_ex')}</button>
+    ${edit?`<div class="card wk-edit-result">${uiWorkoutPlanLine(w)?`<div class="sub wk-plan-line">${uiWorkoutPlanLine(w)}</div>`:''}${uiPerformanceBlock(w.result&&w.result.performance)}${w.result&&w.result.performance?`<div class="sub" style="margin-top:6px">${uiPerfT('snap')}</div>`:''}${uiMuscleSummary(w.id)}${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}<div data-slot="feeling"></div></div>`:''}
+    <div class="card wk-foot"><label for="wk_name">${uiWkT('name')}</label><input id="wk_name" value="${escapeHtml(w.name)}">
+      <label for="wk_notes">${uiWkT('notes')}</label><textarea id="wk_notes" rows="2">${escapeHtml(w.notes||'')}</textarea></div>
+    ${edit?`<button class="btn" id="wkSaveBack">${uiWkT('save_back')}</button>`
+      :`<button class="btn wk-finish" id="wkFinish">✓ ${uiWkT('finish')}</button><button class="btn danger" id="wkDiscard">${uiWkT('discard')}</button>`}
+  </div>`);
+  const list=wrap.querySelector('#wkEntries');
+  if(!w.entries.length) list.appendChild(el(`<div class="card sub">${uiWkT('no_ex')}</div>`));
+  w.entries.forEach(en=>list.appendChild(uiWorkoutEntryCard(w,en)));
+  const back=()=>{ uiWorkoutView=null; render(); window.scrollTo(0,0); };
+  if(edit) wrap.querySelector('.wk-edit-result [data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkEditFeel'));
+  wrap.querySelector('#wkBack').onclick=back;
+  wrap.querySelector('#wkAddEx').onclick=()=>openWorkoutAddExercise(w);
+  wrap.querySelector('#wk_name').oninput=e=>{ const v=e.target.value.trim(); if(v){ w.name=v; scheduleSave(); const h=wrap.querySelector('.wk-title'); if(h) h.textContent=v; } };
+  wrap.querySelector('#wk_notes').oninput=e=>{ w.notes=e.target.value; scheduleSave(); };
+  if(edit){
+    wrap.querySelector('#wk_date').onchange=e=>{ if(e.target.value){ w.date=e.target.value; scheduleSave(); } };
+    wrap.querySelector('#wk_dur').oninput=e=>{ w.duration=e.target.value; scheduleSave(); };
+    wrap.querySelector('#wkSaveBack').onclick=()=>{ toast('Workout updated'); back(); };
+  } else {
+    wrap.querySelector('#wkFinish').onclick=()=>uiFinishWorkout(w);
+    wrap.querySelector('#wkFinishTop').onclick=()=>uiFinishWorkout(w);
+    wrap.querySelector('#wkDiscard').onclick=()=>uiConfirmSheet({title:uiWkT('discard'),text:uiWkT('discard_q'),ok:uiWkT('discard'),danger:true},()=>{
+      workoutDiscard(w.id); uiWorkoutView=null; scheduleSave(); render(); toast(uiWkT('discarded'));
+    });
+    uiEnsureWkTimer();
+  }
+  return wrap;
+}
+function uiFinishWorkout(w){
+  const go=()=>{
+    const r=workoutFinish(w.id);
+    if(!r.ok) return;
+    uiWorkoutView=null; scheduleSave(); render(); window.scrollTo(0,0);
+    openWorkoutSummary(r.workout,r.granted);
+  };
+  if(workoutTotalSets(w)===0) uiConfirmSheet({title:uiWkT('empty_t'),text:uiWkT('empty_q'),ok:uiWkT('finish_sm')},go);
+  else go();
+}
+function uiPrTypeLabel(t){
+  const cs=uiLang()==='cs';
+  return (cs?{weight:'Váha',reps:'Opakování',time:'Čas',distance:'Vzdálenost',pace:'Tempo'}:{weight:'Weight',reps:'Reps',time:'Time',distance:'Distance',pace:'Pace'})[t]||t;
+}
+function uiPrValue(pr){
+  // [big value, small unit, detail]
+  if(pr.type==='weight') return [uiFmtNum(pr.weight),'kg',`× ${pr.reps}`];
+  if(pr.type==='reps'&&pr.measurement==='weight_reps') return [String(pr.reps),uiLang()==='cs'?'opak.':'reps',`@ ${uiFmtNum(pr.weight)} kg`];
+  if(pr.type==='reps') return [String(pr.reps),uiLang()==='cs'?'opak.':'reps',''];
+  if(pr.type==='time') return [uiFmtSec(pr.seconds),'',''];
+  if(pr.type==='distance') return [uiFmtNum(pr.distance),'km',pr.seconds?uiFmtSec(pr.seconds):''];
+  return [uiFmtSec(pr.seconds),'',`${uiFmtNum(pr.distance)} km`];
+}
+function uiPrLine(pr){
+  if(pr.measurement==='weight_reps') return `${uiFmtNum(pr.weight)} kg × ${pr.reps}`;
+  if(pr.type==='reps') return `${pr.reps} ${uiLang()==='cs'?'opak.':'reps'}`;
+  if(pr.type==='time') return uiFmtSec(pr.seconds);
+  return [`${uiFmtNum(pr.distance)} km`,pr.seconds?uiFmtSec(pr.seconds):''].filter(Boolean).join(' · ');
+}
+function uiPrList(prs){
+  return `<div class="wk-prs"><div class="kicker">🏆 ${uiLang()==='cs'?'Nové osobní rekordy':'New personal records'}</div>${prs.map(pr=>
+    `<div class="between wk-pr-row"><span class="truncate"><b>${escapeHtml(pr.name)}</b> <span class="sub">· ${uiPrTypeLabel(pr.type)}</span></span><span class="num">${escapeHtml(uiPrLine(pr))}</span></div>`).join('')}</div>`;
+}
+function uiPerfT(k){
+  const cs=uiLang()==='cs';
+  return (cs?{title:'Performance',excellent:'Výborný',good:'Dobrý',fair:'Slabší',weak:'Slabý',plan:'Plán',target:'Cíle',prev:'Vs. minule',pr:'PR bonus',na:'—',
+    none:'Bez hodnocení — trénink nemá šablonu ani předchozí trénink se stejným názvem.',src_t:'podle šablony',src_p:'podle minulého tréninku se stejným názvem',
+    snap:'Hodnoceno při dokončení.',feeling:'Jak ses cítil/a?',feeling_opt:'nepovinné',bad:'Špatně',normal:'Normálně',great:'Skvěle',good_f:'Dobře'}
+    :{title:'Performance',excellent:'Excellent',good:'Good',fair:'Below par',weak:'Weak',plan:'Plan',target:'Targets',prev:'Vs. last',pr:'PR bonus',na:'—',
+    none:'Not rated — the workout has no template and no earlier workout with the same name.',src_t:'from the template',src_p:'from the last workout with the same name',
+    snap:'Rated when finished.',feeling:'How did it feel?',feeling_opt:'optional',bad:'Bad',normal:'Normal',great:'Great',good_f:'Good'})[k];
+}
+const UI_FEELING_IC={bad:'😣',normal:'😐',good:'🙂',great:'🤩'};
+function uiFeelingLabel(f){ return uiPerfT(f==='good'?'good_f':f); }
+function uiPerformanceBlock(perf){
+  if(!perf) return '';
+  if(perf.score==null) return `<div class="wk-perf is-na" data-perf="na"><div class="kicker">${uiPerfT('title')}</div><div class="sub">${uiPerfT('none')}</div></div>`;
+  const bar=(k)=>{ const v=perf.parts[k]; return `<div class="wk-perf-part${v==null?' is-na':''}"><div class="between"><span>${uiPerfT(k)}</span><b>${v==null?uiPerfT('na'):v+' %'}</b></div><div class="bar"><i style="width:${v||0}%"></i></div></div>`; };
+  return `<div class="wk-perf" data-perf="${perf.score}"><div class="wk-perf-top"><div class="wk-perf-score">${perf.score}</div><div><div class="kicker">${uiPerfT('title')}</div>
+      <div class="wk-perf-label is-${perf.label}">${uiPerfT(perf.label)}</div><div class="sub">${uiPerfT(perf.planSource==='previous'?'src_p':'src_t')}</div></div></div>
+    ${bar('plan')}${bar('target')}${bar('prev')}${perf.prBonus?`<div class="between wk-perf-pr"><span>🏆 ${uiPerfT('pr')}</span><b>+${perf.prBonus}</b></div>`:''}</div>`;
+}
+function uiFeelingPicker(w,idp){
+  const cur=w.result&&w.result.feeling;
+  const box=el(`<div class="wk-feeling" id="${idp}"><div class="kicker">${uiPerfT('feeling')} <span class="sub">· ${uiPerfT('feeling_opt')}</span></div><div class="wk-feel-row" role="group" aria-label="${uiPerfT('feeling')}">
+    ${FEELINGS.map(f=>`<button type="button" class="pill wk-feel${cur===f?' on':''}" data-feel="${f}" aria-pressed="${cur===f}"><span aria-hidden="true">${UI_FEELING_IC[f]}</span> ${uiFeelingLabel(f)}</button>`).join('')}</div></div>`);
+  box.querySelectorAll('[data-feel]').forEach(b=>b.onclick=()=>{
+    const f=b.dataset.feel, next=(w.result&&w.result.feeling)===f?null:f; // tapping the chosen one again clears it
+    workoutSetFeeling(w.id,next); scheduleSave();
+    box.querySelectorAll('[data-feel]').forEach(x=>{ const on=x.dataset.feel===next; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
+  });
+  return box;
+}
+function uiWorkoutPlanLine(w){
+  // where the plan of a finished workout came from (template copy taken at Start) -- informative only
+  const pl=Array.isArray(w.plan)?w.plan:[];
+  if(!pl.length) return '';
+  const t=w.templateId?templateFind(w.templateId):null, sets=pl.reduce((a,p)=>a+(Number(p.target&&p.target.sets)||0),0), cs=uiLang()==='cs';
+  return `📋 ${cs?'Plán':'Plan'}: ${escapeHtml(t?t.name:(cs?'šablona':'template'))} · ${pl.length} ${uiTplT('n_ex')} · ${sets} ${uiTplT('n_sets')}`;
+}
+function openWorkoutSummary(w,granted){
+  const vol=workoutVolume(w), reps=workoutTotalReps(w);
+  const tile=(k,v)=>`<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value">${v}</div></div>`;
+  const inner=el(`<div class="wk-summary" id="wkSummary"><div class="wk-sum-top"><span class="wk-sum-ic" aria-hidden="true">💪</span><div><h3>${uiWkT('sum_t')}</h3><div class="sub">${escapeHtml(w.name)} · ${fmtDate(w.date)}</div></div></div>
+    <div class="stat-grid cols-2">${tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`)}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
+      ${reps?tile(uiWkT('sum_reps'),reps):''}${vol?tile(uiWkT('sum_vol'),`${uiNum(vol)}<small> kg</small>`):''}${tile(uiWkT('sum_ex'),w.entries.filter(en=>workoutWorkingSets(en).length).length)}</div>
+    ${granted?`<div class="chip wk-xp">+80 ${uiWkT('xp')}</div>`:''}
+    <div data-slot="performance"${w.result&&w.result.performance?'':' hidden'}>${uiPerformanceBlock(w.result&&w.result.performance)}</div>${uiMuscleSummary(w.id)}<div data-slot="feeling"></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
+    <button class="btn" id="wkSumOk" style="margin-top:14px">${uiWkT('ok')}</button></div>`);
+  inner.querySelector('[data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkSumFeel'));
+  inner.querySelector('#wkSumOk').onclick=()=>{ closeSheets(); render(); };
+  return openSheet(inner);
+}
+function openWorkoutAddExercise(w){
+  const inW=new Set(w.entries.map(en=>en.exerciseId));
+  const lib=(S.exerciseLibrary||[]).filter(x=>!x.archived).sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+  const have=new Set(lib.map(x=>exerciseKey(x.name)));
+  const cat=EXERCISE_PRESETS.filter(p=>!have.has(exerciseKey(p.name)));
+  const inner=el(`<div><h3>${uiWkT('pick_ex')}</h3>
+    <div class="kicker">${uiWkT('lib')}</div>${lib.length?'':`<div class="sub">${uiWkT('lib_empty')}</div>`}<div class="list wk-pick" id="wkPickLib"></div>
+    ${cat.length?`<div class="kicker" style="margin-top:12px">${uiWkT('catalog')}</div><div class="list wk-pick" id="wkPickCat"></div>`:''}</div>`);
+  const add=id=>{ workoutAddEntry(w.id,id); scheduleSave(); closeSheets(); render(); const c=document.querySelector('#wkEntries .wk-entry:last-child'); if(c) c.scrollIntoView({block:'center'}); };
+  lib.forEach(x=>{ const b=el(`<button class="wk-pick-row" data-pick="${x.id}"><span class="truncate"><b>${escapeHtml(x.name)}</b></span><span class="sub">${uiFitT(x.measurement)}${inW.has(x.id)?' · ✓':''}</span></button>`); b.onclick=()=>add(x.id); inner.querySelector('#wkPickLib').appendChild(b); });
+  cat.forEach(pr=>{ const b=el(`<button class="wk-pick-row" data-pick-preset="${escapeHtml(pr.name)}"><span class="truncate"><b>${escapeHtml(pr.name)}</b></span><span class="sub">${uiFitT(pr.measurement)}</span></button>`);
+    b.onclick=()=>{ const r=exerciseAddPreset(pr.name); if(r.ok) add(r.exercise.id); }; inner.querySelector('#wkPickCat').appendChild(b); });
+  openSheet(inner);
+}
+function uiEntrySummaryRows(w){
+  return (w.entries||[]).map(en=>{ const ws=workoutWorkingSets(en);
+    return `<div class="ex-row"><span class="truncate"><b>${escapeHtml(en.name||'—')}</b></span><span class="num sub">${ws.length}× · ${escapeHtml(uiSetsText(en.measurement,ws))}</span></div>`; }).join('');
+}
+function uiMuscT(k){
+  const cs=uiLang()==='cs';
+  return (cs?{tab:'Svaly',intro:'Svaly získávají XP podle toho, jaké cviky a série trénuješ. Různé svaly proto mohou postupovat různým tempem.',
+    lvl:'Level',to_next:'do dalšího levelu',sum:'Svaly',none:'Zatím žádné Muscle XP — dokonči trénink s cviky, které mají nastavené svaly.'}
+    :{tab:'Muscles',intro:'Muscles earn XP from the exercises and sets you train, so different muscles can progress at different speeds.',
+    lvl:'Level',to_next:'to the next level',sum:'Muscles',none:'No Muscle XP yet — finish a workout with exercises that have muscles set.'})[k];
+}
+function uiMuscleName(g){ return uiMuscleLabel(g); }
+function renderFitnessMuscles(){
+  const ov=muscleOverview(), any=ov.some(m=>m.xp>0);
+  const wrap=el(`<div>${uiPageHead('Fitness','')}${uiFitnessTabs()}<p class="sub mu-intro">${uiMuscT('intro')}</p>
+    ${any?'':`<div class="card sub" style="margin-bottom:10px">${uiMuscT('none')}</div>`}<div class="mu-grid" id="muGrid"></div></div>`);
+  uiBindFitnessTabs(wrap);
+  ov.forEach(m=>wrap.querySelector('#muGrid').appendChild(el(`<div class="card mu-card" data-muscle-card="${m.group}">
+    <div class="between"><div class="item-title">${escapeHtml(uiMuscleName(m.group))}</div><span class="mu-lvl">${uiMuscT('lvl')} ${m.level}</span></div>
+    <div class="between sub mu-xp"><span><b>${uiNum(m.xp)}</b> XP</span><span>${uiNum(m.into)} / ${uiNum(m.need)} ${uiMuscT('to_next')}</span></div>
+    <div class="bar" role="progressbar" aria-label="${escapeHtml(uiMuscleName(m.group))}" aria-valuemin="0" aria-valuemax="${m.need}" aria-valuenow="${m.into}"><i style="width:${uiPct(m.into,m.need)}%"></i></div></div>`)));
+  return wrap;
+}
+function uiMuscleSummary(wid){
+  const t=workoutMuscleXp(wid), gs=MUSCLE_GROUPS.filter(g=>t[g]>0).sort((a,b)=>t[b]-t[a]);
+  if(!gs.length) return '';
+  return `<div class="wk-muscles"><div class="kicker">💪 ${uiMuscT('sum')}</div><div class="chips">${gs.map(g=>`<span class="chip" data-mxp="${g}">${escapeHtml(uiMuscleName(g))} +${t[g]} XP</span>`).join('')}</div></div>`;
 }
 function renderFitness(){
+  if(uiWorkoutView){ const ws=renderWorkoutScreen(); if(ws) return ws; }
+  if(fitnessTab==='library') return renderFitnessLibrary();
+  if(fitnessTab==='templates') return renderFitnessTemplates();
+  if(fitnessTab==='muscles') return renderFitnessMuscles();
   const prs=exercisePRs();
   const cs=uiLang()==='cs';
   const L=cs?{t:'Fitness',add:'Zapsat trénink',week:'Tréninky tento týden',vol:'Objem tento týden',total:'Celkem tréninků',prs:'Osobní rekordy',hist:'Historie',min:'min',ex:'cviků',sets:'sérií',reps:'opak.',volume:'objem',none:'Zatím žádné tréninky',none_d:'Zapiš trénink a sleduj objem, série a osobní rekordy.'}
     :{t:'Fitness',add:'Log workout',week:'Workouts this week',vol:'Volume this week',total:'Total workouts',prs:'Personal records',hist:'History',min:'min',ex:'exercises',sets:'sets',reps:'reps',volume:'volume',none:'No workouts yet',none_d:'Log a workout to track volume, sets and personal records.'};
-  const ws=weekStart(), weekW=S.workouts.filter(w=>w.date>=ws);
+  const done=completedWorkouts(S);
+  const ws=weekStart(), weekW=done.filter(w=>w.date>=ws);
   const weekVol=weekW.reduce((a,w)=>a+workoutVolume(w),0), target=S.dailyTargets.workoutsPerWeek||0;
-  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}
+  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}${uiFitnessTabs()}<div id="wkPanel"></div>
     <div class="stat-grid cols-3">
       <div class="stat-card"><div class="stat-label">🗓️ ${L.week}</div><div class="stat-value">${weekW.length}${target?`<small>/${target}</small>`:''}</div>${target?`<div class="bar${weekW.length>=target?' is-success':''}"><i style="width:${uiPct(weekW.length,target)}%"></i></div>`:''}</div>
       <div class="stat-card"><div class="stat-label">🏋️ ${L.vol}</div><div class="stat-value">${uiNum(weekVol)}<small> kg</small></div></div>
-      <div class="stat-card"><div class="stat-label">📈 ${L.total}</div><div class="stat-value">${S.workouts.length}</div></div>
+      <div class="stat-card"><div class="stat-label">📈 ${L.total}</div><div class="stat-value">${done.length}</div></div>
     </div>
     ${prs.length?`<div class="section-header"><h3>🏆 ${L.prs}</h3></div><div class="pr-strip" id="prList"></div>`:''}
     <div class="section-header"><h3>${L.hist}</h3></div><div class="list" id="wList"></div>
   </div>`);
   if(prs.length){
     const prList=wrap.querySelector('#prList');
-    prs.slice(0,8).forEach(pr=>prList.appendChild(el(`<div class="pr-card"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${pr.weight}<small> kg</small></div><div class="sub">× ${pr.reps} · ${fmtDate(pr.date)}</div></div>`)));
+    prs.slice(0,8).forEach(pr=>{ const [v,u,d]=uiPrValue(pr); prList.appendChild(el(`<div class="pr-card" data-pr="${escapeHtml(pr.exerciseId)}:${pr.type}"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${escapeHtml(v)}${u?`<small> ${escapeHtml(u)}</small>`:''}</div><div class="sub">${uiPrTypeLabel(pr.type)}${d?' · '+escapeHtml(d):''} · ${fmtDate(pr.date)}</div></div>`)); });
   }
   const list=wrap.querySelector('#wList');
-  const sorted=[...S.workouts].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const sorted=[...done].sort((a,b)=>workoutChronoCmp(b,a));
   if(!sorted.length){ const e=el(`<div class="card">${uiEmpty('🏋️',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openWorkoutForm(); list.appendChild(e); }
   sorted.forEach(w=>{
     const vol=workoutVolume(w);
-    const exRows=(w.exercises||[]).map(ex=>`<div class="ex-row"><span class="truncate"><b>${escapeHtml(ex.name||'—')}</b>${ex.muscle?` <span class="sub">· ${escapeHtml(ex.muscle)}</span>`:''}</span><span class="num sub">${ex.sets||0}×${ex.reps||0}${Number(ex.weight)?` · ${ex.weight} kg`:''}${ex.rpe?` · RPE ${escapeHtml(String(ex.rpe))}`:''}</span></div>`).join('');
+    const exRows=Array.isArray(w.entries)?uiEntrySummaryRows(w):(w.exercises||[]).map(ex=>`<div class="ex-row"><span class="truncate"><b>${escapeHtml(ex.name||'—')}</b>${ex.muscle?` <span class="sub">· ${escapeHtml(ex.muscle)}</span>`:''}</span><span class="num sub">${ex.sets||0}×${ex.reps||0}${Number(ex.weight)?` · ${ex.weight} kg`:''}${ex.rpe?` · RPE ${escapeHtml(String(ex.rpe))}`:''}</span></div>`).join('');
     const it=el(`<div class="card workout-card">
       <div class="between"><div class="row" style="min-width:0"><span class="icon-circle" aria-hidden="true">💪</span><div style="min-width:0"><div class="item-title truncate">${escapeHtml(w.name)}</div><div class="item-meta">${fmtDate(w.date)}${w.date===todayStr()?' · '+uiT('today'):''}</div></div></div>
         <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(w.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
       <div class="wk-metrics"><span><b>${w.duration||0}</b> ${L.min}</span><span><b>${workoutTotalSets(w)}</b> ${L.sets}</span><span><b>${workoutTotalReps(w)}</b> ${L.reps}</span><span><b>${uiNum(vol)}</b> kg ${L.volume}</span></div>
       ${exRows?`<div class="ex-list">${exRows}</div>`:''}
+      ${w.result&&(w.result.performance&&w.result.performance.score!=null||w.result.feeling)?`<div class="chips wk-card-perf">${w.result.performance&&w.result.performance.score!=null?`<span class="chip">⚡ ${w.result.performance.score} · ${uiPerfT(w.result.performance.label)}</span>`:''}${w.result.feeling?`<span class="chip is-muted">${UI_FEELING_IC[w.result.feeling]} ${uiFeelingLabel(w.result.feeling)}</span>`:''}</div>`:''}
+      ${Array.isArray(w.entries)?(()=>{ const mx=Object.values(workoutMuscleXp(w.id)).reduce((a,v)=>a+v,0), pl=uiWorkoutPlanLine(w); return mx||pl?`<div class="chips wk-card-perf">${mx?`<span class="chip is-muted" data-card-mxp>💪 +${mx} Muscle XP</span>`:''}${pl?`<span class="chip is-muted" data-card-plan>${pl}</span>`:''}</div>`:''; })():''}
+      ${(w.result&&w.result.prs||[]).length?`<div class="chips wk-card-prs">${w.result.prs.map(pr=>`<span class="chip">🏆 ${escapeHtml(pr.name)} · ${uiPrTypeLabel(pr.type)}</span>`).join('')}</div>`:''}
       ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);
-    it.querySelector('.editBtn').onclick=()=>openWorkoutForm(w);
+    it.querySelector('.editBtn').onclick=()=>{ if(Array.isArray(w.entries)){ uiWorkoutView={mode:'edit',id:w.id}; render(); window.scrollTo(0,0); } else openWorkoutForm(w); };
     it.querySelector('.delbtn').onclick=()=>{
       if(!confirm(`Delete workout "${w.name}"? PRs will be recalculated from remaining workouts.`)) return;
       S.workouts=S.workouts.filter(x=>x.id!==w.id);scheduleSave();render();toast('Workout deleted');
@@ -3342,6 +5105,8 @@ function renderFitness(){
     list.appendChild(it);
   });
   wrap.querySelector('#addW').onclick=()=>openWorkoutForm();
+  wrap.querySelector('#wkPanel').appendChild(uiWorkoutStartPanel());
+  uiBindFitnessTabs(wrap);
   return wrap;
 }
 function openWorkoutForm(existing){
@@ -3918,14 +5683,14 @@ function allHabitsDoneToday(s){const list=habitsActiveList(s);return list.length
 function loggedFinanceToday(s){const d=todayStr();return s.expenses.some(e=>e.date===d)||s.income.some(i=>i.date===d);}
 function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function tasksCompletedThisWeek(s){const ws=weekStart();return s.tasks.filter(t=>t.done && t.dueDate && t.dueDate>=ws).length;}
-function workoutsThisWeek(s){const ws=weekStart();return s.workouts.filter(w=>w.date>=ws).length;}
+function workoutsThisWeek(s){const ws=weekStart();return completedWorkouts(s).filter(w=>w.date>=ws).length;}
 function habitsWithActivityThisWeekCount(s){const ws=weekStart();return habitsActiveList(s).filter(h=>(h.completions||[]).some(d=>d>=ws)).length;}
 function weeklyHabitTarget(s){return habitsActiveList(s).length;}
 const DAILY_QUESTS=[
  {id:'dq_tasks',title:'Complete 3 tasks today',xp:50,attr:'FOC',check:s=>tasksCompletedToday(s)>=3,max:3,val:s=>Math.min(3,tasksCompletedToday(s))},
  {id:'dq_habits',title:'Complete all active habits',xp:50,attr:'DEX',check:s=>allHabitsDoneToday(s),max:1,val:s=>allHabitsDoneToday(s)?1:0},
- {id:'dq_log',title:'Log a workout, meal or finance entry',xp:20,attr:'VIT',check:s=>s.workouts.some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s),max:1,val:s=>(s.workouts.some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s))?1:0},
- {id:'dq_workout',title:'Complete 1 workout today',xp:40,attr:'STR',check:s=>s.workouts.some(w=>w.date===todayStr()),max:1,val:s=>s.workouts.some(w=>w.date===todayStr())?1:0},
+ {id:'dq_log',title:'Log a workout, meal or finance entry',xp:20,attr:'VIT',check:s=>completedWorkouts(s).some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s),max:1,val:s=>(completedWorkouts(s).some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s))?1:0},
+ {id:'dq_workout',title:'Complete 1 workout today',xp:40,attr:'STR',check:s=>completedWorkouts(s).some(w=>w.date===todayStr()),max:1,val:s=>completedWorkouts(s).some(w=>w.date===todayStr())?1:0},
  {id:'dq_nutrition',title:'Log at least one meal today',xp:20,attr:'VIT',check:s=>s.meals.some(m=>m.date===todayStr()),max:1,val:s=>s.meals.some(m=>m.date===todayStr())?1:0},
 ];
 const WEEKLY_QUESTS=[
@@ -4299,7 +6064,7 @@ function computeStats(period){
   const {level,into,need}=levelFromXp(S.totalXp);
 
   // Fitness
-  const workoutsInPeriod=S.workouts.filter(w=>w.date>=since);
+  const workoutsInPeriod=completedWorkouts(S).filter(w=>w.date>=since);
   const fitness={
     count:workoutsInPeriod.length,
     sets:workoutsInPeriod.reduce((a,w)=>a+workoutTotalSets(w),0),
@@ -4380,6 +6145,7 @@ function renderStats(){
   });
   const st=computeStats(statsPeriod);
   const body=el(`<div class="stats-body"></div>`);
+  const dsCard=uiDsStatsCard(); // Phase 9 (placed above the KPI grid below)
   const kpi=(ic,label,v)=>`<div class="stat-card"><div class="stat-label">${ic} ${uiL(label)}</div><div class="stat-value">${v}</div></div>`;
   wrap.appendChild(el(`<div class="stat-grid cols-4 stats-kpis">
     ${kpi('✨','XP earned (period)',uiNum(st.xp.xpEarned))}${kpi('✅','Tasks',st.tasks.tasksCompleted)}${kpi('🔥','Check-ins (period)',st.habits.checks)}
@@ -4426,7 +6192,7 @@ function renderStats(){
     ['Workouts',st.fitness.count],['Sets',st.fitness.sets],['Reps',st.fitness.reps],
     ['Total volume',st.fitness.volume],['Total duration (min)',st.fitness.duration],['Personal records (all-time)',st.fitness.prs.length],
   ])));
-  body.appendChild(el(chartCard(uiL('Workout volume'),chartValuesForLog(S.workouts,statsPeriod,w=>workoutVolume(w)),null,{})));
+  body.appendChild(el(chartCard(uiL('Workout volume'),chartValuesForLog(completedWorkouts(S),statsPeriod,w=>workoutVolume(w)),null,{})));
 
   body.appendChild(el(statCard('Nutrition',[
     ['Avg calories/day (logged)',Math.round(st.nutrition.avgCalories)],['Avg protein (g)',Math.round(st.nutrition.avgProtein)],
@@ -4465,6 +6231,7 @@ function renderStats(){
     ['Current task-completion streak',st.streaks.taskStreak],
   ])));
 
+  wrap.insertBefore(dsCard,wrap.querySelector('.stats-kpis'));
   wrap.appendChild(body);
   return wrap;
 }
@@ -4497,13 +6264,14 @@ function searchNavigate(type,obj){
   else if(type==='expense'){ view='finance'; render(); openFinanceForm('expense',obj); }
   else if(type==='income'){ view='finance'; render(); openFinanceForm('income',obj); }
   else if(type==='subscription'){ view='subscriptions'; render(); openSubForm(obj); }
-  else if(type==='workout'){ view='fitness'; render(); openWorkoutForm(obj); }
+  else if(type==='workout'){ view='fitness'; if(Array.isArray(obj.entries)){ fitnessTab='workouts'; uiWorkoutView={mode:'edit',id:obj.id}; render(); window.scrollTo(0,0); } else { render(); openWorkoutForm(obj); } }
   else if(type==='meal'){ view='nutrition'; render(); openMealForm(obj); }
   else if(type==='journal'){ view='journal'; render(); openJournalForm(obj); }
   else if(type==='vehicle'){ view='car'; render(); openVehicleForm(obj); }
   else if(type==='carService'){ view='car'; render(); openServiceForm(obj.vehicleId,obj); }
   else if(type==='fuel'){ view='car'; render(); openFuelForm(obj.vehicleId,obj); }
   else if(type==='quest'){ view='quests'; render(); }
+  else if(type==='plannerBlock'){ uiPlannerDay=obj.date; view='planner'; render(); openPlannerForm(obj); }
   else if(type==='achievement'){ view='character'; render(); }
   else { view='home'; render(); }
 }
@@ -4514,6 +6282,8 @@ function searchGroups(q){
       .map(t=>({title:t.title,meta:[t.priority,t.dueDate?fmtDate(t.dueDate):''].filter(Boolean).join(' · '),obj:t}))],
     ['Events','📅','event', S.events.filter(e=>searchMatch([e.title,e.description,e.location,e.category],q))
       .map(e=>({title:e.title,meta:fmtDate(e.date),obj:e}))],
+    ['Planner','🗓️','plannerBlock', (S.plannerBlocks||[]).filter(b=>searchMatch([b.title,b.description,b.notes,...(b.workoutTemplateId?[(templateFind(b.workoutTemplateId)||{}).name]:[])],q))
+      .map(b=>({title:b.title,meta:fmtDate(b.date)+' · '+b.startTime+'–'+b.endTime+(b.workoutTemplateId?' · 🏋️ '+((templateFind(b.workoutTemplateId)||{}).name||uiPlT('tpl_missing')):''),obj:b}))],
     ['Habits','🔥','habit', S.habits.filter(h=>searchMatch([h.name,h.description,h.category],q))
       .map(h=>({title:h.name,meta:h.category||'',obj:h}))],
     ['Goals','🎯','goal', S.goals.filter(g=>searchMatch([g.title,g.description,g.category],q))
@@ -4528,7 +6298,7 @@ function searchGroups(q){
       .map(i=>({title:i.description||i.category||'Income',meta:fmtDate(i.date),obj:i}))],
     ['Subscriptions','💳','subscription', S.subscriptions.filter(s=>searchMatch([s.name,s.category,s.notes],q))
       .map(s=>({title:s.name,meta:s.category||'',obj:s}))],
-    ['Workouts','🏋️','workout', S.workouts.filter(w=>searchMatch([w.name,w.notes,...(w.exercises||[]).map(ex=>ex.name)],q))
+    ['Workouts','🏋️','workout', completedWorkouts(S).filter(w=>searchMatch([w.name,w.notes,...(w.exercises||[]).map(ex=>ex.name),...(w.entries||[]).map(en=>en.name)],q))
       .map(w=>({title:w.name,meta:fmtDate(w.date),obj:w}))],
     ['Meals','🍽️','meal', S.meals.filter(m=>searchMatch([m.name,m.notes,m.type],q))
       .map(m=>({title:m.name,meta:fmtDate(m.date),obj:m}))],
@@ -4582,6 +6352,228 @@ function sleepDuration(s){
   let b=new Date('2000-01-01T'+s.bedtime), w=new Date('2000-01-01T'+s.wake);
   if(w<=b) w=new Date('2000-01-02T'+s.wake);
   return Math.round((w-b)/3600000*100)/100;
+}
+/* ================= Phase 10: Daily Planner (time blocking) =================
+   A planner block says WHEN something is done; a Task says WHAT. Blocks live in S.plannerBlocks
+   ({id,date,startTime,endTime,title,description,category,taskId,goalId,workoutId,completed,notes,
+   createdAt,updatedAt}); one block = one concrete day (no recurrence, no crossing midnight).
+   Links are optional ids resolved on read (dangling-safe). Completing a block never touches the
+   linked Task/Workout/Goal, never grants XP and is not part of Daily Score. ---- */
+function plannerTimeToMin(t){ const m=/^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(t==null?'':t).trim()); return m?Number(m[1])*60+Number(m[2]):null; }
+function plannerMinToTime(n){ n=Math.max(0,Math.min(1439,Math.round(n))); return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0'); }
+function plannerValidDate(d){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||'')); if(!m) return false; const x=new Date(Number(m[1]),Number(m[2])-1,Number(m[3])); return x.getFullYear()===Number(m[1])&&x.getMonth()===Number(m[2])-1&&x.getDate()===Number(m[3]); }
+// Returns {} when valid, otherwise {field:'code'} with codes: required | invalid | end_before_start.
+function plannerValidate(f){
+  const e={};
+  if(!String(f.title||'').trim()) e.title='required';
+  if(!plannerValidDate(f.date)) e.date='invalid';
+  const s=plannerTimeToMin(f.startTime), en=plannerTimeToMin(f.endTime);
+  if(s==null) e.startTime='invalid';
+  if(en==null) e.endTime='invalid';
+  if(s!=null&&en!=null&&en<=s) e.endTime='end_before_start';
+  return e;
+}
+function plannerDuration(b){ const s=plannerTimeToMin(b.startTime), e=plannerTimeToMin(b.endTime); return s!=null&&e!=null&&e>s?e-s:0; }
+function plannerBlocksOn(D){
+  return (S.plannerBlocks||[]).filter(b=>b.date===D).sort((a,b)=>(plannerTimeToMin(a.startTime)-plannerTimeToMin(b.startTime))||(plannerTimeToMin(a.endTime)-plannerTimeToMin(b.endTime)));
+}
+// Overlap layout: items [{id,start,end}] (minutes) -> {id:{col,cols}}. Items that overlap (directly
+// or through a chain) share a cluster; each gets the first free column; cols = columns used.
+function plannerLayout(items){
+  const out={}, sorted=[...items].sort((a,b)=>a.start-b.start||a.end-b.end);
+  let cluster=[], colEnds=[], clusterEnd=-1;
+  const flush=()=>{ cluster.forEach(id=>{ out[id].cols=colEnds.length; }); cluster=[]; colEnds=[]; };
+  sorted.forEach(it=>{
+    if(it.start>=clusterEnd) flush();
+    let col=colEnds.findIndex(end=>end<=it.start);
+    if(col<0){ col=colEnds.length; colEnds.push(it.end); } else colEnds[col]=it.end;
+    out[it.id]={col,cols:1}; cluster.push(it.id); clusterEnd=Math.max(clusterEnd,it.end);
+  });
+  flush();
+  return out;
+}
+function plannerLinks(b){
+  return {task:b.taskId?S.tasks.find(t=>t.id===b.taskId)||null:null, goal:b.goalId?S.goals.find(g=>g.id===b.goalId)||null:null,
+    workout:b.workoutId?S.workouts.find(w=>w.id===b.workoutId)||null:null,
+    template:b.workoutTemplateId?templateFind(b.workoutTemplateId):null};
+}
+/* ---- Phase 11A step 9: Planner <-> Workout Template <-> Active Workout, by reference only.
+   A block may carry workoutTemplateId (the template is never copied into the block); starting it
+   runs the normal workoutStart({templateId, plannerBlockId}) -> a standard active workout with its
+   own w.plan snapshot. The block's `completed` and the workout's status stay independent; no XP. */
+function plannerBlockWorkouts(b){ return (S.workouts||[]).filter(w=>w.plannerBlockId===b.id); }
+function plannerBlockWorkoutState(b){
+  // informative only: 'active' while a workout started from this block runs, 'done' once one finished
+  const ws=plannerBlockWorkouts(b);
+  if(ws.some(w=>w.status==='active')) return 'active';
+  return ws.some(isCompletedWorkout)?'done':null;
+}
+function plannerStartWorkout(blockId){
+  const b=(S.plannerBlocks||[]).find(x=>x.id===blockId); if(!b||!b.workoutTemplateId) return {ok:false,reason:'no_block'};
+  const cur=activeWorkout(); if(cur) return {ok:false,reason:'active_exists',workout:cur};
+  if(!templateFind(b.workoutTemplateId)) return {ok:false,reason:'no_template'};
+  const r=workoutStart({templateId:b.workoutTemplateId,plannerBlockId:b.id});
+  if(r.ok&&!b.workoutId){ b.workoutId=r.workout.id; b.updatedAt=Date.now(); } // reference for the existing "linked workout" chip
+  return r;
+}
+function plannerDaySummary(D){
+  const bl=plannerBlocksOn(D);
+  return {planned:bl.length,completed:bl.filter(b=>b.completed).length,plannedMin:bl.reduce((a,b)=>a+plannerDuration(b),0),completedMin:bl.filter(b=>b.completed).reduce((a,b)=>a+plannerDuration(b),0)};
+}
+// CRUD. Save validates first and never touches the linked records.
+function plannerSaveBlock(fields,existing){
+  const f={date:fields.date,startTime:String(fields.startTime||'').trim(),endTime:String(fields.endTime||'').trim(),title:String(fields.title||'').trim(),
+    description:fields.description||'',category:fields.category||'',taskId:fields.taskId||'',goalId:fields.goalId||'',workoutId:fields.workoutId||'',notes:fields.notes||'',
+    workoutTemplateId:fields.workoutTemplateId||''};
+  const errors=plannerValidate(f);
+  if(Object.keys(errors).length) return {ok:false,errors};
+  if(!Array.isArray(S.plannerBlocks)) S.plannerBlocks=[];
+  let block=existing?S.plannerBlocks.find(b=>b.id===existing.id):null;
+  if(block) Object.assign(block,f,{updatedAt:Date.now()});
+  else { block=Object.assign({id:uid(),completed:false,createdAt:Date.now(),updatedAt:Date.now()},f); S.plannerBlocks.push(block); }
+  scheduleSave();
+  return {ok:true,errors:{},block};
+}
+function plannerDeleteBlock(id){ const n=(S.plannerBlocks||[]).length; S.plannerBlocks=(S.plannerBlocks||[]).filter(b=>b.id!==id); if(S.plannerBlocks.length!==n) scheduleSave(); return S.plannerBlocks.length!==n; }
+function plannerToggleCompleted(id){ const b=(S.plannerBlocks||[]).find(x=>x.id===id); if(!b) return false; b.completed=!b.completed; b.updatedAt=Date.now(); scheduleSave(); return true; }
+/* ================= Phase 9: Daily Score (0–100) =================
+   How well a single day went, measured only against what was actually relevant for that day.
+   Strictly read-only: never grants XP, never touches level/attributes/points/achievements/quests.
+   Every area returns {score:0..100|null, ...details}; null = N/A (not relevant or no data) and
+   N/A areas are left out of the weighted average entirely (weights re-normalize). ---- */
+const DAILY_SCORE_ALGO=1;
+const DAILY_SCORE_WEIGHTS={tasks:30,habits:30,nutrition:15,sleep:15,fitness:10}; // goals: info only (weight 0)
+const DAILY_SCORE_PRIORITY_WEIGHT={Low:1,Medium:1,High:1.5,Urgent:2};
+function dailyScoreLabelKey(score){
+  if(score==null) return null;
+  return score>=90?'excellent':score>=75?'good':score>=50?'solid':score>=25?'weaker':'tough';
+}
+// Tasks: due on D (done or not) + overdue tasks completed on D (xpLog key task:<id>:<D>, the only
+// completion-date record the model has). Open overdue tasks are informational only (no snowball).
+function dailyScoreTasks(D){
+  const due=S.tasks.filter(t=>t.dueDate===D);
+  const lateDone=S.tasks.filter(t=>t.done && t.dueDate && t.dueDate<D && S.xpLog.some(x=>x.key===`task:${t.id}:${D}`));
+  const openOverdue=S.tasks.filter(t=>!t.done && t.dueDate && t.dueDate<D).length;
+  const items=[...due,...lateDone];
+  if(!items.length) return {score:null,reason:'none_planned',openOverdue};
+  let wAll=0,wDone=0,done=0;
+  items.forEach(t=>{ const w=DAILY_SCORE_PRIORITY_WEIGHT[t.priority]||1; wAll+=w; if(t.done){ wDone+=w; done++; } });
+  return {score:Math.round(wDone/wAll*100),done,total:items.length,lateDone:lateDone.length,openOverdue};
+}
+// Weekly/custom habits count only on a day they are necessary: the completions still needed this
+// week (target capped to the days the habit exists this week) >= days left including D.
+function dailyScoreHabitNeeded(h,D){
+  const ws=habitWeekStart(D);
+  const first=h.startDate&&h.startDate>ws?h.startDate:ws;
+  const dayIdx=d=>Math.round((new Date(d+'T00:00')-new Date(ws+'T00:00'))/86400000);
+  const target=Math.min(h.target||1,7-dayIdx(first));
+  const doneBefore=[...new Set((h.completions||[]).filter(x=>x>=ws&&x<D))].length;
+  const remaining=target-doneBefore;
+  return remaining>0 && remaining>=7-dayIdx(D);
+}
+function dailyScoreHabits(D){
+  let sum=0,n=0,done=0,pending=0;
+  S.habits.forEach(h=>{
+    if(h.active===false) return;
+    if(h.startDate && D<h.startDate) return;
+    if(h.type==='bad'){
+      if((h.completions||[]).includes(D)){ sum+=1; n++; done++; }
+      else if((h.brokenDates||[]).includes(D)){ n++; }
+      else pending++; // nothing logged yet: not evidence either way
+      return;
+    }
+    if(h.frequency==='weekly'||h.frequency==='custom'){
+      if(!dailyScoreHabitNeeded(h,D)) return;
+      const ok=(h.completions||[]).includes(D); sum+=ok?1:0; n++; if(ok) done++;
+      return;
+    }
+    if(!isScheduledDate(h,D)) return;
+    if(habitUsesDayCounter(h)){
+      const c=(h.completions||[]).filter(x=>x===D).length;
+      const part=Math.min(1,c/(h.target||1)); sum+=part; n++; if(part>=1) done++;
+      return;
+    }
+    const ok=isDayComplete(h,D); sum+=ok?1:0; n++; if(ok) done++;
+  });
+  if(!n) return {score:null,reason:'none_scheduled',pending};
+  return {score:Math.round(sum/n*100),done,total:n,pending};
+}
+// Stravování (nutrition area, weight 15) vs the user's own targets. Parts: calories 60, protein 25,
+// water 15 -- a part counts only when its data was logged that day (meals -> calories/protein,
+// water -> water) and its target is set; internal weights re-normalize over available parts.
+// Calories: LIVE today = progress actual/target capped at 100 (no bonus, no end-of-day guess);
+// a finished day uses the symmetric band (90–110 % = 100, 0 at 50 % and 150 %) so eating far
+// below target is never rewarded.
+function dailyScoreCalorieBand(r){
+  if(r>=0.9&&r<=1.1) return 100;
+  return r<0.9 ? Math.max(0,(r-0.5)/0.4*100) : Math.max(0,(1.5-r)/0.4*100);
+}
+function dailyScoreNutrition(D,live){
+  const hasMeal=S.meals.some(m=>m.date===D), hasWater=S.waterLog.some(w=>w.date===D);
+  if(!hasMeal&&!hasWater) return {score:null,reason:'no_data'};
+  const tg=S.nutritionTargets||{}, tot=nutriTotals(D), water=waterOnDate(D);
+  const parts={calories:null,protein:null,water:null}, w={calories:60,protein:25,water:15};
+  if(hasMeal&&Number(tg.calories)>0){ const r=tot.calories/Number(tg.calories); parts.calories=live?Math.min(100,r*100):dailyScoreCalorieBand(r); }
+  if(hasMeal&&Number(tg.protein)>0) parts.protein=Math.min(100,tot.protein/Number(tg.protein)*100);
+  if(hasWater&&Number(tg.water)>0) parts.water=Math.min(100,water/Number(tg.water)*100);
+  const keys=Object.keys(parts).filter(k=>parts[k]!=null);
+  if(!keys.length) return {score:null,reason:'no_targets'};
+  const wAll=keys.reduce((a,k)=>a+w[k],0);
+  return {score:Math.round(keys.reduce((a,k)=>a+w[k]*parts[k],0)/wAll),mode:live?'live':'closed',
+    calories:Math.round(tot.calories),caloriesTarget:Number(tg.calories)||0,protein:Math.round(tot.protein),proteinTarget:Number(tg.protein)||0,
+    water:Math.round(water),waterTarget:Number(tg.water)||0,parts:Object.fromEntries(Object.entries(parts).map(([k,v])=>[k,v==null?null:Math.round(v)]))};
+}
+// Sleep: the entry dated D (wake-up day); duplicates -> the longer one. 7–9 h = 100, 0 at 4 h,
+// 70 at 11 h. Not a health assessment.
+function dailyScoreSleepBand(h){
+  if(h>=7&&h<=9) return 100;
+  if(h<7) return Math.max(0,(h-4)/3*100);
+  return Math.max(70,100-(h-9)/2*30);
+}
+function dailyScoreSleep(D){
+  const entries=S.sleepLog.filter(x=>x.date===D);
+  if(!entries.length) return {score:null,reason:'no_data'};
+  const best=entries.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a);
+  const hours=sleepDuration(best);
+  return {score:Math.round(dailyScoreSleepBand(hours)),hours,quality:best.quality!=null&&best.quality!==''?Number(best.quality):null};
+}
+// Fitness is scored only when a workout was planned: a Fitness-category calendar event on D
+// (same "stored date or next occurrence" rule as the calendar). Unplanned workouts = bonus info.
+function dailyScoreFitness(D){
+  const planned=S.events.some(e=>e.category==='Fitness'&&(e.date===D||eventUpcomingDate(e)===D));
+  const workouts=completedWorkouts(S).filter(w=>w.date===D).length;
+  if(!planned) return {score:null,reason:'not_planned',bonus:workouts>0,workouts};
+  return {score:workouts>0?100:0,planned:true,workouts};
+}
+// Goals: information only in algo 1 (never part of the score).
+function dailyScoreGoals(D){
+  const ms=S.milestones.filter(m=>m.completed&&m.completedAt&&(()=>{const d=new Date(m.completedAt);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})()===D);
+  return {score:null,reason:'info_only',milestones:ms.map(m=>m.title)};
+}
+// Writes snapshots for finished days (since the feature first ran, at most 14 days back, only days
+// that have a score). Existing snapshots are never rewritten. Returns true if S changed.
+function finalizeDailyScores(){
+  if(!S) return false;
+  let changed=false;
+  if(!S.dailyScores||typeof S.dailyScores!=='object'){ S.dailyScores={}; changed=true; }
+  const today=todayStr();
+  if(!S.dailyScoresSince){ S.dailyScoresSince=today; return true; }
+  let d=S.dailyScoresSince; const oldest=addDays(today,-14); if(d<oldest) d=oldest;
+  for(;d<today;d=addDays(d,1)){
+    if(S.dailyScores[d]) continue;
+    const r=dailyScore(d);
+    if(r.score==null) continue;
+    S.dailyScores[d]={score:r.score,label:r.label,algo:r.algo,areas:Object.fromEntries(Object.keys(DAILY_SCORE_WEIGHTS).map(k=>[k,r.areas[k]])),finalizedAt:Date.now()};
+    changed=true;
+  }
+  return changed;
+}
+function dailyScore(D){
+  const areas={tasks:dailyScoreTasks(D),habits:dailyScoreHabits(D),nutrition:dailyScoreNutrition(D,D===todayStr()),sleep:dailyScoreSleep(D),fitness:dailyScoreFitness(D),goals:dailyScoreGoals(D)};
+  let wAll=0,acc=0,relevant=0;
+  Object.keys(DAILY_SCORE_WEIGHTS).forEach(k=>{ const a=areas[k]; if(a.score==null) return; wAll+=DAILY_SCORE_WEIGHTS[k]; acc+=DAILY_SCORE_WEIGHTS[k]*a.score; relevant++; });
+  const score=wAll?Math.round(acc/wAll):null;
+  return {date:D,algo:DAILY_SCORE_ALGO,score,label:dailyScoreLabelKey(score),relevant,areas};
 }
 /* ---- Phase 7: Health/Sleep statistics — always computed fresh from the real logs, never
    cached, so editing/deleting a log entry is instantly reflected everywhere it's shown. ---- */
@@ -4896,14 +6888,15 @@ function openSheet(contentEl){
   bg.onkeydown=(e)=>{ if(e.key==='Escape'&&bg.onclick) bg.remove(); };
   document.body.appendChild(bg);
   const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button');
-  setTimeout(()=>{ try{ (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
+  // Never steal focus from a field the user already moved to (the timer can fire late on slow devices).
+  setTimeout(()=>{ try{ if(sheet.contains(document.activeElement)) return; (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
   sheet.tabIndex=-1;
   return bg;
 }
 function catOptions(){return CAT_LIST.map(c=>`<option value="${c}">${CATS[c].ic} ${c}</option>`).join('');}
 
 function openQuickAdd(){
-  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽']];
+  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽'],['planner','🗓️']];
   const content=el(`<div>
     <h3>${uiT('quick_add')}</h3>
     <div class="qgrid">${opts.map(([t,ic])=>`<button class="qopt" data-t="${t}"><span class="ic" aria-hidden="true">${ic}</span>${uiT('qa_'+t)}</button>`).join('')}</div>
@@ -4922,6 +6915,7 @@ function openQuickAdd(){
     else if(t==='habit') openHabitForm();
     else if(t==='water') quickAddWater();
     else if(t==='fuel') openFuelQuickAdd();
+    else if(t==='planner') openPlannerForm(null,{date:todayStr()});
     else openForm(t);
   });
 }

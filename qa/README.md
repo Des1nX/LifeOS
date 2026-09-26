@@ -7,7 +7,7 @@ everything here is test tooling only (acorn, playwright, pngjs, pixelmatch as de
 cd qa && npm install          # uses the preinstalled Chromium
 npm test                      # fingerprint check + smoke suite
 npm run fingerprint           # business-logic fingerprint vs baseline/fingerprint.json
-npm run smoke                 # Playwright suite (29 tests)
+npm run smoke                 # Playwright suite (72 tests)
 npm run screens:compare       # pixel-compare fresh screenshots with baseline/screens-8b
 npm run screens               # re-record baseline/screens-8b (only after an intended UI change)
 node shot.mjs <dir> <width> <theme> view[:action],...   # dev helper for quick screenshots
@@ -17,6 +17,9 @@ node shot.mjs <dir> <width> <theme> view[:action],...   # dev helper for quick s
 |---|---|
 | `fingerprint.mjs` | Every non-UI top-level declaration (model, migrations, XP/RPG, IndexedDB, boot, event wiring) is identical at AST level to the pre-8B file (`cd37304`). For `render*`/`open*`/`ui*` presentation functions, every data effect (logic calls, record mutations/assignments incl. the locals they read) must be identical; effects may only *move* between UI functions if the global multiset is unchanged. Navigation-only state (view, filters, render()) and DOM properties are reported for review. |
 | `smoke.mjs` | 19 baseline tests (boot, onboarding, 21 views, navigation, quick add, task CRUD, XP idempotency, level rewards, IndexedDB round-trip, pagehide flush, IDs, export/import, reset, theme, golden values) + 10 Phase 8B tests (zero overflow at 320–1440 px, no duplicate ids, grouped toasts, task completion feedback, accessible names, touch targets, reduced motion/animations setting, keyboard/dialog, WCAG contrast, cs/en greeting). Any console error fails a test. |
+| `baseline/approved.json` | Deliberately approved deviations from the pre-8B logic baseline (Phase 9 Daily Score: new calculator functions, `defaultState` keys, snapshot call in `render()`). Hashes are pinned: any further edit of an approved declaration fails again. Written only by `node fingerprint.mjs --approve "<reason>"`. |
+| Phase 9 tests | 20 Daily Score tests: calculator per area (empty day, tasks, completed vs incomplete, habits, nutrition, sleep, fitness N/A/bonus, combination, labels), read-only guarantee, history snapshots (no estimated history, immutable, reload, export/import, old backup, reset), Home card, empty-day text, detail reasons, widget order/visibility, 320–430 px, Statistics. |
+| Phase 10 tests | 15 Daily Planner tests: time validation (invalid, equal, reversed), CRUD, overlap layout / same-time blocks, block vs task completion independence, dangling links, Quick Add, UI validation, edit/delete, Task → Naplánovat, deleted task, Home Today's plan, day navigation + read-only events, Search, reload/export/import/old state/reset, full-session invariants (XP/RPG/Daily Score/tasks/events). |
 | `baseline/golden.json` | Deterministic outputs of rule tables and calculators on `fixture.mjs` with a frozen clock (2026-09-23). |
 | `baseline/screens/` | Pre-8B screenshots (mobile dark/light 390 px, desktop dark 1280 px). |
 | `baseline/screens-8b/` | Phase 8B screenshots: 375/390/430/1280/1440 px × dark/light, 24 screens each. |

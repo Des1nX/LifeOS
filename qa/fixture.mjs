@@ -102,6 +102,13 @@ export function fixtureState() {
       activityLog: [{ id: 'al1', type: 'levelup', title: 'Level 4', description: 'Reached Level 4', xp: 0, createdAt: ts(-5) }],
     },
     dailyTargets: { workoutsPerWeek: 3, tasksPerDay: 3, habitsPerDay: 2 },
+    plannerBlocks: [
+      { id: 'pb_school', date: d(0), startTime: '08:00', endTime: '09:00', title: 'Škola', description: '', category: 'Learning', taskId: '', goalId: '', workoutId: '', completed: true, notes: '', createdAt: ts(-1), updatedAt: ts(-1) },
+      { id: 'pb_math', date: d(0), startTime: '15:00', endTime: '16:00', title: 'Matematika', description: 'Kapitola 4', category: 'Learning', taskId: 't_open', goalId: '', workoutId: '', completed: false, notes: '', createdAt: ts(-1), updatedAt: ts(-1) },
+      { id: 'pb_call', date: d(0), startTime: '15:30', endTime: '16:30', title: 'Konzultace', description: '', category: 'Work', taskId: '', goalId: '', workoutId: '', completed: false, notes: 'Zoom', createdAt: ts(-1), updatedAt: ts(-1) },
+      { id: 'pb_push', date: d(0), startTime: '17:00', endTime: '18:15', title: 'PUSH A', description: '', category: 'Fitness', taskId: '', goalId: 'g_fit', workoutId: 'w2', completed: false, notes: '', createdAt: ts(-1), updatedAt: ts(-1) },
+      { id: 'pb_tomorrow', date: d(1), startTime: '19:00', endTime: '20:00', title: 'Učení', description: '', category: 'Learning', taskId: '', goalId: '', workoutId: '', completed: false, notes: '', createdAt: ts(-1), updatedAt: ts(-1) },
+    ],
     notificationLog: [],
     settings: {
       theme: 'dark', onboarded: true, language: 'cs', dateFormat: 'DD.MM.YYYY', timeFormat: '24h', firstDayOfWeek: 'monday',
