@@ -1,0 +1,439 @@
+// Playwright smoke/regression suite for LifeOS.html.
+//
+//   node smoke.mjs                 run every test
+//   node smoke.mjs --write-golden  (re)record baseline/golden.json from the current build
+//   node smoke.mjs --screens [dir] save screenshots of every view (default: out/screens)
+//
+// Tests talk to the app the way a person does (clicks on the stable hooks: nav [data-v], #fabBtn,
+// #settingsBtn, #themeBtn, form field ids, .check/.delbtn/.editBtn) and read state through the
+// app's own globals (S, render, view...) plus a raw IndexedDB reader that does not use app code.
+import http from 'node:http';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { fixtureState, TODAY, NOW } from './fixture.mjs';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const APP = process.env.LIFEOS_HTML ? path.resolve(process.env.LIFEOS_HTML) : path.resolve(here, '..', 'LifeOS.html');
+const GOLDEN = path.join(here, 'baseline', 'golden.json');
+const args = process.argv.slice(2);
+
+export const VIEWS = ['home', 'tasks', 'habits', 'goals', 'character', 'more', 'finance', 'fitness', 'nutrition', 'notes',
+  'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings'];
+const NAV = ['home', 'tasks', 'habits', 'character', 'more'];
+const MORE_ITEMS = ['goals', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests',
+  'statistics', 'search', 'health', 'character', 'settings'];
+const QUICK_ADD = ['task', 'habit', 'goal', 'expense', 'income', 'workout', 'meal', 'note', 'journal', 'event', 'water', 'fuel'];
+
+// ---------- harness ----------
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+  res.end(readFileSync(APP));
+});
+await new Promise(r => server.listen(0, '127.0.0.1', r));
+const URL_ = `http://127.0.0.1:${server.address().port}/`;
+const browser = await chromium.launch();
+
+async function openApp({ state = null, viewport = { width: 390, height: 844 }, errors } = {}) {
+  const context = await browser.newContext({ viewport, timezoneId: 'Europe/Prague', locale: 'cs-CZ', acceptDownloads: true, reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
+  page.on('console', m => { if (m.type() === 'error') errors.push(`console.error: ${m.text()}`); });
+  await page.clock.setFixedTime(NOW); // Date is frozen at the fixture's TODAY; timers still run for real
+  await page.goto(URL_);
+  await booted(page);
+  if (state) {
+    // Also swap the in-memory S: the app's pagehide/beforeunload flushSave() writes S on reload.
+    await page.evaluate(async st => { S = st; await rawIdbPut(st); }, state);
+    await reload(page);
+  }
+  return { context, page };
+}
+async function booted(page) {
+  await page.waitForFunction(() => typeof S !== 'undefined' && S !== null && document.getElementById('app'));
+  await injectRawIdb(page);
+}
+async function reload(page) { await page.reload(); await booted(page); }
+// Raw IndexedDB access that does not go through the app's idbGet/idbSet.
+async function injectRawIdb(page) {
+  await page.evaluate(() => {
+    const open = () => new Promise((res, rej) => { const r = indexedDB.open('lifeos', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    window.rawIdbGet = async () => { const db = await open(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get('state'); q.onsuccess = () => { db.close(); res(q.result); }; q.onerror = () => rej(q.error); }); };
+    window.rawIdbPut = async v => { const db = await open(); return new Promise((res, rej) => { const q = db.transaction('kv', 'readwrite').objectStore('kv').put(v, 'state'); q.onsuccess = () => { db.close(); res(true); }; q.onerror = () => rej(q.error); }); };
+  });
+}
+const settle = page => page.waitForTimeout(450); // > scheduleSave()'s 250 ms debounce
+const stateOf = page => page.evaluate(() => JSON.parse(JSON.stringify(S)));
+const idbState = page => page.evaluate(async () => JSON.parse(JSON.stringify(await rawIdbGet()))); // JSON view, like stateOf (xpLog.key may be undefined)
+const go = (page, v) => page.evaluate(v => { view = v; render(); }, v);
+function allIds(obj, out = []) {
+  if (Array.isArray(obj)) obj.forEach(x => allIds(x, out));
+  else if (obj && typeof obj === 'object') { if (typeof obj.id === 'string') out.push(obj.id); Object.values(obj).forEach(x => allIds(x, out)); }
+  return out;
+}
+async function appText(page) { return page.evaluate(() => document.getElementById('app').innerText); }
+
+const tests = [];
+const test = (name, fn, opts = {}) => tests.push({ name, fn, opts });
+const notes = []; // non-failing observations about the baseline
+
+// ---------- tests ----------
+test('boot: fresh install shows onboarding, schemaVersion 8, no errors', async ({ page }) => {
+  const s = await stateOf(page);
+  assert.equal(s.schemaVersion, 8);
+  assert.equal(s.settings.onboarded, false);
+  assert.ok(await page.locator('.sheet').isVisible(), 'onboarding sheet visible');
+  assert.match(await page.locator('.sheet h2').innerText(), /LifeOS/);
+});
+
+test('shell: stable DOM hooks the JS relies on are present', async ({ page }) => {
+  for (const id of ['app', 'toasts', 'fabBtn', 'settingsBtn', 'themeBtn', 'manifestLink']) assert.equal(await page.locator('#' + id).count(), 1, '#' + id);
+  assert.deepEqual(await page.$$eval('nav.bottom button', bs => bs.map(b => b.dataset.v)), NAV);
+});
+
+test('onboarding: full 6-step wizard via UI persists answers', async ({ page }) => {
+  await page.fill('#ob_name', 'QA Hero'); await page.click('.sheet .btn:not(.ghost)');
+  await page.locator('#ob_avatars button').nth(3).click(); await page.click('.sheet .btn:not(.ghost)');
+  await page.fill('#ob_goal', 'QA goal'); await page.fill('#ob_goal_date', '2026-12-31'); await page.click('.sheet .btn:not(.ghost)');
+  for (let i = 0; i < 3; i++) await page.locator('#ob_habits button').nth(i).click();
+  await page.click('.sheet .btn:not(.ghost)');
+  await page.fill('#ob_cal', '2500'); await page.click('.sheet .btn:not(.ghost)');
+  await page.click('#ob_seed');
+  await settle(page);
+  const s = await stateOf(page);
+  assert.equal(s.settings.onboarded, true);
+  assert.equal(s.profile.name, 'QA Hero');
+  assert.equal(s.profile.avatar, '🧝');
+  assert.ok(s.goals.some(g => g.title === 'QA goal' && g.targetDate === '2026-12-31'));
+  assert.deepEqual(s.habits.map(h => h.name).slice(0, 3), ['Drink water', 'Exercise', 'Read']);
+  assert.equal(s.habits.length, 5, '3 picked + 2 sample habits');
+  assert.equal(s.tasks.length, 2, 'sample tasks');
+  assert.equal(s.nutritionTargets.calories, 2500);
+  await reload(page);
+  assert.equal(await page.locator('.sheet').count(), 0, 'wizard not shown again');
+  assert.equal((await stateOf(page)).profile.name, 'QA Hero');
+});
+
+test('onboarding: Skip finishes immediately and never re-traps', async ({ page }) => {
+  await page.fill('#ob_name', 'Skipper'); await page.click('.sheet .btn:not(.ghost)');
+  await page.locator('.sheet button', { hasText: 'Skip' }).click();
+  await settle(page);
+  const s = await stateOf(page);
+  assert.equal(s.settings.onboarded, true);
+  assert.equal(s.tasks.length, 0);
+  await reload(page);
+  assert.equal(await page.locator('.sheet').count(), 0);
+});
+
+test('views: all 21 screens render with data and without errors', async ({ page }, ctx) => {
+  await page.evaluate(() => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; });
+  for (const v of VIEWS) {
+    await go(page, v);
+    const txt = await appText(page);
+    assert.ok(txt.trim().length > 0 && await page.locator('#app > *').count() > 0, `view ${v} rendered content`);
+    for (const bad of ['undefined', 'NaN', '[object Object]']) if (txt.includes(bad)) ctx.note(`view "${v}" shows "${bad}"`);
+  }
+}, { state: fixtureState() });
+
+test('navigation: bottom nav, More grid, settings button and detail links', async ({ page }) => {
+  for (const v of NAV) { await page.click(`nav.bottom button[data-v="${v}"]`); assert.equal(await page.evaluate(() => view), v); assert.equal(await page.locator(`nav.bottom button[data-v="${v}"].on`).count(), 1); }
+  for (const [i, v] of MORE_ITEMS.entries()) {
+    await page.click('nav.bottom button[data-v="more"]');
+    await page.locator('#moreGrid > *').nth(i).click();
+    assert.equal(await page.evaluate(() => view), v, `More item ${i}`);
+  }
+  await page.click('#settingsBtn'); assert.equal(await page.evaluate(() => view), 'settings');
+  await page.click('nav.bottom button[data-v="habits"]');
+  await page.locator('#hlist .hTap', { hasText: 'Read' }).first().click();
+  assert.equal(await page.evaluate(() => [view, currentHabitId].join()), 'habitDetail,h_read');
+  await go(page, 'goals');
+  await page.locator('.gTap').first().click();
+  assert.equal(await page.evaluate(() => view), 'goalDetail');
+}, { state: fixtureState() });
+
+test('sub-navigation: health tabs, statistics periods', async ({ page }) => {
+  await go(page, 'health');
+  const n = await page.locator('#hTabs > *').count();
+  assert.equal(n, 5, 'five health tabs');
+  for (let i = 0; i < n; i++) { await page.locator('#hTabs > *').nth(i).click(); assert.ok((await appText(page)).length > 20); }
+  await go(page, 'statistics');
+  const p = await page.locator('#spTabs button').count();
+  assert.ok(p >= 3, 'statistics periods');
+  for (let i = 0; i < p; i++) { await page.locator('#spTabs button').nth(i).click(); assert.equal(await page.locator('#spTabs button').nth(i).getAttribute('class'), 'on'); }
+}, { state: fixtureState() });
+
+test('quick add: all 12 entries open their form (water logs directly)', async ({ page }) => {
+  for (const t of QUICK_ADD) {
+    await page.click('#fabBtn');
+    assert.equal(await page.locator('.sheet .qopt[data-t]').count(), 12);
+    const water = (await stateOf(page)).waterLog.length;
+    await page.click(`.sheet .qopt[data-t="${t}"]`);
+    if (t === 'water') assert.equal((await stateOf(page)).waterLog.length, water + 1);
+    else assert.equal(await page.locator('.sheet').count(), 1, `form for ${t}`);
+    await page.evaluate(() => closeSheets());
+  }
+}, { state: fixtureState() });
+
+test('tasks: add, edit (same id), complete, delete through the UI', async ({ page }) => {
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="task"]');
+  await page.fill('#f_title', 'QA task'); await page.selectOption('#f_pri', 'High');
+  assert.equal(await page.inputValue('#f_xp'), '30', 'High priority pre-fills 30 XP');
+  await page.click('#f_save');
+  let s = await stateOf(page);
+  const t = s.tasks.find(x => x.title === 'QA task');
+  assert.ok(t && t.priority === 'High' && t.xpReward === 30 && t.dueDate === TODAY);
+  assert.equal(await page.evaluate(() => view), 'tasks');
+  const row = page.locator('.item', { hasText: 'QA task' });
+  await row.locator('.editBtn').click(); await page.fill('#f_title', 'QA task edited'); await page.click('#f_save');
+  s = await stateOf(page);
+  assert.ok(s.tasks.some(x => x.id === t.id && x.title === 'QA task edited'), 'edit keeps id');
+  const xp0 = s.totalXp;
+  await page.locator('.item', { hasText: 'QA task edited' }).locator('.check').click();
+  s = await stateOf(page);
+  assert.ok(s.tasks.find(x => x.id === t.id).done);
+  assert.ok(s.xpLog.some(x => x.key === `task:${t.id}:${TODAY}` && x.amount === 30));
+  assert.ok(s.totalXp >= xp0 + 30);
+  await page.locator('#tf button', { hasText: 'Completed' }).click(); // done tasks leave the Today tab
+  await page.locator('.item', { hasText: 'QA task edited' }).locator('.delbtn').click();
+  assert.ok(!(await stateOf(page)).tasks.some(x => x.id === t.id), 'deleted');
+}, { state: fixtureState() });
+
+test('XP: task/habit completion is exact and idempotent; xpLog sums match totalXp', async ({ page }) => {
+  const before = await stateOf(page);
+  await page.click('nav.bottom button[data-v="tasks"]');
+  const check = tab => page.locator('#tf button', { hasText: tab }).click().then(() => page.locator('.item', { hasText: 'Buy groceries' }).locator('.check').click());
+  await check('Today');
+  let s = await stateOf(page);
+  const key = `task:t_med:${TODAY}`;
+  assert.equal(s.xpLog.filter(x => x.key === key).length, 1);
+  assert.equal(s.xpLog.find(x => x.key === key).amount, 10, 'Medium task = 10 XP');
+  const newXp = s.xpLog.slice(before.xpLog.length).reduce((a, x) => a + x.amount, 0);
+  assert.equal(s.totalXp - before.totalXp, newXp, 'totalXp delta equals new xpLog entries');
+  const afterFirst = s.totalXp;
+  await check('Completed'); await check('Today'); // uncheck + recheck
+  s = await stateOf(page);
+  assert.equal(s.totalXp, afterFirst, 're-checking the same task today grants nothing');
+  assert.equal(s.xpLog.filter(x => x.key === key).length, 1);
+  // Habit already done today whose XP key is in the ledger: toggle off/on must not grant again.
+  await page.click('nav.bottom button[data-v="habits"]');
+  const hc = () => page.locator('#hlist > .card', { hasText: 'Read' }).first().locator('.check').click();
+  await hc(); assert.ok(!(await stateOf(page)).habits.find(h => h.id === 'h_read').completions.includes(TODAY));
+  await hc(); s = await stateOf(page);
+  assert.ok(s.habits.find(h => h.id === 'h_read').completions.includes(TODAY));
+  assert.equal(s.totalXp, afterFirst, 'habit re-check is idempotent');
+  // Counter habit (target 8, 3 done today): 5 more taps complete it and grant once.
+  for (let i = 0; i < 6; i++) await page.locator('#hlist > .card', { hasText: 'Drink water' }).first().locator('.incBtn').click();
+  s = await stateOf(page);
+  assert.equal(s.habits.find(h => h.id === 'h_water').completions.filter(d => d === TODAY).length, 8, 'counter capped at target');
+  assert.equal(s.xpLog.filter(x => x.key === `habit:h_water:${TODAY}`).length, 1);
+}, { state: fixtureState() });
+
+test('level system: crossing a level pays Skill/Attribute points once and survives reload', async ({ page }) => {
+  const b = await stateOf(page);
+  const { level, into, need } = await page.evaluate(() => levelFromXp(S.totalXp));
+  await page.evaluate(n => grantXp(n, 'QA level test'), need - into); // exactly reach the next level
+  const s = await stateOf(page);
+  assert.equal(await page.evaluate(() => levelFromXp(S.totalXp).level), level + 1);
+  assert.equal(s.rpg.highestLevelRewarded, level + 1);
+  const d = (x, y) => Object.fromEntries(Object.keys(x).map(k => [k, x[k] - y[k]]));
+  assert.deepEqual(d(s.rpg.skillPoints, b.rpg.skillPoints), { available: 1, earned: 1, spent: 0 }, '+1 Skill Point');
+  assert.deepEqual(d(s.rpg.attributePoints, b.rpg.attributePoints), { available: 3, earned: 3, spent: 0 }, '+3 Attribute Points');
+  assert.equal(s.rpg.activityLog.find(a => a.type === 'levelup').title, 'Level ' + (level + 1));
+  await settle(page); await reload(page);
+  const r = await stateOf(page);
+  assert.deepEqual(r.rpg, s.rpg, 'reload does not re-pay rewards');
+  assert.equal(r.totalXp, s.totalXp);
+}, { state: fixtureState() });
+
+test('persistence: IndexedDB round-trip is lossless (fixture -> boot -> save -> reload)', async ({ page }) => {
+  const booted1 = await stateOf(page);
+  const fx = fixtureState();
+  // Boot legitimately settles derived state (achievements/quests it now qualifies for grant XP),
+  // so those grow; every stored record must come through migrate() untouched.
+  const DERIVED = ['totalXp', 'xpLog', 'attrs', 'achievementsUnlocked', 'achievementUnlockedAt', 'rpg', 'quests', 'questResetDate', 'notificationLog', 'settings'];
+  for (const k of Object.keys(fx)) if (!DERIVED.includes(k)) assert.deepEqual(booted1[k], fx[k], `migrate keeps ${k} unchanged`);
+  assert.deepEqual(booted1.xpLog.slice(0, fx.xpLog.length), fx.xpLog, 'xpLog history kept as prefix');
+  for (const [k, v] of Object.entries(fx.settings)) if (k !== 'widgets' && k !== 'widgetOrder') assert.deepEqual(booted1.settings[k], v, `settings.${k}`);
+  await reload(page);
+  assert.deepEqual(await stateOf(page), booted1, 'second boot of a settled state changes nothing');
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="task"]');
+  await page.fill('#f_title', 'Persist me'); await page.click('#f_save');
+  await settle(page);
+  const mem = await stateOf(page), disk = await idbState(page);
+  assert.deepEqual(disk, mem, 'IndexedDB equals in-memory state after debounced save');
+  await reload(page);
+  assert.deepEqual(await stateOf(page), mem, 'reload restores identical state');
+}, { state: fixtureState() });
+
+test('persistence: pagehide flushes pending edits immediately', async ({ page }) => {
+  await page.evaluate(() => { S.profile.name = 'Flushed'; scheduleSave(); dispatchEvent(new Event('pagehide')); });
+  await page.waitForTimeout(100); // well under the 250 ms debounce
+  assert.equal((await idbState(page)).profile.name, 'Flushed');
+}, { state: fixtureState() });
+
+test('IDs: unique, preserved through boot, reload, edit and export/import', async ({ page }) => {
+  const fxIds = allIds(fixtureState());
+  let ids = allIds(await stateOf(page));
+  assert.equal(new Set(ids).size, ids.length, 'unique ids');
+  for (const id of fxIds) assert.ok(ids.includes(id), `id ${id} kept`);
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="task"]'); await page.fill('#f_title', 'New'); await page.click('#f_save');
+  const s = await stateOf(page);
+  const nid = s.tasks.find(t => t.title === 'New').id;
+  assert.match(nid, /^[0-9a-z]{10,}$/, 'uid() format');
+  ids = allIds(s); assert.equal(new Set(ids).size, ids.length);
+  await settle(page); await reload(page);
+  assert.deepEqual(allIds(await stateOf(page)), ids);
+}, { state: fixtureState() });
+
+test('export/import: backup JSON equals state; import restores it exactly', async ({ page }) => {
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  assert.equal(dl.suggestedFilename(), `lifeos-backup-${TODAY}.json`);
+  const file = await dl.path();
+  const exported = JSON.parse(readFileSync(file, 'utf8'));
+  const s = await stateOf(page);
+  assert.deepEqual(exported, s, 'export equals state');
+  await page.evaluate(() => { S.tasks = []; S.habits = []; S.totalXp = 0; render(); });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.tasks.length > 0);
+  assert.deepEqual(await stateOf(page), s, 'import restores identical state');
+  await settle(page); await reload(page);
+  assert.deepEqual(await stateOf(page), s, 'imported state persisted');
+  await page.click('#settingsBtn');
+  await page.setInputFiles('#st_impFile', { name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"nope":1}') });
+  await page.waitForTimeout(200);
+  assert.deepEqual(await stateOf(page), s, 'invalid import is rejected without changes');
+}, { state: fixtureState() });
+
+test('reset: double confirm wipes data and restarts onboarding', async ({ page }) => {
+  page.on('dialog', d => d.accept());
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  assert.ok(await page.locator('.sheet h2').isVisible());
+  const s = await stateOf(page);
+  assert.equal(s.tasks.length, 0); assert.equal(s.totalXp, 0); assert.equal(s.schemaVersion, 8);
+}, { state: fixtureState() });
+
+test('theme: toggle switches data-theme and persists', async ({ page }) => {
+  assert.equal(await page.getAttribute('html', 'data-theme'), 'dark');
+  await page.click('#themeBtn');
+  assert.equal(await page.getAttribute('html', 'data-theme'), 'light');
+  await settle(page); await reload(page);
+  assert.equal(await page.getAttribute('html', 'data-theme'), 'light');
+}, { state: fixtureState() });
+
+test('responsive: layouts render without horizontal overflow (320, 390, 768, 1280)', async ({ page }, ctx) => {
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const v of VIEWS) {
+      await page.evaluate(v => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; view = v; render(); }, v);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (over > 0) ctx.note(`horizontal overflow ${over}px on "${v}" at ${width}px`);
+    }
+  }
+}, { state: fixtureState() });
+
+test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
+  const g = await golden(page);
+  if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
+  const base = JSON.parse(readFileSync(GOLDEN, 'utf8'));
+  for (const k of Object.keys(base)) assert.deepEqual(g[k], base[k], `golden.${k}`);
+  assert.deepEqual(Object.keys(g).sort(), Object.keys(base).sort());
+}, { state: fixtureState() });
+
+// Pure, deterministic outputs of the app's rule tables and calculators on the fixture.
+async function golden(page) {
+  return page.evaluate(TODAY_ => {
+    // Normalise the only non-deterministic bits: timestamps and freshly generated uid()s.
+    const strip = o => JSON.parse(JSON.stringify(o, (k, v) => (['createdAt', 'updatedAt', 'ts'].includes(k) && typeof v === 'number') ? '<time>'
+      : (k === 'id' && typeof v === 'string' && /^[0-9a-z]{12,}$/.test(v)) ? '<uid>' : v));
+    const fnMap = arr => Object.fromEntries(arr.map(x => [x.id, JSON.parse(JSON.stringify(x))]));
+    const legacy = { tasks: [{ id: 'lt', title: 'Legacy', done: true, createdAt: 1 }],
+      habits: [{ id: 'lh', name: 'Legacy habit', category: 'Health', icon: '💧', completions: ['2026-09-20'], active: true, createdAt: 1 }],
+      sleepLog: [{ id: 'ls', date: '2026-09-20', bedtime: '23:00', wake: '07:00', quality: 4, createdAt: 1 }],
+      workouts: [{ id: 'lw', name: 'Old', date: '2026-09-19', exercises: [{ id: 'le', name: 'Squat', sets: 3, reps: 5, weight: 100 }] }],
+      totalXp: 800, xpLog: [], rpg: undefined, schemaVersion: 4 };
+    const periods = ['week', 'month', 'year', 'all'];
+    return {
+      xpForLevel: Array.from({ length: 60 }, (_, i) => xpForLevel(i + 1)),
+      levelFromXp: [0, 99, 100, 355, 356, 1234, 1448, 5000, 100000].map(levelFromXp),
+      achievements: fnMap(ACHV), skills: fnMap(SKILLS), skillBranches: [SKILL_BRANCH_LABELS, SKILL_BRANCH_ATTR],
+      dailyQuests: fnMap(DAILY_QUESTS), weeklyQuests: fnMap(WEEKLY_QUESTS),
+      cats: CATS, attrs: Object.keys(ATTRS), widgets: WIDGET_DEFS, avatars: AVATAR_CHOICES, onboardingPresets: ONBOARDING_HABIT_PRESETS,
+      attributePointValue: ATTRIBUTE_POINT_VALUE, i18nKeys: Object.fromEntries(Object.entries(I18N).map(([l, t]) => [l, Object.keys(t).sort()])),
+      defaultState: strip(defaultState()),
+      migrateLegacy: strip(migrate(JSON.parse(JSON.stringify(legacy)))),
+      stats: Object.fromEntries(periods.map(p => { try { return [p, strip(computeStats(p))]; } catch (e) { return [p, 'ERR ' + e.message]; } })),
+      sleepStats: strip(sleepStats('week')), healthDashboard: Object.fromEntries(periods.map(p => [p, strip(healthDashboardData(p))])),
+      streaks: Object.fromEntries(S.habits.map(h => [h.id, [currentStreak(h), bestStreak(h), habitProgressLabel(h), habitProgressPct(h)]])),
+      goals: Object.fromEntries(S.goals.map(g => [g.id, goalProgress(g)])),
+      level: levelFromXp(S.totalXp), xpToday: xpToday(),
+      finance: monthBalance(S), fuel: fuelConsumptionStats('v1'), prs: exercisePRs(), workouts: S.workouts.map(w => [workoutVolume(w), workoutTotalSets(w), workoutTotalReps(w)]),
+      nutrition: nutriTotals(TODAY_), water: waterToday(),
+      subs: S.subscriptions.map(s => nextPaymentDate(s)), carReminders: strip(S.vehicles.map(carReminders)),
+      reminders: strip(getActiveReminders()), search: strip(searchGroups('a')),
+      quests: [DAILY_QUESTS, WEEKLY_QUESTS].flat().map(q => [q.id, q.check(S), q.val(S)]),
+      achievementsNow: ACHV.map(a => [a.id, a.cond(S), a.progress ? a.progress(S) : null]),
+    };
+  }, TODAY).catch(e => { throw new Error('golden evaluation failed: ' + e.message); });
+}
+
+// ---------- screenshots ----------
+async function screens(outDir) {
+  const variants = [
+    { name: 'mobile-dark', viewport: { width: 390, height: 844 }, theme: 'dark' },
+    { name: 'mobile-light', viewport: { width: 390, height: 844 }, theme: 'light' },
+    { name: 'desktop-dark', viewport: { width: 1280, height: 800 }, theme: 'dark' },
+  ];
+  for (const v of variants) {
+    const dir = path.join(outDir, v.name); mkdirSync(dir, { recursive: true });
+    const errors = [];
+    const { context, page } = await openApp({ state: { ...fixtureState(), settings: { ...fixtureState().settings, theme: v.theme } }, viewport: v.viewport, errors });
+    for (const [i, view] of VIEWS.entries()) {
+      await page.evaluate(() => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; });
+      await go(page, view);
+      await page.evaluate(() => { window.scrollTo(0, 0); document.getElementById('toasts').replaceChildren(); }); // boot-time achievement toasts would cover the view
+      await page.screenshot({ path: path.join(dir, `${String(i + 1).padStart(2, '0')}-${view}.png`), fullPage: true, animations: 'disabled' });
+    }
+    await go(page, 'home'); await page.evaluate(() => document.getElementById('toasts').replaceChildren()); await page.click('#fabBtn');
+    await page.screenshot({ path: path.join(dir, '22-quick-add.png'), animations: 'disabled' });
+    await context.close();
+    const ob = await openApp({ viewport: v.viewport, errors });
+    await ob.page.evaluate(t => { S.settings.theme = t; applyTheme(); }, v.theme);
+    await ob.page.screenshot({ path: path.join(dir, '23-onboarding.png'), animations: 'disabled' });
+    await ob.context.close();
+    console.log(`${v.name}: ${VIEWS.length + 2} screenshots -> ${path.relative(process.cwd(), dir)}${errors.length ? '  ERRORS: ' + errors.join('; ') : ''}`);
+  }
+}
+
+// ---------- runner ----------
+let failed = 0;
+if (args.includes('--screens')) {
+  await screens(path.resolve(args[args.indexOf('--screens') + 1] && !args[args.indexOf('--screens') + 1].startsWith('--') ? args[args.indexOf('--screens') + 1] : path.join(here, 'out', 'screens')));
+} else {
+  const only = process.env.ONLY;
+  for (const t of tests) {
+    if (only && !t.name.includes(only)) continue;
+    const errors = [], tnotes = [];
+    const started = Date.now();
+    let context;
+    try {
+      const o = await openApp({ state: t.opts?.state ?? null, errors });
+      context = o.context;
+      await t.fn({ page: o.page }, { note: m => tnotes.push(m) });
+      await o.page.waitForTimeout(50);
+      if (errors.length) throw new Error('console/page errors:\n      ' + errors.join('\n      '));
+      console.log(`  ✓ ${t.name} (${Date.now() - started} ms)`);
+    } catch (e) {
+      failed++;
+      console.log(`  ✗ ${t.name}\n      ${String(e.message).split('\n').join('\n      ')}`);
+    } finally { await context?.close(); }
+    tnotes.forEach(n => notes.push(`${t.name}: ${n}`));
+  }
+  const ran = only ? tests.filter(t => t.name.includes(only)).length : tests.length;
+  console.log(`\n${ran - failed}/${ran} passed`);
+  if (notes.length) console.log('\nNOTES (observations, not failures):\n  ' + [...new Set(notes)].join('\n  '));
+}
+await browser.close(); server.close();
+process.exit(failed ? 1 : 0);

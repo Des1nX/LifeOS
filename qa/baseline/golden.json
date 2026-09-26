@@ -1,0 +1,3515 @@
+{
+ "xpForLevel": [
+  100,
+  255,
+  441,
+  650,
+  878,
+  1123,
+  1383,
+  1656,
+  1942,
+  2239,
+  2546,
+  2863,
+  3190,
+  3526,
+  3870,
+  4222,
+  4583,
+  4950,
+  5325,
+  5707,
+  6095,
+  6490,
+  6892,
+  7299,
+  7713,
+  8132,
+  8557,
+  8988,
+  9424,
+  9865,
+  10312,
+  10763,
+  11220,
+  11681,
+  12148,
+  12619,
+  13094,
+  13574,
+  14058,
+  14547,
+  15040,
+  15538,
+  16039,
+  16545,
+  17054,
+  17568,
+  18086,
+  18607,
+  19132,
+  19661,
+  20194,
+  20730,
+  21270,
+  21814,
+  22361,
+  22912,
+  23466,
+  24023,
+  24584,
+  25148
+ ],
+ "levelFromXp": [
+  {
+   "level": 1,
+   "into": 0,
+   "need": 100
+  },
+  {
+   "level": 1,
+   "into": 99,
+   "need": 100
+  },
+  {
+   "level": 2,
+   "into": 0,
+   "need": 255
+  },
+  {
+   "level": 3,
+   "into": 0,
+   "need": 441
+  },
+  {
+   "level": 3,
+   "into": 1,
+   "need": 441
+  },
+  {
+   "level": 4,
+   "into": 438,
+   "need": 650
+  },
+  {
+   "level": 5,
+   "into": 2,
+   "need": 878
+  },
+  {
+   "level": 8,
+   "into": 170,
+   "need": 1656
+  },
+  {
+   "level": 27,
+   "into": 5930,
+   "need": 8557
+  }
+ ],
+ "achievements": {
+  "first_task": {
+   "id": "first_task",
+   "title": "First Step",
+   "desc": "Complete your first task",
+   "rarity": "Common",
+   "xp": 20
+  },
+  "seven_streak": {
+   "id": "seven_streak",
+   "title": "7 Day Streak",
+   "desc": "Keep a habit streak of 7+",
+   "rarity": "Uncommon",
+   "xp": 75
+  },
+  "thirty_streak": {
+   "id": "thirty_streak",
+   "title": "30 Day Streak",
+   "desc": "Keep a habit streak of 30+",
+   "rarity": "Rare",
+   "xp": 250
+  },
+  "ten_tasks": {
+   "id": "ten_tasks",
+   "title": "Task Master",
+   "desc": "Complete 10 tasks",
+   "rarity": "Common",
+   "xp": 50
+  },
+  "first_goal": {
+   "id": "first_goal",
+   "title": "Goal Crusher",
+   "desc": "Complete your first goal",
+   "rarity": "Rare",
+   "xp": 150
+  },
+  "level5": {
+   "id": "level5",
+   "title": "Rising Hero",
+   "desc": "Reach Level 5",
+   "rarity": "Uncommon",
+   "xp": 0
+  },
+  "level10": {
+   "id": "level10",
+   "title": "Unstoppable",
+   "desc": "Reach Level 10",
+   "rarity": "Epic",
+   "xp": 0
+  },
+  "five_habits": {
+   "id": "five_habits",
+   "title": "Creature of Habit",
+   "desc": "Track 5 different habits",
+   "rarity": "Common",
+   "xp": 40
+  },
+  "money_tracker": {
+   "id": "money_tracker",
+   "title": "Money Maker",
+   "desc": "Log your first finance entry",
+   "rarity": "Common",
+   "xp": 20
+  },
+  "saver": {
+   "id": "saver",
+   "title": "Savings Streak",
+   "desc": "Log income exceeding expenses in a month",
+   "rarity": "Uncommon",
+   "xp": 80
+  },
+  "first_workout": {
+   "id": "first_workout",
+   "title": "Beast Mode",
+   "desc": "Log your first workout",
+   "rarity": "Common",
+   "xp": 20
+  },
+  "fitness_beast": {
+   "id": "fitness_beast",
+   "title": "Fitness Beast",
+   "desc": "Log 10 workouts",
+   "rarity": "Rare",
+   "xp": 150
+  },
+  "first_meal": {
+   "id": "first_meal",
+   "title": "Nourished",
+   "desc": "Log your first meal",
+   "rarity": "Common",
+   "xp": 15
+  },
+  "hydrated": {
+   "id": "hydrated",
+   "title": "Hydration Hero",
+   "desc": "Hit your water target in a day",
+   "rarity": "Uncommon",
+   "xp": 40
+  },
+  "first_note": {
+   "id": "first_note",
+   "title": "Knowledge Seeker",
+   "desc": "Create your first note",
+   "rarity": "Common",
+   "xp": 15
+  },
+  "first_journal": {
+   "id": "first_journal",
+   "title": "Reflective",
+   "desc": "Write your first journal entry",
+   "rarity": "Common",
+   "xp": 20
+  },
+  "journal_week": {
+   "id": "journal_week",
+   "title": "Consistent Reflection",
+   "desc": "Journal 7 days total",
+   "rarity": "Rare",
+   "xp": 100
+  },
+  "first_vehicle": {
+   "id": "first_vehicle",
+   "title": "Garage Keeper",
+   "desc": "Add your first vehicle",
+   "rarity": "Common",
+   "xp": 15
+  },
+  "first_sub": {
+   "id": "first_sub",
+   "title": "Subscribed",
+   "desc": "Track your first subscription",
+   "rarity": "Common",
+   "xp": 15
+  },
+  "quest_5": {
+   "id": "quest_5",
+   "title": "Adventurer",
+   "desc": "Complete 5 quests",
+   "rarity": "Uncommon",
+   "xp": 60
+  }
+ },
+ "skills": {
+  "discipline_consistency_1": {
+   "id": "discipline_consistency_1",
+   "branch": "discipline",
+   "name": "Consistency I",
+   "description": "+5 bonus XP the day a habit streak reaches 7 days.",
+   "cost": 1,
+   "prerequisites": [],
+   "effect": {
+    "type": "habit_streak_bonus_xp",
+    "milestone": 7,
+    "value": 5
+   }
+  },
+  "discipline_consistency_2": {
+   "id": "discipline_consistency_2",
+   "branch": "discipline",
+   "name": "Consistency II",
+   "description": "+10 bonus XP the day a habit streak reaches 30 days.",
+   "cost": 2,
+   "prerequisites": [
+    "discipline_consistency_1"
+   ],
+   "effect": {
+    "type": "habit_streak_bonus_xp",
+    "milestone": 30,
+    "value": 10
+   }
+  },
+  "discipline_streak_master": {
+   "id": "discipline_streak_master",
+   "branch": "discipline",
+   "name": "Streak Master",
+   "description": "Perk: Streak Master badge on your Character profile.",
+   "cost": 3,
+   "prerequisites": [
+    "discipline_consistency_2"
+   ],
+   "effect": {
+    "type": "badge",
+    "value": "Streak Master"
+   }
+  },
+  "knowledge_learner_1": {
+   "id": "knowledge_learner_1",
+   "branch": "knowledge",
+   "name": "Learner I",
+   "description": "+5 bonus INT when completing a Learning-category task or habit.",
+   "cost": 1,
+   "prerequisites": [],
+   "effect": {
+    "type": "category_attr_bonus",
+    "attr": "INT",
+    "value": 5
+   }
+  },
+  "knowledge_learner_2": {
+   "id": "knowledge_learner_2",
+   "branch": "knowledge",
+   "name": "Learner II",
+   "description": "+10 additional bonus INT when completing a Learning-category task or habit.",
+   "cost": 2,
+   "prerequisites": [
+    "knowledge_learner_1"
+   ],
+   "effect": {
+    "type": "category_attr_bonus",
+    "attr": "INT",
+    "value": 10
+   }
+  },
+  "knowledge_master": {
+   "id": "knowledge_master",
+   "branch": "knowledge",
+   "name": "Knowledge Master",
+   "description": "Perk: Knowledge Master badge on your Character profile.",
+   "cost": 3,
+   "prerequisites": [
+    "knowledge_learner_2"
+   ],
+   "effect": {
+    "type": "badge",
+    "value": "Knowledge Master"
+   }
+  },
+  "fitness_training_1": {
+   "id": "fitness_training_1",
+   "branch": "fitness",
+   "name": "Training I",
+   "description": "+5 bonus STR on workout completion.",
+   "cost": 1,
+   "prerequisites": [],
+   "effect": {
+    "type": "workout_attr_bonus",
+    "attr": "STR",
+    "value": 5
+   }
+  },
+  "fitness_training_2": {
+   "id": "fitness_training_2",
+   "branch": "fitness",
+   "name": "Training II",
+   "description": "+10 additional bonus STR on workout completion.",
+   "cost": 2,
+   "prerequisites": [
+    "fitness_training_1"
+   ],
+   "effect": {
+    "type": "workout_attr_bonus",
+    "attr": "STR",
+    "value": 10
+   }
+  },
+  "fitness_athlete": {
+   "id": "fitness_athlete",
+   "branch": "fitness",
+   "name": "Athlete",
+   "description": "Perk: Athlete badge on your Character profile.",
+   "cost": 3,
+   "prerequisites": [
+    "fitness_training_2"
+   ],
+   "effect": {
+    "type": "badge",
+    "value": "Athlete"
+   }
+  },
+  "finance_saver_1": {
+   "id": "finance_saver_1",
+   "branch": "finance",
+   "name": "Saver I",
+   "description": "+5 bonus WIS the first time you log a finance entry each day.",
+   "cost": 1,
+   "prerequisites": [],
+   "effect": {
+    "type": "finance_attr_bonus",
+    "attr": "WIS",
+    "value": 5
+   }
+  },
+  "finance_saver_2": {
+   "id": "finance_saver_2",
+   "branch": "finance",
+   "name": "Saver II",
+   "description": "+10 additional bonus WIS the first time you log a finance entry each day.",
+   "cost": 2,
+   "prerequisites": [
+    "finance_saver_1"
+   ],
+   "effect": {
+    "type": "finance_attr_bonus",
+    "attr": "WIS",
+    "value": 10
+   }
+  },
+  "finance_wealth_builder": {
+   "id": "finance_wealth_builder",
+   "branch": "finance",
+   "name": "Wealth Builder",
+   "description": "Perk: Wealth Builder badge on your Character profile.",
+   "cost": 3,
+   "prerequisites": [
+    "finance_saver_2"
+   ],
+   "effect": {
+    "type": "badge",
+    "value": "Wealth Builder"
+   }
+  },
+  "focus_deepwork_1": {
+   "id": "focus_deepwork_1",
+   "branch": "focus",
+   "name": "Deep Work I",
+   "description": "+5 bonus FOC when completing a Focus-category task or habit.",
+   "cost": 1,
+   "prerequisites": [],
+   "effect": {
+    "type": "category_attr_bonus",
+    "attr": "FOC",
+    "value": 5
+   }
+  },
+  "focus_deepwork_2": {
+   "id": "focus_deepwork_2",
+   "branch": "focus",
+   "name": "Deep Work II",
+   "description": "+10 additional bonus FOC when completing a Focus-category task or habit.",
+   "cost": 2,
+   "prerequisites": [
+    "focus_deepwork_1"
+   ],
+   "effect": {
+    "type": "category_attr_bonus",
+    "attr": "FOC",
+    "value": 10
+   }
+  },
+  "focus_master": {
+   "id": "focus_master",
+   "branch": "focus",
+   "name": "Focus Master",
+   "description": "Perk: Focus Master badge on your Character profile.",
+   "cost": 3,
+   "prerequisites": [
+    "focus_deepwork_2"
+   ],
+   "effect": {
+    "type": "badge",
+    "value": "Focus Master"
+   }
+  },
+  "social_social_1": {
+   "id": "social_social_1",
+   "branch": "social",
+   "name": "Social I",
+   "description": "+5 bonus SOC when completing a Social-category task or habit.",
+   "cost": 1,
+   "prerequisites": [],
+   "effect": {
+    "type": "category_attr_bonus",
+    "attr": "SOC",
+    "value": 5
+   }
+  },
+  "social_social_2": {
+   "id": "social_social_2",
+   "branch": "social",
+   "name": "Social II",
+   "description": "+10 additional bonus SOC when completing a Social-category task or habit.",
+   "cost": 2,
+   "prerequisites": [
+    "social_social_1"
+   ],
+   "effect": {
+    "type": "category_attr_bonus",
+    "attr": "SOC",
+    "value": 10
+   }
+  },
+  "social_networker": {
+   "id": "social_networker",
+   "branch": "social",
+   "name": "Networker",
+   "description": "Perk: Networker badge on your Character profile.",
+   "cost": 3,
+   "prerequisites": [
+    "social_social_2"
+   ],
+   "effect": {
+    "type": "badge",
+    "value": "Networker"
+   }
+  }
+ },
+ "skillBranches": [
+  {
+   "discipline": "Discipline",
+   "knowledge": "Knowledge",
+   "fitness": "Fitness",
+   "finance": "Finance",
+   "focus": "Focus",
+   "social": "Social"
+  },
+  {
+   "discipline": "DEX",
+   "knowledge": "INT",
+   "fitness": "STR",
+   "finance": "WIS",
+   "focus": "FOC",
+   "social": "SOC"
+  }
+ ],
+ "dailyQuests": {
+  "dq_tasks": {
+   "id": "dq_tasks",
+   "title": "Complete 3 tasks today",
+   "xp": 50,
+   "attr": "FOC",
+   "max": 3
+  },
+  "dq_habits": {
+   "id": "dq_habits",
+   "title": "Complete all active habits",
+   "xp": 50,
+   "attr": "DEX",
+   "max": 1
+  },
+  "dq_log": {
+   "id": "dq_log",
+   "title": "Log a workout, meal or finance entry",
+   "xp": 20,
+   "attr": "VIT",
+   "max": 1
+  },
+  "dq_workout": {
+   "id": "dq_workout",
+   "title": "Complete 1 workout today",
+   "xp": 40,
+   "attr": "STR",
+   "max": 1
+  },
+  "dq_nutrition": {
+   "id": "dq_nutrition",
+   "title": "Log at least one meal today",
+   "xp": 20,
+   "attr": "VIT",
+   "max": 1
+  }
+ },
+ "weeklyQuests": {
+  "wq_streak": {
+   "id": "wq_streak",
+   "title": "Maintain a 7-day habit streak",
+   "xp": 250,
+   "attr": "DEX",
+   "max": 1
+  },
+  "wq_goal": {
+   "id": "wq_goal",
+   "title": "Make progress on an active goal",
+   "xp": 100,
+   "attr": "WIS",
+   "max": 1
+  },
+  "wq_tasks": {
+   "id": "wq_tasks",
+   "title": "Complete 15 tasks this week",
+   "xp": 200,
+   "attr": "FOC",
+   "max": 15
+  },
+  "wq_habits": {
+   "id": "wq_habits",
+   "title": "Complete this week's habit target",
+   "xp": 150,
+   "attr": "DEX"
+  },
+  "wq_workouts": {
+   "id": "wq_workouts",
+   "title": "Complete 3 workouts this week",
+   "xp": 150,
+   "attr": "STR",
+   "max": 3
+  }
+ },
+ "cats": {
+  "Fitness": {
+   "a": "STR",
+   "ic": "💪"
+  },
+  "Health": {
+   "a": "VIT",
+   "ic": "❤️"
+  },
+  "Learning": {
+   "a": "INT",
+   "ic": "📚"
+  },
+  "Habit": {
+   "a": "DEX",
+   "ic": "🔥"
+  },
+  "Finance": {
+   "a": "WIS",
+   "ic": "💰"
+  },
+  "Work": {
+   "a": "FOC",
+   "ic": "💼"
+  },
+  "Social": {
+   "a": "SOC",
+   "ic": "🎉"
+  },
+  "Personal": {
+   "a": "FOC",
+   "ic": "✨"
+  }
+ },
+ "attrs": [
+  "STR",
+  "INT",
+  "DEX",
+  "VIT",
+  "WIS",
+  "FOC",
+  "SOC"
+ ],
+ "widgets": [
+  {
+   "key": "reminders",
+   "label": "Reminders"
+  },
+  {
+   "key": "progress",
+   "label": "Level Progress"
+  },
+  {
+   "key": "tasks",
+   "label": "Today's Tasks"
+  },
+  {
+   "key": "habits",
+   "label": "Habits"
+  },
+  {
+   "key": "goals",
+   "label": "Goals"
+  },
+  {
+   "key": "nutrition",
+   "label": "Nutrition Today"
+  },
+  {
+   "key": "finance",
+   "label": "Finance"
+  },
+  {
+   "key": "fitness",
+   "label": "Fitness"
+  },
+  {
+   "key": "health",
+   "label": "Health"
+  }
+ ],
+ "avatars": [
+  "🧙",
+  "🦸",
+  "🥷",
+  "🧝",
+  "🤖",
+  "🐱",
+  "🐺",
+  "🦉"
+ ],
+ "onboardingPresets": [
+  "Drink water",
+  "Exercise",
+  "Read"
+ ],
+ "attributePointValue": 10,
+ "i18nKeys": {
+  "cs": [
+   "day_monday",
+   "day_sunday",
+   "enable_notifications",
+   "export_label",
+   "greet_afternoon",
+   "greet_evening",
+   "greet_morning",
+   "import_label",
+   "nav_character",
+   "nav_habits",
+   "nav_home",
+   "nav_more",
+   "nav_tasks",
+   "notif_default",
+   "notif_denied",
+   "notif_granted",
+   "notif_unsupported",
+   "off_label",
+   "on_label",
+   "open_settings",
+   "reset_label",
+   "settings_animations",
+   "settings_avatar",
+   "settings_daily_targets",
+   "settings_dashboard",
+   "settings_data",
+   "settings_dateformat",
+   "settings_firstday",
+   "settings_gamification",
+   "settings_language",
+   "settings_name",
+   "settings_notifications",
+   "settings_profile",
+   "settings_reminders_engine",
+   "settings_sounds",
+   "settings_theme",
+   "settings_timeformat",
+   "settings_title",
+   "theme_dark",
+   "theme_light",
+   "theme_system",
+   "time_12h",
+   "time_24h"
+  ],
+  "en": [
+   "day_monday",
+   "day_sunday",
+   "enable_notifications",
+   "export_label",
+   "greet_afternoon",
+   "greet_evening",
+   "greet_morning",
+   "import_label",
+   "nav_character",
+   "nav_habits",
+   "nav_home",
+   "nav_more",
+   "nav_tasks",
+   "notif_default",
+   "notif_denied",
+   "notif_granted",
+   "notif_unsupported",
+   "off_label",
+   "on_label",
+   "open_settings",
+   "reset_label",
+   "settings_animations",
+   "settings_avatar",
+   "settings_daily_targets",
+   "settings_dashboard",
+   "settings_data",
+   "settings_dateformat",
+   "settings_firstday",
+   "settings_gamification",
+   "settings_language",
+   "settings_name",
+   "settings_notifications",
+   "settings_profile",
+   "settings_reminders_engine",
+   "settings_sounds",
+   "settings_theme",
+   "settings_timeformat",
+   "settings_title",
+   "theme_dark",
+   "theme_light",
+   "theme_system",
+   "time_12h",
+   "time_24h"
+  ]
+ },
+ "defaultState": {
+  "profile": {
+   "name": "Hero",
+   "avatar": "🧙",
+   "createdAt": "<time>"
+  },
+  "totalXp": 0,
+  "xpLog": [],
+  "attrs": {
+   "STR": 0,
+   "INT": 0,
+   "DEX": 0,
+   "VIT": 0,
+   "WIS": 0,
+   "FOC": 0,
+   "SOC": 0
+  },
+  "tasks": [],
+  "habits": [],
+  "goals": [],
+  "expenses": [],
+  "income": [],
+  "budgets": [],
+  "financeXpDate": null,
+  "schemaVersion": 8,
+  "workouts": [],
+  "meals": [],
+  "waterLog": [],
+  "nutritionTargets": {
+   "calories": 2200,
+   "protein": 150,
+   "carbs": 250,
+   "fat": 70,
+   "water": 2500
+  },
+  "customFoods": [],
+  "recipes": [],
+  "notes": [],
+  "journal": [],
+  "vehicles": [],
+  "carServices": [],
+  "fuelEntries": [],
+  "subscriptions": [],
+  "events": [],
+  "quests": [],
+  "questResetDate": null,
+  "milestones": [],
+  "sleepLog": [],
+  "weightLog": [],
+  "stepsLog": [],
+  "heartRateLog": [],
+  "activeCaloriesLog": [],
+  "achievementsUnlocked": [],
+  "achievementUnlockedAt": {},
+  "rpg": {
+   "skillPoints": {
+    "available": 0,
+    "earned": 0,
+    "spent": 0
+   },
+   "attributePoints": {
+    "available": 0,
+    "earned": 0,
+    "spent": 0
+   },
+   "highestLevelRewarded": 1,
+   "skillTree": {
+    "unlocked": [],
+    "totalSpent": 0
+   },
+   "activityLog": []
+  },
+  "dailyTargets": {
+   "workoutsPerWeek": 3,
+   "tasksPerDay": 3,
+   "habitsPerDay": 1
+  },
+  "notificationLog": [],
+  "settings": {
+   "theme": "dark",
+   "onboarded": false,
+   "language": "cs",
+   "dateFormat": "DD.MM.YYYY",
+   "timeFormat": "24h",
+   "firstDayOfWeek": "monday",
+   "animations": true,
+   "sounds": true,
+   "widgets": {
+    "reminders": true,
+    "progress": true,
+    "tasks": true,
+    "habits": true,
+    "goals": true,
+    "nutrition": true,
+    "finance": true,
+    "fitness": true,
+    "health": true
+   },
+   "widgetOrder": [
+    "reminders",
+    "progress",
+    "tasks",
+    "habits",
+    "goals",
+    "nutrition",
+    "finance",
+    "fitness",
+    "health"
+   ],
+   "notifications": {
+    "task": true,
+    "event": true,
+    "habit": true,
+    "goal": true,
+    "subscription": true,
+    "car": true,
+    "quest": true,
+    "achievement": true,
+    "levelup": true
+   },
+   "notificationsPermission": "default"
+  }
+ },
+ "migrateLegacy": {
+  "profile": {
+   "name": "Hero",
+   "avatar": "🧙",
+   "createdAt": "<time>"
+  },
+  "totalXp": 800,
+  "xpLog": [],
+  "attrs": {
+   "STR": 0,
+   "INT": 0,
+   "DEX": 0,
+   "VIT": 0,
+   "WIS": 0,
+   "FOC": 0,
+   "SOC": 0
+  },
+  "tasks": [
+   {
+    "id": "lt",
+    "title": "Legacy",
+    "done": true,
+    "createdAt": "<time>"
+   }
+  ],
+  "habits": [
+   {
+    "description": "",
+    "icon": "💧",
+    "color": "",
+    "category": "Health",
+    "type": "good",
+    "frequency": "daily",
+    "target": 1,
+    "weekdays": [],
+    "reminder": "",
+    "xpReward": 15,
+    "attrReward": "VIT",
+    "startDate": "1970-01-01",
+    "active": true,
+    "goalId": "",
+    "completions": [
+     "2026-09-20"
+    ],
+    "brokenDates": [],
+    "createdAt": "<time>",
+    "id": "lh",
+    "name": "Legacy habit"
+   }
+  ],
+  "goals": [],
+  "expenses": [],
+  "income": [],
+  "budgets": [],
+  "financeXpDate": null,
+  "schemaVersion": 8,
+  "workouts": [
+   {
+    "notes": "",
+    "createdAt": "<time>",
+    "id": "lw",
+    "name": "Old",
+    "date": "2026-09-19",
+    "exercises": [
+     {
+      "id": "le",
+      "muscle": "",
+      "rpe": "",
+      "rest": "",
+      "name": "Squat",
+      "sets": 3,
+      "reps": 5,
+      "weight": 100
+     }
+    ]
+   }
+  ],
+  "meals": [],
+  "waterLog": [],
+  "nutritionTargets": {
+   "calories": 2200,
+   "protein": 150,
+   "carbs": 250,
+   "fat": 70,
+   "water": 2500
+  },
+  "customFoods": [],
+  "recipes": [],
+  "notes": [],
+  "journal": [],
+  "vehicles": [],
+  "carServices": [],
+  "fuelEntries": [],
+  "subscriptions": [],
+  "events": [],
+  "quests": [],
+  "questResetDate": null,
+  "milestones": [],
+  "sleepLog": [
+   {
+    "notes": "",
+    "quality": 4,
+    "createdAt": "<time>",
+    "id": "ls",
+    "date": "2026-09-20",
+    "bedtime": "23:00",
+    "wake": "07:00"
+   }
+  ],
+  "weightLog": [],
+  "stepsLog": [],
+  "heartRateLog": [],
+  "activeCaloriesLog": [],
+  "achievementsUnlocked": [],
+  "achievementUnlockedAt": {},
+  "rpg": {
+   "skillPoints": {
+    "available": 3,
+    "earned": 3,
+    "spent": 0
+   },
+   "attributePoints": {
+    "available": 9,
+    "earned": 9,
+    "spent": 0
+   },
+   "highestLevelRewarded": 4,
+   "skillTree": {
+    "unlocked": [],
+    "totalSpent": 0
+   },
+   "activityLog": [
+    {
+     "id": "<uid>",
+     "type": "levelup",
+     "title": "Level 4",
+     "description": "Reached Level 4 — +1 Skill Point, +3 Attribute Points",
+     "xp": 0,
+     "createdAt": "<time>"
+    },
+    {
+     "id": "<uid>",
+     "type": "levelup",
+     "title": "Level 3",
+     "description": "Reached Level 3 — +1 Skill Point, +3 Attribute Points",
+     "xp": 0,
+     "createdAt": "<time>"
+    },
+    {
+     "id": "<uid>",
+     "type": "levelup",
+     "title": "Level 2",
+     "description": "Reached Level 2 — +1 Skill Point, +3 Attribute Points",
+     "xp": 0,
+     "createdAt": "<time>"
+    }
+   ]
+  },
+  "dailyTargets": {
+   "workoutsPerWeek": 3,
+   "tasksPerDay": 3,
+   "habitsPerDay": 1
+  },
+  "notificationLog": [],
+  "settings": {
+   "theme": "dark",
+   "onboarded": false,
+   "language": "cs",
+   "dateFormat": "DD.MM.YYYY",
+   "timeFormat": "24h",
+   "firstDayOfWeek": "monday",
+   "animations": true,
+   "sounds": true,
+   "widgets": {
+    "reminders": true,
+    "progress": true,
+    "tasks": true,
+    "habits": true,
+    "goals": true,
+    "nutrition": true,
+    "finance": true,
+    "fitness": true,
+    "health": true
+   },
+   "widgetOrder": [
+    "reminders",
+    "progress",
+    "tasks",
+    "habits",
+    "goals",
+    "nutrition",
+    "finance",
+    "fitness",
+    "health"
+   ],
+   "notifications": {
+    "task": true,
+    "event": true,
+    "habit": true,
+    "goal": true,
+    "subscription": true,
+    "car": true,
+    "quest": true,
+    "achievement": true,
+    "levelup": true
+   },
+   "notificationsPermission": "default"
+  }
+ },
+ "stats": {
+  "week": {
+   "since": "2026-09-16",
+   "period": "week",
+   "tasks": {
+    "tasksCreated": 5,
+    "tasksCompleted": 2,
+    "tasksTotal": 5,
+    "completionRate": 40,
+    "overdueTasks": 0,
+    "byPriority": {
+     "High": 1,
+     "Medium": 2,
+     "Low": 1,
+     "Urgent": 1
+    }
+   },
+   "habits": {
+    "activeCount": 4,
+    "goodHabits": 3,
+    "badHabits": 1,
+    "checks": 27,
+    "completion": {
+     "scheduled": 24,
+     "completed": 11,
+     "pct": 46
+    },
+    "bestStreakOverall": 10,
+    "currentStreakOverall": 10
+   },
+   "goals": {
+    "activeGoals": 1,
+    "completedGoals": 1,
+    "avgGoalProgress": 50,
+    "completedMilestonesInPeriod": 1,
+    "completedMilestonesAll": 1,
+    "goalsByCategory": {
+     "Fitness": 1,
+     "None": 1
+    }
+   },
+   "xp": {
+    "xpEarned": 1199,
+    "xpTodayVal": 999,
+    "xpThisWeek": 1199,
+    "xpThisMonth": 2199,
+    "level": 5,
+    "into": 753,
+    "need": 878,
+    "skillPoints": 3,
+    "attributePoints": 8
+   },
+   "fitness": {
+    "count": 2,
+    "sets": 10,
+    "reps": 77,
+    "volume": 6010,
+    "duration": 110,
+    "prs": [
+     {
+      "weight": 140,
+      "reps": 5,
+      "date": "2026-09-23",
+      "name": "Deadlift"
+     },
+     {
+      "weight": 80,
+      "reps": 8,
+      "date": "2026-09-21",
+      "name": "Bench press"
+     },
+     {
+      "weight": 45,
+      "reps": 10,
+      "date": "2026-09-21",
+      "name": "Overhead press"
+     }
+    ]
+   },
+   "nutrition": {
+    "daysLogged": 1,
+    "avgCalories": 1150,
+    "avgProtein": 75,
+    "avgCarbs": 140,
+    "avgFat": 27,
+    "avgWater": 500
+   },
+   "finance": {
+    "income": 0,
+    "expenses": 1620,
+    "balance": -1620,
+    "savings": 0,
+    "transactions": 2,
+    "byCategory": {
+     "Food": 420,
+     "Transport": 1200
+    }
+   },
+   "health": {
+    "avgSleep": 7.625,
+    "sleepDaysLogged": 2,
+    "avgSteps": 6900,
+    "stepsDaysLogged": 2,
+    "weightTrend": -0.8000000000000114
+   },
+   "journal": {
+    "count": 1,
+    "avgRating": 4,
+    "moodCounts": {
+     "1": 0,
+     "2": 0,
+     "3": 1,
+     "4": 0,
+     "5": 0
+    },
+    "daysLogged": 1
+   },
+   "streaks": {
+    "taskStreak": 1,
+    "habitBest": 10,
+    "habitCurrent": 10
+   }
+  },
+  "month": {
+   "since": "2026-08-23",
+   "period": "month",
+   "tasks": {
+    "tasksCreated": 5,
+    "tasksCompleted": 2,
+    "tasksTotal": 5,
+    "completionRate": 40,
+    "overdueTasks": 0,
+    "byPriority": {
+     "High": 1,
+     "Medium": 2,
+     "Low": 1,
+     "Urgent": 1
+    }
+   },
+   "habits": {
+    "activeCount": 4,
+    "goodHabits": 3,
+    "badHabits": 1,
+    "checks": 29,
+    "completion": {
+     "scheduled": 93,
+     "completed": 13,
+     "pct": 14
+    },
+    "bestStreakOverall": 10,
+    "currentStreakOverall": 10
+   },
+   "goals": {
+    "activeGoals": 1,
+    "completedGoals": 1,
+    "avgGoalProgress": 50,
+    "completedMilestonesInPeriod": 1,
+    "completedMilestonesAll": 1,
+    "goalsByCategory": {
+     "Fitness": 1,
+     "None": 1
+    }
+   },
+   "xp": {
+    "xpEarned": 2199,
+    "xpTodayVal": 999,
+    "xpThisWeek": 1199,
+    "xpThisMonth": 2199,
+    "level": 5,
+    "into": 753,
+    "need": 878,
+    "skillPoints": 3,
+    "attributePoints": 8
+   },
+   "fitness": {
+    "count": 2,
+    "sets": 10,
+    "reps": 77,
+    "volume": 6010,
+    "duration": 110,
+    "prs": [
+     {
+      "weight": 140,
+      "reps": 5,
+      "date": "2026-09-23",
+      "name": "Deadlift"
+     },
+     {
+      "weight": 80,
+      "reps": 8,
+      "date": "2026-09-21",
+      "name": "Bench press"
+     },
+     {
+      "weight": 45,
+      "reps": 10,
+      "date": "2026-09-21",
+      "name": "Overhead press"
+     }
+    ]
+   },
+   "nutrition": {
+    "daysLogged": 1,
+    "avgCalories": 1150,
+    "avgProtein": 75,
+    "avgCarbs": 140,
+    "avgFat": 27,
+    "avgWater": 500
+   },
+   "finance": {
+    "income": 42000,
+    "expenses": 1620,
+    "balance": 40380,
+    "savings": 40380,
+    "transactions": 3,
+    "byCategory": {
+     "Food": 420,
+     "Transport": 1200
+    }
+   },
+   "health": {
+    "avgSleep": 7.625,
+    "sleepDaysLogged": 2,
+    "avgSteps": 6900,
+    "stepsDaysLogged": 2,
+    "weightTrend": -0.8000000000000114
+   },
+   "journal": {
+    "count": 1,
+    "avgRating": 4,
+    "moodCounts": {
+     "1": 0,
+     "2": 0,
+     "3": 1,
+     "4": 0,
+     "5": 0
+    },
+    "daysLogged": 1
+   },
+   "streaks": {
+    "taskStreak": 1,
+    "habitBest": 10,
+    "habitCurrent": 10
+   }
+  },
+  "year": {
+   "since": "2025-09-23",
+   "period": "year",
+   "tasks": {
+    "tasksCreated": 5,
+    "tasksCompleted": 2,
+    "tasksTotal": 5,
+    "completionRate": 40,
+    "overdueTasks": 0,
+    "byPriority": {
+     "High": 1,
+     "Medium": 2,
+     "Low": 1,
+     "Urgent": 1
+    }
+   },
+   "habits": {
+    "activeCount": 4,
+    "goodHabits": 3,
+    "badHabits": 1,
+    "checks": 29,
+    "completion": {
+     "scheduled": 93,
+     "completed": 13,
+     "pct": 14
+    },
+    "bestStreakOverall": 10,
+    "currentStreakOverall": 10
+   },
+   "goals": {
+    "activeGoals": 1,
+    "completedGoals": 1,
+    "avgGoalProgress": 50,
+    "completedMilestonesInPeriod": 1,
+    "completedMilestonesAll": 1,
+    "goalsByCategory": {
+     "Fitness": 1,
+     "None": 1
+    }
+   },
+   "xp": {
+    "xpEarned": 2199,
+    "xpTodayVal": 999,
+    "xpThisWeek": 1199,
+    "xpThisMonth": 2199,
+    "level": 5,
+    "into": 753,
+    "need": 878,
+    "skillPoints": 3,
+    "attributePoints": 8
+   },
+   "fitness": {
+    "count": 2,
+    "sets": 10,
+    "reps": 77,
+    "volume": 6010,
+    "duration": 110,
+    "prs": [
+     {
+      "weight": 140,
+      "reps": 5,
+      "date": "2026-09-23",
+      "name": "Deadlift"
+     },
+     {
+      "weight": 80,
+      "reps": 8,
+      "date": "2026-09-21",
+      "name": "Bench press"
+     },
+     {
+      "weight": 45,
+      "reps": 10,
+      "date": "2026-09-21",
+      "name": "Overhead press"
+     }
+    ]
+   },
+   "nutrition": {
+    "daysLogged": 1,
+    "avgCalories": 1150,
+    "avgProtein": 75,
+    "avgCarbs": 140,
+    "avgFat": 27,
+    "avgWater": 500
+   },
+   "finance": {
+    "income": 42000,
+    "expenses": 1620,
+    "balance": 40380,
+    "savings": 40380,
+    "transactions": 3,
+    "byCategory": {
+     "Food": 420,
+     "Transport": 1200
+    }
+   },
+   "health": {
+    "avgSleep": 7.625,
+    "sleepDaysLogged": 2,
+    "avgSteps": 6900,
+    "stepsDaysLogged": 2,
+    "weightTrend": -0.8000000000000114
+   },
+   "journal": {
+    "count": 1,
+    "avgRating": 4,
+    "moodCounts": {
+     "1": 0,
+     "2": 0,
+     "3": 1,
+     "4": 0,
+     "5": 0
+    },
+    "daysLogged": 1
+   },
+   "streaks": {
+    "taskStreak": 1,
+    "habitBest": 10,
+    "habitCurrent": 10
+   }
+  },
+  "all": {
+   "since": "2025-09-23",
+   "period": "all",
+   "tasks": {
+    "tasksCreated": 5,
+    "tasksCompleted": 2,
+    "tasksTotal": 5,
+    "completionRate": 40,
+    "overdueTasks": 0,
+    "byPriority": {
+     "High": 1,
+     "Medium": 2,
+     "Low": 1,
+     "Urgent": 1
+    }
+   },
+   "habits": {
+    "activeCount": 4,
+    "goodHabits": 3,
+    "badHabits": 1,
+    "checks": 29,
+    "completion": {
+     "scheduled": 93,
+     "completed": 13,
+     "pct": 14
+    },
+    "bestStreakOverall": 10,
+    "currentStreakOverall": 10
+   },
+   "goals": {
+    "activeGoals": 1,
+    "completedGoals": 1,
+    "avgGoalProgress": 50,
+    "completedMilestonesInPeriod": 1,
+    "completedMilestonesAll": 1,
+    "goalsByCategory": {
+     "Fitness": 1,
+     "None": 1
+    }
+   },
+   "xp": {
+    "xpEarned": 2199,
+    "xpTodayVal": 999,
+    "xpThisWeek": 1199,
+    "xpThisMonth": 2199,
+    "level": 5,
+    "into": 753,
+    "need": 878,
+    "skillPoints": 3,
+    "attributePoints": 8
+   },
+   "fitness": {
+    "count": 2,
+    "sets": 10,
+    "reps": 77,
+    "volume": 6010,
+    "duration": 110,
+    "prs": [
+     {
+      "weight": 140,
+      "reps": 5,
+      "date": "2026-09-23",
+      "name": "Deadlift"
+     },
+     {
+      "weight": 80,
+      "reps": 8,
+      "date": "2026-09-21",
+      "name": "Bench press"
+     },
+     {
+      "weight": 45,
+      "reps": 10,
+      "date": "2026-09-21",
+      "name": "Overhead press"
+     }
+    ]
+   },
+   "nutrition": {
+    "daysLogged": 1,
+    "avgCalories": 1150,
+    "avgProtein": 75,
+    "avgCarbs": 140,
+    "avgFat": 27,
+    "avgWater": 500
+   },
+   "finance": {
+    "income": 42000,
+    "expenses": 1620,
+    "balance": 40380,
+    "savings": 40380,
+    "transactions": 3,
+    "byCategory": {
+     "Food": 420,
+     "Transport": 1200
+    }
+   },
+   "health": {
+    "avgSleep": 7.625,
+    "sleepDaysLogged": 2,
+    "avgSteps": 6900,
+    "stepsDaysLogged": 2,
+    "weightTrend": -0.8000000000000114
+   },
+   "journal": {
+    "count": 1,
+    "avgRating": 4,
+    "moodCounts": {
+     "1": 0,
+     "2": 0,
+     "3": 1,
+     "4": 0,
+     "5": 0
+    },
+    "daysLogged": 1
+   },
+   "streaks": {
+    "taskStreak": 1,
+    "habitBest": 10,
+    "habitCurrent": 10
+   }
+  }
+ },
+ "sleepStats": {
+  "daysLogged": 2,
+  "avg": 7.625,
+  "shortest": 7.25,
+  "longest": 8,
+  "consistency": 93,
+  "avgQuality": 3.5,
+  "entries": [
+   {
+    "notes": "",
+    "quality": "4",
+    "createdAt": "<time>",
+    "id": "sl1",
+    "date": "2026-09-22",
+    "bedtime": "23:00",
+    "wake": "07:00"
+   },
+   {
+    "notes": "Woke up once",
+    "quality": "3",
+    "createdAt": "<time>",
+    "id": "sl2",
+    "date": "2026-09-23",
+    "bedtime": "23:30",
+    "wake": "06:45"
+   }
+  ],
+  "durations": [
+   8,
+   7.25
+  ]
+ },
+ "healthDashboard": {
+  "week": {
+   "sleepToday": {
+    "notes": "Woke up once",
+    "quality": "3",
+    "createdAt": "<time>",
+    "id": "sl2",
+    "date": "2026-09-23",
+    "bedtime": "23:30",
+    "wake": "06:45"
+   },
+   "sleep": {
+    "daysLogged": 2,
+    "avg": 7.625,
+    "shortest": 7.25,
+    "longest": 8,
+    "consistency": 93,
+    "avgQuality": 3.5,
+    "entries": [
+     {
+      "notes": "",
+      "quality": "4",
+      "createdAt": "<time>",
+      "id": "sl1",
+      "date": "2026-09-22",
+      "bedtime": "23:00",
+      "wake": "07:00"
+     },
+     {
+      "notes": "Woke up once",
+      "quality": "3",
+      "createdAt": "<time>",
+      "id": "sl2",
+      "date": "2026-09-23",
+      "bedtime": "23:30",
+      "wake": "06:45"
+     }
+    ],
+    "durations": [
+     8,
+     7.25
+    ]
+   },
+   "weight": {
+    "count": 2,
+    "avg": 82,
+    "latest": {
+     "unit": "kg",
+     "createdAt": "<time>",
+     "id": "wt2",
+     "date": "2026-09-23",
+     "weight": 81.6
+    },
+    "trend": -0.8000000000000114,
+    "items": [
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt1",
+      "date": "2026-09-16",
+      "weight": 82.4
+     },
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt2",
+      "date": "2026-09-23",
+      "weight": 81.6
+     }
+    ],
+    "values": [
+     82.4,
+     81.6
+    ]
+   },
+   "latestWeight": {
+    "unit": "kg",
+    "createdAt": "<time>",
+    "id": "wt2",
+    "date": "2026-09-23",
+    "weight": 81.6
+   },
+   "stepsToday": {
+    "createdAt": "<time>",
+    "id": "st2",
+    "date": "2026-09-23",
+    "steps": 4300
+   },
+   "steps": {
+    "count": 2,
+    "avg": 6900,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "st2",
+     "date": "2026-09-23",
+     "steps": 4300
+    },
+    "trend": -5200,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "st1",
+      "date": "2026-09-22",
+      "steps": 9500
+     },
+     {
+      "createdAt": "<time>",
+      "id": "st2",
+      "date": "2026-09-23",
+      "steps": 4300
+     }
+    ],
+    "values": [
+     9500,
+     4300
+    ]
+   },
+   "heartRate": {
+    "count": 1,
+    "avg": 62,
+    "latest": {
+     "type": "resting",
+     "createdAt": "<time>",
+     "id": "hr1",
+     "date": "2026-09-23",
+     "value": 62
+    },
+    "trend": null,
+    "items": [
+     {
+      "type": "resting",
+      "createdAt": "<time>",
+      "id": "hr1",
+      "date": "2026-09-23",
+      "value": 62
+     }
+    ],
+    "values": [
+     62
+    ]
+   },
+   "latestHeartRate": {
+    "type": "resting",
+    "createdAt": "<time>",
+    "id": "hr1",
+    "date": "2026-09-23",
+    "value": 62
+   },
+   "activeCaloriesToday": {
+    "createdAt": "<time>",
+    "id": "ac1",
+    "date": "2026-09-23",
+    "calories": 380
+   },
+   "activeCalories": {
+    "count": 1,
+    "avg": 380,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "ac1",
+     "date": "2026-09-23",
+     "calories": 380
+    },
+    "trend": null,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "ac1",
+      "date": "2026-09-23",
+      "calories": 380
+     }
+    ],
+    "values": [
+     380
+    ]
+   }
+  },
+  "month": {
+   "sleepToday": {
+    "notes": "Woke up once",
+    "quality": "3",
+    "createdAt": "<time>",
+    "id": "sl2",
+    "date": "2026-09-23",
+    "bedtime": "23:30",
+    "wake": "06:45"
+   },
+   "sleep": {
+    "daysLogged": 2,
+    "avg": 7.625,
+    "shortest": 7.25,
+    "longest": 8,
+    "consistency": 93,
+    "avgQuality": 3.5,
+    "entries": [
+     {
+      "notes": "",
+      "quality": "4",
+      "createdAt": "<time>",
+      "id": "sl1",
+      "date": "2026-09-22",
+      "bedtime": "23:00",
+      "wake": "07:00"
+     },
+     {
+      "notes": "Woke up once",
+      "quality": "3",
+      "createdAt": "<time>",
+      "id": "sl2",
+      "date": "2026-09-23",
+      "bedtime": "23:30",
+      "wake": "06:45"
+     }
+    ],
+    "durations": [
+     8,
+     7.25
+    ]
+   },
+   "weight": {
+    "count": 2,
+    "avg": 82,
+    "latest": {
+     "unit": "kg",
+     "createdAt": "<time>",
+     "id": "wt2",
+     "date": "2026-09-23",
+     "weight": 81.6
+    },
+    "trend": -0.8000000000000114,
+    "items": [
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt1",
+      "date": "2026-09-16",
+      "weight": 82.4
+     },
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt2",
+      "date": "2026-09-23",
+      "weight": 81.6
+     }
+    ],
+    "values": [
+     82.4,
+     81.6
+    ]
+   },
+   "latestWeight": {
+    "unit": "kg",
+    "createdAt": "<time>",
+    "id": "wt2",
+    "date": "2026-09-23",
+    "weight": 81.6
+   },
+   "stepsToday": {
+    "createdAt": "<time>",
+    "id": "st2",
+    "date": "2026-09-23",
+    "steps": 4300
+   },
+   "steps": {
+    "count": 2,
+    "avg": 6900,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "st2",
+     "date": "2026-09-23",
+     "steps": 4300
+    },
+    "trend": -5200,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "st1",
+      "date": "2026-09-22",
+      "steps": 9500
+     },
+     {
+      "createdAt": "<time>",
+      "id": "st2",
+      "date": "2026-09-23",
+      "steps": 4300
+     }
+    ],
+    "values": [
+     9500,
+     4300
+    ]
+   },
+   "heartRate": {
+    "count": 1,
+    "avg": 62,
+    "latest": {
+     "type": "resting",
+     "createdAt": "<time>",
+     "id": "hr1",
+     "date": "2026-09-23",
+     "value": 62
+    },
+    "trend": null,
+    "items": [
+     {
+      "type": "resting",
+      "createdAt": "<time>",
+      "id": "hr1",
+      "date": "2026-09-23",
+      "value": 62
+     }
+    ],
+    "values": [
+     62
+    ]
+   },
+   "latestHeartRate": {
+    "type": "resting",
+    "createdAt": "<time>",
+    "id": "hr1",
+    "date": "2026-09-23",
+    "value": 62
+   },
+   "activeCaloriesToday": {
+    "createdAt": "<time>",
+    "id": "ac1",
+    "date": "2026-09-23",
+    "calories": 380
+   },
+   "activeCalories": {
+    "count": 1,
+    "avg": 380,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "ac1",
+     "date": "2026-09-23",
+     "calories": 380
+    },
+    "trend": null,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "ac1",
+      "date": "2026-09-23",
+      "calories": 380
+     }
+    ],
+    "values": [
+     380
+    ]
+   }
+  },
+  "year": {
+   "sleepToday": {
+    "notes": "Woke up once",
+    "quality": "3",
+    "createdAt": "<time>",
+    "id": "sl2",
+    "date": "2026-09-23",
+    "bedtime": "23:30",
+    "wake": "06:45"
+   },
+   "sleep": {
+    "daysLogged": 2,
+    "avg": 7.625,
+    "shortest": 7.25,
+    "longest": 8,
+    "consistency": 93,
+    "avgQuality": 3.5,
+    "entries": [
+     {
+      "notes": "",
+      "quality": "4",
+      "createdAt": "<time>",
+      "id": "sl1",
+      "date": "2026-09-22",
+      "bedtime": "23:00",
+      "wake": "07:00"
+     },
+     {
+      "notes": "Woke up once",
+      "quality": "3",
+      "createdAt": "<time>",
+      "id": "sl2",
+      "date": "2026-09-23",
+      "bedtime": "23:30",
+      "wake": "06:45"
+     }
+    ],
+    "durations": [
+     8,
+     7.25
+    ]
+   },
+   "weight": {
+    "count": 2,
+    "avg": 82,
+    "latest": {
+     "unit": "kg",
+     "createdAt": "<time>",
+     "id": "wt2",
+     "date": "2026-09-23",
+     "weight": 81.6
+    },
+    "trend": -0.8000000000000114,
+    "items": [
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt1",
+      "date": "2026-09-16",
+      "weight": 82.4
+     },
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt2",
+      "date": "2026-09-23",
+      "weight": 81.6
+     }
+    ],
+    "values": [
+     82.4,
+     81.6
+    ]
+   },
+   "latestWeight": {
+    "unit": "kg",
+    "createdAt": "<time>",
+    "id": "wt2",
+    "date": "2026-09-23",
+    "weight": 81.6
+   },
+   "stepsToday": {
+    "createdAt": "<time>",
+    "id": "st2",
+    "date": "2026-09-23",
+    "steps": 4300
+   },
+   "steps": {
+    "count": 2,
+    "avg": 6900,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "st2",
+     "date": "2026-09-23",
+     "steps": 4300
+    },
+    "trend": -5200,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "st1",
+      "date": "2026-09-22",
+      "steps": 9500
+     },
+     {
+      "createdAt": "<time>",
+      "id": "st2",
+      "date": "2026-09-23",
+      "steps": 4300
+     }
+    ],
+    "values": [
+     9500,
+     4300
+    ]
+   },
+   "heartRate": {
+    "count": 1,
+    "avg": 62,
+    "latest": {
+     "type": "resting",
+     "createdAt": "<time>",
+     "id": "hr1",
+     "date": "2026-09-23",
+     "value": 62
+    },
+    "trend": null,
+    "items": [
+     {
+      "type": "resting",
+      "createdAt": "<time>",
+      "id": "hr1",
+      "date": "2026-09-23",
+      "value": 62
+     }
+    ],
+    "values": [
+     62
+    ]
+   },
+   "latestHeartRate": {
+    "type": "resting",
+    "createdAt": "<time>",
+    "id": "hr1",
+    "date": "2026-09-23",
+    "value": 62
+   },
+   "activeCaloriesToday": {
+    "createdAt": "<time>",
+    "id": "ac1",
+    "date": "2026-09-23",
+    "calories": 380
+   },
+   "activeCalories": {
+    "count": 1,
+    "avg": 380,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "ac1",
+     "date": "2026-09-23",
+     "calories": 380
+    },
+    "trend": null,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "ac1",
+      "date": "2026-09-23",
+      "calories": 380
+     }
+    ],
+    "values": [
+     380
+    ]
+   }
+  },
+  "all": {
+   "sleepToday": {
+    "notes": "Woke up once",
+    "quality": "3",
+    "createdAt": "<time>",
+    "id": "sl2",
+    "date": "2026-09-23",
+    "bedtime": "23:30",
+    "wake": "06:45"
+   },
+   "sleep": {
+    "daysLogged": 2,
+    "avg": 7.625,
+    "shortest": 7.25,
+    "longest": 8,
+    "consistency": 93,
+    "avgQuality": 3.5,
+    "entries": [
+     {
+      "notes": "",
+      "quality": "4",
+      "createdAt": "<time>",
+      "id": "sl1",
+      "date": "2026-09-22",
+      "bedtime": "23:00",
+      "wake": "07:00"
+     },
+     {
+      "notes": "Woke up once",
+      "quality": "3",
+      "createdAt": "<time>",
+      "id": "sl2",
+      "date": "2026-09-23",
+      "bedtime": "23:30",
+      "wake": "06:45"
+     }
+    ],
+    "durations": [
+     8,
+     7.25
+    ]
+   },
+   "weight": {
+    "count": 2,
+    "avg": 82,
+    "latest": {
+     "unit": "kg",
+     "createdAt": "<time>",
+     "id": "wt2",
+     "date": "2026-09-23",
+     "weight": 81.6
+    },
+    "trend": -0.8000000000000114,
+    "items": [
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt1",
+      "date": "2026-09-16",
+      "weight": 82.4
+     },
+     {
+      "unit": "kg",
+      "createdAt": "<time>",
+      "id": "wt2",
+      "date": "2026-09-23",
+      "weight": 81.6
+     }
+    ],
+    "values": [
+     82.4,
+     81.6
+    ]
+   },
+   "latestWeight": {
+    "unit": "kg",
+    "createdAt": "<time>",
+    "id": "wt2",
+    "date": "2026-09-23",
+    "weight": 81.6
+   },
+   "stepsToday": {
+    "createdAt": "<time>",
+    "id": "st2",
+    "date": "2026-09-23",
+    "steps": 4300
+   },
+   "steps": {
+    "count": 2,
+    "avg": 6900,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "st2",
+     "date": "2026-09-23",
+     "steps": 4300
+    },
+    "trend": -5200,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "st1",
+      "date": "2026-09-22",
+      "steps": 9500
+     },
+     {
+      "createdAt": "<time>",
+      "id": "st2",
+      "date": "2026-09-23",
+      "steps": 4300
+     }
+    ],
+    "values": [
+     9500,
+     4300
+    ]
+   },
+   "heartRate": {
+    "count": 1,
+    "avg": 62,
+    "latest": {
+     "type": "resting",
+     "createdAt": "<time>",
+     "id": "hr1",
+     "date": "2026-09-23",
+     "value": 62
+    },
+    "trend": null,
+    "items": [
+     {
+      "type": "resting",
+      "createdAt": "<time>",
+      "id": "hr1",
+      "date": "2026-09-23",
+      "value": 62
+     }
+    ],
+    "values": [
+     62
+    ]
+   },
+   "latestHeartRate": {
+    "type": "resting",
+    "createdAt": "<time>",
+    "id": "hr1",
+    "date": "2026-09-23",
+    "value": 62
+   },
+   "activeCaloriesToday": {
+    "createdAt": "<time>",
+    "id": "ac1",
+    "date": "2026-09-23",
+    "calories": 380
+   },
+   "activeCalories": {
+    "count": 1,
+    "avg": 380,
+    "latest": {
+     "createdAt": "<time>",
+     "id": "ac1",
+     "date": "2026-09-23",
+     "calories": 380
+    },
+    "trend": null,
+    "items": [
+     {
+      "createdAt": "<time>",
+      "id": "ac1",
+      "date": "2026-09-23",
+      "calories": 380
+     }
+    ],
+    "values": [
+     380
+    ]
+   }
+  }
+ },
+ "streaks": {
+  "h_read": [
+   10,
+   10,
+   "🔥10 day streak",
+   33
+  ],
+  "h_water": [
+   1,
+   1,
+   "3 / 8 today",
+   3
+  ],
+  "h_smoke": [
+   6,
+   6,
+   "6d clean streak",
+   97
+  ],
+  "h_gym": [
+   0,
+   0,
+   "1 / 3 this week",
+   7
+  ]
+ },
+ "goals": {
+  "g_fit": 0,
+  "g_done": 100
+ },
+ "level": {
+  "level": 5,
+  "into": 753,
+  "need": 878
+ },
+ "xpToday": 999,
+ "finance": 40380,
+ "fuel": {
+  "intervals": [
+   {
+    "l100": 6,
+    "distKm": 700,
+    "liters": 42,
+    "date": "2026-09-20"
+   }
+  ],
+  "avgL100": 6
+ },
+ "prs": [
+  {
+   "weight": 140,
+   "reps": 5,
+   "date": "2026-09-23",
+   "name": "Deadlift"
+  },
+  {
+   "weight": 80,
+   "reps": 8,
+   "date": "2026-09-21",
+   "name": "Bench press"
+  },
+  {
+   "weight": 45,
+   "reps": 10,
+   "date": "2026-09-21",
+   "name": "Overhead press"
+  }
+ ],
+ "workouts": [
+  [
+   3910,
+   7,
+   62
+  ],
+  [
+   2100,
+   3,
+   15
+  ]
+ ],
+ "nutrition": {
+  "calories": 1150,
+  "protein": 75,
+  "carbs": 140,
+  "fat": 27
+ },
+ "water": 500,
+ "subs": [
+  "2026-09-27",
+  "2027-01-21"
+ ],
+ "carReminders": [
+  [
+   "📋 STK/inspection due in 20d"
+  ]
+ ],
+ "reminders": [
+  {
+   "prefType": "event",
+   "navType": "event",
+   "id": "ev1",
+   "text": "📅 Today: Team meeting at 14:00"
+  },
+  {
+   "prefType": "event",
+   "navType": "event",
+   "id": "ev2",
+   "text": "📅 Birthday in 3d"
+  },
+  {
+   "prefType": "habit",
+   "navType": "habit",
+   "id": "h_water",
+   "text": "🔥 Habit: Drink water (08:00)"
+  },
+  {
+   "prefType": "car",
+   "navType": "vehicle",
+   "id": "v1",
+   "text": "📋 STK/inspection due in 20d"
+  },
+  {
+   "prefType": "quest",
+   "navType": "quest",
+   "id": "dq_tasks",
+   "text": "📜 Quest: Complete 3 tasks today"
+  },
+  {
+   "prefType": "quest",
+   "navType": "quest",
+   "id": "dq_habits",
+   "text": "📜 Quest: Complete all active habits"
+  }
+ ],
+ "search": [
+  [
+   "Tasks",
+   "✅",
+   "task",
+   [
+    {
+     "title": "Write report",
+     "meta": "High · 23.09.2026",
+     "obj": {
+      "id": "t_open",
+      "title": "Write report",
+      "description": "Q3 summary",
+      "category": "Work",
+      "priority": "High",
+      "dueDate": "2026-09-23",
+      "done": false,
+      "createdAt": "<time>",
+      "goalId": "g_fit",
+      "xpReward": 30
+     }
+    },
+    {
+     "title": "Buy groceries",
+     "meta": "Medium · 23.09.2026",
+     "obj": {
+      "id": "t_med",
+      "title": "Buy groceries",
+      "description": "",
+      "category": "Personal",
+      "priority": "Medium",
+      "dueDate": "2026-09-23",
+      "done": false,
+      "createdAt": "<time>"
+     }
+    },
+    {
+     "title": "Call mom",
+     "meta": "Low · 23.09.2026",
+     "obj": {
+      "id": "t_done",
+      "title": "Call mom",
+      "description": "",
+      "category": "Social",
+      "priority": "Low",
+      "dueDate": "2026-09-23",
+      "done": true,
+      "createdAt": "<time>"
+     }
+    },
+    {
+     "title": "Old task",
+     "meta": "Urgent · 21.09.2026",
+     "obj": {
+      "id": "t_old",
+      "title": "Old task",
+      "description": "",
+      "category": "Work",
+      "priority": "Urgent",
+      "dueDate": "2026-09-21",
+      "done": true,
+      "createdAt": "<time>"
+     }
+    },
+    {
+     "title": "Dentist",
+     "meta": "Medium · 28.09.2026",
+     "obj": {
+      "id": "t_future",
+      "title": "Dentist",
+      "description": "",
+      "category": "Health",
+      "priority": "Medium",
+      "dueDate": "2026-09-28",
+      "done": false,
+      "createdAt": "<time>"
+     }
+    }
+   ]
+  ],
+  [
+   "Events",
+   "📅",
+   "event",
+   [
+    {
+     "title": "Team meeting",
+     "meta": "23.09.2026",
+     "obj": {
+      "description": "",
+      "start": "14:00",
+      "end": "15:00",
+      "location": "Office",
+      "category": "Work",
+      "recurring": "weekly",
+      "reminder": "",
+      "linkedTaskId": "t_open",
+      "linkedGoalId": "",
+      "linkedHabitId": "",
+      "createdAt": "<time>",
+      "id": "ev1",
+      "title": "Team meeting",
+      "date": "2026-09-23"
+     }
+    },
+    {
+     "title": "Birthday",
+     "meta": "26.09.2026",
+     "obj": {
+      "description": "",
+      "start": "",
+      "end": "",
+      "location": "",
+      "category": "Personal",
+      "recurring": "none",
+      "reminder": "",
+      "linkedTaskId": "",
+      "linkedGoalId": "",
+      "linkedHabitId": "",
+      "createdAt": "<time>",
+      "id": "ev2",
+      "title": "Birthday",
+      "date": "2026-09-26"
+     }
+    }
+   ]
+  ],
+  [
+   "Habits",
+   "🔥",
+   "habit",
+   [
+    {
+     "title": "Read",
+     "meta": "Learning",
+     "obj": {
+      "description": "",
+      "icon": "📚",
+      "color": "",
+      "category": "Learning",
+      "type": "good",
+      "frequency": "daily",
+      "target": 1,
+      "weekdays": [],
+      "reminder": "",
+      "xpReward": 15,
+      "attrReward": "INT",
+      "startDate": "2026-08-24",
+      "active": true,
+      "goalId": "",
+      "completions": [
+       "2026-09-14",
+       "2026-09-15",
+       "2026-09-16",
+       "2026-09-17",
+       "2026-09-18",
+       "2026-09-19",
+       "2026-09-20",
+       "2026-09-21",
+       "2026-09-22",
+       "2026-09-23"
+      ],
+      "brokenDates": [],
+      "createdAt": "<time>",
+      "id": "h_read",
+      "name": "Read"
+     }
+    },
+    {
+     "title": "Drink water",
+     "meta": "Health",
+     "obj": {
+      "description": "",
+      "icon": "💧",
+      "color": "",
+      "category": "Health",
+      "type": "good",
+      "frequency": "daily",
+      "target": 8,
+      "weekdays": [],
+      "reminder": "08:00",
+      "xpReward": 15,
+      "attrReward": "VIT",
+      "startDate": "2026-08-24",
+      "active": true,
+      "goalId": "g_fit",
+      "completions": [
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-22",
+       "2026-09-23",
+       "2026-09-23",
+       "2026-09-23"
+      ],
+      "brokenDates": [],
+      "createdAt": "<time>",
+      "id": "h_water",
+      "name": "Drink water"
+     }
+    },
+    {
+     "title": "No smoking",
+     "meta": "Health",
+     "obj": {
+      "description": "",
+      "icon": "🚭",
+      "color": "",
+      "category": "Health",
+      "type": "bad",
+      "frequency": "daily",
+      "target": 1,
+      "weekdays": [],
+      "reminder": "",
+      "xpReward": 15,
+      "attrReward": "VIT",
+      "startDate": "2026-08-24",
+      "active": true,
+      "goalId": "",
+      "completions": [
+       "2026-09-17",
+       "2026-09-18",
+       "2026-09-19",
+       "2026-09-20",
+       "2026-09-21",
+       "2026-09-22"
+      ],
+      "brokenDates": [
+       "2026-09-16"
+      ],
+      "createdAt": "<time>",
+      "id": "h_smoke",
+      "name": "No smoking"
+     }
+    }
+   ]
+  ],
+  [
+   "Goals",
+   "🎯",
+   "goal",
+   [
+    {
+     "title": "Get in shape",
+     "meta": "Active",
+     "obj": {
+      "id": "g_fit",
+      "title": "Get in shape",
+      "description": "3 months of training",
+      "targetDate": "2026-11-22",
+      "status": "Active",
+      "manualProgress": 30,
+      "createdAt": "<time>",
+      "category": "Fitness"
+     }
+    },
+    {
+     "title": "Read 5 books",
+     "meta": "Completed",
+     "obj": {
+      "id": "g_done",
+      "title": "Read 5 books",
+      "description": "",
+      "targetDate": "2026-09-13",
+      "status": "Completed",
+      "manualProgress": 100,
+      "createdAt": "<time>"
+     }
+    }
+   ]
+  ],
+  [
+   "Milestones",
+   "🚩",
+   "milestone",
+   []
+  ],
+  [
+   "Notes",
+   "📝",
+   "note",
+   [
+    {
+     "title": "Ideas",
+     "meta": "Personal",
+     "obj": {
+      "tags": [
+       "ideas"
+      ],
+      "favorite": false,
+      "updatedAt": "<time>",
+      "createdAt": "<time>",
+      "id": "n1",
+      "title": "Ideas",
+      "body": "Side project ideas",
+      "category": "Personal",
+      "pinned": true
+     }
+    },
+    {
+     "title": "Meeting",
+     "meta": "Work",
+     "obj": {
+      "tags": [],
+      "favorite": true,
+      "updatedAt": "<time>",
+      "createdAt": "<time>",
+      "id": "n2",
+      "title": "Meeting",
+      "body": "Agenda for Monday",
+      "category": "Work",
+      "pinned": false
+     }
+    }
+   ]
+  ],
+  [
+   "Expenses",
+   "💸",
+   "expense",
+   [
+    {
+     "title": "Fuel",
+     "meta": "20.09.2026",
+     "obj": {
+      "description": "Fuel",
+      "paymentMethod": "Card",
+      "recurring": false,
+      "tags": [],
+      "createdAt": "<time>",
+      "id": "e2",
+      "amount": 1200,
+      "category": "Transport",
+      "date": "2026-09-20"
+     }
+    }
+   ]
+  ],
+  [
+   "Income",
+   "💵",
+   "income",
+   [
+    {
+     "title": "September",
+     "meta": "15.09.2026",
+     "obj": {
+      "description": "September",
+      "paymentMethod": "Bank",
+      "recurring": true,
+      "tags": [],
+      "createdAt": "<time>",
+      "id": "i1",
+      "amount": 42000,
+      "category": "Salary",
+      "date": "2026-09-15"
+     }
+    }
+   ]
+  ],
+  [
+   "Subscriptions",
+   "💳",
+   "subscription",
+   [
+    {
+     "title": "Spotify",
+     "meta": "Entertainment",
+     "obj": {
+      "category": "Entertainment",
+      "notes": "",
+      "active": true,
+      "createdAt": "<time>",
+      "id": "s1",
+      "name": "Spotify",
+      "price": 169,
+      "period": "Monthly",
+      "nextPayment": "2026-09-27"
+     }
+    }
+   ]
+  ],
+  [
+   "Workouts",
+   "🏋️",
+   "workout",
+   [
+    {
+     "title": "Push day",
+     "meta": "21.09.2026",
+     "obj": {
+      "notes": "",
+      "createdAt": "<time>",
+      "id": "w1",
+      "name": "Push day",
+      "date": "2026-09-21",
+      "duration": "60",
+      "exercises": [
+       {
+        "id": "ex1",
+        "muscle": "Chest",
+        "rpe": "8",
+        "rest": "120",
+        "name": "Bench press",
+        "sets": "4",
+        "reps": "8",
+        "weight": "80"
+       },
+       {
+        "id": "ex2",
+        "muscle": "Shoulders",
+        "rpe": "",
+        "rest": "",
+        "name": "Overhead press",
+        "sets": "3",
+        "reps": "10",
+        "weight": "45"
+       }
+      ]
+     }
+    },
+    {
+     "title": "Pull day",
+     "meta": "23.09.2026",
+     "obj": {
+      "notes": "Felt good",
+      "createdAt": "<time>",
+      "id": "w2",
+      "name": "Pull day",
+      "date": "2026-09-23",
+      "duration": "50",
+      "exercises": [
+       {
+        "id": "ex3",
+        "muscle": "Back",
+        "rpe": "9",
+        "rest": "180",
+        "name": "Deadlift",
+        "sets": "3",
+        "reps": "5",
+        "weight": "140"
+       }
+      ]
+     }
+    }
+   ]
+  ],
+  [
+   "Meals",
+   "🍽️",
+   "meal",
+   [
+    {
+     "title": "Oatmeal",
+     "meta": "23.09.2026",
+     "obj": {
+      "servings": 1,
+      "notes": "",
+      "createdAt": "<time>",
+      "id": "meal1",
+      "name": "Oatmeal",
+      "type": "Breakfast",
+      "date": "2026-09-23",
+      "calories": "450",
+      "protein": "20",
+      "carbs": "60",
+      "fat": "12"
+     }
+    }
+   ]
+  ],
+  [
+   "Journal",
+   "📔",
+   "journal",
+   [
+    {
+     "title": "22.09.2026",
+     "meta": "Productive day.",
+     "obj": {
+      "tags": [
+       "work"
+      ],
+      "createdAt": "<time>",
+      "id": "j1",
+      "date": "2026-09-22",
+      "mood": "🙂",
+      "rating": "4",
+      "text": "Productive day."
+     }
+    }
+   ]
+  ],
+  [
+   "Vehicles",
+   "🚗",
+   "vehicle",
+   [
+    {
+     "title": "Octavia",
+     "meta": "Škoda Octavia",
+     "obj": {
+      "vin": "",
+      "regExpiry": "2026-10-13",
+      "insuranceExpiry": "2027-04-11",
+      "createdAt": "<time>",
+      "id": "v1",
+      "name": "Octavia",
+      "brand": "Škoda",
+      "model": "Octavia",
+      "year": "2019",
+      "mileage": "84000"
+     }
+    }
+   ]
+  ],
+  [
+   "Car Services",
+   "🔧",
+   "carService",
+   [
+    {
+     "title": "Oil change",
+     "meta": "14.08.2026",
+     "obj": {
+      "notes": "",
+      "createdAt": "<time>",
+      "id": "cs1",
+      "vehicleId": "v1",
+      "type": "Oil change",
+      "date": "2026-08-14",
+      "mileage": "80000",
+      "cost": "2500"
+     }
+    }
+   ]
+  ],
+  [
+   "Fuel Entries",
+   "⛽",
+   "fuel",
+   []
+  ],
+  [
+   "Quests",
+   "📜",
+   "quest",
+   [
+    {
+     "title": "Complete 3 tasks today",
+     "meta": "+50 XP",
+     "obj": {
+      "id": "dq_tasks",
+      "title": "Complete 3 tasks today",
+      "xp": 50,
+      "attr": "FOC",
+      "max": 3
+     }
+    },
+    {
+     "title": "Complete all active habits",
+     "meta": "+50 XP",
+     "obj": {
+      "id": "dq_habits",
+      "title": "Complete all active habits",
+      "xp": 50,
+      "attr": "DEX",
+      "max": 1
+     }
+    },
+    {
+     "title": "Log a workout, meal or finance entry",
+     "meta": "+20 XP",
+     "obj": {
+      "id": "dq_log",
+      "title": "Log a workout, meal or finance entry",
+      "xp": 20,
+      "attr": "VIT",
+      "max": 1
+     }
+    },
+    {
+     "title": "Complete 1 workout today",
+     "meta": "+40 XP",
+     "obj": {
+      "id": "dq_workout",
+      "title": "Complete 1 workout today",
+      "xp": 40,
+      "attr": "STR",
+      "max": 1
+     }
+    },
+    {
+     "title": "Log at least one meal today",
+     "meta": "+20 XP",
+     "obj": {
+      "id": "dq_nutrition",
+      "title": "Log at least one meal today",
+      "xp": 20,
+      "attr": "VIT",
+      "max": 1
+     }
+    },
+    {
+     "title": "Maintain a 7-day habit streak",
+     "meta": "+250 XP",
+     "obj": {
+      "id": "wq_streak",
+      "title": "Maintain a 7-day habit streak",
+      "xp": 250,
+      "attr": "DEX",
+      "max": 1
+     }
+    },
+    {
+     "title": "Make progress on an active goal",
+     "meta": "+100 XP",
+     "obj": {
+      "id": "wq_goal",
+      "title": "Make progress on an active goal",
+      "xp": 100,
+      "attr": "WIS",
+      "max": 1
+     }
+    },
+    {
+     "title": "Complete 15 tasks this week",
+     "meta": "+200 XP",
+     "obj": {
+      "id": "wq_tasks",
+      "title": "Complete 15 tasks this week",
+      "xp": 200,
+      "attr": "FOC",
+      "max": 15
+     }
+    },
+    {
+     "title": "Complete this week's habit target",
+     "meta": "+150 XP",
+     "obj": {
+      "id": "wq_habits",
+      "title": "Complete this week's habit target",
+      "xp": 150,
+      "attr": "DEX"
+     }
+    }
+   ]
+  ],
+  [
+   "Achievements",
+   "🏆",
+   "achievement",
+   [
+    {
+     "title": "First Step",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_task",
+      "title": "First Step",
+      "desc": "Complete your first task",
+      "rarity": "Common",
+      "xp": 20
+     }
+    },
+    {
+     "title": "7 Day Streak",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "seven_streak",
+      "title": "7 Day Streak",
+      "desc": "Keep a habit streak of 7+",
+      "rarity": "Uncommon",
+      "xp": 75
+     }
+    },
+    {
+     "title": "30 Day Streak",
+     "meta": "Locked",
+     "obj": {
+      "id": "thirty_streak",
+      "title": "30 Day Streak",
+      "desc": "Keep a habit streak of 30+",
+      "rarity": "Rare",
+      "xp": 250
+     }
+    },
+    {
+     "title": "Task Master",
+     "meta": "Locked",
+     "obj": {
+      "id": "ten_tasks",
+      "title": "Task Master",
+      "desc": "Complete 10 tasks",
+      "rarity": "Common",
+      "xp": 50
+     }
+    },
+    {
+     "title": "Goal Crusher",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_goal",
+      "title": "Goal Crusher",
+      "desc": "Complete your first goal",
+      "rarity": "Rare",
+      "xp": 150
+     }
+    },
+    {
+     "title": "Rising Hero",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "level5",
+      "title": "Rising Hero",
+      "desc": "Reach Level 5",
+      "rarity": "Uncommon",
+      "xp": 0
+     }
+    },
+    {
+     "title": "Unstoppable",
+     "meta": "Locked",
+     "obj": {
+      "id": "level10",
+      "title": "Unstoppable",
+      "desc": "Reach Level 10",
+      "rarity": "Epic",
+      "xp": 0
+     }
+    },
+    {
+     "title": "Creature of Habit",
+     "meta": "Locked",
+     "obj": {
+      "id": "five_habits",
+      "title": "Creature of Habit",
+      "desc": "Track 5 different habits",
+      "rarity": "Common",
+      "xp": 40
+     }
+    },
+    {
+     "title": "Money Maker",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "money_tracker",
+      "title": "Money Maker",
+      "desc": "Log your first finance entry",
+      "rarity": "Common",
+      "xp": 20
+     }
+    },
+    {
+     "title": "Savings Streak",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "saver",
+      "title": "Savings Streak",
+      "desc": "Log income exceeding expenses in a month",
+      "rarity": "Uncommon",
+      "xp": 80
+     }
+    },
+    {
+     "title": "Beast Mode",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_workout",
+      "title": "Beast Mode",
+      "desc": "Log your first workout",
+      "rarity": "Common",
+      "xp": 20
+     }
+    },
+    {
+     "title": "Fitness Beast",
+     "meta": "Locked",
+     "obj": {
+      "id": "fitness_beast",
+      "title": "Fitness Beast",
+      "desc": "Log 10 workouts",
+      "rarity": "Rare",
+      "xp": 150
+     }
+    },
+    {
+     "title": "Nourished",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_meal",
+      "title": "Nourished",
+      "desc": "Log your first meal",
+      "rarity": "Common",
+      "xp": 15
+     }
+    },
+    {
+     "title": "Hydration Hero",
+     "meta": "Locked",
+     "obj": {
+      "id": "hydrated",
+      "title": "Hydration Hero",
+      "desc": "Hit your water target in a day",
+      "rarity": "Uncommon",
+      "xp": 40
+     }
+    },
+    {
+     "title": "Knowledge Seeker",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_note",
+      "title": "Knowledge Seeker",
+      "desc": "Create your first note",
+      "rarity": "Common",
+      "xp": 15
+     }
+    },
+    {
+     "title": "Reflective",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_journal",
+      "title": "Reflective",
+      "desc": "Write your first journal entry",
+      "rarity": "Common",
+      "xp": 20
+     }
+    },
+    {
+     "title": "Consistent Reflection",
+     "meta": "Locked",
+     "obj": {
+      "id": "journal_week",
+      "title": "Consistent Reflection",
+      "desc": "Journal 7 days total",
+      "rarity": "Rare",
+      "xp": 100
+     }
+    },
+    {
+     "title": "Garage Keeper",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_vehicle",
+      "title": "Garage Keeper",
+      "desc": "Add your first vehicle",
+      "rarity": "Common",
+      "xp": 15
+     }
+    },
+    {
+     "title": "Subscribed",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "first_sub",
+      "title": "Subscribed",
+      "desc": "Track your first subscription",
+      "rarity": "Common",
+      "xp": 15
+     }
+    },
+    {
+     "title": "Adventurer",
+     "meta": "Unlocked",
+     "obj": {
+      "id": "quest_5",
+      "title": "Adventurer",
+      "desc": "Complete 5 quests",
+      "rarity": "Uncommon",
+      "xp": 60
+     }
+    }
+   ]
+  ]
+ ],
+ "quests": [
+  [
+   "dq_tasks",
+   false,
+   1
+  ],
+  [
+   "dq_habits",
+   false,
+   0
+  ],
+  [
+   "dq_log",
+   true,
+   1
+  ],
+  [
+   "dq_workout",
+   true,
+   1
+  ],
+  [
+   "dq_nutrition",
+   true,
+   1
+  ],
+  [
+   "wq_streak",
+   true,
+   1
+  ],
+  [
+   "wq_goal",
+   false,
+   0
+  ],
+  [
+   "wq_tasks",
+   false,
+   2
+  ],
+  [
+   "wq_habits",
+   true,
+   4
+  ],
+  [
+   "wq_workouts",
+   false,
+   2
+  ]
+ ],
+ "achievementsNow": [
+  [
+   "first_task",
+   true,
+   100
+  ],
+  [
+   "seven_streak",
+   true,
+   100
+  ],
+  [
+   "thirty_streak",
+   false,
+   33
+  ],
+  [
+   "ten_tasks",
+   false,
+   20
+  ],
+  [
+   "first_goal",
+   true,
+   100
+  ],
+  [
+   "level5",
+   true,
+   100
+  ],
+  [
+   "level10",
+   false,
+   50
+  ],
+  [
+   "five_habits",
+   false,
+   80
+  ],
+  [
+   "money_tracker",
+   true,
+   100
+  ],
+  [
+   "saver",
+   true,
+   100
+  ],
+  [
+   "first_workout",
+   true,
+   100
+  ],
+  [
+   "fitness_beast",
+   false,
+   20
+  ],
+  [
+   "first_meal",
+   true,
+   100
+  ],
+  [
+   "hydrated",
+   false,
+   20
+  ],
+  [
+   "first_note",
+   true,
+   100
+  ],
+  [
+   "first_journal",
+   true,
+   100
+  ],
+  [
+   "journal_week",
+   false,
+   14
+  ],
+  [
+   "first_vehicle",
+   true,
+   100
+  ],
+  [
+   "first_sub",
+   true,
+   100
+  ],
+  [
+   "quest_5",
+   true,
+   100
+  ]
+ ]
+}

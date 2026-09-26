@@ -1,0 +1,1152 @@
+{
+ "logicHash": "67d404e670b0ab9f",
+ "effectsHash": "34dcbad88e432a11",
+ "effectful": [
+  "applyCategoryAttrSkillBonus",
+  "applyFinanceAttrSkillBonus",
+  "applyHabitStreakSkillBonus",
+  "applyLevelRewards",
+  "applyWorkoutAttrSkillBonus",
+  "checkAchievements",
+  "checkBrowserNotifications",
+  "checkLevelUp",
+  "checkQuests",
+  "completeGoal",
+  "decrementHabitToday",
+  "doImport",
+  "doReset",
+  "enableNotificationsClick",
+  "financeGrantXp",
+  "finishOnboardingWizard",
+  "flushSave",
+  "goalMini",
+  "grantXp",
+  "habitItem",
+  "idbGet",
+  "idbSet",
+  "incrementHabitToday",
+  "logActivity",
+  "markHabitBroken",
+  "markHabitClean",
+  "migrate",
+  "migrateWorkout",
+  "moveWidget",
+  "openActiveCaloriesForm",
+  "openBudgetForm",
+  "openDB",
+  "openEventForm",
+  "openFinanceForm",
+  "openForm",
+  "openFuelForm",
+  "openFuelQuickAdd",
+  "openGoalForm",
+  "openHabitForm",
+  "openHeartRateForm",
+  "openJournalForm",
+  "openMealForm",
+  "openMilestoneForm",
+  "openNoteForm",
+  "openQuickAdd",
+  "openServiceForm",
+  "openSleepForm",
+  "openStepsForm",
+  "openSubForm",
+  "openTaskEditForm",
+  "openVehicleForm",
+  "openWeightForm",
+  "openWorkoutForm",
+  "quickAddWater",
+  "render",
+  "renderCalendar",
+  "renderCar",
+  "renderCharacter",
+  "renderFinance",
+  "renderFitness",
+  "renderGoalDetail",
+  "renderGoals",
+  "renderHabitDetail",
+  "renderHabits",
+  "renderHealth",
+  "renderHealthActiveCalTab",
+  "renderHealthHeartRateTab",
+  "renderHealthSleepTab",
+  "renderHealthStepsTab",
+  "renderHealthWeightTab",
+  "renderHome",
+  "renderJournal",
+  "renderMore",
+  "renderNotes",
+  "renderNutrition",
+  "renderQuests",
+  "renderSearch",
+  "renderSettings",
+  "renderStats",
+  "renderSubs",
+  "renderTasks",
+  "scheduleSave",
+  "searchNavigate",
+  "seedData",
+  "sendBrowserNotification",
+  "showOnboarding",
+  "spendAttributePoint",
+  "taskItem",
+  "toggleHabitDay",
+  "toggleMilestone",
+  "unlockSkill"
+ ],
+ "logic": {
+  "DB_NAME,STORE": "5dd3afd153841fe1",
+  "openDB": "0ce4f5ff08189ba9",
+  "idbGet": "5117abf9d9541ed8",
+  "idbSet": "0426f3078f9359ce",
+  "uid": "0db49a7b51c4a8a5",
+  "todayStr": "58638177d69a4e69",
+  "fmtDate": "42e62e6d5fe7a7bd",
+  "ATTRS": "1fbdd9be1f012c99",
+  "CATS": "dc88befc0790c1cd",
+  "CAT_LIST": "ea844884ea577be2",
+  "xpForLevel": "4c564dbf014763bd",
+  "levelFromXp": "0f3819a3d0f3d4a3",
+  "ACHV": "96aa2ba3df4ee445",
+  "SKILLS": "ffb088ff49a86073",
+  "SKILL_BRANCH_LABELS": "132c4ab1b6e7d050",
+  "SKILL_BRANCH_ATTR": "7bfabceae54b3f29",
+  "logActivity": "ff0c3b40b544f015",
+  "applyLevelRewards": "579b1dde68561ae8",
+  "unlockSkill": "1b8479bdd8dd5db2",
+  "ATTRIBUTE_POINT_VALUE": "ff2964608541b961",
+  "spendAttributePoint": "ce31dde3905c83b0",
+  "applyCategoryAttrSkillBonus": "8758de21fc2d6bc9",
+  "applyWorkoutAttrSkillBonus": "415f1dcdb881dd6b",
+  "applyFinanceAttrSkillBonus": "85867f9c72685eb0",
+  "applyHabitStreakSkillBonus": "71cdd0025d91c697",
+  "waterOnDate": "32b8baf8cfb51ab5",
+  "waterToday": "f169da144cefbedc",
+  "monthBalance": "b5b62790c5930231",
+  "AVATAR_CHOICES": "fecb899a41b6f5a6",
+  "WIDGET_DEFS": "e84b31a921aaf0a1",
+  "defaultState": "b3983dd10f46b19a",
+  "migrateHabit": "691bb350f4d6ec7c",
+  "migrateEvent": "4d8a2388b0a9d7bc",
+  "migrateFinanceEntry": "f04928f4a05a6334",
+  "migrateBudget": "fde329e46d5ec0ed",
+  "migrateSub": "958364a4100db5ba",
+  "migrateWorkout": "aec40d55bb292d60",
+  "migrateMeal": "163ce4f3ea8be422",
+  "migrateNote": "77cd98b1efe26c8e",
+  "migrateJournalEntry": "35daa0f8d19c00b0",
+  "migrateVehicle": "453aa917b97fa3a0",
+  "migrateService": "34b6fdced85d5c95",
+  "migrateFuel": "c7739e8ecf389ad0",
+  "migrateSleepEntry": "461b0eb18de8faf1",
+  "migrateWeightEntry": "f12d54b7e7c1acd6",
+  "migrateStepsEntry": "ea65139d940da3cb",
+  "migrateHeartRateEntry": "d351855b5ed4182a",
+  "migrateActiveCaloriesEntry": "b2af1b40bdd7d12c",
+  "migrate": "d12069d3d6931962",
+  "I18N": "eafd84c94c370e99",
+  "tr": "9a468d79409d70e8",
+  "formatDateDisplay": "95b2d6640fdb45c9",
+  "formatTimeDisplay": "3b40923b4333abfb",
+  "moveWidget": "ffaefe7f38d12fc1",
+  "playSound": "9e3b9bdbc0abe01e",
+  "animationsOn": "3593aeb3741b6e15",
+  "getActiveReminders": "8237c73473924fd0",
+  "resolveReminderEntity": "5e18eea93d48f498",
+  "notificationsSupported": "5cf4b9f21129858b",
+  "requestNotificationPermission": "e4e3aff92679bc91",
+  "enableNotificationsClick": "8d5339eefd0d20c8",
+  "sendBrowserNotification": "3d40e58cf640fc2e",
+  "checkBrowserNotifications": "50991dd477fe831b",
+  "seedData": "5da0abd6a093c7b4",
+  "S": "ae4bb0e4fd6999a7",
+  "saveTimer": "5b7ca60620953864",
+  "scheduleSave": "affe599d8d54df22",
+  "flushSave": "0537b4152dff13d5",
+  "addDays": "8789f99824dc71c4",
+  "isScheduledDate": "89952fa3cda3e1e1",
+  "habitUsesDayCounter": "b41fbca6982251a7",
+  "isDayComplete": "3f391675c4a9d63b",
+  "habitWeekStart": "a8dc478a17299038",
+  "habitWeekCount": "106b817d908be0e6",
+  "habitWeekMeetsTarget": "3f703715d474d60a",
+  "bestStreakDaily": "821d26f184e65935",
+  "currentStreakDaily": "a2c868475d336fae",
+  "currentStreakWeekdays": "f7673ae766965f85",
+  "bestStreakWeekdays": "d1d92b0a78b7af14",
+  "currentStreakWeekly": "0ea1532d25bb795e",
+  "bestStreakWeekly": "3827c691c9a9cb24",
+  "bestStreak": "900557998529b9b5",
+  "currentStreak": "2271dc1969d58d14",
+  "habitProgressLabel": "b430863c6d419e54",
+  "grantXp": "08411cdd833350b2",
+  "lastLevelSeen": "b95fe15562240555",
+  "checkLevelUp": "7328285d2d538730",
+  "checkAchievements": "d1a3b5c23658e1f1",
+  "xpToday": "3039a19c6bc0bb82",
+  "view": "f756ef649ec93694",
+  "escapeHtml": "31848e2879413be2",
+  "toggleHabitDay": "62a38094cde3b212",
+  "incrementHabitToday": "9e5aa6bfb1245740",
+  "decrementHabitToday": "ef6e4302b7b987a1",
+  "markHabitClean": "7d43de47b25ae7b6",
+  "markHabitBroken": "97bce69a8e060df2",
+  "habitProgressPct": "c6361f84e24f837f",
+  "goalProgress": "65c1c6ed542eb826",
+  "completeGoal": "5fcba1022ce2f98a",
+  "toggleMilestone": "85c2273bc8c5c002",
+  "taskFilter": "c4d8ecff7d466c95",
+  "last30": "a330b87eda26c1f7",
+  "currentHabitId": "957f9bdd53ad2728",
+  "goalFilter": "bbf2c71ec03a5d03",
+  "currentGoalId": "e19fc6e4e8932bcf",
+  "financeGrantXp": "75115af0e5d5afe6",
+  "workoutVolume": "6154691713377ae3",
+  "workoutTotalSets": "023b3457a1862300",
+  "workoutTotalReps": "48f5e8411d4e5c8e",
+  "exercisePRs": "4d308ff8956b0100",
+  "nutriTotals": "70b541c70229d501",
+  "noteSearch": "826b982a6d400ddf",
+  "fuelConsumptionStats": "48934599ba663b0c",
+  "carReminders": "05dc05c0c91fe5d6",
+  "nextPaymentDate": "41f54586b7709aa6",
+  "addPeriod": "d4f4556636974897",
+  "tasksCompletedToday": "ec65817acdec0a40",
+  "habitsActiveList": "7ef5d722385e772e",
+  "allHabitsDoneToday": "d418ba58d0f0143b",
+  "loggedFinanceToday": "cd2f55deb9c37dc5",
+  "weekStart": "ca113a26aea8688f",
+  "tasksCompletedThisWeek": "8d48f4474c749746",
+  "workoutsThisWeek": "cf282ccd2cef7bf4",
+  "habitsWithActivityThisWeekCount": "f11bffb0a3893b17",
+  "weeklyHabitTarget": "328887e3ae3eb458",
+  "DAILY_QUESTS": "cb35da937a71f11d",
+  "WEEKLY_QUESTS": "4351fbf128840712",
+  "questKey": "bbca804f4f93243f",
+  "checkQuests": "4dbcf5737d0e532a",
+  "questMax": "32a3c2c31a67794c",
+  "calOffset": "eb62e8d11e5028f7",
+  "stepEventDate": "321fb39d4591ef74",
+  "eventUpcomingDate": "dcb20a8826fea9e5",
+  "periodBuckets": "03009031c5ad0622",
+  "bucketSum": "0783248a9fc2e126",
+  "chartValuesForLog": "039240ab4afef917",
+  "statsPeriod": "92cc9b41cf1d59fd",
+  "periodStart": "8b034ebe3abc546f",
+  "currentTaskStreak": "faa53f2c245e7579",
+  "habitCompletionStatsForPeriod": "0760557c38935cc6",
+  "computeStats": "22908fceee815656",
+  "chartValuesForTaskCompletions": "5bf43fce3c83a353",
+  "chartValuesForHabitCompletions": "7f5cfd7a6082a536",
+  "chartValuesForNetBalance": "d1567514eecc968c",
+  "searchMatch": "a9bab6e0d07e040b",
+  "searchNavigate": "4e3a6dbb4a34f86f",
+  "searchGroups": "ac2d1a4113969b72",
+  "sleepDuration": "6b63d3a989d70ae4",
+  "sleepStats": "5bf0ec221fcade99",
+  "healthMetricStats": "77c73a198f5fc41e",
+  "healthDashboardData": "30a3da53a23cdfac",
+  "healthTab": "983e6afe888eb434",
+  "doExport": "a96bebc490e27c58",
+  "doImport": "9abf39b9a87cf720",
+  "doReset": "a9a792ba5e68c5cb",
+  "quickAddWater": "93d0f16e1ee72230",
+  "computedTheme": "4fcf92c83f10977a",
+  "applyTheme": "358a212bc786ecf5",
+  "ONBOARDING_HABIT_PRESETS": "663c67e672fbeb1e",
+  "defaultOnboardingData": "4e74e7e31240714b",
+  "finishOnboardingWizard": "7e3aef0214302b88"
+ },
+ "statements": [
+  {
+   "hash": "1ed12bb92d4532d8",
+   "src": "(async function boot(){ let saved=null, readError=null; for(let attempt=0;attempt<3;attemp"
+  },
+  {
+   "hash": "2aceff869a027e38",
+   "src": "window.addEventListener('pagehide',flushSave);"
+  },
+  {
+   "hash": "33cb509a30536a25",
+   "src": "window.addEventListener('beforeunload',flushSave);"
+  },
+  {
+   "hash": "381c22791741fc05",
+   "src": "try{ if('serviceWorker' in navigator){ const swCode=` const CACHE='lifeos-v1'; self.addEve"
+  },
+  {
+   "hash": "5a7524bbc8518091",
+   "src": "setInterval(()=>{ render(); checkBrowserNotifications(); }, 60000);"
+  },
+  {
+   "hash": "71e5e4f1a025f709",
+   "src": "document.querySelectorAll('nav.bottom button').forEach(b=>b.onclick=()=>{view=b.dataset.v;"
+  },
+  {
+   "hash": "7c13b3dc73f4b085",
+   "src": "document.getElementById('settingsBtn').onclick=()=>{ view='settings'; render(); window.scr"
+  },
+  {
+   "hash": "945b49ff183aead7",
+   "src": "window.addEventListener('freeze',flushSave);"
+  },
+  {
+   "hash": "a7fe779401bfefa1",
+   "src": "document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSave(); });"
+  },
+  {
+   "hash": "cb8693f50f692a68",
+   "src": "document.getElementById('themeBtn').onclick=()=>{ // Quick toggle always switches to an ex"
+  },
+  {
+   "hash": "d1a25dc6e79c9607",
+   "src": "try{ if(window.matchMedia){ window.matchMedia('(prefers-color-scheme: dark)').addEventList"
+  },
+  {
+   "hash": "d2ea1895e9a1217e",
+   "src": "try{ const manifest={name:'LifeOS',short_name:'LifeOS',start_url:'./',display:'standalone'"
+  },
+  {
+   "hash": "ec4026366463bc88",
+   "src": "document.getElementById('fabBtn').onclick=openQuickAdd;"
+  }
+ ],
+ "ui": {
+  "toast": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "666c8e39f3ce33a1",
+   "effects": []
+  },
+  "el": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "da12923c58600f09",
+   "effects": []
+  },
+  "render": {
+   "effectsHash": "c3dd31a841a4c26b",
+   "shapeHash": "2642f515b9edb341",
+   "effects": [
+    "call checkBrowserNotifications()  #2f6a8c73"
+   ]
+  },
+  "progressCard": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "ad7dfb0569101872",
+   "effects": []
+  },
+  "greet": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "2ad822889c8fd7cd",
+   "effects": []
+  },
+  "renderHome": {
+   "effectsHash": "17f560d65c6461bd",
+   "shapeHash": "51518e8e5c438c95",
+   "effects": [
+    "call searchNavigate('quest',null)  #2385487c",
+    "call searchNavigate(r.navType,obj)  #35f3e685",
+    "call taskItem(t)  #65782fae",
+    "call habitItem(h)  #6aa3672c",
+    "call goalMini(g)  #0c92ffcc",
+    "set view='finance'  #d933e04d",
+    "call render()  #37391697",
+    "set view='fitness'  #aadc1e0e",
+    "call render()  #37391697",
+    "set view='health'  #06927d92",
+    "call render()  #37391697"
+   ]
+  },
+  "taskItem": {
+   "effectsHash": "a5126595543f5b40",
+   "shapeHash": "9a430ebb6992e200",
+   "effects": [
+    "set t.done=!t.done  #0a926ac9",
+    "call grantXp(xp,'Task: '+t.title,attrKey,taskKey)  #c57eaec7",
+    "call applyCategoryAttrSkillBonus(attrKey,taskKey)  #10f8ce4e",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openTaskEditForm(t)  #4d6a86d7",
+    "call searchNavigate('goal',linkedGoal)  #1fcd6c6c",
+    "set S.tasks=S.tasks.filter(x=>x.id!==t.id)  #11d72de4",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "goalOptions": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "26d4bfee6ebd9d22",
+   "effects": []
+  },
+  "openTaskEditForm": {
+   "effectsHash": "64cedc017006c84f",
+   "shapeHash": "969e62eb39c037e5",
+   "effects": [
+    "set inner.querySelector('#f_cat').value=t.category||''  #d6058169",
+    "set inner.querySelector('#f_pri').value=t.priority||'Medium'  #363d1966",
+    "set t.description=inner.querySelector('#f_desc').value  #938ac386",
+    "set t.category=inner.querySelector('#f_cat').value  #fb8b347a",
+    "set t.priority=inner.querySelector('#f_pri').value  #f0f5aa80",
+    "set t.dueDate=inner.querySelector('#f_due').value  #95932758",
+    "set t.goalId=inner.querySelector('#f_goal').value  #2385383b",
+    "set t.xpReward=parseFloat(inner.querySelector('#f_xp').value)||0  #86d2ed78",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "habitItem": {
+   "effectsHash": "0245e096d2f984a2",
+   "shapeHash": "99fc21700c7d398b",
+   "effects": [
+    "call markHabitBroken(h,todayStr())  #78423098",
+    "call markHabitClean(h,todayStr())  #b9ccfba9",
+    "call incrementHabitToday(h)  #dd9192b3",
+    "call toggleHabitDay(h)  #4477ec39",
+    "set currentHabitId=h.id  #61062728",
+    "set view='habitDetail'  #c2530820",
+    "call render()  #37391697",
+    "call searchNavigate('goal',linkedGoal)  #8fd4ff97",
+    "set S.habits=S.habits.filter(x=>x.id!==h.id)  #5abc450f",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "goalMini": {
+   "effectsHash": "b0a33d0637783d3e",
+   "shapeHash": "bd2f558ca0da6894",
+   "effects": [
+    "set currentGoalId=g.id  #7503f920",
+    "set view='goalDetail'  #e6dd0ec9",
+    "call render()  #37391697"
+   ]
+  },
+  "renderTasks": {
+   "effectsHash": "c0d799383574474b",
+   "shapeHash": "736d4189bfe7af57",
+   "effects": [
+    "set taskFilter=f  #21562e9d",
+    "call render()  #37391697",
+    "call taskItem(t)  #65782fae"
+   ]
+  },
+  "renderHabits": {
+   "effectsHash": "1bbe158832dd8b19",
+   "shapeHash": "3e759371e89decb1",
+   "effects": [
+    "call openHabitForm()  #99ad0d93",
+    "set currentHabitId=h.id  #61062728",
+    "set view='habitDetail'  #c2530820",
+    "call render()  #37391697",
+    "call markHabitClean(h,todayStr())  #b9ccfba9",
+    "call markHabitBroken(h,todayStr())  #78423098",
+    "call incrementHabitToday(h)  #dd9192b3",
+    "call decrementHabitToday(h)  #e5763562",
+    "call toggleHabitDay(h)  #4477ec39",
+    "call openHabitForm(h)  #dcba0645",
+    "set S.habits=S.habits.filter(x=>x.id!==h.id)  #5abc450f",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderHabitDetail": {
+   "effectsHash": "9b2994ea97cf4e4d",
+   "shapeHash": "5ab3673f05732db2",
+   "effects": [
+    "set view='habits'  #4ec6343e",
+    "call renderHabits()  #d2bcebdf",
+    "set view='habits'  #4ec6343e",
+    "call render()  #37391697",
+    "call openHabitForm(h)  #76da2089"
+   ]
+  },
+  "openHabitForm": {
+   "effectsHash": "236ebdba0df20507",
+   "shapeHash": "73550b8eb521e005",
+   "effects": [
+    "set inner.querySelector('#h_cat').value=h?(h.category||''):''  #ba4cac9f",
+    "set inner.querySelector('#h_type').value=h?(h.type||'good'):'good'  #eb746bf7",
+    "set inner.querySelector('#h_freq').value=h?(h.frequency||'daily'):'daily'  #62d7e729",
+    "set inner.querySelector('#h_active').value=h&&h.active===false?'0':'1'  #f08d0949",
+    "mutate S.habits.push(Object.assign({id:uid(),completions:[],brokenDates:[],startDate:todayStr(),attrReward:(CATS[fields.category]&&CATS[fields.cate  #7e36591f",
+    "call scheduleSave()  #d125fc8e",
+    "set view='habits'  #21f0c251",
+    "call render()  #37391697",
+    "call checkAchievements()  #05038667"
+   ]
+  },
+  "renderGoals": {
+   "effectsHash": "f627f196da763348",
+   "shapeHash": "8abca4f2b5046721",
+   "effects": [
+    "set goalFilter=f  #46365738",
+    "call render()  #37391697",
+    "call openGoalForm()  #2686bc7c",
+    "set currentGoalId=g.id  #7503f920",
+    "set view='goalDetail'  #e6dd0ec9",
+    "call render()  #37391697",
+    "call completeGoal(g)  #4c405aa1",
+    "call render()  #37391697",
+    "set t.goalId=''  #5c3381dc",
+    "set S.milestones=S.milestones.filter(m=>m.goalId!==g.id)  #b286670a",
+    "set S.goals=S.goals.filter(x=>x.id!==g.id)  #adba04da",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openGoalForm": {
+   "effectsHash": "b18e753c749c624d",
+   "shapeHash": "affa950acb2d21f5",
+   "effects": [
+    "set inner.querySelector('#g_cat').value=g.category||''  #d13c6ce5",
+    "set inner.querySelector('#g_status').value=g.status||'Active'  #664bb5cb",
+    "set inner.querySelector('#g_mode').value=g.mode||'auto'  #affb283d",
+    "set g.description=inner.querySelector('#g_desc').value  #cf3df9e6",
+    "set g.category=inner.querySelector('#g_cat').value  #a206e3a4",
+    "set g.targetDate=inner.querySelector('#g_due').value  #e1bd344c",
+    "set g.mode=inner.querySelector('#g_mode').value  #d53ded1a",
+    "set g.manualProgress=parseFloat(inner.querySelector('#g_manual').value)||0  #ae48864d",
+    "set g.xpReward=parseFloat(inner.querySelector('#g_xp').value)||0  #4e7ebd4b",
+    "call completeGoal(g)  #eac68f6f",
+    "set g.status=newStatus  #f0f0e528",
+    "call completeGoal(ng)  #780678b9",
+    "mutate S.goals.push(ng)  #e090d785",
+    "call scheduleSave()  #d125fc8e",
+    "set view='goals'  #d37940af",
+    "call render()  #37391697"
+   ]
+  },
+  "renderGoalDetail": {
+   "effectsHash": "d49a0230381cca2e",
+   "shapeHash": "5fbbfc6b75dffaed",
+   "effects": [
+    "set view='goals'  #09769f70",
+    "call renderGoals()  #04199f59",
+    "set view='goals'  #09769f70",
+    "call render()  #37391697",
+    "call openGoalForm(g)  #c55613af",
+    "call completeGoal(g)  #ba4fd7ae",
+    "call render()  #37391697",
+    "call taskItem(t)  #65782fae",
+    "call habitItem(h)  #6aa3672c",
+    "call toggleMilestone(m)  #d8e25367",
+    "call render()  #37391697",
+    "call openMilestoneForm(g.id,m)  #cbe1cae4",
+    "set S.milestones=S.milestones.filter(x=>x.id!==m.id)  #6e85cd45",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openMilestoneForm(g.id)  #400d3b80"
+   ]
+  },
+  "openMilestoneForm": {
+   "effectsHash": "b2daf04442254373",
+   "shapeHash": "2bfbf157725f2e7e",
+   "effects": [
+    "set m.description=inner.querySelector('#ms_desc').value  #334b4fa7",
+    "set m.xpReward=parseFloat(inner.querySelector('#ms_xp').value)||0  #50ff4b01",
+    "mutate S.milestones.push({id:uid(),goalId,title,description:inner.querySelector('#ms_desc').value, xpReward:parseFloat(inner.querySelector('#ms_xp'  #25c717ab",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderCharacter": {
+   "effectsHash": "496b6c2bc6c044b5",
+   "shapeHash": "c285e559eabb676b",
+   "effects": [
+    "call spendAttributePoint(b.dataset.attr)  #acf6b529",
+    "call render()  #37391697",
+    "call unlockSkill(sk.id)  #1d49f4ae",
+    "call render()  #37391697",
+    "set view='settings'  #86921cc1",
+    "call render()  #37391697"
+   ]
+  },
+  "renderSettings": {
+   "effectsHash": "02d2b6ad5b42feb2",
+   "shapeHash": "aa3e2372d3b4c58a",
+   "effects": [
+    "set S.profile.name=e.target.value  #65132065",
+    "call scheduleSave()  #d125fc8e",
+    "set S.profile.avatar=a  #a8088180",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.language=e.target.value  #8ce1528a",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.dateFormat=e.target.value  #51729878",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.timeFormat=e.target.value  #85972718",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.firstDayOfWeek=e.target.value  #cda2738c",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.theme=e.target.value  #9e8d8e2e",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.widgets[k]=!on  #1279c14d",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call moveWidget(k,parseInt(b.dataset.dir,10))  #c57a20a4",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.animations=S.settings.animations===false  #aabac294",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.sounds=S.settings.sounds===false  #1baabca5",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.settings.notifications[k]=!on  #86b31e74",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call scheduleSave()  #d125fc8e",
+    "set S.nutritionTargets.calories=v  #2469c6ca",
+    "set S.nutritionTargets.protein=v  #9545bffe",
+    "set S.nutritionTargets.water=v  #e9a8a678",
+    "set S.dailyTargets.workoutsPerWeek=v  #bc868ebc",
+    "set S.dailyTargets.tasksPerDay=v  #692eec76",
+    "set S.dailyTargets.habitsPerDay=v  #16d08295"
+   ]
+  },
+  "renderMore": {
+   "effectsHash": "9eaf0f3dbe3b1712",
+   "shapeHash": "6f91f5fb0f2a67fa",
+   "effects": [
+    "set view=it.v  #c2460662",
+    "call render()  #37391697"
+   ]
+  },
+  "renderFinance": {
+   "effectsHash": "0e7dbd6d52b88eae",
+   "shapeHash": "795c09165de6e8f5",
+   "effects": [
+    "call openBudgetForm(b)  #f631458b",
+    "set S.budgets=S.budgets.filter(x=>x.id!==b.id)  #a878d34f",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openFinanceForm(f.kind,real)  #a356dc85",
+    "set S.income=S.income.filter(x=>x.id!==f.id)  #fc4e504c",
+    "set S.expenses=S.expenses.filter(x=>x.id!==f.id)  #a93dd3d4",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openFinanceForm('expense')  #6d6b8f38",
+    "call openFinanceForm('income')  #b39a7060",
+    "call openBudgetForm()  #1b30bef6"
+   ]
+  },
+  "openBudgetForm": {
+   "effectsHash": "9ad74a0d543e90c8",
+   "shapeHash": "4fb0570e054456c3",
+   "effects": [
+    "set inner.querySelector('#b_cat').value=b.category  #de9d0f9e",
+    "set inner.querySelector('#b_period').value=b.period||'Monthly'  #ee984a6a",
+    "set b.category=cat  #18bf572d",
+    "set b.amount=amt  #183e66af",
+    "set b.period=period  #8d8b554d",
+    "set S.budgets=S.budgets.filter(x=>x.category!==cat)  #860da441",
+    "mutate S.budgets.push({id:uid(),category:cat,amount:amt,period,createdAt:Date.now()})  #db7aa7d5",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openFinanceForm": {
+   "effectsHash": "ac2aaa4c065a880d",
+   "shapeHash": "f3c129dce2e04377",
+   "effects": [
+    "set inner.querySelector('#f_cat').value=f.category||''  #bf7b3324",
+    "set inner.querySelector('#f_rec').value=f.recurring?'1':'0'  #83800a8d",
+    "mutate S.expenses.push(entry)  #2a2c603f",
+    "mutate S.income.push(entry)  #d9dcd08c",
+    "call financeGrantXp()  #5f078f74",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderFitness": {
+   "effectsHash": "88de6e8701e0d697",
+   "shapeHash": "5a8d019de932666a",
+   "effects": [
+    "call openWorkoutForm(w)  #4917726a",
+    "set S.workouts=S.workouts.filter(x=>x.id!==w.id)  #537356d9",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openWorkoutForm()  #59831739"
+   ]
+  },
+  "openWorkoutForm": {
+   "effectsHash": "eb59e243a577ddcf",
+   "shapeHash": "69ebc73fdfa377f8",
+   "effects": [
+    "mutate S.workouts.push(Object.assign({id:wid,createdAt:Date.now()},fields))  #7092da5a",
+    "call grantXp(80,'Workout: '+name,'STR',key)  #318e5bf6",
+    "set S.attrs.VIT=(S.attrs.VIT||0)+20  #6702f782",
+    "call applyWorkoutAttrSkillBonus(key)  #494a9525",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "macroRow": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "4af0e56b9202efaf",
+   "effects": []
+  },
+  "renderNutrition": {
+   "effectsHash": "a261e15799323814",
+   "shapeHash": "6541b3f53dcaef2f",
+   "effects": [
+    "call openMealForm(m)  #1b31254a",
+    "mutate S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.serv  #82a19e55",
+    "call grantXp(10,'Meal logged','VIT')  #63a86916",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set S.meals=S.meals.filter(x=>x.id!==m.id)  #6ad49e91",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openMealForm()  #cbf0637c",
+    "mutate S.waterLog.push({id:uid(),date:today,amount:250})  #8d965b21",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "savedFoodOptions": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "253d0c628ab634e1",
+   "effects": []
+  },
+  "openMealForm": {
+   "effectsHash": "ffa5476e101ca822",
+   "shapeHash": "5ec08391c5221959",
+   "effects": [
+    "set inner.querySelector('#m_type').value=m.type||'Breakfast'  #91d796a9",
+    "set inner.querySelector('#m_name').value=f.name  #33956af9",
+    "set inner.querySelector('#m_cal').value=f.calories||0  #6cf6a4b4",
+    "set inner.querySelector('#m_p').value=f.protein||0  #dba74dda",
+    "set inner.querySelector('#m_c').value=f.carbs||0  #da19b862",
+    "set inner.querySelector('#m_f').value=f.fat||0  #fe7505a5",
+    "mutate S.customFoods.push({id:uid(),name,calories:Number(fields.calories)||0,protein:Number(fields.protein)||0, carbs:Number(fields.carbs)||0,fat:N  #3ee28bbf",
+    "mutate S.meals.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields))  #3be08272",
+    "call grantXp(10,'Meal logged','VIT')  #63a86916",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderNotes": {
+   "effectsHash": "c6994cc40cdfaf3d",
+   "shapeHash": "6a9d42381872aca4",
+   "effects": [
+    "set noteSearch=e.target.value  #69670523",
+    "call render()  #37391697",
+    "set n.pinned=!n.pinned  #375a016f",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "set n.favorite=!n.favorite  #1a87f0db",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openNoteForm(n)  #add13624",
+    "set S.notes=S.notes.filter(x=>x.id!==n.id)  #18ed81d1",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openNoteForm()  #3e2cb855"
+   ]
+  },
+  "openNoteForm": {
+   "effectsHash": "882dbd2410a659b5",
+   "shapeHash": "b7d54ea745212820",
+   "effects": [
+    "set inner.querySelector('#n_cat').value=n.category||'Personal'  #51108b47",
+    "set inner.querySelector('#n_pin').checked=!!n.pinned  #83b4de75",
+    "set inner.querySelector('#n_fav').checked=!!n.favorite  #6513696d",
+    "set n.updatedAt=Date.now()  #6b18acfa",
+    "mutate S.notes.push(Object.assign({id:uid(),createdAt:Date.now(),updatedAt:Date.now()},fields))  #88cbc96e",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderJournal": {
+   "effectsHash": "9092741802023141",
+   "shapeHash": "571fa127f60401b8",
+   "effects": [
+    "call openJournalForm(j)  #6d0a8780",
+    "set S.journal=S.journal.filter(x=>x.id!==j.id)  #5f67ba0a",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openJournalForm(todaysEntry)  #d16710fe"
+   ]
+  },
+  "openJournalForm": {
+   "effectsHash": "2bb3a410c4b8b4e5",
+   "shapeHash": "bd5893caf2a103a9",
+   "effects": [
+    "set inner.querySelector('#j_mood').value=j?(j.mood||3):3  #8c03329b",
+    "mutate S.journal.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields))  #90b3cb6e",
+    "call grantXp(15,'Journal entry','FOC')  #3b15e71a",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderCar": {
+   "effectsHash": "e9727db2070e6e79",
+   "shapeHash": "4ef0a0ac20511dac",
+   "effects": [
+    "call openVehicleForm(v)  #554d939b",
+    "set S.vehicles=S.vehicles.filter(x=>x.id!==v.id)  #65c93c21",
+    "set S.carServices=S.carServices.filter(x=>x.vehicleId!==v.id)  #475fdc1f",
+    "set S.fuelEntries=S.fuelEntries.filter(x=>x.vehicleId!==v.id)  #a6baf3ad",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openServiceForm(v.id)  #53e0178f",
+    "call openFuelForm(v.id)  #285bbeac",
+    "call openServiceForm(v.id,s)  #b2662452",
+    "set S.carServices=S.carServices.filter(x=>x.id!==s.id)  #9fca0435",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openFuelForm(v.id,f)  #d470e0a4",
+    "set S.fuelEntries=S.fuelEntries.filter(x=>x.id!==f.id)  #af47cd62",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openVehicleForm()  #e6f70b91"
+   ]
+  },
+  "openVehicleForm": {
+   "effectsHash": "dba41c92d76ed58c",
+   "shapeHash": "45d4b9b40bf4f9ac",
+   "effects": [
+    "mutate S.vehicles.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #609b5d3c",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openServiceForm": {
+   "effectsHash": "422196b32fdecf01",
+   "shapeHash": "cef60195aec749ae",
+   "effects": [
+    "set inner.querySelector('#s_type').value=s.type  #8c97ccc0",
+    "mutate S.carServices.push(Object.assign({id:uid(),vehicleId,createdAt:Date.now()},fields))  #c7e52c79",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openFuelForm": {
+   "effectsHash": "50664b2179906b4a",
+   "shapeHash": "571a7040be23d5f9",
+   "effects": [
+    "mutate S.fuelEntries.push(Object.assign({id:uid(),vehicleId,createdAt:Date.now()},fields))  #4254d6a8",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderSubs": {
+   "effectsHash": "8da8047953728e60",
+   "shapeHash": "a3adecc5558f1247",
+   "effects": [
+    "set s.nextPayment=nxt  #73945608",
+    "call scheduleSave()  #d125fc8e",
+    "set s.active=(s.active===false)  #40131af7",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openSubForm(s)  #c40d6051",
+    "set S.subscriptions=S.subscriptions.filter(x=>x.id!==s.id)  #1c04d0b9",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openSubForm()  #b92d0d74"
+   ]
+  },
+  "openSubForm": {
+   "effectsHash": "586c401eaf6588e7",
+   "shapeHash": "2ebdac7a6e596e5f",
+   "effects": [
+    "set inner.querySelector('#su_period').value=s.period||'Monthly'  #c4c5fcfc",
+    "set inner.querySelector('#su_cat').value=s.category||''  #07b485b5",
+    "set inner.querySelector('#su_active').value=s.active===false?'0':'1'  #511970e4",
+    "mutate S.subscriptions.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #b6854341",
+    "call checkAchievements()  #05038667",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderQuests": {
+   "effectsHash": "671545c0e5890845",
+   "shapeHash": "e502c70a35388edd",
+   "effects": [
+    "call checkQuests()  #b48cd845"
+   ]
+  },
+  "renderCalendar": {
+   "effectsHash": "268505ba33b14928",
+   "shapeHash": "0bfb1ada01ba276b",
+   "effects": [
+    "set calOffset--  #e45313a1",
+    "call render()  #37391697",
+    "set calOffset++  #750c1276",
+    "call render()  #37391697",
+    "call searchNavigate('task',linkedTask)  #b8abafc4",
+    "call searchNavigate('goal',linkedGoal)  #cbb2a2e8",
+    "call searchNavigate('habit',linkedHabit)  #ed9aab50",
+    "call openEventForm(e)  #eb12108d",
+    "set S.events=S.events.filter(x=>x.id!==e.id)  #7840ec08",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697",
+    "call openEventForm()  #01861a04"
+   ]
+  },
+  "openEventForm": {
+   "effectsHash": "27e40adcfcf1cf81",
+   "shapeHash": "57ce1061330c9fd0",
+   "effects": [
+    "set inner.querySelector('#e_cat').value=e.category||''  #bc8de298",
+    "set inner.querySelector('#e_rec').value=e.recurring||'none'  #0c737714",
+    "mutate S.events.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #32c475a1",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "svgBarChart": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "bed77b3c52182661",
+   "effects": []
+  },
+  "svgLineChart": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "caf886cbe857626e",
+   "effects": []
+  },
+  "chartCard": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "cbc05c30e15773a6",
+   "effects": []
+  },
+  "statRow": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "180dafbfd0882b54",
+   "effects": []
+  },
+  "statCard": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "b5b41606dfbef251",
+   "effects": []
+  },
+  "renderStats": {
+   "effectsHash": "316cbf1520499795",
+   "shapeHash": "c262897dd0acbb1b",
+   "effects": [
+    "set statsPeriod=k  #e65d8641",
+    "call render()  #37391697"
+   ]
+  },
+  "renderSearch": {
+   "effectsHash": "0402c54556706dcb",
+   "shapeHash": "1430017f566a4ec9",
+   "effects": [
+    "call searchNavigate(type,r.obj)  #42cdb111"
+   ]
+  },
+  "renderHealth": {
+   "effectsHash": "07a6c4dc06d0ed9f",
+   "shapeHash": "c0a9fd1a502d97d1",
+   "effects": [
+    "set healthTab=k  #b3aaeafa",
+    "call render()  #37391697",
+    "call renderHealthSleepTab(data)  #4adbe5c5",
+    "call renderHealthWeightTab(data)  #1dc86bcf",
+    "call renderHealthStepsTab(data)  #9e31b908",
+    "call renderHealthHeartRateTab(data)  #51a129f6",
+    "call renderHealthActiveCalTab(data)  #e5a41de8"
+   ]
+  },
+  "renderHealthSleepTab": {
+   "effectsHash": "9b01a28d42b39046",
+   "shapeHash": "ad2726ec54410b70",
+   "effects": [
+    "call openSleepForm()  #1ceaf0e0",
+    "call openSleepForm(s)  #eef74f74",
+    "set S.sleepLog=S.sleepLog.filter(x=>x.id!==s.id)  #8d483971",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderHealthWeightTab": {
+   "effectsHash": "5c5cdedb7e54cc8c",
+   "shapeHash": "01c55102dfaf492b",
+   "effects": [
+    "call openWeightForm()  #afbe1c45",
+    "call openWeightForm(w)  #8d65cf9e",
+    "set S.weightLog=S.weightLog.filter(x=>x.id!==w.id)  #bec068d9",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderHealthStepsTab": {
+   "effectsHash": "331abf2931e758da",
+   "shapeHash": "508f3a8c25785bd8",
+   "effects": [
+    "call openStepsForm()  #9dd62ec3",
+    "call openStepsForm(x)  #f61e0fb5",
+    "set S.stepsLog=S.stepsLog.filter(y=>y.id!==x.id)  #f7b34b6f",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderHealthHeartRateTab": {
+   "effectsHash": "11855f89a6a68891",
+   "shapeHash": "eb1ce8c50157e824",
+   "effects": [
+    "call openHeartRateForm()  #bb7bb94c",
+    "call openHeartRateForm(x)  #94629a1f",
+    "set S.heartRateLog=S.heartRateLog.filter(y=>y.id!==x.id)  #354dc8b3",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "renderHealthActiveCalTab": {
+   "effectsHash": "3e5ef539492597e9",
+   "shapeHash": "07381f74f679690e",
+   "effects": [
+    "call openActiveCaloriesForm()  #ab8b6b9b",
+    "call openActiveCaloriesForm(x)  #60a8a6d7",
+    "set S.activeCaloriesLog=S.activeCaloriesLog.filter(y=>y.id!==x.id)  #48befb6d",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openSleepForm": {
+   "effectsHash": "2b2d4672de70bb52",
+   "shapeHash": "3a137116b8a3a937",
+   "effects": [
+    "mutate S.sleepLog.push(Object.assign({id,createdAt:Date.now()},fields))  #9f1bc4a0",
+    "call grantXp(10,'Sleep logged','VIT',`sleep:${id}`)  #237e3168",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openWeightForm": {
+   "effectsHash": "c5b44d14dec02a30",
+   "shapeHash": "ade412414487b041",
+   "effects": [
+    "mutate S.weightLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #f50cd22f",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openStepsForm": {
+   "effectsHash": "0927938f7ae07914",
+   "shapeHash": "25ef3e23d8fd9fdd",
+   "effects": [
+    "mutate S.stepsLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #d6a0585a",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openHeartRateForm": {
+   "effectsHash": "f5748889064702a3",
+   "shapeHash": "e8a618d6260f099e",
+   "effects": [
+    "mutate S.heartRateLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #fe918f1e",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openActiveCaloriesForm": {
+   "effectsHash": "966b746ca2ae92f4",
+   "shapeHash": "6f0c969b23147ade",
+   "effects": [
+    "mutate S.activeCaloriesLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #aec0a376",
+    "call scheduleSave()  #d125fc8e",
+    "call render()  #37391697"
+   ]
+  },
+  "openSheet": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "aa62d2dd73b6afbb",
+   "effects": []
+  },
+  "catOptions": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "5f2165f05e784392",
+   "effects": []
+  },
+  "openQuickAdd": {
+   "effectsHash": "9fc52fb7cdee6e50",
+   "shapeHash": "e4c557e879765e6a",
+   "effects": [
+    "call openFinanceForm(t)  #bce5c336",
+    "call openWorkoutForm()  #59831739",
+    "call openMealForm()  #cbf0637c",
+    "call openNoteForm()  #3e2cb855",
+    "call openJournalForm()  #a8ef5185",
+    "call openEventForm()  #01861a04",
+    "call openGoalForm()  #2686bc7c",
+    "call openHabitForm()  #99ad0d93",
+    "call quickAddWater()  #5470de60",
+    "call openFuelQuickAdd()  #e03bfc53",
+    "call openForm(t)  #5540fa8c"
+   ]
+  },
+  "openForm": {
+   "effectsHash": "e8dbb2172b2e86c3",
+   "shapeHash": "652599156a982241",
+   "effects": [
+    "mutate S.tasks.push({id:uid(),title,description:inner.querySelector('#f_desc').value,category:inner.querySelector('#f_cat').value,priority:priSel.v  #fb74034e",
+    "call scheduleSave()  #d125fc8e",
+    "set view='tasks'  #5c1d730e",
+    "call render()  #37391697",
+    "mutate S.habits.push({id:uid(),name,category:inner.querySelector('#f_cat').value,icon:CATS[inner.querySelector('#f_cat').value]?.ic||'🔥', completi  #840a98d9",
+    "call scheduleSave()  #d125fc8e",
+    "set view='habits'  #6ede29eb",
+    "call render()  #37391697",
+    "call checkAchievements()  #05038667",
+    "mutate S.goals.push({id:uid(),title,description:inner.querySelector('#f_desc').value,targetDate:inner.querySelector('#f_due').value, status:'Active  #0c789314",
+    "call scheduleSave()  #d125fc8e",
+    "set view='goals'  #4044b10a",
+    "call render()  #37391697"
+   ]
+  },
+  "closeSheets": {
+   "effectsHash": "e3b0c44298fc1c14",
+   "shapeHash": "fd5e2a9f484bc309",
+   "effects": []
+  },
+  "openFuelQuickAdd": {
+   "effectsHash": "57b72dc1e7901e96",
+   "shapeHash": "228e2e26e3db4ee1",
+   "effects": [
+    "call openFuelForm(S.vehicles[0].id)  #c5abe03c",
+    "call openFuelForm(v.id)  #285bbeac"
+   ]
+  },
+  "showOnboarding": {
+   "effectsHash": "f00eaaa92a0f5d5f",
+   "shapeHash": "e01242384bab48ec",
+   "effects": [
+    "call finishOnboardingWizard(data,true)  #87e330bb",
+    "set data.name=inner.querySelector('#ob_name').value.trim()  #8861b7ad",
+    "call showOnboarding(2,data)  #64cdd9ee",
+    "set data.avatar=a  #68a46563",
+    "call showOnboarding(2,data)  #64cdd9ee",
+    "call showOnboarding(3,data)  #d8c23668",
+    "call showOnboarding(1,data)  #2b2ee882",
+    "set data.goalTitle=inner.querySelector('#ob_goal').value.trim()  #796ec508",
+    "set data.goalDate=inner.querySelector('#ob_goal_date').value  #19e19471",
+    "call showOnboarding(4,data)  #fd962b5d",
+    "call showOnboarding(2,data)  #64cdd9ee",
+    "mutate data.habitPicks.splice(idx,1)  #08567450",
+    "mutate data.habitPicks.push(name)  #63b963f4",
+    "call showOnboarding(4,data)  #fd962b5d",
+    "call showOnboarding(5,data)  #23bc5fa0",
+    "call showOnboarding(3,data)  #d8c23668",
+    "set data.targets={ calories:parseFloat(inner.querySelector('#ob_cal').value)||2200, protein:parseFloat(inner.querySelector('#ob_prot').value)||1  #9a21a9f0",
+    "call showOnboarding(6,data)  #150fce2e",
+    "call showOnboarding(4,data)  #fd962b5d",
+    "call finishOnboardingWizard(data,false,true)  #7cd2be90",
+    "call finishOnboardingWizard(data,false,false)  #ce7252f1",
+    "call showOnboarding(5,data)  #23bc5fa0"
+   ]
+  }
+ }
+}
