@@ -581,6 +581,31 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .quest .bar{height:8px}
 .quest.is-done .bar>i{background:var(--success-grad)}
 
+/* Finance */
+.fin-hero{padding:18px}
+.fin-pill{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card2);min-width:0}
+.fin-pill b{font-size:18px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.budget-row .metric-head{align-items:center}
+.budget-row .iconbtn.ghost-ic,.budget-row .delbtn{width:36px;min-width:36px;height:36px;min-height:36px}
+.sub-item{align-items:flex-start}
+.sub-item.is-inactive{opacity:.65}
+.sub-actions{display:flex;align-items:center;gap:2px;margin-top:6px;margin-left:-4px}
+
+/* Fitness */
+.pr-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.pr-strip::-webkit-scrollbar{display:none}
+.pr-card{flex:0 0 138px;padding:12px;border-radius:16px;background:linear-gradient(160deg,var(--gold-muted),var(--card));border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line))}
+.pr-card .pr-v{font-family:var(--font-display);font-size:24px;font-weight:850;letter-spacing:-.02em;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.pr-card .pr-v small{font-size:13px;color:var(--sub)}
+.wk-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0 0}
+.wk-metrics span{display:flex;flex-direction:column;align-items:flex-start;padding:8px 10px;border-radius:12px;background:var(--card2);font-size:var(--fs-caption);color:var(--sub);min-width:0}
+.wk-metrics b{font-size:16px;color:var(--text);font-variant-numeric:tabular-nums}
+.ex-list{margin-top:10px;display:flex;flex-direction:column;gap:2px}
+.ex-row{display:flex;justify-content:space-between;gap:10px;padding:7px 2px;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent);font-size:var(--fs-body-sm)}
+.ex-row:last-child{border-bottom:none}
+.ex-row>span:last-child{flex:none}
+@media(max-width:374px){.wk-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 /* Metric rows (nutrition macros, budgets, targets) */
 .metric{margin-bottom:12px}
 .metric:last-child{margin-bottom:0}
@@ -2928,29 +2953,40 @@ function renderFinance(){
   const totExp=monthExp.reduce((a,b)=>a+Number(b.amount||0),0);
   const totInc=monthInc.reduce((a,b)=>a+Number(b.amount||0),0);
   const bal=totInc-totExp;
-  const wrap=el(`<div><h2>Finance</h2>
-    <div class="grid2">
-      <div class="card"><div class="sub">Income (month)</div><div class="big" style="color:var(--accent2)">${totInc.toFixed(0)}</div></div>
-      <div class="card"><div class="sub">Expenses (month)</div><div class="big" style="color:var(--danger)">${totExp.toFixed(0)}</div></div>
+  const cs=uiLang()==='cs';
+  const L=cs?{t:'Finance',bal:'Zůstatek tento měsíc',inc:'Příjmy',exp:'Výdaje',spent:'utraceno z příjmů',exp_b:'Výdaj',inc_b:'Příjem',bud_b:'Rozpočet',budgets:'Rozpočty',bycat:'Výdaje podle kategorií',recent:'Poslední transakce',subs:'Předplatné',per_month:'měsíčně',nobud:'Zatím žádné rozpočty',nobud_d:'Rozpočet hlídá, kolik v kategorii utratíš za měsíc.',nocat:'Tento měsíc žádné výdaje',noent:'Zatím žádné transakce',noent_d:'Zapiš první příjem nebo výdaj.'}
+    :{t:'Finance',bal:'Balance this month',inc:'Income',exp:'Expenses',spent:'of income spent',exp_b:'Expense',inc_b:'Income',bud_b:'Budget',budgets:'Budgets',bycat:'Spending by category',recent:'Recent transactions',subs:'Subscriptions',per_month:'per month',nobud:'No budgets yet',nobud_d:'A budget tracks how much you spend in a category each month.',nocat:'No expenses this month',noent:'No transactions yet',noent_d:'Log your first income or expense.'};
+  const subsMonthly=S.subscriptions.filter(s=>s.active!==false).reduce((a,s)=>a+(s.period==='Yearly'?Number(s.price||0)/12:Number(s.price||0)),0); // same formula as Subscriptions
+  const wrap=el(`<div>${uiPageHead(L.t)}
+    <section class="card fin-hero">
+      <div class="kicker">${L.bal}</div>
+      <div class="big num" style="color:${bal>=0?'var(--accent2)':'var(--danger)'};margin:6px 0 14px">${bal<0?'−':''}${uiNum(Math.abs(Math.round(bal)))}</div>
+      <div class="grid2">
+        <div class="fin-pill"><span class="sub">↑ ${L.inc}</span><b style="color:var(--accent2)">${uiNum(Math.round(totInc))}</b></div>
+        <div class="fin-pill"><span class="sub">↓ ${L.exp}</span><b style="color:var(--danger)">${uiNum(Math.round(totExp))}</b></div>
+      </div>
+      ${totInc>0?`<div class="metric" style="margin-top:14px"><div class="metric-head"><span>${uiPct(totExp,totInc)}% ${L.spent}</span></div><div class="bar${totExp>totInc?' is-danger':''}"><i style="width:${uiPct(totExp,totInc)}%"></i></div></div>`:''}
+    </section>
+    <div class="btn-row" style="margin-bottom:6px">
+      <button class="btn sm" id="addExp">＋ ${L.exp_b}</button>
+      <button class="btn sm ghost" id="addInc">＋ ${L.inc_b}</button>
+      <button class="btn sm ghost" id="addBud">＋ ${L.bud_b}</button>
     </div>
-    <div class="card"><div class="between"><span>Balance</span><b style="color:${bal>=0?'var(--accent2)':'var(--danger)'}">${bal.toFixed(0)}</b></div></div>
-    <div class="row" style="gap:8px;margin:4px 0 12px">
-      <button class="btn sm" id="addExp">+ Expense</button>
-      <button class="btn sm ghost" id="addInc">+ Income</button>
-      <button class="btn sm ghost" id="addBud">+ Budget</button>
-    </div>
-    <h3>Budgets</h3><div class="list" id="budList" style="margin-bottom:14px"></div>
-    <h3>By category</h3><div class="list" id="byCat" style="margin-bottom:14px"></div>
-    <h3>Recent</h3><div class="list" id="finList"></div>
+    <div class="section-header"><h3>${L.budgets}</h3></div><div class="card" id="budList"></div>
+    <div class="section-header"><h3>${L.bycat}</h3></div><div class="card" id="byCat"></div>
+    <div class="section-header"><h3>${L.subs}</h3></div>
+    <button class="card is-link between" id="uiSubsLink" style="width:100%;text-align:left;font:inherit;color:inherit"><span class="row"><span class="icon-circle" aria-hidden="true">💳</span><span><b>${uiNum(Math.round(subsMonthly))}</b> <span class="sub">${L.per_month}</span></span></span><span class="sub" aria-hidden="true">›</span></button>
+    <div class="section-header"><h3>${L.recent}</h3></div><div class="list" id="finList"></div>
   </div>`);
+  wrap.querySelector('#uiSubsLink').onclick=()=>{view='subscriptions';render();window.scrollTo(0,0);};
   const budList=wrap.querySelector('#budList');
-  if(!S.budgets.length) budList.appendChild(el(`<div class="empty">No budgets set.</div>`));
+  if(!S.budgets.length){ const e=el(uiEmpty('🎯',L.nobud,L.nobud_d,'＋ '+L.bud_b)); e.querySelector('.emptyCta').onclick=()=>openBudgetForm(); budList.appendChild(e); }
   S.budgets.forEach(b=>{
     const spent=monthExp.filter(e=>e.category===b.category).reduce((a,e)=>a+Number(e.amount||0),0);
     const pct=Math.min(100,Math.round(spent/b.amount*100))||0;
-    const it=el(`<div style="margin-bottom:10px">
-      <div class="between"><span class="sub">${b.category}</span><span class="row" style="gap:6px"><span class="sub">${spent.toFixed(0)}/${b.amount}</span><button class="pill sm editBudBtn" style="padding:2px 8px">Edit</button><button class="delbtn" style="padding:0 4px">✕</button></span></div>
-      <div class="bar" style="margin-top:4px"><i style="width:${pct}%;background:${pct>=100?'var(--danger)':'linear-gradient(90deg,var(--accent),var(--accent2))'}"></i></div>
+    const it=el(`<div class="metric budget-row">
+      <div class="metric-head"><span>${escapeHtml(b.category)} <span class="sub">· ${b.period||'Monthly'}</span></span><span class="row" style="gap:0"><span><b>${uiNum(Math.round(spent))}</b> / ${uiNum(b.amount)}</span><button class="iconbtn ghost-ic editBudBtn" aria-label="${uiT('edit')}: ${escapeHtml(b.category)}">${uiIcon('edit',16)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(b.category)}">✕</button></span></div>
+      <div class="bar${pct>=100?' is-danger':pct>=80?' is-warn':' is-success'}" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(b.category)}"><i style="width:${pct}%"></i></div>
     </div>`);
     it.querySelector('.editBudBtn').onclick=()=>openBudgetForm(b);
     it.querySelector('.delbtn').onclick=()=>{
@@ -2963,22 +2999,23 @@ function renderFinance(){
   const cats={};
   monthExp.forEach(e=>{cats[e.category||'Other']=(cats[e.category||'Other']||0)+Number(e.amount||0);});
   const catKeys=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]);
-  if(!catKeys.length) byCat.appendChild(el(`<div class="empty">No expenses logged this month.</div>`));
+  if(!catKeys.length) byCat.appendChild(el(`<div class="sub" style="text-align:center;padding:6px 0">${L.nocat}</div>`));
   catKeys.forEach(c=>{
     const pct=Math.round(cats[c]/totExp*100)||0;
-    byCat.appendChild(el(`<div style="margin-bottom:8px"><div class="between"><span class="sub">${c}</span><span class="sub">${cats[c].toFixed(0)} (${pct}%)</span></div><div class="bar" style="margin-top:4px"><i style="width:${pct}%"></i></div></div>`));
+    byCat.appendChild(el(`<div class="metric"><div class="metric-head"><span>${escapeHtml(c)}</span><span><b>${uiNum(Math.round(cats[c]))}</b> · ${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`));
   });
   const finList=wrap.querySelector('#finList');
   const all=[...S.expenses.map(e=>({...e,kind:'expense'})),...S.income.map(i=>({...i,kind:'income'}))].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(!all.length) finList.appendChild(el(`<div class="empty"><div class="e">💰</div>No finance entries yet.</div>`));
+  if(!all.length){ const e=el(`<div class="card">${uiEmpty('💰',L.noent,L.noent_d,'＋ '+L.exp_b)}</div>`); e.querySelector('.emptyCta').onclick=()=>openFinanceForm('expense'); finList.appendChild(e); }
   all.slice(0,25).forEach(f=>{
+    const ttl=escapeHtml(f.description||f.category||(f.kind==='income'?L.inc_b:L.exp_b));
     const it=el(`<div class="item">
-      <span style="font-size:18px">${f.kind==='income'?'💵':'💸'}</span>
-      <div style="flex:1"><div class="item-title">${escapeHtml(f.description||f.category||(f.kind==='income'?'Income':'Expense'))}</div>
-      <div class="item-meta">${fmtDate(f.date)}${f.category?' · '+f.category:''}${f.paymentMethod?' · '+escapeHtml(f.paymentMethod):''}${f.recurring?' · 🔁':''}</div></div>
-      <b style="color:${f.kind==='income'?'var(--accent2)':'var(--danger)'}">${f.kind==='income'?'+':'-'}${Number(f.amount).toFixed(0)}</b>
-      <button class="pill sm editBtn">Edit</button>
-      <button class="delbtn" aria-label="Delete">✕</button>
+      <span class="icon-circle" style="background:${f.kind==='income'?'var(--color-success-muted)':'var(--color-danger-muted)'}" aria-hidden="true">${f.kind==='income'?'💵':'💸'}</span>
+      <div style="flex:1;min-width:0"><div class="item-title truncate">${ttl}</div>
+      <div class="item-meta">${fmtDate(f.date)}${f.category?' · '+escapeHtml(f.category):''}${f.paymentMethod?' · '+escapeHtml(f.paymentMethod):''}${f.recurring?' · 🔁':''}</div></div>
+      <b class="num" style="white-space:nowrap;color:${f.kind==='income'?'var(--accent2)':'var(--danger)'}">${f.kind==='income'?'+':'−'}${uiNum(Math.round(Number(f.amount)))}</b>
+      <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${ttl}">${uiIcon('edit',18)}</button>
+      <button class="delbtn" aria-label="${uiT('delete')}: ${ttl}">✕</button></div>
     </div>`);
     it.querySelector('.editBtn').onclick=()=>{
       // f is a {...entry,kind} SPREAD COPY built for this merged display list — look up the
@@ -3077,25 +3114,36 @@ function exercisePRs(){
 }
 function renderFitness(){
   const prs=exercisePRs();
-  const wrap=el(`<div><h2>Fitness</h2>
-    <button class="btn" id="addW" style="margin-bottom:12px">+ Log Workout</button>
-    ${prs.length?`<h3>Personal Records</h3><div class="list" id="prList" style="margin-bottom:16px"></div>`:''}
-    <h3>History</h3><div class="list" id="wList"></div>
+  const cs=uiLang()==='cs';
+  const L=cs?{t:'Fitness',add:'Zapsat trénink',week:'Tréninky tento týden',vol:'Objem tento týden',total:'Celkem tréninků',prs:'Osobní rekordy',hist:'Historie',min:'min',ex:'cviků',sets:'sérií',reps:'opak.',volume:'objem',none:'Zatím žádné tréninky',none_d:'Zapiš trénink a sleduj objem, série a osobní rekordy.'}
+    :{t:'Fitness',add:'Log workout',week:'Workouts this week',vol:'Volume this week',total:'Total workouts',prs:'Personal records',hist:'History',min:'min',ex:'exercises',sets:'sets',reps:'reps',volume:'volume',none:'No workouts yet',none_d:'Log a workout to track volume, sets and personal records.'};
+  const ws=weekStart(), weekW=S.workouts.filter(w=>w.date>=ws);
+  const weekVol=weekW.reduce((a,w)=>a+workoutVolume(w),0), target=S.dailyTargets.workoutsPerWeek||0;
+  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}
+    <div class="stat-grid cols-3">
+      <div class="stat-card"><div class="stat-label">🗓️ ${L.week}</div><div class="stat-value">${weekW.length}${target?`<small>/${target}</small>`:''}</div>${target?`<div class="bar${weekW.length>=target?' is-success':''}"><i style="width:${uiPct(weekW.length,target)}%"></i></div>`:''}</div>
+      <div class="stat-card"><div class="stat-label">🏋️ ${L.vol}</div><div class="stat-value">${uiNum(weekVol)}<small> kg</small></div></div>
+      <div class="stat-card"><div class="stat-label">📈 ${L.total}</div><div class="stat-value">${S.workouts.length}</div></div>
+    </div>
+    ${prs.length?`<div class="section-header"><h3>🏆 ${L.prs}</h3></div><div class="pr-strip" id="prList"></div>`:''}
+    <div class="section-header"><h3>${L.hist}</h3></div><div class="list" id="wList"></div>
   </div>`);
   if(prs.length){
     const prList=wrap.querySelector('#prList');
-    prs.slice(0,8).forEach(pr=>prList.appendChild(el(`<div class="item"><span style="font-size:18px">🏆</span><div style="flex:1"><div class="item-title">${escapeHtml(pr.name)}</div><div class="item-meta">${pr.weight}kg × ${pr.reps} · ${fmtDate(pr.date)}</div></div></div>`)));
+    prs.slice(0,8).forEach(pr=>prList.appendChild(el(`<div class="pr-card"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${pr.weight}<small> kg</small></div><div class="sub">× ${pr.reps} · ${fmtDate(pr.date)}</div></div>`)));
   }
   const list=wrap.querySelector('#wList');
   const sorted=[...S.workouts].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(!sorted.length) list.appendChild(el(`<div class="empty"><div class="e">🏋️</div>No workouts logged yet.</div>`));
+  if(!sorted.length){ const e=el(`<div class="card">${uiEmpty('🏋️',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openWorkoutForm(); list.appendChild(e); }
   sorted.forEach(w=>{
     const vol=workoutVolume(w);
-    const it=el(`<div class="card">
-      <div class="between"><div class="item-title">💪 ${escapeHtml(w.name)}</div><span class="sub">${fmtDate(w.date)}</span></div>
-      <div class="item-meta" style="margin:4px 0">${w.duration||0} min · ${(w.exercises||[]).length} exercises · ${workoutTotalSets(w)} sets · ${workoutTotalReps(w)} reps · volume ${vol}</div>
-      ${w.notes?`<div class="sub" style="margin-bottom:6px">${escapeHtml(w.notes)}</div>`:''}
-      <div class="row" style="gap:8px"><button class="pill sm editBtn">Edit</button><button class="delbtn">✕ Delete</button></div>
+    const exRows=(w.exercises||[]).map(ex=>`<div class="ex-row"><span class="truncate"><b>${escapeHtml(ex.name||'—')}</b>${ex.muscle?` <span class="sub">· ${escapeHtml(ex.muscle)}</span>`:''}</span><span class="num sub">${ex.sets||0}×${ex.reps||0}${Number(ex.weight)?` · ${ex.weight} kg`:''}${ex.rpe?` · RPE ${escapeHtml(String(ex.rpe))}`:''}</span></div>`).join('');
+    const it=el(`<div class="card workout-card">
+      <div class="between"><div class="row" style="min-width:0"><span class="icon-circle" aria-hidden="true">💪</span><div style="min-width:0"><div class="item-title truncate">${escapeHtml(w.name)}</div><div class="item-meta">${fmtDate(w.date)}${w.date===todayStr()?' · '+uiT('today'):''}</div></div></div>
+        <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(w.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
+      <div class="wk-metrics"><span><b>${w.duration||0}</b> ${L.min}</span><span><b>${workoutTotalSets(w)}</b> ${L.sets}</span><span><b>${workoutTotalReps(w)}</b> ${L.reps}</span><span><b>${uiNum(vol)}</b> kg ${L.volume}</span></div>
+      ${exRows?`<div class="ex-list">${exRows}</div>`:''}
+      ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);
     it.querySelector('.editBtn').onclick=()=>openWorkoutForm(w);
     it.querySelector('.delbtn').onclick=()=>{
@@ -3189,20 +3237,31 @@ function renderNutrition(){
   const t=S.nutritionTargets, today=todayStr();
   const tot=nutriTotals(today);
   const water=waterToday(S);
-  const wrap=el(`<div><h2>Nutrition</h2>
-    <div class="card">${macroRow('Calories',tot.calories,t.calories,'')}${macroRow('Protein',tot.protein,t.protein,'g')}${macroRow('Carbs',tot.carbs,t.carbs,'g')}${macroRow('Fat',tot.fat,t.fat,'g')}${macroRow('Water',water,t.water,'ml')}</div>
-    <div class="row" style="gap:8px;margin-bottom:12px">
-      <button class="btn sm" id="addMeal">+ Meal</button>
-      <button class="btn sm ghost" id="addWater">+ 250ml Water</button>
+  const cs=uiLang()==='cs';
+  const L=cs?{t:'Výživa',cal:'Kalorie',left:'zbývá',over:'nad cílem',p:'Bílkoviny',c:'Sacharidy',f:'Tuky',w:'Voda',meal:'Jídlo',water:'250 ml vody',meals:'Dnešní jídla',repeat:'Zopakovat',none:'Dnes žádná jídla',none_d:'Zapiš jídlo a uvidíš, jak plníš denní cíl.'}
+    :{t:'Nutrition',cal:'Calories',left:'left',over:'over target',p:'Protein',c:'Carbs',f:'Fat',w:'Water',meal:'Meal',water:'250 ml water',meals:"Today's meals",repeat:'Repeat',none:'No meals today',none_d:'Log a meal to see how you track against your daily target.'};
+  const calPct=uiPct(tot.calories,t.calories), left=Math.round(t.calories-tot.calories);
+  const wrap=el(`<div>${uiPageHead(L.t,uiTodayLong())}
+    <section class="card nutri-hero">
+      <div class="today-grid">
+        <div class="ring" style="--p:${calPct};--c:${tot.calories>t.calories?'var(--warn)':'var(--accent2)'}" role="img" aria-label="${L.cal} ${calPct}%"><span>${calPct}%</span></div>
+        <div style="min-width:0"><div class="kicker">${L.cal}</div><div class="big num">${uiNum(Math.round(tot.calories))}<span class="sub" style="font-size:14px;font-weight:650"> / ${uiNum(t.calories)} kcal</span></div>
+        <div class="sub">${left>=0?`${uiNum(left)} kcal ${L.left}`:`${uiNum(-left)} kcal ${L.over}`}</div></div>
+      </div>
+    </section>
+    <section class="card">${uiMetric(L.p,tot.protein,t.protein,'g')}${uiMetric(L.c,tot.carbs,t.carbs,'g')}${uiMetric(L.f,tot.fat,t.fat,'g')}${uiMetric('💧 '+L.w,water,t.water,'ml')}</section>
+    <div class="btn-row" style="margin-bottom:6px">
+      <button class="btn sm" id="addMeal">＋ ${L.meal}</button>
+      <button class="btn sm ghost" id="addWater">💧 ＋ ${L.water}</button>
     </div>
-    <h3>Today's meals</h3><div class="list" id="mealList"></div>
+    <div class="section-header"><h3>${L.meals}</h3></div><div class="list" id="mealList"></div>
   </div>`);
   const ml=wrap.querySelector('#mealList');
   const meals=S.meals.filter(m=>m.date===today);
-  if(!meals.length) ml.appendChild(el(`<div class="empty"><div class="e">🍎</div>No meals logged today.</div>`));
+  if(!meals.length){ const e=el(`<div class="card">${uiEmpty('🍎',L.none,L.none_d,'＋ '+L.meal)}</div>`); e.querySelector('.emptyCta').onclick=()=>openMealForm(); ml.appendChild(e); }
   meals.forEach(m=>{
     const q=Number(m.servings)||1;
-    const it=el(`<div class="item"><span style="font-size:18px">🍽️</span><div style="flex:1"><div class="item-title">${escapeHtml(m.name)} <span class="sub">(${m.type}${q!==1?' · ×'+q:''})</span></div><div class="item-meta">${Math.round((m.calories||0)*q)} kcal · P${Math.round((m.protein||0)*q)} C${Math.round((m.carbs||0)*q)} F${Math.round((m.fat||0)*q)}</div></div><button class="pill sm repeatBtn">Repeat</button><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const it=el(`<div class="item meal-item"><span class="icon-circle" aria-hidden="true">🍽️</span><div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(m.name)}</div><div class="item-meta meta-row"><span class="chip is-muted">${escapeHtml(m.type||'')}${q!==1?' · ×'+q:''}</span><b class="num" style="color:var(--text)">${Math.round((m.calories||0)*q)} kcal</b><span class="num">P ${Math.round((m.protein||0)*q)} · C ${Math.round((m.carbs||0)*q)} · F ${Math.round((m.fat||0)*q)}</span></div></div><div class="item-actions"><button class="iconbtn ghost-ic repeatBtn" aria-label="${L.repeat}: ${escapeHtml(m.name)}" title="${L.repeat}">↻</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(m.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.name)}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openMealForm(m);
     it.querySelector('.repeatBtn').onclick=()=>{
       S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()});
@@ -3582,24 +3641,30 @@ function addPeriod(dstr,period){
 function renderSubs(){
   const active=S.subscriptions.filter(s=>s.active!==false);
   const monthlyTotal=active.reduce((a,s)=>a+(s.period==='Yearly'?Number(s.price||0)/12:Number(s.price||0)),0);
-  const wrap=el(`<div><h2>Subscriptions</h2>
-    <div class="card"><div class="between"><span class="sub">Monthly total (active)</span><b>${monthlyTotal.toFixed(0)}</b></div>
-    <div class="between" style="margin-top:6px"><span class="sub">Yearly total (active)</span><b>${(monthlyTotal*12).toFixed(0)}</b></div></div>
-    <button class="btn" id="addSub" style="margin-bottom:12px">+ Add Subscription</button>
+  const cs=uiLang()==='cs';
+  const L=cs?{t:'Předplatné',mo:'Měsíčně (aktivní)',yr:'Ročně (aktivní)',add:'Předplatné',act:'Aktivovat',deact:'Pozastavit',inactive:'neaktivní',next:'další platba',none:'Žádná předplatná',none_d:'Sleduj pravidelné platby a kdy přijde další.',n:'aktivních'}
+    :{t:'Subscriptions',mo:'Monthly (active)',yr:'Yearly (active)',add:'Subscription',act:'Activate',deact:'Deactivate',inactive:'inactive',next:'next payment',none:'No subscriptions yet',none_d:'Track recurring payments and when the next one is due.',n:'active'};
+  const wrap=el(`<div>${uiPageHead(L.t,`${active.length} ${L.n}`,`<button class="btn sm" id="addSub">＋ ${L.add}</button>`)}
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">${L.mo}</div><div class="stat-value">${uiNum(Math.round(monthlyTotal))}</div></div>
+      <div class="stat-card"><div class="stat-label">${L.yr}</div><div class="stat-value">${uiNum(Math.round(monthlyTotal*12))}</div></div>
+    </div>
     <div class="list" id="subList"></div>
   </div>`);
   const sl=wrap.querySelector('#subList');
-  if(!S.subscriptions.length) sl.appendChild(el(`<div class="empty"><div class="e">💳</div>No subscriptions tracked yet.</div>`));
+  if(!S.subscriptions.length){ const e=el(`<div class="card">${uiEmpty('💳',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openSubForm(); sl.appendChild(e); }
   [...S.subscriptions].sort((a,b)=>(nextPaymentDate(a)||'9999').localeCompare(nextPaymentDate(b)||'9999')).forEach(s=>{
     const nxt=nextPaymentDate(s);
     // Rollover: once the stored nextPayment date has passed, persist the rolled-forward date
     // so it stays accurate for stats/reminders too, not just for this one render.
     if(nxt && nxt!==s.nextPayment){ s.nextPayment=nxt; scheduleSave(); }
-    const it=el(`<div class="item"><span style="font-size:18px">💳</span>
-      <div style="flex:1"><div class="item-title">${escapeHtml(s.name)}${s.active===false?' <span class="sub">(inactive)</span>':''}</div><div class="item-meta">${s.price} / ${s.period}${s.category?' · '+escapeHtml(s.category):''}${nxt?' · next '+fmtDate(nxt):''}</div></div>
-      <button class="pill sm activeBtn">${s.active===false?'Activate':'Deactivate'}</button>
-      <button class="pill sm editBtn">Edit</button>
-      <button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const days=nxt?Math.round((new Date(nxt+'T00:00')-new Date(todayStr()+'T00:00'))/86400000):null;
+    const it=el(`<div class="item sub-item${s.active===false?' is-inactive':''}"><span class="icon-circle" aria-hidden="true">💳</span>
+      <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(s.name)}${s.active===false?` <span class="chip is-muted">${L.inactive}</span>`:''}</div>
+      <div class="item-meta meta-row"><b class="num" style="color:var(--text)">${uiNum(s.price)}</b><span>/ ${s.period}</span>${s.category?`<span>${escapeHtml(s.category)}</span>`:''}${nxt?`<span class="chip ${days!=null&&days<=3?'is-warn':'is-muted'}">⏳ ${fmtDate(nxt)}</span>`:''}</div>
+      <div class="sub-actions"><button class="pill sm activeBtn">${s.active===false?L.act:L.deact}</button>
+      <button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(s.name)}">${uiIcon('edit',18)}</button>
+      <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(s.name)}">✕</button></div></div></div>`);
     it.querySelector('.activeBtn').onclick=()=>{s.active=(s.active===false); scheduleSave();render();};
     it.querySelector('.editBtn').onclick=()=>openSubForm(s);
     it.querySelector('.delbtn').onclick=()=>{
