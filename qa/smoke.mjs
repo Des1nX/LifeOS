@@ -1517,11 +1517,12 @@ test('11A active: the Fitness page lists only finished workouts; export/import k
   const tid = await setupTpl(page);
   await page.evaluate(tid => workoutStart({ templateId: tid }), tid);
   await page.evaluate(() => { fitnessTab = 'workouts'; view = 'fitness'; render(); });
-  const t = await appText(page);
-  assert.ok(!/Push A/.test(t), 'the active workout is not in the history list');
-  assert.match(t, /Pull day/);
+  const hist = await page.locator('#wList').innerText();
+  assert.ok(!/Push A/.test(hist), 'the active workout is not in the history list');
+  assert.match(hist, /Pull day/);
+  assert.match(await page.locator('#wkResume').innerText(), /Push A/, 'it is shown separately as the workout in progress');
   await page.evaluate(() => { view = 'home'; render(); });
-  assert.ok(!/Push A/.test(await appText(page)));
+  assert.ok(!/Naposledy: Push A|Last: Push A/.test(await appText(page)), 'Home "last workout" ignores it');
   await persist(page);
   await page.click('#settingsBtn');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
@@ -1536,6 +1537,244 @@ test('11A active: the Fitness page lists only finished workouts; export/import k
   await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.workouts.length === 2);
   assert.deepEqual(await page.evaluate(() => [completedWorkouts(S).length, activeWorkout(), S.workouts.some(w => 'status' in w)]), [2, null, false]);
+}, { state: fixtureState() });
+
+// ---------- Phase 11A step 4: active workout UI ----------
+const openWorkouts = page => page.evaluate(() => { closeSheets(); uiWorkoutView = null; fitnessTab = 'workouts'; view = 'fitness'; render(); });
+const active = page => page.evaluate(() => { const a = activeWorkout(); return a ? JSON.parse(JSON.stringify(a)) : null; });
+const entryCard = (page, name) => page.locator('.wk-entry', { has: page.locator('.item-title', { hasText: name }) });
+const setRow = (page, name, i) => entryCard(page, name).locator('.ws-list .ws-row').nth(i);
+
+test('11A UI: Start from a template (Fitness and Templates tab) opens the live screen with plan, last and set rows; no XP at Start', async ({ page }) => {
+  await setupTpl(page);
+  const u0 = await untouchable(page);
+  await openWorkouts(page);
+  assert.equal(await page.locator('#wkStartCard').count(), 1);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  assert.equal(await page.locator('#wkLive').count(), 1, 'live screen');
+  const w = await active(page);
+  assert.equal(w.name, 'Push A');
+  assert.equal(await page.locator('.wk-entry').count(), 3);
+  const bench = await entryCard(page, 'Bench press').innerText();
+  assert.match(bench, /PLÁN\s*2 × 8–10 @ 70 kg/i);
+  assert.match(bench, /MINULE\s*80 kg × 8, 8, 8, 8/i, 'last performance from the legacy history');
+  assert.equal(await entryCard(page, 'Plank').locator('.ws-head').innerText().then(t => /S/.test(t) && !/KG/.test(t)), true, 'time exercise: seconds column, no kg');
+  assert.equal(await entryCard(page, 'Pull-up').locator('[data-f="weight"]').count(), 0, 'reps exercise: no kg input');
+  assert.equal(await untouchable(page), u0, 'no XP / quest / achievement / Daily Score change at Start');
+  // back to the list: the resume card replaces the start panel; the Templates-tab Start resumes, never duplicates
+  await page.click('#wkBack');
+  assert.equal(await page.locator('#wkResume').count(), 1);
+  assert.equal(await page.locator('#wkStartCard').count(), 0);
+  await page.click('#fitTabs [data-k="templates"]');
+  await page.click('.tpl-card .tplStart');
+  assert.equal(await page.locator('#wkLive').count(), 1);
+  assert.equal(await page.evaluate(() => S.workouts.filter(w => w.status === 'active').length), 1, 'no duplicate');
+  await page.evaluate(() => { uiWorkoutView = null; view = 'home'; render(); });
+  assert.match(await appText(page), /Rozpracovaný trénink: Push A/);
+}, { state: fixtureState() });
+
+test('11A UI: blank workout - add exercises from library and catalog, fill/complete sets, warm-up, add and remove sets', async ({ page }) => {
+  await openWorkouts(page);
+  await page.click('#wkBlank');
+  let w = await active(page);
+  assert.deepEqual([w.name, w.entries.length, w.templateId], ['Trénink', 0, '']);
+  assert.match(await page.locator('#wkEntries').innerText(), /Zatím žádné cviky/);
+  await page.click('#wkAddEx');
+  await page.click('[data-pick-preset="Pull-up"]');                       // catalog -> library + entry
+  await page.click('#wkAddEx');
+  await page.click(`[data-pick="${await page.evaluate(() => exerciseFind('Deadlift').id)}"]`);
+  w = await active(page);
+  assert.deepEqual(w.entries.map(en => [en.name, en.measurement, en.sets.length, en.target]), [['Pull-up', 'reps', 1, null], ['Deadlift', 'weight_reps', 1, null]]);
+  assert.equal(await page.evaluate(() => exerciseFind('Pull-up').source), 'preset');
+  // placeholders come from the last Deadlift (140 x 5) because there is no plan
+  const dl0 = setRow(page, 'Deadlift', 0);
+  assert.equal(await dl0.locator('[data-f="weight"]').getAttribute('placeholder'), '140');
+  // fill a set
+  await dl0.locator('[data-f="weight"]').fill('150'); await dl0.locator('[data-f="reps"]').fill('3');
+  w = await active(page);
+  assert.deepEqual([w.entries[1].sets[0].weight, w.entries[1].sets[0].reps, w.entries[1].sets[0].done], [150, 3, false], 'typed numbers are stored as you type');
+  await dl0.locator('.ws-done').click();
+  assert.equal(await setRow(page, 'Deadlift', 0).getAttribute('class').then(c => c.includes('is-done')), true);
+  assert.equal(await page.locator('#wkProg').innerText(), '1/2');
+  // add a set (copies the previous values), tick an untouched set -> placeholders adopted
+  await entryCard(page, 'Deadlift').locator('.wkAddSet').click();
+  assert.equal(await setRow(page, 'Deadlift', 1).locator('[data-f="weight"]').inputValue(), '150');
+  await entryCard(page, 'Pull-up').locator('.ws-done').first().click();
+  w = await active(page);
+  assert.deepEqual([w.entries[0].sets[0].reps, w.entries[0].sets[0].done], [null, true], 'no plan and no history -> nothing invented');
+  // warm-up: + Rozcvička goes first and is labelled R; the number badge toggles it
+  await entryCard(page, 'Deadlift').locator('.wkAddWu').click();
+  assert.equal(await setRow(page, 'Deadlift', 0).locator('.ws-num').innerText(), 'R');
+  await setRow(page, 'Deadlift', 0).locator('[data-f="weight"]').fill('60'); await setRow(page, 'Deadlift', 0).locator('[data-f="reps"]').fill('5');
+  await setRow(page, 'Deadlift', 0).locator('.ws-done').click();
+  w = await active(page);
+  assert.deepEqual(w.entries[1].sets.map(s => [s.warmup, s.weight, s.reps, s.done]), [[true, 60, 5, true], [false, 150, 3, true], [false, 150, 3, false]]);
+  assert.equal(await page.evaluate(() => workoutVolume(activeWorkout())), 450, 'warm-up and unfinished sets excluded');
+  await setRow(page, 'Deadlift', 2).locator('.ws-num').click();
+  assert.equal((await active(page)).entries[1].sets[2].warmup, true, 'badge toggles warm-up');
+  await setRow(page, 'Deadlift', 2).locator('.ws-num').click();
+  // remove a set, remove an exercise (with confirmation)
+  await setRow(page, 'Deadlift', 2).locator('.ws-rm').click();
+  assert.equal((await active(page)).entries[1].sets.length, 2);
+  await entryCard(page, 'Pull-up').locator('.wkRmEx').click(); await page.click('#cf_ok');
+  assert.deepEqual((await active(page)).entries.map(en => en.name), ['Deadlift']);
+}, { state: fixtureState() });
+
+test('11A UI: reload keeps the active workout (values, done, warm-up, plan) and Continue resumes it without a duplicate', async ({ page }) => {
+  await setupTpl(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('[data-f="weight"]').fill('72.5');
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  await entryCard(page, 'Bench press').locator('.wkAddWu').click();
+  await page.fill('#wk_notes', 'heavy day');
+  const before = await active(page);
+  await persist(page); await reload(page);
+  assert.deepEqual(await active(page), before);
+  await openWorkouts(page);
+  await page.click('#wkContinue');
+  assert.equal(await page.locator('#wkLive').count(), 1);
+  assert.equal(await setRow(page, 'Bench press', 0).locator('.ws-num').innerText(), 'R');
+  assert.equal(await setRow(page, 'Bench press', 1).locator('[data-f="weight"]').inputValue(), '72.5');
+  assert.equal(await setRow(page, 'Bench press', 1).getAttribute('class').then(c => c.includes('is-done')), true);
+  assert.match(await entryCard(page, 'Bench press').innerText(), /PLÁN\s*2 × 8–10 @ 70 kg/i);
+  assert.equal(await page.inputValue('#wk_notes'), 'heavy day');
+  assert.equal(await page.evaluate(() => S.workouts.length), 3, 'no duplicate');
+}, { state: fixtureState() });
+
+test('11A UI: Finish -> done + summary; XP only once; history shows it and opens the entries editor (legacy workouts keep the old form)', async ({ page }) => {
+  await setupTpl(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  await setRow(page, 'Bench press', 1).locator('.ws-done').click();
+  const wid = (await active(page)).id;
+  const x0 = await page.evaluate(() => S.totalXp);
+  await page.click('#wkFinish');
+  assert.equal(await page.locator('#wkSummary').count(), 1, 'summary shown');
+  const sum = await page.locator('#wkSummary').innerText();
+  assert.match(sum, /Trénink dokončen/); assert.match(sum, /\+80 Character XP/); assert.match(sum, /1\s*120\s*kg/, 'volume 2 x 8 x 70');
+  assert.equal(await page.locator('#wkSummary [data-slot="performance"]').count(), 1, 'slot for Performance (later step)');
+  const w = (await stateOf(page)).workouts.find(x => x.id === wid);
+  assert.deepEqual([w.status, typeof w.finishedAt, w.duration], ['done', 'number', '1']);
+  assert.equal(await page.evaluate(() => S.totalXp) - x0, 80);
+  // a second Finish (double tap / stale button) pays nothing
+  await page.evaluate(wid => uiFinishWorkout(workoutFindById(wid)), wid);
+  assert.equal(await page.evaluate(() => S.xpLog.filter(e => e.key && e.key.startsWith('workout:')).length), 1);
+  assert.equal(await page.evaluate(() => S.totalXp) - x0, 80);
+  await page.click('#wkSumOk');
+  // history + editor
+  const card = page.locator('.workout-card', { hasText: 'Push A' });
+  assert.match(await card.innerText(), /Bench press\s*2× · 70 kg × 8, 8/);
+  await card.locator('.editBtn').click();
+  assert.equal(await page.locator('.wk-edit-head').count(), 1, 'entries editor');
+  assert.equal(await page.locator('#wkFinish').count() + await page.locator('#wkDiscard').count(), 0);
+  await setRow(page, 'Bench press', 1).locator('[data-f="reps"]').fill('10');
+  await page.fill('#wk_dur', '55');
+  await page.click('#wkSaveBack');
+  const w2 = (await stateOf(page)).workouts.find(x => x.id === wid);
+  assert.deepEqual([w2.entries[0].sets[1].reps, w2.duration, w2.status], [10, '55', 'done']);
+  assert.equal(await page.evaluate(() => S.totalXp) - x0, 80, 'editing never re-grants XP');
+  await page.locator('.workout-card', { hasText: 'Pull day' }).locator('.editBtn').click();
+  assert.equal(await page.locator('#w_name').inputValue(), 'Pull day', 'legacy workout opens the legacy form');
+}, { state: fixtureState() });
+
+test('11A UI: Finish with no completed working set asks first - Cancel keeps it active, Dokončit finishes with the usual XP', async ({ page }) => {
+  await setupTpl(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await entryCard(page, 'Bench press').locator('.wkAddWu').click();
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();            // a done warm-up is not a working set
+  const u0 = await untouchable(page);
+  await page.click('#wkFinishTop');
+  assert.match(await page.locator('.cf-sheet').innerText(), /Tento trénink nemá žádnou dokončenou sérii\. Opravdu ho chceš dokončit\?/);
+  assert.equal(await page.locator('#cf_cancel').innerText(), 'Zrušit');
+  assert.equal(await page.locator('#cf_ok').innerText(), 'Dokončit');
+  await page.click('#cf_cancel');
+  assert.equal((await active(page)).status, 'active');
+  assert.equal(await untouchable(page), u0, 'Cancel changes nothing');
+  assert.equal(await page.locator('#wkLive').count(), 1, 'still on the live screen');
+  const x0 = await page.evaluate(() => S.totalXp);
+  await page.click('#wkFinish'); await page.click('#cf_ok');
+  assert.equal(await active(page), null);
+  assert.equal(await page.evaluate(() => S.totalXp) - x0, 80, 'same XP as today for a workout without sets');
+  assert.equal(await page.locator('#wkSummary').count(), 1);
+}, { state: fixtureState() });
+
+test('11A UI: Discard (with confirmation) removes only the active workout - no XP, achievements, Daily Score, stats or new records', async ({ page }) => {
+  await setupTpl(page);
+  const snap = () => page.evaluate(() => JSON.stringify([completedWorkouts(S), computeStats('all').fitness, S.plannerBlocks, S.workoutTemplates, S.quests]));
+  const [u0, s0] = [await untouchable(page), await snap()];
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  await page.click('#wkDiscard');
+  assert.match(await page.locator('.cf-sheet').innerText(), /Zahodit rozpracovaný trénink/);
+  await page.click('#cf_cancel');
+  assert.notEqual(await active(page), null, 'cancel keeps it');
+  await page.click('#wkDiscard'); await page.click('#cf_ok');
+  assert.equal(await active(page), null);
+  assert.equal(await page.locator('#wkStartCard').count(), 1, 'back to the start panel');
+  assert.equal(await untouchable(page), u0);
+  assert.equal(await snap(), s0);
+  assert.equal(await page.evaluate(() => S.workouts.length), 2);
+}, { state: fixtureState() });
+
+test('11A UI: start panel, live screen, editor and its sheets fit 320-1440 px; no duplicate ids; buttons >= 36 px', async ({ page }) => {
+  await setupTpl(page);
+  await page.evaluate(() => {
+    const w = workoutStart({ templateId: S.workoutTemplates[0].id }).workout; workoutAddEntry(w.id, exerciseFind('Deadlift').id);
+    exerciseAddPreset('Running'); workoutAddEntry(w.id, exerciseFind('Running').id);
+    workoutAddSet(w.id, w.entries[0].id, { warmup: true }); workoutUpdateSet(w.id, w.entries[0].id, w.entries[0].sets[0].id, { done: true, weight: 102.5, reps: 12 });
+    workoutFinish(w.id); workoutStart({ templateId: S.workoutTemplates[0].id });
+  });
+  const screens = ['start', 'resume', 'live', 'edit', 'confirm', 'add', 'summary'];
+
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const k of screens) {
+      await page.evaluate(k => {
+        closeSheets(); if (!activeWorkout()) workoutStart({ templateId: S.workoutTemplates[0].id });
+        ({ start: () => { uiWorkoutView = null; S.workouts = S.workouts.filter(w => w.status !== 'active'); }, resume: () => { uiWorkoutView = null; }, live: () => { uiWorkoutView = { mode: 'active' }; },
+          edit: () => { uiWorkoutView = { mode: 'edit', id: completedWorkouts(S).find(w => w.entries).id }; }, confirm: () => { uiWorkoutView = { mode: 'active' }; },
+          add: () => { uiWorkoutView = { mode: 'active' }; }, summary: () => { uiWorkoutView = null; } })[k]();
+        fitnessTab = 'workouts'; view = 'fitness'; render();
+        if (k === 'confirm') uiConfirmSheet({ title: 'x', text: uiWkT('empty_q'), ok: uiWkT('finish_sm') }, () => {});
+        if (k === 'add') openWorkoutAddExercise(activeWorkout());
+        if (k === 'summary') openWorkoutSummary(completedWorkouts(S).find(w => w.entries), true);
+      }, k);
+      const r = await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map(n => n.id); const sheet = document.querySelector('.sheet');
+        const small = [...document.querySelectorAll('#app button, .sheet button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36).map(b => b.className || b.textContent);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: sheet ? sheet.scrollWidth - sheet.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i), small };
+      });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length || r.small.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('11A UI: export/import keeps the active workout and it can be continued and finished afterwards', async ({ page }) => {
+  await setupTpl(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  const wk = await active(page);
+  await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  await page.evaluate(() => { S.workouts = S.workouts.filter(w => w.status !== 'active'); });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => !!activeWorkout());
+  assert.deepEqual(await active(page), wk);
+  await openWorkouts(page);
+  await page.click('#wkContinue');
+  const x0 = await page.evaluate(() => S.totalXp);
+  await page.click('#wkFinish');
+  assert.equal(await page.evaluate(() => S.totalXp) - x0, 80);
+  assert.equal(await page.evaluate(id => workoutFindById(id).status, wk.id), 'done');
 }, { state: fixtureState() });
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {

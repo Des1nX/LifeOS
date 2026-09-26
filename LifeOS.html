@@ -725,6 +725,51 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .tp-f{display:flex;flex-direction:column;gap:2px;margin:0;font-size:var(--fs-caption);color:var(--sub);min-width:0}
 .tp-f input{margin:0;min-height:44px;min-width:0}
 .tp-f .field-error,.tp-row>.field-error{margin:2px 0 0}
+.tpl-actions{display:flex;justify-content:flex-end;padding:0 16px 14px}
+/* Phase 11A: active workout -- a "live" surface built from the 8B card/btn/bar tokens */
+@keyframes livePulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent2) 60%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent2);margin-right:7px;flex:none;animation:livePulse 1.6s infinite}
+.wk-live{border:1px solid color-mix(in srgb,var(--accent) 55%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 16%,var(--card)),var(--card) 70%);box-shadow:var(--glow)}
+.wk-live-k{display:flex;align-items:center;font-size:var(--fs-caption);font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--accent2);font-variant-numeric:tabular-nums}
+.wk-live .bar{margin-top:8px}
+.wk-resume .item-title{font-size:18px;margin:6px 0 2px}
+.wk-resume .btn{margin-top:12px}
+.wk-title{margin:10px 0 4px;font-size:var(--fs-h2);overflow-wrap:anywhere}
+.wk-startcard .kicker{margin-bottom:8px}
+.wk-tpl-row{gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.wk-tpl-list .wk-tpl-row:last-child{border-bottom:0;margin-bottom:8px}
+.wk-hint{margin:10px 2px}
+.wk-screen>.btn{margin-top:10px}
+.wk-entry{padding:14px}
+.wk-entry-head{gap:8px}
+.wk-meta{display:flex;flex-direction:column;gap:3px;margin:8px 0 10px;font-size:var(--fs-body-sm);font-variant-numeric:tabular-nums}
+.wk-meta .kicker{display:inline;margin-right:4px}
+.ws-row{display:grid;gap:6px;align-items:center;margin-bottom:6px;border-radius:12px}
+.ws-c1{grid-template-columns:44px minmax(0,1fr) 52px 36px}
+.ws-c2{grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) 52px 36px}
+.ws-head{font-size:var(--fs-micro);color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.ws-head span{text-align:center}
+.ws-row .ws-in{margin:0;min-height:52px;font-size:18px;font-weight:700;text-align:center;padding:8px 6px;min-width:0}
+.ws-num{min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-weight:800;font-size:16px;cursor:pointer}
+.ws-row.is-wu .ws-num{background:var(--color-warning-muted);color:var(--warn);border-color:transparent}
+.ws-row.is-wu .ws-in{opacity:.85}
+.ws-done{min-height:52px;border-radius:14px;border:2px solid color-mix(in srgb,var(--sub) 45%,var(--line));background:transparent;color:transparent;font-size:22px;font-weight:900;cursor:pointer}
+.ws-row.is-done .ws-done{background:var(--accent2);border-color:var(--accent2);color:#04241a;animation:checkPop .28s ease}
+.ws-row.is-done .ws-in{background:var(--color-success-muted);border-color:transparent}
+.ws-rm{min-height:44px;border:0;background:none;color:var(--sub);font-size:15px;cursor:pointer;border-radius:10px}
+.wk-entry-actions{margin-top:4px}
+.wk-entry-actions .btn{flex:1 1 100px}
+.wk-foot{margin-top:10px}
+.wk-finish{min-height:58px;font-size:17px}
+.wk-edit-head .btn.sm{width:auto}
+.wk-pick{gap:6px}
+.wk-pick-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.wk-sum-top{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.wk-sum-top h3{margin:0}
+.wk-sum-ic{font-size:30px}
+.wk-xp{margin-top:12px}
+.wk-snap-live{display:flex;align-items:center;color:var(--accent2);font-weight:700}
+.cf-sheet p{margin:6px 0 16px}
 .ex-archived summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
 /* Phase 9: Daily Score */
 .ds-card{cursor:pointer}
@@ -2506,6 +2551,8 @@ function renderHome(){
         else fitc.appendChild(el(`<div class="snap-v" style="font-size:15px">${uiT('no_workout_today')}</div>`));
         if(last) fitc.appendChild(el(`<div class="snap-s">${uiT('last')}: ${escapeHtml(last.name)} · ${fmtDate(last.date)}</div>`));
       }
+      const act=activeWorkout();
+      if(act) fitc.appendChild(el(`<div class="snap-s wk-snap-live"><span class="live-dot" aria-hidden="true"></span>${uiWkT('active_t')}: ${escapeHtml(act.name)}</div>`));
       fitc.onclick=()=>{view='fitness';render();};
       fitc.style.cursor='pointer';
       return fitc;
@@ -3721,6 +3768,24 @@ function workoutDiscard(wid){
   const w=workoutFindById(wid); if(!w||w.status!=='active') return false;
   S.workouts=S.workouts.filter(x=>x.id!==wid); return true;
 }
+function exerciseLastPerformance(exerciseId,name,excludeWorkoutId){
+  // The most recent finished workout (other than excludeWorkoutId) that has working sets of this
+  // exercise: new records match by exerciseId, legacy exercises[] rows by name (sets x reps @ kg).
+  const key=exerciseKey(name);
+  const list=completedWorkouts(S).filter(w=>w.id!==excludeWorkoutId)
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||((b.finishedAt||b.createdAt||0)-(a.finishedAt||a.createdAt||0)));
+  for(const w of list){
+    if(Array.isArray(w.entries)){
+      const en=w.entries.find(e=>(exerciseId&&e.exerciseId===exerciseId)||(!exerciseId&&exerciseKey(e.name)===key));
+      const ws=en?workoutWorkingSets(en):[];
+      if(ws.length) return {date:w.date,workoutId:w.id,measurement:en.measurement,sets:ws.map(s=>({weight:s.weight,reps:s.reps,seconds:s.seconds,distance:s.distance}))};
+    } else {
+      const ex=(w.exercises||[]).find(e=>key&&exerciseKey(e.name)===key); const n=ex?Number(ex.sets)||0:0;
+      if(n>0) return {date:w.date,workoutId:w.id,measurement:'weight_reps',sets:Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null}))};
+    }
+  }
+  return null;
+}
 function workoutFinish(wid){
   // The moment a workout counts as done. The rewards below are exactly the ones the Log
   // Workout form grants for a new workout (80 XP STR + 20 VIT + the Phase 5 skill bonus), behind
@@ -4067,8 +4132,10 @@ function renderFitnessTemplates(){
     const names=t.exercises.map(te=>{ const x=exerciseFind(te.exerciseId); return escapeHtml(x?x.name:'—'); }).join(' · ');
     const it=el(`<div class="card tpl-card" data-tpl="${t.id}"><button class="tpl-open" aria-label="${uiTplT('edit_t')}: ${escapeHtml(t.name)}">
       <div class="between"><div class="item-title truncate">${escapeHtml(t.name)}</div><span class="sub">${sm.exercises} ${uiTplT('n_ex')} · ${sm.sets} ${uiTplT('n_sets')}</span></div>
-      <div class="sub tpl-names">${names}</div></button></div>`);
+      <div class="sub tpl-names">${names}</div></button>
+      <div class="tpl-actions"><button class="btn sm tplStart" aria-label="${uiWkT('start')}: ${escapeHtml(t.name)}">▶ ${uiWkT('start')}</button></div></div>`);
     it.querySelector('.tpl-open').onclick=()=>openTemplateForm(t);
+    it.querySelector('.tplStart').onclick=()=>uiStartWorkout({templateId:t.id});
     list.appendChild(it);
   });
   wrap.querySelector('#uiAddTpl').onclick=()=>openTemplateForm();
@@ -4146,7 +4213,262 @@ function openTemplateForm(existing){
   };
   openSheet(inner);
 }
+/* ---- Phase 11A step 4: active workout UI. Presentation only -- every change goes through the
+   workout* model functions above; Finish/Discard are the only places that change status. ---- */
+let uiWorkoutView=null; // null | {mode:'active'} | {mode:'edit',id}
+let uiWkTimer=null;
+const WS_FIELDS={weight_reps:['weight','reps'],reps:['reps'],time:['seconds'],distance_time:['distance','seconds']};
+function uiWkT(k){
+  const cs=uiLang()==='cs';
+  const T=cs?{live:'Probíhá',cont:'Pokračovat',active_t:'Rozpracovaný trénink',start_t:'Začít trénink',blank:'Prázdný trénink',start:'Start',
+    no_tpl:'Šablona ti připraví cviky a série. Nebo začni prázdný trénink a cviky přidávej průběžně.',make_tpl:'Vytvořit šablonu',
+    back:'Zpět na Fitness',finish:'Dokončit trénink',finish_sm:'Dokončit',discard:'Zahodit trénink',add_ex:'+ Přidat cvik',add_set:'+ Série',add_wu:'+ Rozcvička',
+    plan:'Plán',last:'Minule',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
+    sets_done:'sérií hotovo',rm_set:'Odebrat sérii',rm_ex:'Odebrat cvik',toggle_wu:'přepnout rozcvičku',mark_done:'označit jako hotovou',
+    name:'Název',notes:'Poznámka',date:'Datum',duration:'Délka (min)',edit_t:'Upravit trénink',save_back:'Hotovo',
+    empty_t:'Prázdný trénink',empty_q:'Tento trénink nemá žádnou dokončenou sérii. Opravdu ho chceš dokončit?',cancel:'Zrušit',
+    discard_q:'Zahodit rozpracovaný trénink? Nic se neuloží a nezapočítá.',discarded:'Trénink zahozen',resumed:'Pokračuješ v rozpracovaném tréninku',
+    pick_ex:'Přidat cvik',lib:'Z knihovny',catalog:'Z katalogu',lib_empty:'Knihovna cviků je prázdná.',no_ex:'Zatím žádné cviky — přidej první.',
+    rm_ex_q:'Odebrat cvik z tréninku?',sum_t:'Trénink dokončen',sum_dur:'Délka',sum_sets:'Série',sum_reps:'Opakování',sum_vol:'Objem',sum_ex:'Cviky',min:'min',ok:'Hotovo',
+    xp:'Character XP',started:'Začátek'}
+    :{live:'In progress',cont:'Continue',active_t:'Workout in progress',start_t:'Start a workout',blank:'Empty workout',start:'Start',
+    no_tpl:'A template prepares exercises and sets for you. Or start an empty workout and add exercises as you go.',make_tpl:'Create a template',
+    back:'Back to Fitness',finish:'Finish workout',finish_sm:'Finish',discard:'Discard workout',add_ex:'+ Add exercise',add_set:'+ Set',add_wu:'+ Warm-up',
+    plan:'Plan',last:'Last',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
+    sets_done:'sets done',rm_set:'Remove set',rm_ex:'Remove exercise',toggle_wu:'toggle warm-up',mark_done:'mark as done',
+    name:'Name',notes:'Notes',date:'Date',duration:'Duration (min)',edit_t:'Edit workout',save_back:'Done',
+    empty_t:'Empty workout',empty_q:'This workout has no completed set. Do you really want to finish it?',cancel:'Cancel',
+    discard_q:'Discard the workout in progress? Nothing is saved or counted.',discarded:'Workout discarded',resumed:'Continuing your workout in progress',
+    pick_ex:'Add exercise',lib:'From your library',catalog:'From the catalog',lib_empty:'Your exercise library is empty.',no_ex:'No exercises yet — add the first one.',
+    rm_ex_q:'Remove this exercise from the workout?',sum_t:'Workout finished',sum_dur:'Duration',sum_sets:'Sets',sum_reps:'Reps',sum_vol:'Volume',sum_ex:'Exercises',min:'min',ok:'Done',
+    xp:'Character XP',started:'Started'};
+  return T[k];
+}
+function uiFmtSec(s){ s=Math.round(Number(s)||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`; }
+function uiFmtNum(v){ return v==null||v===''?'':Number(v).toLocaleString(uiLocale(),{maximumFractionDigits:2}); }
+function uiPlanText(m,t){
+  if(!t) return '';
+  const n=Number(t.sets)||0, reps=t.repsMin!=null?(t.repsMax!=null&&t.repsMax!==t.repsMin?`${t.repsMin}–${t.repsMax}`:`${t.repsMin}`):'';
+  if(m==='weight_reps') return `${n} × ${reps}${t.weight!=null?` @ ${uiFmtNum(t.weight)} kg`:''}`;
+  if(m==='reps') return `${n} × ${reps}`;
+  if(m==='time') return `${n} × ${uiFmtSec(t.seconds)}`;
+  const parts=[t.distance!=null?`${uiFmtNum(t.distance)} km`:'',t.seconds!=null?uiFmtSec(t.seconds):''].filter(Boolean).join(' · ');
+  return n>1?`${n} × ${parts}`:parts;
+}
+function uiSetsText(m,sets){
+  if(!sets||!sets.length) return '';
+  if(m==='weight_reps'){
+    const w0=sets[0].weight;
+    return sets.every(s=>s.weight===w0)?`${uiFmtNum(w0||0)} kg × ${sets.map(s=>s.reps||0).join(', ')}`:sets.map(s=>`${uiFmtNum(s.weight||0)}×${s.reps||0}`).join(', ');
+  }
+  if(m==='reps') return sets.map(s=>s.reps||0).join(', ');
+  if(m==='time') return sets.map(s=>uiFmtSec(s.seconds)).join(', ');
+  return sets.map(s=>[s.distance!=null?`${uiFmtNum(s.distance)} km`:'',s.seconds!=null?uiFmtSec(s.seconds):''].filter(Boolean).join(' · ')).join(', ');
+}
+function uiWkProgress(w){
+  const planned=(w.entries||[]).reduce((a,en)=>a+en.sets.filter(s=>!s.warmup).length,0);
+  return {done:workoutTotalSets(w),planned};
+}
+function uiEnsureWkTimer(){
+  if(uiWkTimer) return;
+  uiWkTimer=setInterval(()=>{
+    const els=document.querySelectorAll('[data-elapsed]');
+    if(!els.length){ clearInterval(uiWkTimer); uiWkTimer=null; return; }
+    els.forEach(e=>{ e.textContent=uiFmtSec((Date.now()-Number(e.dataset.elapsed))/1000); });
+  },1000);
+}
+function uiConfirmSheet(o,onOk){
+  const inner=el(`<div class="cf-sheet"><h3>${escapeHtml(o.title)}</h3><p class="sub">${escapeHtml(o.text)}</p>
+    <div class="btn-row"><button class="btn ghost" id="cf_cancel">${escapeHtml(o.cancel||uiWkT('cancel'))}</button><button class="btn${o.danger?' danger':''}" id="cf_ok">${escapeHtml(o.ok)}</button></div></div>`);
+  inner.querySelector('#cf_cancel').onclick=()=>closeSheets();
+  inner.querySelector('#cf_ok').onclick=()=>{ closeSheets(); onOk(); };
+  return openSheet(inner);
+}
+function uiStartWorkout(opts){
+  const r=workoutStart(opts||{});
+  if(!r.ok) toast(uiWkT('resumed')); else scheduleSave();
+  uiWorkoutView={mode:'active'}; fitnessTab='workouts'; view='fitness'; render(); window.scrollTo(0,0);
+}
+function uiWorkoutStartPanel(){
+  const a=activeWorkout();
+  if(a){
+    const p=uiWkProgress(a);
+    const c=el(`<div class="card wk-live wk-resume" id="wkResume"><div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiWkT('active_t')}</div>
+      <div class="item-title truncate">${escapeHtml(a.name)}</div>
+      <div class="sub">${uiWkT('started')} ${fmtDate(a.date)} · <span data-elapsed="${a.startedAt}">${uiFmtSec((Date.now()-a.startedAt)/1000)}</span> · ${p.done}/${p.planned} ${uiWkT('sets_done')}</div>
+      <button class="btn" id="wkContinue">▶ ${uiWkT('cont')}</button></div>`);
+    c.querySelector('#wkContinue').onclick=()=>{ uiWorkoutView={mode:'active'}; render(); window.scrollTo(0,0); };
+    uiEnsureWkTimer();
+    return c;
+  }
+  const tpls=[...(S.workoutTemplates||[])].sort((x,y)=>x.name.localeCompare(y.name,uiLocale()));
+  const c=el(`<div class="card wk-startcard" id="wkStartCard"><div class="kicker">${uiWkT('start_t')}</div>
+    <div class="list wk-tpl-list"></div>
+    ${tpls.length?'':`<div class="sub" style="margin:4px 0 10px">${uiWkT('no_tpl')}</div>`}
+    <div class="btn-row"><button class="btn ghost" id="wkBlank">＋ ${uiWkT('blank')}</button>${tpls.length?'':`<button class="btn ghost" id="wkMakeTpl">📋 ${uiWkT('make_tpl')}</button>`}</div></div>`);
+  const list=c.querySelector('.wk-tpl-list');
+  tpls.forEach(t=>{
+    const sm=templateSummary(t);
+    const r=el(`<div class="between wk-tpl-row" data-start-tpl="${t.id}"><div style="min-width:0"><div class="item-title truncate">${escapeHtml(t.name)}</div><div class="sub">${sm.exercises} ${uiTplT('n_ex')} · ${sm.sets} ${uiTplT('n_sets')}</div></div>
+      <button class="btn sm wkStartTpl" aria-label="${uiWkT('start')}: ${escapeHtml(t.name)}">▶ ${uiWkT('start')}</button></div>`);
+    r.querySelector('.wkStartTpl').onclick=()=>uiStartWorkout({templateId:t.id});
+    list.appendChild(r);
+  });
+  c.querySelector('#wkBlank').onclick=()=>uiStartWorkout({});
+  const mk=c.querySelector('#wkMakeTpl'); if(mk) mk.onclick=()=>{ fitnessTab='templates'; render(); openTemplateForm(); };
+  return c;
+}
+function uiWorkoutSetRow(w,en,st,workIdx,ph){
+  const fs=WS_FIELDS[en.measurement]||['reps'];
+  const num=st.warmup?uiWkT('wu'):String(workIdx);
+  const inputs=fs.map(f=>`<input type="number" inputmode="${f==='weight'||f==='distance'?'decimal':'numeric'}" min="0" step="any" class="ws-in" data-f="${f}"
+    aria-label="${uiWkT('set')} ${num}: ${uiWkT(f==='weight'?'kg':f)}" value="${st[f]==null?'':st[f]}" placeholder="${ph&&ph[f]!=null?ph[f]:''}">`).join('');
+  const row=el(`<div class="ws-row ws-c${fs.length}${st.done?' is-done':''}${st.warmup?' is-wu':''}" data-set="${st.id}">
+    <button type="button" class="ws-num" aria-pressed="${st.warmup}" aria-label="${uiWkT('set')} ${num}: ${uiWkT('toggle_wu')}">${num}</button>
+    ${inputs}
+    <button type="button" class="ws-done" aria-pressed="${st.done}" aria-label="${uiWkT('set')} ${num}: ${uiWkT('mark_done')}">✓</button>
+    <button type="button" class="ws-rm" aria-label="${uiWkT('rm_set')} ${num}">✕</button></div>`);
+  row.querySelectorAll('.ws-in').forEach(inp=>inp.oninput=()=>{ workoutUpdateSet(w.id,en.id,st.id,{[inp.dataset.f]:inp.value}); scheduleSave(); });
+  row.querySelector('.ws-num').onclick=()=>{ workoutUpdateSet(w.id,en.id,st.id,{warmup:!st.warmup}); scheduleSave(); uiRedrawEntry(w,en,'.ws-num',st.id); };
+  row.querySelector('.ws-done').onclick=()=>{
+    const patch={done:!st.done};
+    // Ticking an untouched set adopts the values shown as placeholders (plan or last time).
+    if(!st.done&&ph) fs.forEach(f=>{ if(st[f]==null&&ph[f]!=null) patch[f]=ph[f]; });
+    workoutUpdateSet(w.id,en.id,st.id,patch); scheduleSave(); uiRedrawEntry(w,en,'.ws-done',st.id);
+  };
+  row.querySelector('.ws-rm').onclick=()=>{ workoutRemoveSet(w.id,en.id,st.id); scheduleSave(); uiRedrawEntry(w,en,null,null); };
+  return row;
+}
+function uiWorkoutEntryCard(w,en){
+  const last=exerciseLastPerformance(en.exerciseId,en.name,w.id);
+  const fs=WS_FIELDS[en.measurement]||['reps'];
+  const lastWork=last?last.sets:[];
+  const t=en.target||{};
+  const phFor=i=>{
+    const l=lastWork.length?lastWork[Math.min(i,lastWork.length-1)]:null;
+    const o={}; fs.forEach(f=>{ const tv=f==='reps'?t.repsMin:t[f]; o[f]=tv!=null?tv:(l&&l[f]!=null?l[f]:null); }); return o;
+  };
+  const card=el(`<div class="card wk-entry" data-entry="${en.id}">
+    <div class="between wk-entry-head"><div style="min-width:0"><div class="item-title truncate">${escapeHtml(en.name)}</div><div class="sub">${uiFitT(en.measurement)}</div></div>
+      <button type="button" class="delbtn wkRmEx" aria-label="${uiWkT('rm_ex')}: ${escapeHtml(en.name)}">✕</button></div>
+    <div class="wk-meta">${en.target?`<div><span class="kicker">${uiWkT('plan')}</span> ${escapeHtml(uiPlanText(en.measurement,en.target))}</div>`:''}
+      ${last?`<div class="wk-last"><span class="kicker">${uiWkT('last')}</span> ${escapeHtml(uiSetsText(last.measurement,last.sets))} <span class="sub">· ${fmtDate(last.date)}</span></div>`:''}
+      <div class="wk-suggestion" data-slot="suggestion" hidden></div></div>
+    <div class="ws-row ws-c${fs.length} ws-head" aria-hidden="true"><span>${uiWkT('set')}</span>${fs.map(f=>`<span>${uiWkT(f==='weight'?'kg':f)}</span>`).join('')}<span>✓</span><span></span></div>
+    <div class="ws-list"></div>
+    <div class="btn-row wk-entry-actions"><button type="button" class="btn ghost sm wkAddSet">${uiWkT('add_set')}</button><button type="button" class="btn ghost sm wkAddWu">${uiWkT('add_wu')}</button></div>
+  </div>`);
+  const list=card.querySelector('.ws-list');
+  let wi=0;
+  en.sets.forEach(st=>{ const idx=st.warmup?0:++wi; list.appendChild(uiWorkoutSetRow(w,en,st,idx,st.warmup?null:phFor(idx-1))); });
+  card.querySelector('.wkAddSet').onclick=()=>{ workoutAddSet(w.id,en.id,{}); scheduleSave(); uiRedrawEntry(w,en,'.wkAddSet',null); };
+  card.querySelector('.wkAddWu').onclick=()=>{
+    const st=workoutAddSet(w.id,en.id,{warmup:true,weight:null,reps:null,seconds:null,distance:null});
+    // a warm-up belongs before the working sets
+    en.sets.splice(en.sets.indexOf(st),1); const firstWork=en.sets.findIndex(s=>!s.warmup); en.sets.splice(firstWork<0?en.sets.length:firstWork,0,st);
+    scheduleSave(); uiRedrawEntry(w,en,'.wkAddWu',null);
+  };
+  card.querySelector('.wkRmEx').onclick=()=>uiConfirmSheet({title:en.name,text:uiWkT('rm_ex_q'),ok:uiWkT('rm_ex'),danger:true},()=>{ workoutRemoveEntry(w.id,en.id); scheduleSave(); render(); });
+  return card;
+}
+function uiRedrawEntry(w,en,focusSel,setId){
+  // Re-draw one exercise card in place (keeps scroll position and the rest of the screen).
+  const old=document.querySelector(`[data-entry="${en.id}"]`);
+  const fresh=workoutFindById(w.id); const e2=fresh&&(fresh.entries||[]).find(x=>x.id===en.id);
+  if(!old||!e2){ render(); return; }
+  const card=uiWorkoutEntryCard(fresh,e2); old.replaceWith(card);
+  const f=focusSel&&(setId?card.querySelector(`[data-set="${setId}"] ${focusSel}`):card.querySelector(focusSel)); if(f) f.focus({preventScroll:true});
+  const p=uiWkProgress(fresh), pe=document.getElementById('wkProg');
+  if(pe){ pe.textContent=`${p.done}/${p.planned}`; const bar=document.getElementById('wkBar'); if(bar) bar.style.width=uiPct(p.done,p.planned||1)+'%'; }
+}
+function renderWorkoutScreen(){
+  const edit=uiWorkoutView&&uiWorkoutView.mode==='edit';
+  const w=edit?workoutFindById(uiWorkoutView.id):activeWorkout();
+  if(!w||!Array.isArray(w.entries)||(edit&&w.status==='active')){ uiWorkoutView=null; return null; }
+  const p=uiWkProgress(w);
+  const head=edit
+    ?`<div class="card wk-edit-head"><button class="btn ghost sm" id="wkBack">← ${uiWkT('back')}</button><h2 style="margin:10px 0 8px">${uiWkT('edit_t')}</h2>
+        <div class="grid2"><div><label for="wk_date">${uiWkT('date')}</label><input type="date" id="wk_date" value="${w.date}"></div>
+        <div><label for="wk_dur">${uiWkT('duration')}</label><input type="number" inputmode="numeric" min="0" id="wk_dur" value="${escapeHtml(String(w.duration||''))}"></div></div></div>`
+    :`<div class="card wk-live" id="wkLive"><div class="between"><button class="btn ghost sm" id="wkBack" aria-label="${uiWkT('back')}">←</button>
+        <div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiWkT('live')} · <span data-elapsed="${w.startedAt}">${uiFmtSec((Date.now()-w.startedAt)/1000)}</span></div>
+        <button class="btn sm" id="wkFinishTop">${uiWkT('finish_sm')}</button></div>
+        <h2 class="wk-title">${escapeHtml(w.name)}</h2>
+        <div class="between sub"><span><b id="wkProg">${p.done}/${p.planned}</b> ${uiWkT('sets_done')}</span></div>
+        <div class="bar${p.planned&&p.done>=p.planned?' is-success':''}"><i id="wkBar" style="width:${uiPct(p.done,p.planned||1)}%"></i></div></div>`;
+  const wrap=el(`<div class="wk-screen">${head}
+    <div class="sub wk-hint">${uiWkT('wu_hint')}</div>
+    <div class="list" id="wkEntries"></div>
+    <button class="btn ghost" id="wkAddEx">${uiWkT('add_ex')}</button>
+    <div class="card wk-foot"><label for="wk_name">${uiWkT('name')}</label><input id="wk_name" value="${escapeHtml(w.name)}">
+      <label for="wk_notes">${uiWkT('notes')}</label><textarea id="wk_notes" rows="2">${escapeHtml(w.notes||'')}</textarea></div>
+    ${edit?`<button class="btn" id="wkSaveBack">${uiWkT('save_back')}</button>`
+      :`<button class="btn wk-finish" id="wkFinish">✓ ${uiWkT('finish')}</button><button class="btn danger" id="wkDiscard">${uiWkT('discard')}</button>`}
+  </div>`);
+  const list=wrap.querySelector('#wkEntries');
+  if(!w.entries.length) list.appendChild(el(`<div class="card sub">${uiWkT('no_ex')}</div>`));
+  w.entries.forEach(en=>list.appendChild(uiWorkoutEntryCard(w,en)));
+  const back=()=>{ uiWorkoutView=null; render(); window.scrollTo(0,0); };
+  wrap.querySelector('#wkBack').onclick=back;
+  wrap.querySelector('#wkAddEx').onclick=()=>openWorkoutAddExercise(w);
+  wrap.querySelector('#wk_name').oninput=e=>{ const v=e.target.value.trim(); if(v){ w.name=v; scheduleSave(); const h=wrap.querySelector('.wk-title'); if(h) h.textContent=v; } };
+  wrap.querySelector('#wk_notes').oninput=e=>{ w.notes=e.target.value; scheduleSave(); };
+  if(edit){
+    wrap.querySelector('#wk_date').onchange=e=>{ if(e.target.value){ w.date=e.target.value; scheduleSave(); } };
+    wrap.querySelector('#wk_dur').oninput=e=>{ w.duration=e.target.value; scheduleSave(); };
+    wrap.querySelector('#wkSaveBack').onclick=()=>{ toast('Workout updated'); back(); };
+  } else {
+    wrap.querySelector('#wkFinish').onclick=()=>uiFinishWorkout(w);
+    wrap.querySelector('#wkFinishTop').onclick=()=>uiFinishWorkout(w);
+    wrap.querySelector('#wkDiscard').onclick=()=>uiConfirmSheet({title:uiWkT('discard'),text:uiWkT('discard_q'),ok:uiWkT('discard'),danger:true},()=>{
+      workoutDiscard(w.id); uiWorkoutView=null; scheduleSave(); render(); toast(uiWkT('discarded'));
+    });
+    uiEnsureWkTimer();
+  }
+  return wrap;
+}
+function uiFinishWorkout(w){
+  const go=()=>{
+    const r=workoutFinish(w.id);
+    if(!r.ok) return;
+    uiWorkoutView=null; scheduleSave(); render(); window.scrollTo(0,0);
+    openWorkoutSummary(r.workout,r.granted);
+  };
+  if(workoutTotalSets(w)===0) uiConfirmSheet({title:uiWkT('empty_t'),text:uiWkT('empty_q'),ok:uiWkT('finish_sm')},go);
+  else go();
+}
+function openWorkoutSummary(w,granted){
+  const vol=workoutVolume(w), reps=workoutTotalReps(w);
+  const tile=(k,v)=>`<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value">${v}</div></div>`;
+  const inner=el(`<div class="wk-summary" id="wkSummary"><div class="wk-sum-top"><span class="wk-sum-ic" aria-hidden="true">💪</span><div><h3>${uiWkT('sum_t')}</h3><div class="sub">${escapeHtml(w.name)} · ${fmtDate(w.date)}</div></div></div>
+    <div class="stat-grid cols-2">${tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`)}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
+      ${reps?tile(uiWkT('sum_reps'),reps):''}${vol?tile(uiWkT('sum_vol'),`${uiNum(vol)}<small> kg</small>`):''}${tile(uiWkT('sum_ex'),w.entries.filter(en=>workoutWorkingSets(en).length).length)}</div>
+    ${granted?`<div class="chip wk-xp">+80 ${uiWkT('xp')}</div>`:''}
+    <div data-slot="performance" hidden></div><div data-slot="prs" hidden></div>
+    <button class="btn" id="wkSumOk" style="margin-top:14px">${uiWkT('ok')}</button></div>`);
+  inner.querySelector('#wkSumOk').onclick=()=>closeSheets();
+  return openSheet(inner);
+}
+function openWorkoutAddExercise(w){
+  const inW=new Set(w.entries.map(en=>en.exerciseId));
+  const lib=(S.exerciseLibrary||[]).filter(x=>!x.archived).sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+  const have=new Set(lib.map(x=>exerciseKey(x.name)));
+  const cat=EXERCISE_PRESETS.filter(p=>!have.has(exerciseKey(p.name)));
+  const inner=el(`<div><h3>${uiWkT('pick_ex')}</h3>
+    <div class="kicker">${uiWkT('lib')}</div>${lib.length?'':`<div class="sub">${uiWkT('lib_empty')}</div>`}<div class="list wk-pick" id="wkPickLib"></div>
+    ${cat.length?`<div class="kicker" style="margin-top:12px">${uiWkT('catalog')}</div><div class="list wk-pick" id="wkPickCat"></div>`:''}</div>`);
+  const add=id=>{ workoutAddEntry(w.id,id); scheduleSave(); closeSheets(); render(); const c=document.querySelector('#wkEntries .wk-entry:last-child'); if(c) c.scrollIntoView({block:'center'}); };
+  lib.forEach(x=>{ const b=el(`<button class="wk-pick-row" data-pick="${x.id}"><span class="truncate"><b>${escapeHtml(x.name)}</b></span><span class="sub">${uiFitT(x.measurement)}${inW.has(x.id)?' · ✓':''}</span></button>`); b.onclick=()=>add(x.id); inner.querySelector('#wkPickLib').appendChild(b); });
+  cat.forEach(pr=>{ const b=el(`<button class="wk-pick-row" data-pick-preset="${escapeHtml(pr.name)}"><span class="truncate"><b>${escapeHtml(pr.name)}</b></span><span class="sub">${uiFitT(pr.measurement)}</span></button>`);
+    b.onclick=()=>{ const r=exerciseAddPreset(pr.name); if(r.ok) add(r.exercise.id); }; inner.querySelector('#wkPickCat').appendChild(b); });
+  openSheet(inner);
+}
+function uiEntrySummaryRows(w){
+  return (w.entries||[]).map(en=>{ const ws=workoutWorkingSets(en);
+    return `<div class="ex-row"><span class="truncate"><b>${escapeHtml(en.name||'—')}</b></span><span class="num sub">${ws.length}× · ${escapeHtml(uiSetsText(en.measurement,ws))}</span></div>`; }).join('');
+}
 function renderFitness(){
+  if(uiWorkoutView){ const ws=renderWorkoutScreen(); if(ws) return ws; }
   if(fitnessTab==='library') return renderFitnessLibrary();
   if(fitnessTab==='templates') return renderFitnessTemplates();
   const prs=exercisePRs();
@@ -4156,7 +4478,7 @@ function renderFitness(){
   const done=completedWorkouts(S);
   const ws=weekStart(), weekW=done.filter(w=>w.date>=ws);
   const weekVol=weekW.reduce((a,w)=>a+workoutVolume(w),0), target=S.dailyTargets.workoutsPerWeek||0;
-  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}${uiFitnessTabs()}
+  const wrap=el(`<div>${uiPageHead(L.t,'',`<button class="btn sm" id="addW">＋ ${L.add}</button>`)}${uiFitnessTabs()}<div id="wkPanel"></div>
     <div class="stat-grid cols-3">
       <div class="stat-card"><div class="stat-label">🗓️ ${L.week}</div><div class="stat-value">${weekW.length}${target?`<small>/${target}</small>`:''}</div>${target?`<div class="bar${weekW.length>=target?' is-success':''}"><i style="width:${uiPct(weekW.length,target)}%"></i></div>`:''}</div>
       <div class="stat-card"><div class="stat-label">🏋️ ${L.vol}</div><div class="stat-value">${uiNum(weekVol)}<small> kg</small></div></div>
@@ -4174,7 +4496,7 @@ function renderFitness(){
   if(!sorted.length){ const e=el(`<div class="card">${uiEmpty('🏋️',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openWorkoutForm(); list.appendChild(e); }
   sorted.forEach(w=>{
     const vol=workoutVolume(w);
-    const exRows=(w.exercises||[]).map(ex=>`<div class="ex-row"><span class="truncate"><b>${escapeHtml(ex.name||'—')}</b>${ex.muscle?` <span class="sub">· ${escapeHtml(ex.muscle)}</span>`:''}</span><span class="num sub">${ex.sets||0}×${ex.reps||0}${Number(ex.weight)?` · ${ex.weight} kg`:''}${ex.rpe?` · RPE ${escapeHtml(String(ex.rpe))}`:''}</span></div>`).join('');
+    const exRows=Array.isArray(w.entries)?uiEntrySummaryRows(w):(w.exercises||[]).map(ex=>`<div class="ex-row"><span class="truncate"><b>${escapeHtml(ex.name||'—')}</b>${ex.muscle?` <span class="sub">· ${escapeHtml(ex.muscle)}</span>`:''}</span><span class="num sub">${ex.sets||0}×${ex.reps||0}${Number(ex.weight)?` · ${ex.weight} kg`:''}${ex.rpe?` · RPE ${escapeHtml(String(ex.rpe))}`:''}</span></div>`).join('');
     const it=el(`<div class="card workout-card">
       <div class="between"><div class="row" style="min-width:0"><span class="icon-circle" aria-hidden="true">💪</span><div style="min-width:0"><div class="item-title truncate">${escapeHtml(w.name)}</div><div class="item-meta">${fmtDate(w.date)}${w.date===todayStr()?' · '+uiT('today'):''}</div></div></div>
         <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(w.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
@@ -4182,7 +4504,7 @@ function renderFitness(){
       ${exRows?`<div class="ex-list">${exRows}</div>`:''}
       ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);
-    it.querySelector('.editBtn').onclick=()=>openWorkoutForm(w);
+    it.querySelector('.editBtn').onclick=()=>{ if(Array.isArray(w.entries)){ uiWorkoutView={mode:'edit',id:w.id}; render(); window.scrollTo(0,0); } else openWorkoutForm(w); };
     it.querySelector('.delbtn').onclick=()=>{
       if(!confirm(`Delete workout "${w.name}"? PRs will be recalculated from remaining workouts.`)) return;
       S.workouts=S.workouts.filter(x=>x.id!==w.id);scheduleSave();render();toast('Workout deleted');
@@ -4190,6 +4512,7 @@ function renderFitness(){
     list.appendChild(it);
   });
   wrap.querySelector('#addW').onclick=()=>openWorkoutForm();
+  wrap.querySelector('#wkPanel').appendChild(uiWorkoutStartPanel());
   uiBindFitnessTabs(wrap);
   return wrap;
 }
