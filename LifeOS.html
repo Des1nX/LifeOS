@@ -4128,7 +4128,7 @@ function workoutSetFeeling(wid,feeling){
    export/import); deleting a workout keeps its records (no refund).
    Per exercise and workout (all its entries together, done working sets only):
      units: weight_reps/reps 1 per set; time/distance_time floor(sum seconds / 60); max 6
-     xp    = units x 10 + (15 if result.prs has a PR of this exercise, once)
+     xp    = units x 10 + (15 if result.prs has a PR of this exercise and units >= 1, once)
    split by the entry's muscle snapshot (en.muscles, copied from the library at Finish) with
    largest-remainder rounding, then capped at 150 per muscle per workout date across all
    workouts of that day. Legacy exercises[]-only workouts have no exerciseId -> never paid. ---- */
@@ -4164,7 +4164,8 @@ function muscleAwardWorkout(w,st){
   const added=[];
   per.forEach((it,eid)=>{
     const key=`muscle:${w.id}:${eid}`; if(log.some(r=>r.key===key)) return;
-    const units=muscleUnits(it.measurement,it.sets), baseXp=units*MUSCLE_XP_PER_UNIT, prXp=prIds.has(eid)?MUSCLE_XP_PR:0;
+    // the PR bonus needs real counted work: 0 units -> no base XP and no PR XP
+    const units=muscleUnits(it.measurement,it.sets), baseXp=units*MUSCLE_XP_PER_UNIT, prXp=units>0&&prIds.has(eid)?MUSCLE_XP_PR:0;
     const xp={};
     Object.entries(muscleSplit(baseXp+prXp,it.muscles)).forEach(([g,v])=>{ const room=Math.max(0,MUSCLE_DAILY_CAP-(used[g]||0)); const got=Math.min(v,room); if(got>0){ xp[g]=got; used[g]=(used[g]||0)+got; } });
     const rec={key,workoutId:w.id,exerciseId:eid,date:w.date,units,baseXp,prXp,xp,ts:Date.now()};
