@@ -617,6 +617,69 @@ test('9 Daily Score: computing scores never changes any data (XP, level, attribu
   assert.deepEqual(await stateOf(page), before);
 }, { state: fixtureState() });
 
+const DAY = 86400000;
+const tick = async (page, ms) => { await page.clock.setFixedTime(NOW + ms); await page.evaluate(() => render()); };
+
+test('9 history: first run starts the history today - no estimated past snapshots', async ({ page }) => {
+  const s = await stateOf(page);
+  assert.equal(s.dailyScoresSince, TODAY);
+  assert.deepEqual(s.dailyScores, {}, 'past days with data are NOT back-filled');
+  assert.equal(s.schemaVersion, 8);
+}, { state: fixtureState() });
+
+test('9 history: a finished day is snapshotted once, immutable, and XP/RPG data never change', async ({ page }) => {
+  const live = await page.evaluate(d => dailyScore(d), TODAY);
+  assert.ok(live.score != null);
+  const rpgBefore = await page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.rpg, S.achievementsUnlocked, S.quests]));
+  await tick(page, DAY);                                                     // next day: TODAY is finished
+  const s1 = await stateOf(page);
+  const snap = s1.dailyScores[TODAY];
+  assert.ok(snap, 'snapshot written');
+  assert.equal(snap.score, live.score); assert.equal(snap.algo, 1); assert.equal(snap.label, live.label);
+  assert.deepEqual(Object.keys(snap.areas).sort(), ['fitness', 'habits', 'nutrition', 'sleep', 'tasks']);
+  // Only the new day's quest/achievement checks may run on boot of a new day - render() alone must not
+  // touch RPG data. (Quests are only checked on boot/Quests screen, not here.)
+  assert.equal(await page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.rpg, S.achievementsUnlocked, S.quests])), rpgBefore, 'Daily Score snapshots never change XP/RPG data');
+  // Changing that day's data afterwards does not rewrite the stored snapshot.
+  await page.evaluate(d => { S.tasks.filter(t => t.dueDate === d).forEach(t => { t.done = true; }); render(); }, TODAY);
+  assert.deepEqual((await stateOf(page)).dailyScores[TODAY], snap, 'snapshot is immutable');
+  await tick(page, 2 * DAY);
+  const s2 = await stateOf(page);
+  assert.deepEqual(s2.dailyScores[TODAY], snap);
+  assert.ok(Object.values(s2.dailyScores).every(x => x.score != null), 'days without a score are never stored as 0');
+}, { state: fixtureState() });
+
+test('9 history: snapshots persist through save + reload and survive export/import', async ({ page }) => {
+  await tick(page, DAY);
+  await persist(page);
+  const snap = (await stateOf(page)).dailyScores;
+  assert.ok(Object.keys(snap).length >= 1);
+  await reload(page);
+  assert.deepEqual((await stateOf(page)).dailyScores, snap, 'reload keeps snapshots');
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  const exported = JSON.parse(readFileSync(file, 'utf8'));
+  assert.deepEqual(exported.dailyScores, snap); assert.equal(exported.dailyScoresSince, TODAY);
+  await page.evaluate(() => { S.dailyScores = {}; S.dailyScoresSince = null; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => Object.keys(S.dailyScores).length > 0);
+  assert.deepEqual((await stateOf(page)).dailyScores, snap, 'import restores snapshots');
+}, { state: fixtureState() });
+
+test('9 history: a pre-Phase-9 backup (no dailyScores keys) imports cleanly; reset clears history', async ({ page }) => {
+  const old = fixtureState(); delete old.dailyScores; delete old.dailyScoresSince;
+  await page.click('#settingsBtn');
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => S.profile.name === 'Tester');
+  let s = await stateOf(page);
+  assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, TODAY); assert.equal(s.schemaVersion, 8);
+  page.on('dialog', d => d.accept());
+  await tick(page, DAY); await page.click('#settingsBtn'); await page.click('#st_reset');
+  s = await stateOf(page);
+  assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, null);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

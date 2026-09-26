@@ -13,10 +13,15 @@
   "dailyScoreSleep": "54db549da39beb13",
   "dailyScoreFitness": "ec90a72648e9e4ef",
   "dailyScoreGoals": "763c964355d3b3ce",
-  "dailyScore": "b05a0436a0e42c5e"
+  "dailyScore": "b05a0436a0e42c5e",
+  "defaultState": "5453858aad058527",
+  "finalizeDailyScores": "48ba5ee8e70505c0"
  },
  "statements": [],
- "uiEffects": [],
+ "uiEffects": [
+  "call:21fe68683507dabd",
+  "call:d125fc8ea79c87db"
+ ],
  "reasons": [
   {
    "reason": "Phase 9 step 2: pure read-only Daily Score calculator (approved algorithm, algo 1)",
@@ -34,6 +39,28 @@
     "dailyScoreSleep",
     "dailyScoreFitness",
     "dailyScoreGoals",
+    "dailyScore"
+   ],
+   "at": "2026-09-26"
+  },
+  {
+   "reason": "Phase 9 step 3: Daily Score snapshots - defaultState gains dailyScores/dailyScoresSince, finalizeDailyScores(), render() stores finished days",
+   "logic": [
+    "defaultState",
+    "DAILY_SCORE_ALGO",
+    "DAILY_SCORE_WEIGHTS",
+    "DAILY_SCORE_PRIORITY_WEIGHT",
+    "dailyScoreLabelKey",
+    "dailyScoreTasks",
+    "dailyScoreHabitNeeded",
+    "dailyScoreHabits",
+    "dailyScoreCalorieBand",
+    "dailyScoreNutrition",
+    "dailyScoreSleepBand",
+    "dailyScoreSleep",
+    "dailyScoreFitness",
+    "dailyScoreGoals",
+    "finalizeDailyScores",
     "dailyScore"
    ],
    "at": "2026-09-26"

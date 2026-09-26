@@ -862,6 +862,8 @@
    "habitsPerDay": 1
   },
   "notificationLog": [],
+  "dailyScores": {},
+  "dailyScoresSince": null,
   "settings": {
    "theme": "dark",
    "onboarded": false,
@@ -1071,6 +1073,8 @@
    "habitsPerDay": 1
   },
   "notificationLog": [],
+  "dailyScores": {},
+  "dailyScoresSince": null,
   "settings": {
    "theme": "dark",
    "onboarded": false,

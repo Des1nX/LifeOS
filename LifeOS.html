@@ -1075,6 +1075,11 @@ function defaultState(){return{
   dailyTargets:{workoutsPerWeek:3, tasksPerDay:3, habitsPerDay:1},
   // ---- Phase 6: idempotency ledger for browser notifications (see sendBrowserNotification) ----
   notificationLog:[], // {key,ts}
+  // ---- Phase 9: Daily Score history. Today is always computed live by dailyScore(); a finished
+  // day is stored once as an immutable snapshot {score,label,algo,areas,finalizedAt}. Snapshots
+  // start at dailyScoresSince (the first day the feature ran) -- no estimated history. New keys
+  // reach old states/backups through migrate()'s generic top-level fill-in: no schema bump. ----
+  dailyScores:{}, dailyScoresSince:null,
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -1714,6 +1719,8 @@ function render(){
     more:renderMore,finance:renderFinance,fitness:renderFitness,nutrition:renderNutrition,notes:renderNotes,journal:renderJournal,
     car:renderCar,subscriptions:renderSubs,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
+  // Phase 9: store finished days' Daily Score snapshots (no-op unless a day has ended).
+  if(finalizeDailyScores()) scheduleSave();
   app.appendChild(map[view]());
   // Phase 8B presentation: entrance animation only when the screen actually changes (not on the
   // 60 s refresh or after a tap on the same screen), motion follows Settings → Animations.
@@ -4691,6 +4698,24 @@ function dailyScoreFitness(D){
 function dailyScoreGoals(D){
   const ms=S.milestones.filter(m=>m.completed&&m.completedAt&&(()=>{const d=new Date(m.completedAt);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})()===D);
   return {score:null,reason:'info_only',milestones:ms.map(m=>m.title)};
+}
+// Writes snapshots for finished days (since the feature first ran, at most 14 days back, only days
+// that have a score). Existing snapshots are never rewritten. Returns true if S changed.
+function finalizeDailyScores(){
+  if(!S) return false;
+  let changed=false;
+  if(!S.dailyScores||typeof S.dailyScores!=='object'){ S.dailyScores={}; changed=true; }
+  const today=todayStr();
+  if(!S.dailyScoresSince){ S.dailyScoresSince=today; return true; }
+  let d=S.dailyScoresSince; const oldest=addDays(today,-14); if(d<oldest) d=oldest;
+  for(;d<today;d=addDays(d,1)){
+    if(S.dailyScores[d]) continue;
+    const r=dailyScore(d);
+    if(r.score==null) continue;
+    S.dailyScores[d]={score:r.score,label:r.label,algo:r.algo,areas:Object.fromEntries(Object.keys(DAILY_SCORE_WEIGHTS).map(k=>[k,r.areas[k]])),finalizedAt:Date.now()};
+    changed=true;
+  }
+  return changed;
 }
 function dailyScore(D){
   const areas={tasks:dailyScoreTasks(D),habits:dailyScoreHabits(D),nutrition:dailyScoreNutrition(D),sleep:dailyScoreSleep(D),fitness:dailyScoreFitness(D),goals:dailyScoreGoals(D)};
