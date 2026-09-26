@@ -336,6 +336,9 @@ a{color:var(--accent)}
 .stat-card .stat-sub{font-size:var(--fs-caption);color:var(--color-text-secondary);margin-top:4px}
 .stat-card .bar{margin-top:10px}
 .stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.stat-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat-grid.cols-3 .stat-card{padding:12px}
+.stat-grid.cols-3 .stat-value{font-size:21px}
 @media(min-width:700px){.stat-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3)}.stat-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .xp-bar{height:12px;border-radius:var(--radius-pill);background:var(--color-surface-muted);overflow:hidden;position:relative;border:1px solid var(--color-border)}
 .xp-bar>i{display:block;height:100%;background:var(--xp-grad);border-radius:var(--radius-pill);transition:width var(--dur-slow) var(--ease-standard);position:relative;
@@ -534,13 +537,16 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .skill-branch-head .sub{margin-left:auto}
 .skill-path{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:16px}
 .skill-path::before{content:'';position:absolute;left:5px;top:18px;bottom:18px;width:2px;border-radius:2px;background:linear-gradient(var(--ac),color-mix(in srgb,var(--ac) 10%,var(--line)))}
-.skill-node{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);min-height:56px}
+.skill-node{position:relative;display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);min-height:56px}
 .skill-node::before{content:'';position:absolute;left:-16px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:var(--card);border:2px solid var(--line)}
 .skill-node .sk-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--card);flex:none}
 .skill-node .sk-main{flex:1;min-width:0}
-.skill-node .sk-name{font-weight:700;font-size:14px}
+.skill-node .sk-name{font-weight:700;font-size:14px;min-width:0}
+.skill-node .sk-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.skill-node .sk-top .chip{flex:none;font-size:10.5px;padding:2px 8px}
+.skill-node .sk-meta{font-size:var(--fs-caption);color:var(--sub);font-weight:600;min-width:0}
 .skill-node .sk-desc{font-size:var(--fs-caption);color:var(--sub);margin-top:2px;line-height:1.4}
-.skill-node .sk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.skill-node .sk-tags{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
 .skill-node.is-unlocked{border-color:color-mix(in srgb,var(--ac) 50%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 14%,var(--card2)),var(--card2))}
 .skill-node.is-unlocked::before{background:var(--ac);border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
 .skill-node.is-unlocked .sk-ic{background:color-mix(in srgb,var(--ac) 22%,var(--card))}
@@ -1780,6 +1786,7 @@ function uiT(key,vars){
   const s=(UI_I18N[uiLang()]&&UI_I18N[uiLang()][key]) ?? UI_I18N.cs[key] ?? tr(key);
   return vars ? String(s).replace(/\{(\w+)\}/g,(_,k)=>vars[k]!=null?vars[k]:'') : s;
 }
+function uiIsoDate(ts){ const d=new Date(ts); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function uiLocale(){ return uiLang()==='cs'?'cs-CZ':'en-US'; }
 function uiNum(n){ return Number(n||0).toLocaleString(uiLocale()); }
 function uiPct(v,max){ return max>0?Math.max(0,Math.min(100,Math.round(v/max*100))):0; }
@@ -2569,101 +2576,113 @@ function openMilestoneForm(goalId,existing){
 function renderCharacter(){
   const {level,into,need}=levelFromXp(S.totalXp);
   const pct=Math.min(100,Math.round(into/need*100));
-  const wrap=el(`<div><h2>Character</h2></div>`);
-  wrap.appendChild(el(`<div class="card">
-    <div class="row"><div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff">${S.profile.avatar?S.profile.avatar:(S.profile.name||'H')[0].toUpperCase()}</div>
-    <div><div class="item-title" style="font-size:18px">${escapeHtml(S.profile.name)}</div><div class="sub">Level ${level} · ${S.totalXp} total XP</div></div></div>
-    <div class="xp-bar" style="margin-top:12px"><i style="width:${pct}%"></i></div>
-    <div class="sub" style="margin-top:6px">${into}/${need} XP to next level</div>
-  </div>`));
+  const bestStreakOverall=S.habits.reduce((m,h)=>Math.max(m,bestStreak(h)),0);
+  const curStreakOverall=S.habits.reduce((m,h)=>Math.max(m,currentStreak(h)),0);
+  const badgeSkills=SKILLS.filter(sk=>sk.effect&&sk.effect.type==='badge'&&S.rpg.skillTree.unlocked.includes(sk.id));
+  const sp=S.rpg.skillPoints, ap=S.rpg.attributePoints;
+  const wrap=el(`<div class="character">${uiPageHead(uiT('character'))}<div class="char-cols"><div class="char-main"></div><div class="char-side"></div></div></div>`);
+  const main=wrap.querySelector('.char-main'), side=wrap.querySelector('.char-side');
 
-  const ac=el(`<div class="card"><h3>Attributes</h3></div>`);
+  // ---- Hero: avatar, level, XP, points (Phase 5 data, read-only here) ----
+  main.appendChild(el(`<section class="card hud char-hero" aria-label="${escapeHtml(S.profile.name)}">
+    <div class="avatar hero lg" aria-hidden="true">${S.profile.avatar?S.profile.avatar:(S.profile.name||'H')[0].toUpperCase()}</div>
+    <div class="hud-name">${escapeHtml(S.profile.name)}</div>
+    <div class="row" style="justify-content:center;gap:8px;margin-top:6px">
+      <span class="badge is-gold">${uiT('level')} ${level}</span><span class="badge">${uiNum(S.totalXp)} ${uiT('total_xp')}</span>
+    </div>
+    <div class="xp-row" style="margin-top:18px"><span><b>${uiNum(into)}</b> / ${uiNum(need)} XP</span><span>${uiT('xp_to_next',{n:level+1})}</span></div>
+    <div class="xp-bar" role="progressbar" aria-label="XP" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+    <div class="char-points">
+      <div class="point-tile${sp.available>0?' is-available':''}"><span class="kicker">⭐ ${uiT('skill_points')}</span><b>${sp.available}</b><div class="sub">${sp.earned} ${uiT('earned')} · ${sp.spent} ${uiT('spent')}</div></div>
+      <div class="point-tile${ap.available>0?' is-available':''}"><span class="kicker">🔵 ${uiT('attr_points')}</span><b>${ap.available}</b><div class="sub">${ap.earned} ${uiT('earned')} · ${ap.spent} ${uiT('spent')}</div></div>
+    </div>
+  </section>`));
+
+  main.appendChild(el(`<div class="stat-grid cols-4">
+    <div class="stat-card"><div class="stat-label">🏆 ${uiT('achievements')}</div><div class="stat-value">${S.achievementsUnlocked.length}<small>/${ACHV.length}</small></div></div>
+    <div class="stat-card"><div class="stat-label">🌟 ${uiT('skills_unlocked')}</div><div class="stat-value">${S.rpg.skillTree.unlocked.length}<small>/${SKILLS.length}</small></div></div>
+    <div class="stat-card"><div class="stat-label">🔥 ${uiT('current_streak')}</div><div class="stat-value">${curStreakOverall}</div></div>
+    <div class="stat-card"><div class="stat-label">🏅 ${uiT('best_streak')}</div><div class="stat-value">${bestStreakOverall}</div></div>
+  </div>`));
+  if(badgeSkills.length) main.appendChild(el(`<div class="card"><div class="kicker" style="margin-bottom:8px">${uiT('badges')}</div><div class="row" style="flex-wrap:wrap;gap:6px">${badgeSkills.map(b=>`<span class="chip is-gold">🏅 ${escapeHtml(b.effect.value)}</span>`).join('')}</div></div>`));
+
+  // ---- Attributes: level = floor(value/50)+1, bar = progress inside that level (unchanged rule) ----
+  const ac=el(`<section class="card"><div class="section-header"><h3>${uiT('attributes')}</h3></div></section>`);
   const availAttrPts=S.rpg.attributePoints.available||0;
-  if(availAttrPts>0) ac.appendChild(el(`<div class="sub" style="margin-bottom:8px">🔵 ${availAttrPts} attribute point${availAttrPts===1?'':'s'} available to spend</div>`));
+  if(availAttrPts>0) ac.appendChild(el(`<div class="chip is-gold" style="margin-bottom:8px">🔵 ${uiT('attr_points_avail',{n:availAttrPts})}</div>`));
   Object.keys(ATTRS).forEach(k=>{
     const val=S.attrs[k]||0; const lvl=Math.floor(val/50)+1; const into2=val%50;
-    const row=el(`<div class="attr">
-      <div class="dot" style="background:${ATTRS[k].c}">${k}</div>
-      <div style="flex:1"><div class="between"><span class="sub">${ATTRS[k].label}</span><span class="sub">Lv ${lvl}</span></div>
-      <div class="bar" style="margin-top:4px"><i style="width:${into2/50*100}%;background:${ATTRS[k].c}"></i></div></div>
-      ${availAttrPts>0?`<button class="iconbtn spendAttrBtn" data-attr="${k}" title="Spend 1 point on ${k}">+</button>`:''}
+    const row=el(`<div class="attr attr-row" style="--ac:${ATTRS[k].c}">
+      <div class="dot">${k}</div>
+      <div style="min-width:0"><div class="attr-name"><span>${ATTRS[k].label}</span><span>Lv ${lvl} · ${val}</span></div>
+      <div class="bar" role="progressbar" aria-label="${ATTRS[k].label}" aria-valuenow="${Math.round(into2/50*100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${into2/50*100}%"></i></div></div>
+      ${availAttrPts>0?`<button class="iconbtn spendAttrBtn" data-attr="${k}" title="${uiT('spend_point',{k})}" aria-label="${uiT('spend_point',{k})}">+</button>`:'<span></span>'}
     </div>`);
     ac.appendChild(row);
   });
   ac.querySelectorAll('.spendAttrBtn').forEach(b=>b.onclick=()=>{ if(spendAttributePoint(b.dataset.attr)) render(); });
-  wrap.appendChild(ac);
+  main.appendChild(ac);
 
-  // ---- Phase 5: RPG summary (Skill Points / Attribute Points / streaks / badges) ----
-  const bestStreakOverall=S.habits.reduce((m,h)=>Math.max(m,bestStreak(h)),0);
-  const curStreakOverall=S.habits.reduce((m,h)=>Math.max(m,currentStreak(h)),0);
-  const badgeSkills=SKILLS.filter(sk=>sk.effect&&sk.effect.type==='badge'&&S.rpg.skillTree.unlocked.includes(sk.id));
-  const rpgC=el(`<div class="card"><h3>RPG</h3>
-    <div class="grid2">
-      <div class="item" style="justify-content:space-between"><span>⭐ Skill Points</span><b>${S.rpg.skillPoints.available}</b></div>
-      <div class="item" style="justify-content:space-between"><span>🔵 Attribute Points</span><b>${S.rpg.attributePoints.available}</b></div>
-      <div class="item" style="justify-content:space-between"><span>🏆 Achievements</span><b>${S.achievementsUnlocked.length}/${ACHV.length}</b></div>
-      <div class="item" style="justify-content:space-between"><span>🌟 Skills unlocked</span><b>${S.rpg.skillTree.unlocked.length}/${SKILLS.length}</b></div>
-      <div class="item" style="justify-content:space-between"><span>🔥 Current streak</span><b>${curStreakOverall}</b></div>
-      <div class="item" style="justify-content:space-between"><span>🏅 Best streak</span><b>${bestStreakOverall}</b></div>
-    </div>
-    <div class="sub" style="margin-top:8px">Skill Points: ${S.rpg.skillPoints.earned} earned · ${S.rpg.skillPoints.spent} spent</div>
-    <div class="sub">Attribute Points: ${S.rpg.attributePoints.earned} earned · ${S.rpg.attributePoints.spent} spent</div>
-    ${badgeSkills.length?`<div class="sub" style="margin-top:8px">Badges: ${badgeSkills.map(b=>escapeHtml(b.effect.value)).join(' · ')}</div>`:''}
-  </div>`);
-  wrap.appendChild(rpgC);
-
-  // ---- Phase 5: real Skill Tree -- unlockable, persisted, cost/prerequisites-gated ----
-  const skC=el(`<div class="card"><h3>Skill Tree</h3><div class="sub" style="margin-bottom:10px">${S.rpg.skillPoints.available} skill point${S.rpg.skillPoints.available===1?'':'s'} available</div></div>`);
+  // ---- Skill Tree: 6 branches x 3 skills, cost/prerequisite gated by unlockSkill() ----
+  const skC=el(`<section class="card"><div class="section-header"><h3>${uiT('skill_tree')}</h3><span class="chip ${S.rpg.skillPoints.available>0?'is-gold':'is-muted'}">⭐ ${uiT('sp_available',{n:S.rpg.skillPoints.available})}</span></div></section>`);
   Object.keys(SKILL_BRANCH_LABELS).forEach(branchKey=>{
     const attr=SKILL_BRANCH_ATTR[branchKey];
     const branchSkills=SKILLS.filter(sk=>sk.branch===branchKey);
-    const branchWrap=el(`<div style="margin-bottom:14px"><div class="row" style="margin-bottom:6px"><span class="dot" style="background:${ATTRS[attr].c};width:26px;height:26px;font-size:10px">${attr}</span><b>${SKILL_BRANCH_LABELS[branchKey]}</b></div></div>`);
+    const doneN=branchSkills.filter(sk=>S.rpg.skillTree.unlocked.includes(sk.id)).length;
+    const branchWrap=el(`<div class="skill-branch" style="--ac:${ATTRS[attr].c}"><div class="skill-branch-head"><span class="dot">${attr}</span><b>${SKILL_BRANCH_LABELS[branchKey]}</b><span class="sub">${doneN}/${branchSkills.length}</span></div><div class="skill-path"></div></div>`);
+    const path=branchWrap.querySelector('.skill-path');
     branchSkills.forEach(sk=>{
       const isUnlocked=S.rpg.skillTree.unlocked.includes(sk.id);
       const prereqsMet=(sk.prerequisites||[]).every(p=>S.rpg.skillTree.unlocked.includes(p));
       const canAfford=(S.rpg.skillPoints.available||0)>=sk.cost;
       const canUnlock=!isUnlocked&&prereqsMet&&canAfford;
-      const row=el(`<div class="item" style="margin:4px 0 4px 36px;opacity:${isUnlocked?1:(prereqsMet?0.85:0.4)}">
-        <span style="font-size:16px">${isUnlocked?'✅':'🔒'}</span>
-        <div style="flex:1"><div class="item-title" style="font-size:14px">${escapeHtml(sk.name)}</div>
-        <div class="item-meta">${escapeHtml(sk.description)}${isUnlocked?'':' · cost '+sk.cost+(prereqsMet?'':' · locked (prerequisites)')}</div></div>
-        ${!isUnlocked?`<button class="pill sm unlockSkillBtn" data-id="${sk.id}" ${canUnlock?'':'disabled'}>Unlock</button>`:''}
+      const state=isUnlocked?'unlocked':prereqsMet?'available':'locked';
+      const prereqNames=(sk.prerequisites||[]).map(id=>(SKILLS.find(x=>x.id===id)||{name:id}).name).join(', ');
+      // The Unlock button is shown whenever prerequisites are met (disabled without enough
+      // points, exactly as before); a skill still behind prerequisites just shows what it needs.
+      const row=el(`<div class="skill-node is-${state}" data-skill="${sk.id}">
+        <span class="sk-ic" aria-hidden="true">${isUnlocked?'✅':prereqsMet?'✨':'🔒'}</span>
+        <div class="sk-main">
+          <div class="sk-top"><span class="sk-name">${escapeHtml(sk.name)}</span><span class="chip ${isUnlocked?'is-success':state==='available'?'is-gold':'is-muted'}">${uiT(state)}</span></div>
+          <div class="sk-desc">${escapeHtml(sk.description)}</div>
+          ${isUnlocked?'':`<div class="sk-tags"><span class="sk-meta">⭐ ${uiT('cost',{n:sk.cost})}${!prereqsMet&&prereqNames?' · '+uiT('requires',{s:escapeHtml(prereqNames)}):''}</span>${prereqsMet?`<button class="pill sm unlockSkillBtn" data-id="${sk.id}" ${canUnlock?'':'disabled'} aria-label="${uiT('unlock')}: ${escapeHtml(sk.name)}">${uiT('unlock')}</button>`:''}</div>`}
+        </div>
       </div>`);
       const btn=row.querySelector('.unlockSkillBtn');
       if(btn) btn.onclick=()=>{ if(unlockSkill(sk.id)) render(); };
-      branchWrap.appendChild(row);
+      path.appendChild(row);
     });
     skC.appendChild(branchWrap);
   });
-  wrap.appendChild(skC);
+  side.appendChild(skC);
 
+  // ---- Achievements: unlocked first (with real unlock date), then locked with real progress ----
   const unlockedA=ACHV.filter(a=>S.achievementsUnlocked.includes(a.id));
   const lockedA=ACHV.filter(a=>!S.achievementsUnlocked.includes(a.id));
-  const achC=el(`<div class="card"><h3>Achievements (${unlockedA.length}/${ACHV.length})</h3><div class="list" id="achl"></div></div>`);
+  const achC=el(`<section class="card"><div class="section-header"><h3>${uiT('achievements')}</h3><span class="chip is-gold">🏆 ${unlockedA.length}/${ACHV.length}</span></div><div class="ach-grid" id="achl"></div></section>`);
   const al=achC.querySelector('#achl');
   unlockedA.forEach(a=>{
     const at=S.achievementUnlockedAt&&S.achievementUnlockedAt[a.id];
-    al.appendChild(el(`<div class="item"><span style="font-size:20px">🏆</span><div><div class="item-title">${a.title}</div><div class="item-meta">${a.desc} · ${a.rarity}${at?' · unlocked '+new Date(at).toLocaleDateString():''}</div></div></div>`));
+    al.appendChild(el(`<div class="ach is-unlocked"><span class="ach-ic" aria-hidden="true">🏆</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="rarity r-${a.rarity}">${a.rarity}</span>${at?`<span class="sub" style="font-size:11px">${fmtDate(uiIsoDate(at))}</span>`:''}</div></div>`));
   });
   lockedA.forEach(a=>{
     const p=a.progress?Math.max(0,Math.min(100,a.progress(S))):0;
-    al.appendChild(el(`<div class="item" style="opacity:.55;align-items:flex-start"><span style="font-size:20px">🔒</span><div style="flex:1"><div class="item-title">${a.title}</div><div class="item-meta">${a.desc} · ${a.rarity}</div><div class="bar" style="margin-top:4px"><i style="width:${p}%"></i></div></div></div>`));
+    al.appendChild(el(`<div class="ach is-locked"><span class="ach-ic" aria-hidden="true">🔒</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><span class="rarity r-${a.rarity}">${a.rarity} · ${Math.round(p)}%</span><div class="bar"><i style="width:${p}%"></i></div></div>`));
   });
   wrap.appendChild(achC);
 
   // ---- Phase 5: RPG activity log (real events only) ----
-  const actC=el(`<div class="card"><h3>Recent Activity</h3><div class="list" id="actl"></div></div>`);
+  const actC=el(`<section class="card"><div class="section-header"><h3>${uiT('recent_activity')}</h3></div><div class="timeline" id="actl"></div></section>`);
   const actl=actC.querySelector('#actl');
   const recent=(S.rpg.activityLog||[]).slice(0,10);
-  if(!recent.length) actl.appendChild(el(`<div class="empty">No RPG activity yet.</div>`));
+  if(!recent.length) actl.appendChild(el(uiEmpty('✨',uiT('no_activity'),'','')));
   const ACTIVITY_ICON={levelup:'⬆️',skill_unlock:'🌟',achievement:'🏆',quest_complete:'📜',xp:'✨'};
-  recent.forEach(a=>actl.appendChild(el(`<div class="item"><span style="font-size:16px">${ACTIVITY_ICON[a.type]||'✨'}</span><div style="flex:1"><div class="item-title" style="font-size:14px">${escapeHtml(a.title)}</div><div class="item-meta">${escapeHtml(a.description||'')}</div></div></div>`)));
+  recent.forEach(a=>actl.appendChild(el(`<div class="tl-item"><span class="tl-ic" aria-hidden="true">${ACTIVITY_ICON[a.type]||'✨'}</span><div style="min-width:0"><div class="item-title" style="font-size:14px">${escapeHtml(a.title)}</div><div class="item-meta">${escapeHtml(a.description||'')}</div></div></div>`)));
   wrap.appendChild(actC);
 
-  // Phase 6: name/avatar/widgets/export/import/reset now live in the dedicated Settings
-  // screen (view='settings', reachable from the ⚙️ topbar icon or the More menu) -- this
-  // just links there instead of duplicating the same controls in two places.
-  const setLink=el(`<div class="card" style="cursor:pointer"><div class="between"><span>${tr('open_settings')}</span><span class="sub">›</span></div></div>`);
+  // Phase 6: name/avatar/widgets/export/import/reset live in the dedicated Settings screen --
+  // this just links there instead of duplicating the same controls in two places.
+  const setLink=el(`<button class="card is-link between" style="width:100%;text-align:left;font:inherit;color:inherit"><span>${tr('open_settings')}</span><span class="sub" aria-hidden="true">›</span></button>`);
   setLink.onclick=()=>{view='settings';render();window.scrollTo(0,0);};
   wrap.appendChild(setLink);
   return wrap;
@@ -3618,34 +3637,57 @@ function checkQuests(){
   });
 }
 function questMax(q){ return typeof q.max==='function'?q.max(S):q.max; }
+// Czech display names for the fixed quest definitions (ids and rules untouched).
+const UI_QUEST_CS={dq_tasks:'Splň dnes 3 úkoly',dq_habits:'Splň všechny aktivní návyky',dq_log:'Zapiš trénink, jídlo nebo finance',dq_workout:'Dokonči dnes 1 trénink',
+  dq_nutrition:'Zapiš dnes aspoň jedno jídlo',wq_streak:'Udrž 7denní streak návyku',wq_goal:'Posuň aktivní cíl',wq_tasks:'Splň tento týden 15 úkolů',
+  wq_habits:'Splň týdenní cíl návyků',wq_workouts:'Dokonči tento týden 3 tréninky'};
+function uiQuestTitle(q){ return uiLang()==='cs'&&UI_QUEST_CS[q.id]?UI_QUEST_CS[q.id]:q.title; }
 function renderQuests(){
   checkQuests();
-  const wrap=el(`<div><h2>Quests</h2><h3>Daily</h3><div class="list" id="dqL" style="margin-bottom:18px"></div><h3>Weekly</h3><div class="list" id="wqL"></div></div>`);
+  const dailyDone=DAILY_QUESTS.filter(q=>S.quests.some(x=>x.key===questKey(q.id,'daily'))).length;
+  const weeklyDone=WEEKLY_QUESTS.filter(q=>S.quests.some(x=>x.key===questKey(q.id,'weekly'))).length;
+  const activeGoals=S.goals.filter(g=>g.status==='Active');
+  const weekEnd=addDays(weekStart(),6);
+  const wrap=el(`<div>${uiPageHead(uiT('quests'))}
+    <div class="stat-grid cols-3">
+      <div class="stat-card"><div class="stat-label">📜 ${uiT('daily')}</div><div class="stat-value">${dailyDone}<small>/${DAILY_QUESTS.length}</small></div><div class="bar is-success"><i style="width:${uiPct(dailyDone,DAILY_QUESTS.length)}%"></i></div></div>
+      <div class="stat-card"><div class="stat-label">🗓️ ${uiT('weekly')}</div><div class="stat-value">${weeklyDone}<small>/${WEEKLY_QUESTS.length}</small></div><div class="bar is-success"><i style="width:${uiPct(weeklyDone,WEEKLY_QUESTS.length)}%"></i></div></div>
+      <div class="stat-card"><div class="stat-label">🎯 ${uiT('goal_quests')}</div><div class="stat-value">${activeGoals.length}</div></div>
+    </div>
+    <div class="section-header"><h3>${uiT('daily')}</h3><span class="chip is-muted">⏳ ${uiT('resets_today')}</span></div><div class="list" id="dqL"></div>
+    <div class="section-header"><h3>${uiT('weekly')}</h3><span class="chip is-muted">⏳ ${uiT('resets_week',{d:fmtDate(weekEnd)})}</span></div><div class="list" id="wqL"></div>
+    <div class="section-header"><h3>${uiT('goal_quests')}</h3></div><div class="list" id="gqL"></div>
+    <div class="section-header"><h3>${uiT('challenges')}</h3></div><div class="card"><div class="sub">${uiT('no_challenges')}</div></div>
+  </div>`);
+  const questCard=(q,done)=>{
+    const max=questMax(q);
+    const val=q.val?q.val(S):(done?1:0);
+    const pct=Math.round(val/max*100);
+    return el(`<div class="card quest${done?' is-done':''}">
+      <div class="quest-top"><span class="icon-circle" aria-hidden="true">${done?'✅':'📜'}</span>
+        <div style="flex:1;min-width:0"><div class="quest-title ${done?'item-title done':''}">${escapeHtml(uiQuestTitle(q))}</div>
+        <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><span class="chip is-gold">+${q.xp} XP</span><span class="chip is-muted">${q.attr}</span>${done?`<span class="chip is-success">✓ ${uiT('completed_q')}</span>`:''}</div></div>
+      </div>
+      <div class="bar" role="progressbar" aria-valuenow="${Math.min(100,pct)}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(uiQuestTitle(q))}"><i style="width:${Math.min(100,pct)}%"></i></div>
+      <div class="quest-foot"><span>${Math.min(val,max)}/${max}</span><span>${Math.min(100,pct)}%</span></div>
+    </div>`);
+  };
   const dl=wrap.querySelector('#dqL');
-  DAILY_QUESTS.forEach(q=>{
-    const done=S.quests.some(x=>x.key===questKey(q.id,'daily'));
-    const max=questMax(q);
-    const val=q.val?q.val(S):(done?1:0);
-    const pct=Math.round(val/max*100);
-    dl.appendChild(el(`<div class="item" style="align-items:flex-start"><span style="font-size:18px">${done?'✅':'📜'}</span>
-      <div style="flex:1"><div class="item-title ${done?'done':''}">${q.title}</div>
-      <div class="bar" style="margin:6px 0 2px"><i style="width:${pct}%"></i></div>
-      <div class="item-meta">${Math.min(val,max)}/${max} · +${q.xp} XP</div></div></div>`));
-  });
+  DAILY_QUESTS.forEach(q=>dl.appendChild(questCard(q,S.quests.some(x=>x.key===questKey(q.id,'daily')))));
   const wl=wrap.querySelector('#wqL');
-  WEEKLY_QUESTS.forEach(q=>{
-    const done=S.quests.some(x=>x.key===questKey(q.id,'weekly'));
-    const max=questMax(q);
-    const val=q.val?q.val(S):(done?1:0);
-    const pct=Math.round(val/max*100);
-    wl.appendChild(el(`<div class="item" style="align-items:flex-start"><span style="font-size:18px">${done?'✅':'📜'}</span>
-      <div style="flex:1"><div class="item-title ${done?'done':''}">${q.title}</div>
-      <div class="bar" style="margin:6px 0 2px"><i style="width:${pct}%"></i></div>
-      <div class="item-meta">${Math.min(val,max)}/${max} · +${q.xp} XP</div></div></div>`));
+  WEEKLY_QUESTS.forEach(q=>wl.appendChild(questCard(q,S.quests.some(x=>x.key===questKey(q.id,'weekly')))));
+  // Goal quests are the user's real active goals (progress = goalProgress, reward = goal XP).
+  const gl=wrap.querySelector('#gqL');
+  if(!activeGoals.length){ const e=el(`<div class="card">${uiEmpty('🎯',uiT('empty_goals_t'),uiT('quest_goal_note'),uiT('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openGoalForm(); gl.appendChild(e); }
+  else gl.appendChild(el(`<div class="sub" style="margin:0 2px 6px">${uiT('quest_goal_note')}</div>`));
+  activeGoals.forEach(g=>{
+    const c=el(`<div class="card quest"></div>`);
+    c.appendChild(goalMini(g));
+    c.appendChild(el(`<div class="row" style="gap:6px"><span class="chip is-gold">+${g.xpReward||200} XP</span>${g.targetDate?`<span class="chip is-muted">⏳ ${fmtDate(g.targetDate)}</span>`:''}</div>`));
+    gl.appendChild(c);
   });
   return wrap;
 }
-
 /* ---- Calendar module ---- */
 let calOffset=0;
 function stepEventDate(dstr,recurring){

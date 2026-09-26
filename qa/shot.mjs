@@ -17,8 +17,16 @@ for (const v of views.split(',')) {
   const [name, action] = v.split(':');
   await p.evaluate(n => { view = n; render(); window.scrollTo(0, 0); document.getElementById('toasts').replaceChildren(); }, name);
   if (action === 'fab') await p.click('#fabBtn');
-  if (action === 'ob') await p.evaluate(() => showOnboarding(+new URLSearchParams(location.search).get('s') || 1));
+  if (action && action.startsWith('ob')) await p.evaluate(n => showOnboarding(n), +(action.slice(2) || 1));
+  if (action && action.startsWith('click=')) await p.click(action.slice(6));
+  const segs = action && /^\d+$/.test(action) ? +action : 0; // viewport shots down the page
   await p.waitForTimeout(150);
-  await p.screenshot({ path: `${out}/${name}${action ? '-' + action : ''}-${width}-${theme}.png`, fullPage: !action });
+  if (segs) {
+    for (let i = 0; i < segs; i++) {
+      await p.evaluate(y => window.scrollTo(0, y), i * 800);
+      await p.waitForTimeout(80);
+      await p.screenshot({ path: `${out}/${name}-${width}-${theme}-${i}.png` });
+    }
+  } else await p.screenshot({ path: `${out}/${name}${action ? '-' + action.replace(/[^a-z0-9]/gi, '') : ''}-${width}-${theme}.png`, fullPage: !action });
 }
 await b.close();
