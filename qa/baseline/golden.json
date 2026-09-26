@@ -1088,6 +1088,7 @@
     "notes": "",
     "archived": false,
     "source": "history",
+    "aliases": [],
     "createdAt": "<time>",
     "id": "<uid>",
     "updatedAt": "<time>"
@@ -1197,26 +1198,7 @@
     "reps": 77,
     "volume": 6010,
     "duration": 110,
-    "prs": [
-     {
-      "weight": 140,
-      "reps": 5,
-      "date": "2026-09-23",
-      "name": "Deadlift"
-     },
-     {
-      "weight": 80,
-      "reps": 8,
-      "date": "2026-09-21",
-      "name": "Bench press"
-     },
-     {
-      "weight": 45,
-      "reps": 10,
-      "date": "2026-09-21",
-      "name": "Overhead press"
-     }
-    ]
+    "prs": []
    },
    "nutrition": {
     "daysLogged": 1,
@@ -1319,26 +1301,7 @@
     "reps": 77,
     "volume": 6010,
     "duration": 110,
-    "prs": [
-     {
-      "weight": 140,
-      "reps": 5,
-      "date": "2026-09-23",
-      "name": "Deadlift"
-     },
-     {
-      "weight": 80,
-      "reps": 8,
-      "date": "2026-09-21",
-      "name": "Bench press"
-     },
-     {
-      "weight": 45,
-      "reps": 10,
-      "date": "2026-09-21",
-      "name": "Overhead press"
-     }
-    ]
+    "prs": []
    },
    "nutrition": {
     "daysLogged": 1,
@@ -1441,26 +1404,7 @@
     "reps": 77,
     "volume": 6010,
     "duration": 110,
-    "prs": [
-     {
-      "weight": 140,
-      "reps": 5,
-      "date": "2026-09-23",
-      "name": "Deadlift"
-     },
-     {
-      "weight": 80,
-      "reps": 8,
-      "date": "2026-09-21",
-      "name": "Bench press"
-     },
-     {
-      "weight": 45,
-      "reps": 10,
-      "date": "2026-09-21",
-      "name": "Overhead press"
-     }
-    ]
+    "prs": []
    },
    "nutrition": {
     "daysLogged": 1,
@@ -1563,26 +1507,7 @@
     "reps": 77,
     "volume": 6010,
     "duration": 110,
-    "prs": [
-     {
-      "weight": 140,
-      "reps": 5,
-      "date": "2026-09-23",
-      "name": "Deadlift"
-     },
-     {
-      "weight": 80,
-      "reps": 8,
-      "date": "2026-09-21",
-      "name": "Bench press"
-     },
-     {
-      "weight": 45,
-      "reps": 10,
-      "date": "2026-09-21",
-      "name": "Overhead press"
-     }
-    ]
+    "prs": []
    },
    "nutrition": {
     "daysLogged": 1,
@@ -2415,26 +2340,7 @@
   ],
   "avgL100": 6
  },
- "prs": [
-  {
-   "weight": 140,
-   "reps": 5,
-   "date": "2026-09-23",
-   "name": "Deadlift"
-  },
-  {
-   "weight": 80,
-   "reps": 8,
-   "date": "2026-09-21",
-   "name": "Bench press"
-  },
-  {
-   "weight": 45,
-   "reps": 10,
-   "date": "2026-09-21",
-   "name": "Overhead press"
-  }
- ],
+ "prs": [],
  "workouts": [
   [
    3910,

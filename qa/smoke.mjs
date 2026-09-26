@@ -1777,6 +1777,199 @@ test('11A UI: export/import keeps the active workout and it can be continued and
   assert.equal(await page.evaluate(id => workoutFindById(id).status, wk.id), 'done');
 }, { state: fixtureState() });
 
+// ---------- Phase 11A step 5: PR engine + history ----------
+// Builders for finished new-model workouts. f = finishedAt offset in hours relative to NOW.
+const PRL = [['xb', 'Bench press', 'weight_reps'], ['xp', 'Pull-up', 'reps'], ['xk', 'Plank', 'time'], ['xr', 'Running', 'distance_time']]
+  .map(([id, name, measurement]) => ({ id, name, measurement, muscles: {}, increment: 2.5, notes: '', archived: false, source: 'user', aliases: [], createdAt: NOW, updatedAt: NOW }));
+const PW = (id, date, h, entries) => ({ id, name: id, date, status: 'done', startedAt: NOW + (h - 1) * 3600e3, finishedAt: NOW + h * 3600e3, duration: '60', notes: '', exercises: [], entries, createdAt: NOW + h * 3600e3 });
+const PE = (exerciseId, sets, measurement = PRL.find(x => x.id === exerciseId)?.measurement || 'weight_reps', name = PRL.find(x => x.id === exerciseId)?.name || exerciseId) =>
+  ({ id: 'en_' + Math.random().toString(36).slice(2, 8), exerciseId, name, measurement, target: null, notes: '',
+    sets: sets.map(s => ({ id: 'st_' + Math.random().toString(36).slice(2, 8), weight: null, reps: null, seconds: null, distance: null, rpe: null, warmup: false, done: true, ...s })) });
+const ws = (w, reps) => ({ weight: w, reps });
+// Run: install workouts (+ optional legacy rows / library), return PRs of every workout and the strip.
+const prRun = (page, workouts, extra = {}) => page.evaluate(({ workouts, lib, extra }) => {
+  S.exerciseLibrary = extra.lib || lib; S.workouts = workouts;
+  const idx = exerciseHistoryIndex();
+  const strip = t => ({ ...t, exerciseId: undefined, workoutId: t.workoutId, date: undefined, name: t.name, measurement: undefined });
+  const per = Object.fromEntries(S.workouts.map(w => [w.id, workoutPRs(w, idx).map(p => { const { exerciseId, name, measurement, date, ...r } = p; return r; })]));
+  return { per, strip: exercisePRs().map(p => [p.name, p.type, p.workoutId]) };
+}, { workouts, lib: PRL, extra });
+const only = (per, id) => per[id].map(({ workoutId, ...r }) => r);
+
+test('11A PR: 120x1 -> 120x2 is a Rep PR; 120x2 -> 130x1 is a Weight PR (and not also a Rep PR); the first performance is never a PR', async ({ page }) => {
+  let r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xb', [ws(120, 1)])]), PW('b', '2026-09-03', -40, [PE('xb', [ws(120, 2)])])]);
+  assert.deepEqual(only(r.per, 'a'), [], 'first performance');
+  assert.deepEqual(only(r.per, 'b'), [{ type: 'reps', weight: 120, reps: 2, prevReps: 1 }]);
+  r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xb', [ws(120, 2)])]), PW('b', '2026-09-03', -40, [PE('xb', [ws(130, 1)])])]);
+  assert.deepEqual(only(r.per, 'b'), [{ type: 'weight', weight: 130, reps: 1, prevWeight: 120 }]);
+  r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xb', [ws(120, 2)])]), PW('b', '2026-09-03', -40, [PE('xb', [ws(120, 2)])])]);
+  assert.deepEqual(only(r.per, 'b'), [], 'equal is not a PR');
+});
+
+test('11A PR: warm-ups and unfinished sets never make or block a PR; volume alone is never a PR', async ({ page }) => {
+  let r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xb', [{ weight: 300, reps: 1, warmup: true }, ws(100, 5), { weight: 200, reps: 5, done: false }])]),
+    PW('b', '2026-09-03', -40, [PE('xb', [{ weight: 250, reps: 3, warmup: true }, { weight: 180, reps: 1, done: false }, ws(110, 5)])])]);
+  assert.deepEqual(only(r.per, 'b'), [{ type: 'weight', weight: 110, reps: 5, prevWeight: 100 }], 'only working, done sets on both sides');
+  r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xb', [ws(100, 5), ws(100, 5), ws(100, 5)])]), PW('b', '2026-09-03', -40, [PE('xb', Array(6).fill(ws(100, 5)))])]);
+  assert.deepEqual(only(r.per, 'b'), [], 'twice the volume, same best sets -> no PR');
+  r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xb', [ws(60, 8, 0)].map(s => ({ ...s, warmup: true })))]), PW('b', '2026-09-03', -40, [PE('xb', [ws(60, 8)])])]);
+  assert.deepEqual(only(r.per, 'b'), [], 'a history of warm-ups only is no history: first working performance');
+});
+
+test('11A PR: dominance - lower weight with more reps; several candidates -> only the best Weight PR and the best Rep PR', async ({ page }) => {
+  const base = PW('a', '2026-09-01', -50, [PE('xb', [ws(100, 5)])]);
+  const run = sets => prRun(page, [base, PW('b', '2026-09-03', -40, [PE('xb', sets)])]).then(r => only(r.per, 'b'));
+  assert.deepEqual(await run([ws(90, 8)]), [{ type: 'reps', weight: 90, reps: 8, prevReps: 5 }], '90x8 beats nothing heavier-and-longer');
+  assert.deepEqual(await run([ws(90, 5)]), [], '90x5 is dominated by 100x5');
+  assert.deepEqual(await run([ws(100, 5)]), []);
+  assert.deepEqual(await run([ws(105, 3), ws(110, 2), ws(100, 7), ws(95, 9), ws(90, 4)]),
+    [{ type: 'weight', weight: 110, reps: 2, prevWeight: 100 }, { type: 'reps', weight: 100, reps: 7, prevReps: 5 }], 'one of each type, the best one');
+});
+
+test('11A PR: reps, time and distance_time measurements', async ({ page }) => {
+  let r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xp', [{ reps: 10 }, { reps: 8 }]), PE('xk', [{ seconds: 60 }])]),
+    PW('b', '2026-09-03', -40, [PE('xp', [{ reps: 12 }, { reps: 11 }]), PE('xk', [{ seconds: 75 }, { seconds: 30 }])]),
+    PW('c', '2026-09-05', -30, [PE('xp', [{ reps: 12 }]), PE('xk', [{ seconds: 70 }])])]);
+  assert.deepEqual(only(r.per, 'b'), [{ type: 'reps', reps: 12, prevReps: 10 }, { type: 'time', seconds: 75, prevSeconds: 60 }]);
+  assert.deepEqual(only(r.per, 'c'), [], 'equal reps / shorter time');
+  r = await prRun(page, [PW('a', '2026-09-01', -50, [PE('xr', [{ distance: 5, seconds: 1800 }])]),
+    PW('b', '2026-09-03', -40, [PE('xr', [{ distance: 6, seconds: 2160 }])]),
+    PW('c', '2026-09-05', -30, [PE('xr', [{ distance: 5, seconds: 1620 }])]),
+    PW('d', '2026-09-07', -20, [PE('xr', [{ distance: 4, seconds: 1700 }])]),
+    PW('e', '2026-09-09', -10, [PE('xr', [{ distance: 3 }])])]);
+  assert.deepEqual(only(r.per, 'b'), [{ type: 'distance', distance: 6, seconds: 2160, prevDistance: 5 }]);
+  assert.deepEqual(only(r.per, 'c'), [{ type: 'pace', distance: 5, seconds: 1620, prevSeconds: 1800 }], '5 km faster than every earlier >= 5 km effort');
+  assert.deepEqual(only(r.per, 'd'), [], '4 km in 28:20 is slower than the 5 km in 27:00 -> no pace PR');
+  assert.deepEqual(only(r.per, 'e'), [], 'distance without time: no pace, not the longest');
+  assert.deepEqual(r.strip.filter(x => x[0] === 'Running'), [['Running', 'pace', 'c'], ['Running', 'distance', 'b']]);
+});
+
+test('11A PR: comparison follows when workouts happened (date, then finish time), never their position in the array', async ({ page }) => {
+  const a = PW('a', '2026-09-01', -50, [PE('xb', [ws(100, 5)])]), b = PW('b', '2026-09-03', -40, [PE('xb', [ws(110, 5)])]);
+  const same1 = PW('s1', '2026-09-05', -30, [PE('xb', [ws(120, 1)])]), same2 = PW('s2', '2026-09-05', -29, [PE('xb', [ws(125, 1)])]);
+  const r1 = await prRun(page, [a, b, same1, same2]);
+  const r2 = await prRun(page, [same2, b, same1, a]);
+  assert.deepEqual(r2.per, r1.per);
+  assert.deepEqual(only(r1.per, 'a'), []); assert.equal(only(r1.per, 'b')[0].type, 'weight');
+  assert.equal(only(r1.per, 's2')[0].prevWeight, 120, 'same day: the later finish is compared against the earlier one');
+});
+
+test('11A history: legacy "4 x 8 @ 80" = four working sets; legacy + new records join; rename keeps history; similar names never merge', async ({ page }) => {
+  const legacy = { id: 'L1', name: 'Old', date: '2026-08-01', duration: '60', notes: '', createdAt: NOW - 90 * 864e5,
+    exercises: [{ id: 'l1', name: 'Bench press', sets: '4', reps: '8', weight: '80' }, { id: 'l2', name: 'Incline bench press', sets: '3', reps: '5', weight: '200' }, { id: 'l3', name: 'bench  PRESS ', sets: '1', reps: '1', weight: '0' }] };
+  const r = await page.evaluate(({ legacy, lib }) => {
+    S.exerciseLibrary = lib; S.workouts = [legacy];
+    const h = exerciseHistoryBefore('xb', 'Bench press', null);
+    return { sets: h.sets, work: h.work, best: h.best, recordUntouched: JSON.stringify(S.workouts[0]) === JSON.stringify(legacy) };
+  }, { legacy, lib: PRL });
+  assert.deepEqual(r.sets, [...Array(4).fill({ weight: 80, reps: 8, seconds: null, distance: null }), { weight: 0, reps: 1, seconds: null, distance: null }], 'exact-name rows (case/space-normalized) only');
+  assert.equal(r.work, 2560); assert.deepEqual(r.best, { weight: 80, reps: 8, seconds: null, distance: null });
+  assert.equal(r.recordUntouched, true, 'legacy record is not rewritten');
+  // new workout vs legacy history: 80 x 9 is a rep PR; the 200 kg "Incline bench press" never counts for Bench press
+  let p = await prRun(page, [legacy, PW('n1', '2026-09-01', -50, [PE('xb', [ws(80, 9), ws(150, 1)])])]);
+  assert.deepEqual(only(p.per, 'n1'), [{ type: 'weight', weight: 150, reps: 1, prevWeight: 80 }, { type: 'reps', weight: 80, reps: 9, prevReps: 8 }]);
+  // rename: legacy history stays attached through the alias, and a NEW exercise later called "Bench press" does not steal it
+  const after = await page.evaluate(() => {
+    exerciseSave({ name: 'Barbell bench', measurement: 'weight_reps', muscles: {} }, 'xb');
+    const nb = exerciseSave({ name: 'Bench press', measurement: 'weight_reps', muscles: {} }).exercise;
+    const idx = exerciseHistoryIndex();
+    return { aliases: exerciseFind('xb').aliases, xb: idx.get('xb').sessions.map(s => s.workoutId), nb: idx.get(nb.id).sessions.length,
+      last: exerciseLastPerformance('xb', 'Barbell bench', null).workoutId, incline: [...idx.values()].find(g => g.name === 'Incline bench press').sessions.length };
+  });
+  assert.deepEqual(after, { aliases: ['bench press'], xb: ['L1', 'n1'], nb: 0, last: 'n1', incline: 1 });
+}, { state: fixtureState() });
+
+test('11A PR: result.prs is a snapshot; editing and deleting workouts recompute the current records', async ({ page }) => {
+  await page.evaluate(lib => { S.exerciseLibrary = lib; S.workouts = []; }, PRL);
+  let tick = 0;
+  const fin = async sets => { await page.clock.setFixedTime(NOW + (++tick) * 60e3); return page.evaluate(sets => { const w = workoutStart({}).workout; const en = workoutAddEntry(w.id, 'xb');
+    en.sets = sets.map(s => Object.assign(workoutNewSet(null), s, { done: true })); return JSON.parse(JSON.stringify(workoutFinish(w.id).workout)); }, sets); };
+  const w1 = await fin([ws(100, 5)]), w2 = await fin([ws(110, 5)]);
+  assert.deepEqual(w1.result.prs, []);
+  assert.deepEqual(w2.result.prs.map(p => [p.type, p.weight, p.prevWeight]), [['weight', 110, 100]]);
+  assert.deepEqual(await page.evaluate(() => exercisePRs().map(p => [p.type, p.weight])), [['weight', 110]]);
+  // edit the finished workout: 110 -> 95; the snapshot stays, the current records follow the data
+  await page.evaluate(id => { const w = workoutFindById(id); workoutUpdateSet(w.id, w.entries[0].id, w.entries[0].sets[0].id, { weight: 95 }); }, w2.id);
+  assert.deepEqual(await page.evaluate(id => workoutFindById(id).result.prs.map(p => [p.type, p.weight]), w2.id), [['weight', 110]], 'snapshot unchanged');
+  assert.deepEqual(await page.evaluate(id => workoutPRs(workoutFindById(id)).map(p => p.type), w2.id), [], 'dynamic: 95x5 is no longer a record');
+  assert.deepEqual(await page.evaluate(() => exercisePRs()), []);
+  // delete: the first workout goes away -> the second becomes the first performance -> no records
+  await page.evaluate(id => { const w = workoutFindById(id); workoutUpdateSet(w.id, w.entries[0].id, w.entries[0].sets[0].id, { weight: 110 }); }, w2.id);
+  assert.equal(await page.evaluate(() => exercisePRs().length), 1);
+  await page.evaluate(id => { S.workouts = S.workouts.filter(w => w.id !== id); }, w1.id);
+  assert.deepEqual(await page.evaluate(() => exercisePRs()), [], 'deleting recomputes');
+}, { state: fixtureState() });
+
+test('11A UI: Finish with a PR shows it in the summary, in the history card and in the Fitness PR strip; strip survives reload', async ({ page }) => {
+  await setupTpl(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('[data-f="weight"]').fill('85');
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  await setRow(page, 'Bench press', 1).locator('[data-f="weight"]').fill('80'); await setRow(page, 'Bench press', 1).locator('[data-f="reps"]').fill('9');
+  await setRow(page, 'Bench press', 1).locator('.ws-done').click();
+  await page.click('#wkFinish');
+  const sum = await page.locator('#wkSummary [data-slot="prs"]');
+  assert.equal(await sum.isVisible(), true);
+  assert.match(await sum.innerText(), /Bench press[\s\S]*Váha[\s\S]*85 kg × 8[\s\S]*Bench press[\s\S]*Opakování[\s\S]*80 kg × 9/);
+  await page.click('#wkSumOk');
+  assert.match(await page.locator('.workout-card', { hasText: 'Push A' }).innerText(), /🏆 Bench press · Váha/);
+  const strip = async () => page.locator('#prList').innerText();
+  assert.match(await strip(), /BENCH PRESS[\s\S]*85\s*kg[\s\S]*Váha · × 8/i);
+  await persist(page); await reload(page); await openWorkouts(page);
+  assert.match(await strip(), /85\s*kg/);
+  assert.equal(await page.locator('#prList .pr-card').count(), 2, 'Weight PR + Rep PR of Bench press (legacy single sessions are no records)');
+}, { state: fixtureState() });
+
+test('11A PR data: export/import keeps result.prs and the same records; an old backup derives records from legacy history only', async ({ page }) => {
+  await page.evaluate(lib => { S.exerciseLibrary = lib; S.workouts = []; }, PRL);
+  for (const [i, wt] of [100, 105].entries()) {
+    await page.clock.setFixedTime(NOW + (i + 1) * 60e3);
+    await page.evaluate(w => { const a = workoutStart({}).workout; const en = workoutAddEntry(a.id, 'xb'); en.sets = [Object.assign(workoutNewSet(null), { weight: w, reps: 5, done: true })]; workoutFinish(a.id); }, wt);
+  }
+  assert.deepEqual(await page.evaluate(() => S.workouts.map(w => (w.result.prs || []).map(p => p.weight))), [[], [105]]);
+  const before = await page.evaluate(() => JSON.stringify([exercisePRs(), S.workouts.map(w => w.result)]));
+  await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  await page.evaluate(() => { S.workouts = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.workouts.length === 2);
+  assert.equal(await page.evaluate(() => JSON.stringify([exercisePRs(), S.workouts.map(w => w.result)])), before);
+  const old = fixtureState();
+  old.workouts.push({ id: 'w0', name: 'Older push', date: '2026-09-10', duration: '50', notes: '', createdAt: NOW - 13 * 864e5, exercises: [{ id: 'ex0', name: 'Bench press', sets: '3', reps: '8', weight: '75', muscle: '', rpe: '', rest: '' }] });
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => S.workouts.length === 3);
+  assert.deepEqual(await page.evaluate(() => exercisePRs().map(p => [p.name, p.type, p.weight, p.prevWeight, p.workoutId])), [['Bench press', 'weight', 80, 75, 'w1']]);
+  assert.deepEqual(await page.evaluate(() => [S.workouts.some(w => 'result' in w || 'status' in w), computeStats('all').fitness.prs.length]), [false, 1], 'old records untouched; Statistics counts the same records');
+}, { state: fixtureState() });
+
+test('11A UI: PR strip, summary with PRs and history cards fit 320-1440 px', async ({ page }) => {
+  await page.evaluate(lib => { S.exerciseLibrary = lib; }, PRL);
+  for (const [i, v] of [[100, 5, 5, 1800], [112.5, 8, 10.5, 3000]].entries()) {
+    await page.clock.setFixedTime(NOW + (i + 1) * 60e3);
+    await page.evaluate(([w, r, d, sec]) => {
+      const a = workoutStart({ name: 'A long workout name for a narrow phone screen' }).workout;
+      for (const [id, st] of [['xb', { weight: w, reps: r }], ['xp', { reps: r + 7 }], ['xk', { seconds: sec / 10 }], ['xr', { distance: d, seconds: sec }]]) {
+        const en = workoutAddEntry(a.id, id); en.sets = [Object.assign(workoutNewSet(null), st, { done: true })];
+      }
+      workoutFinish(a.id);
+    }, v);
+  }
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const sheet of [false, true]) {
+      await page.evaluate(sh => { closeSheets(); uiWorkoutView = null; fitnessTab = 'workouts'; view = 'fitness'; render(); if (sh) openWorkoutSummary(completedWorkouts(S).find(w => (w.result?.prs || []).length), true); }, sheet);
+      const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0 }; });
+      if (r.over > 0 || r.sheetOver > 0) bad.push(`${sheet ? 'summary' : 'page'}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+  assert.equal(await page.locator('#prList .pr-card').count(), 4, 'bench weight, pull-up reps, plank time, running distance');
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

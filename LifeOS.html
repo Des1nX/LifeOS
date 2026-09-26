@@ -770,6 +770,10 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .wk-xp{margin-top:12px}
 .wk-snap-live{display:flex;align-items:center;color:var(--accent2);font-weight:700}
 .cf-sheet p{margin:6px 0 16px}
+.wk-prs{margin-top:12px;padding:12px;border-radius:14px;background:var(--gold-muted);border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line))}
+.wk-pr-row{gap:8px;padding:4px 0;font-size:var(--fs-body-sm)}
+.wk-pr-row .num{font-weight:750;white-space:nowrap}
+.wk-card-prs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .ex-archived summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
 /* Phase 9: Daily Score */
 .ds-card{cursor:pointer}
@@ -3768,23 +3772,145 @@ function workoutDiscard(wid){
   const w=workoutFindById(wid); if(!w||w.status!=='active') return false;
   S.workouts=S.workouts.filter(x=>x.id!==wid); return true;
 }
-function exerciseLastPerformance(exerciseId,name,excludeWorkoutId){
-  // The most recent finished workout (other than excludeWorkoutId) that has working sets of this
-  // exercise: new records match by exerciseId, legacy exercises[] rows by name (sets x reps @ kg).
-  const key=exerciseKey(name);
-  const list=completedWorkouts(S).filter(w=>w.id!==excludeWorkoutId)
-    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||((b.finishedAt||b.createdAt||0)-(a.finishedAt||a.createdAt||0)));
-  for(const w of list){
-    if(Array.isArray(w.entries)){
-      const en=w.entries.find(e=>(exerciseId&&e.exerciseId===exerciseId)||(!exerciseId&&exerciseKey(e.name)===key));
-      const ws=en?workoutWorkingSets(en):[];
-      if(ws.length) return {date:w.date,workoutId:w.id,measurement:en.measurement,sets:ws.map(s=>({weight:s.weight,reps:s.reps,seconds:s.seconds,distance:s.distance}))};
-    } else {
-      const ex=(w.exercises||[]).find(e=>key&&exerciseKey(e.name)===key); const n=ex?Number(ex.sets)||0:0;
-      if(n>0) return {date:w.date,workoutId:w.id,measurement:'weight_reps',sets:Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null}))};
+/* ---- Phase 11A step 5: exercise history + PR engine (always derived from S.workouts, never cached).
+   Order: workouts are compared by when they happened -- date, then finishedAt/startedAt/createdAt,
+   then id -- never by their position in S.workouts (import/editing cannot reorder "previous").
+   Identity: new entries by exerciseId. Legacy exercises[] rows by exact normalized name
+   (exerciseKey: trim, single spaces, lowercase -- no fuzzy matching), resolved in this order:
+     1. a name the library exercise was renamed from (x.aliases),
+     2. the current name of a library exercise,
+     3. a name stored in new entries of exactly one exercise,
+     otherwise the name forms its own history group.
+   A legacy row "4 x 8 @ 80" reads as four working sets of 80 kg x 8 (the record is not rewritten).
+   Only finished workouts and only done, non-warm-up sets ever enter a history. ---- */
+function workoutChronoCmp(a,b){
+  const t=w=>Number(w.finishedAt||w.startedAt||w.createdAt||0);
+  return (a.date||'').localeCompare(b.date||'')||(t(a)-t(b))||String(a.id).localeCompare(String(b.id));
+}
+function prNum(v){ return v===''||v==null||!Number.isFinite(Number(v))?null:Number(v); }
+function exerciseHistoryIndex(){
+  const lib=S.exerciseLibrary||[];
+  const groups=new Map();
+  const ensure=(id,name,measurement)=>{ if(!groups.has(id)) groups.set(id,{id,name,measurement,sessions:[]}); return groups.get(id); };
+  lib.forEach(x=>ensure(x.id,x.name,x.measurement));
+  const ws=completedWorkouts(S).slice().sort(workoutChronoCmp);
+  // legacy-name ownership (see the header comment); a name claimed by two exercises at the same tier is skipped at that tier
+  const claim=(m,k,id)=>{ if(!k) return; if(!m.has(k)) m.set(k,id); else if(m.get(k)!==id) m.set(k,null); };
+  const byAlias=new Map(), byName=new Map(), byEntry=new Map();
+  lib.forEach(x=>(x.aliases||[]).forEach(k=>claim(byAlias,k,x.id)));
+  lib.filter(x=>!x.archived).forEach(x=>claim(byName,exerciseKey(x.name),x.id));
+  lib.filter(x=>x.archived).forEach(x=>{ const k=exerciseKey(x.name); if(!byName.has(k)) byName.set(k,x.id); });
+  ws.forEach(w=>(w.entries||[]).forEach(en=>{ if(en.exerciseId){ ensure(en.exerciseId,en.name,en.measurement); claim(byEntry,exerciseKey(en.name),en.exerciseId); } }));
+  const legacyOwner=(k,name)=>byAlias.get(k)||byName.get(k)||byEntry.get(k)||ensure('name:'+k,name,'weight_reps').id;
+  ws.forEach((w,order)=>{
+    const per=new Map();
+    const add=(gid,measurement,sets)=>{ if(!sets.length) return; const s=per.get(gid)||{measurement,sets:[]}; s.sets.push(...sets); per.set(gid,s); };
+    if(Array.isArray(w.entries)) w.entries.forEach(en=>{ if(en.exerciseId) add(en.exerciseId,en.measurement,workoutWorkingSets(en).map(s=>({weight:prNum(s.weight),reps:prNum(s.reps),seconds:prNum(s.seconds),distance:prNum(s.distance)}))); });
+    else (w.exercises||[]).forEach(ex=>{
+      const name=String(ex.name||'').trim().replace(/\s+/g,' '), k=exerciseKey(name), n=Math.max(0,Math.floor(Number(ex.sets)||0));
+      if(!k||!n) return;
+      add(legacyOwner(k,name),'weight_reps',Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null})));
+    });
+    per.forEach((v,gid)=>groups.get(gid).sessions.push({workoutId:w.id,date:w.date,order,measurement:v.measurement,sets:v.sets}));
+  });
+  groups.legacyOwner=legacyOwner;
+  return groups;
+}
+function exerciseHistoryGroup(idx,exerciseId,name){
+  if(exerciseId&&idx.has(exerciseId)) return idx.get(exerciseId);
+  const k=exerciseKey(name); if(!k) return null;
+  const gid=idx.legacyOwner(k,String(name).trim()); return idx.get(gid)||null;
+}
+function exerciseSessionPRs(measurement,cur,prior){
+  // cur: this session's working sets; prior: working sets of every EARLIER session with the same
+  // measurement. No prior sets -> first performance -> no PR. At most one (the best) PR per type.
+  const out=[];
+  const best=(arr,cmp)=>arr.slice().sort(cmp)[0];
+  if(measurement==='weight_reps'){
+    const P=prior.filter(p=>p.reps>=1&&p.weight!=null), C=cur.filter(c=>c.reps>=1&&c.weight!=null);
+    if(!P.length||!C.length) return out;
+    const maxW=Math.max(...P.map(p=>p.weight));
+    const heavy=(a,b)=>b.weight-a.weight||b.reps-a.reps;
+    const w=best(C.filter(c=>c.weight>maxW),heavy);
+    if(w) out.push({type:'weight',weight:w.weight,reps:w.reps,prevWeight:maxW});
+    // more reps at a weight already lifted before (a heavier-than-ever set is the weight PR above)
+    const r=best(C.filter(c=>c.weight<=maxW&&!P.some(p=>p.weight>=c.weight&&p.reps>=c.reps)),heavy);
+    if(r) out.push({type:'reps',weight:r.weight,reps:r.reps,prevReps:Math.max(...P.filter(p=>p.weight>=r.weight).map(p=>p.reps))});
+  } else if(measurement==='reps'){
+    const P=prior.filter(p=>p.reps>=1), C=cur.filter(c=>c.reps>=1);
+    if(!P.length||!C.length) return out;
+    const maxR=Math.max(...P.map(p=>p.reps)), c=Math.max(...C.map(x=>x.reps));
+    if(c>maxR) out.push({type:'reps',reps:c,prevReps:maxR});
+  } else if(measurement==='time'){
+    const P=prior.filter(p=>p.seconds>0), C=cur.filter(c=>c.seconds>0);
+    if(!P.length||!C.length) return out;
+    const maxS=Math.max(...P.map(p=>p.seconds)), c=Math.max(...C.map(x=>x.seconds));
+    if(c>maxS) out.push({type:'time',seconds:c,prevSeconds:maxS});
+  } else if(measurement==='distance_time'){
+    const P=prior.filter(p=>p.distance>0), C=cur.filter(c=>c.distance>0);
+    if(P.length&&C.length){
+      const maxD=Math.max(...P.map(p=>p.distance));
+      const d=best(C.filter(c=>c.distance>maxD),(a,b)=>b.distance-a.distance||(a.seconds||Infinity)-(b.seconds||Infinity));
+      if(d) out.push({type:'distance',distance:d.distance,seconds:d.seconds,prevDistance:maxD});
+      // pace: covered at least as far as before, faster than every earlier effort of >= that distance
+      const P2=P.filter(p=>p.seconds>0), C2=C.filter(c=>c.seconds>0&&c.distance<=maxD);
+      const pc=best(C2.filter(c=>P2.some(p=>p.distance>=c.distance)&&!P2.some(p=>p.distance>=c.distance&&p.seconds<=c.seconds)),(a,b)=>a.seconds/a.distance-b.seconds/b.distance);
+      if(pc) out.push({type:'pace',distance:pc.distance,seconds:pc.seconds,prevSeconds:Math.min(...P2.filter(p=>p.distance>=pc.distance).map(p=>p.seconds))});
     }
   }
-  return null;
+  return out;
+}
+function exerciseGroupPRs(g){
+  // every PR event of one exercise, oldest first
+  const ev=[];
+  g.sessions.forEach((s,i)=>{
+    const prior=g.sessions.slice(0,i).filter(p=>p.measurement===s.measurement).flatMap(p=>p.sets);
+    exerciseSessionPRs(s.measurement,s.sets,prior).forEach(pr=>ev.push(Object.assign({exerciseId:g.id,name:g.name,measurement:s.measurement,date:s.date,workoutId:s.workoutId},pr)));
+  });
+  return ev;
+}
+function workoutPRs(w,idx){
+  // PRs of one finished workout against the CURRENT history (dynamic). The snapshot taken at
+  // Finish lives in w.result.prs and is never rewritten.
+  if(!w||!isCompletedWorkout(w)) return [];
+  idx=idx||exerciseHistoryIndex();
+  const out=[];
+  idx.forEach(g=>exerciseGroupPRs(g).forEach(e=>{ if(e.workoutId===w.id) out.push(e); }));
+  return out;
+}
+function exercisePRs(){
+  // Current records for the Fitness strip / Statistics: per exercise and PR type, the latest PR
+  // event in the history (a first performance is never a record). Newest first.
+  const out=[];
+  exerciseHistoryIndex().forEach(g=>{
+    const latest={}; exerciseGroupPRs(g).forEach(e=>{ latest[e.type]=e; });
+    Object.values(latest).forEach(e=>out.push(e));
+  });
+  return out.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.name.localeCompare(b.name));
+}
+function exerciseSessionMetrics(measurement,sets){
+  // work + best set by measurement: weight_reps sum(kg x reps) / heaviest; reps sum / max;
+  // time sum seconds / longest; distance_time sum km (+ sum seconds) / longest.
+  const S0=sets||[], sum=f=>S0.reduce((a,s)=>a+(Number(s[f])||0),0);
+  if(measurement==='weight_reps') return {work:S0.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0),best:S0.slice().sort((a,b)=>(b.weight||0)-(a.weight||0)||(b.reps||0)-(a.reps||0))[0]||null};
+  if(measurement==='reps') return {work:sum('reps'),best:S0.slice().sort((a,b)=>(b.reps||0)-(a.reps||0))[0]||null};
+  if(measurement==='time') return {work:sum('seconds'),best:S0.slice().sort((a,b)=>(b.seconds||0)-(a.seconds||0))[0]||null};
+  return {work:sum('distance'),seconds:sum('seconds'),best:S0.slice().sort((a,b)=>(b.distance||0)-(a.distance||0))[0]||null};
+}
+function exerciseHistoryBefore(exerciseId,name,w,idx){
+  // The previous relevant session of an exercise for workout w (or the latest one when w is not
+  // finished yet): its working sets, best set and work, by the session's measurement.
+  idx=idx||exerciseHistoryIndex();
+  const g=exerciseHistoryGroup(idx,exerciseId,name); if(!g) return null;
+  const mine=w?g.sessions.find(s=>s.workoutId===w.id):null;
+  const before=mine?g.sessions.filter(s=>s.order<mine.order):g.sessions.filter(s=>!w||s.workoutId!==w.id);
+  const prev=before[before.length-1]; if(!prev) return null;
+  const m=exerciseSessionMetrics(prev.measurement,prev.sets);
+  return {workoutId:prev.workoutId,date:prev.date,measurement:prev.measurement,sets:prev.sets,best:m.best,work:m.work,seconds:m.seconds};
+}
+function exerciseLastPerformance(exerciseId,name,excludeWorkoutId){
+  const h=exerciseHistoryBefore(exerciseId,name,excludeWorkoutId?{id:excludeWorkoutId}:null);
+  return h?{date:h.date,workoutId:h.workoutId,measurement:h.measurement,sets:h.sets}:null;
 }
 function workoutFinish(wid){
   // The moment a workout counts as done. The rewards below are exactly the ones the Log
@@ -3793,6 +3919,8 @@ function workoutFinish(wid){
   const w=workoutFindById(wid); if(!w||w.status!=='active') return {ok:false};
   w.status='done'; w.finishedAt=Date.now();
   if(!w.duration) w.duration=String(Math.max(1,Math.round((w.finishedAt-(w.startedAt||w.finishedAt))/60000)));
+  // Snapshot of the PRs at the moment of finishing (never rewritten; current records stay dynamic).
+  w.result=Object.assign({},w.result,{prs:workoutPRs(w),at:w.finishedAt});
   const key=`workout:${w.id}:${w.date}`;
   const granted=grantXp(80,'Workout: '+w.name,'STR',key);
   if(granted){
@@ -3808,17 +3936,6 @@ function workoutTotalSets(w){ if(Array.isArray(w.entries)) return w.entries.redu
   return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0),0); }
 function workoutTotalReps(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+(en.measurement==='weight_reps'||en.measurement==='reps'?workoutWorkingSets(en).reduce((b,st)=>b+(Number(st.reps)||0),0):0),0);
   return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0),0); }
-function exercisePRs(){
-  // Always computed fresh from S.workouts — never a stored/cached flag — so editing or
-  // deleting a workout automatically recomputes the correct PR, with no stale-PR risk.
-  const prs={};
-  completedWorkouts(S).forEach(w=>(w.exercises||[]).forEach(ex=>{
-    const name=(ex.name||'').trim(); if(!name) return;
-    const weight=Number(ex.weight)||0;
-    if(!prs[name]||weight>prs[name].weight) prs[name]={weight,reps:Number(ex.reps)||0,date:w.date,name};
-  }));
-  return Object.values(prs).sort((a,b)=>b.weight-a.weight);
-}
 /* ---- Phase 11A: Fitness 2.0 -- exercise library + muscle groups ----
    S.exerciseLibrary[] {id,name,measurement,muscles:{Group:pct},increment,notes,archived,source,createdAt,updatedAt}
    - measurement: weight_reps | reps | time | distance_time (never assume every exercise uses kg)
@@ -3868,7 +3985,7 @@ function normalizeMuscles(m){
   return Object.fromEntries(out.filter(([,v])=>v>0));
 }
 function migrateExercise(x){
-  const r=Object.assign({name:'',measurement:'weight_reps',muscles:{},increment:null,notes:'',archived:false,source:'user',createdAt:Date.now()},x);
+  const r=Object.assign({name:'',measurement:'weight_reps',muscles:{},increment:null,notes:'',archived:false,source:'user',aliases:[],createdAt:Date.now()},x);
   if(!MEASUREMENTS.includes(r.measurement)) r.measurement='weight_reps';
   r.muscles=normalizeMuscles(r.muscles);
   if(r.increment==null||!Number.isFinite(Number(r.increment))||Number(r.increment)<0) r.increment=MEASUREMENT_DEFAULT_INCREMENT[r.measurement];
@@ -3910,7 +4027,12 @@ function exerciseSave(f,id){
   const fields={name:String(f.name).trim().replace(/\s+/g,' '),measurement:f.measurement,muscles:normalizeMuscles(f.muscles),
     increment:f.increment===''||f.increment==null?MEASUREMENT_DEFAULT_INCREMENT[f.measurement]:Number(f.increment),notes:String(f.notes||''),updatedAt:Date.now()};
   let x=id?S.exerciseLibrary.find(r=>r.id===id):null;
-  if(x) Object.assign(x,fields);
+  if(x){
+    // A rename keeps the old name as an alias, so legacy history stored by name stays attached.
+    const oldK=exerciseKey(x.name), newK=exerciseKey(fields.name);
+    if(oldK!==newK) fields.aliases=[...new Set([...(x.aliases||[]),oldK])].filter(k=>k&&k!==newK);
+    Object.assign(x,fields);
+  }
   else { x=migrateExercise(Object.assign({id:uid(),source:f.source||'user',createdAt:Date.now()},fields)); S.exerciseLibrary.push(x); }
   return {ok:true,exercise:x};
 }
@@ -4437,6 +4559,29 @@ function uiFinishWorkout(w){
   if(workoutTotalSets(w)===0) uiConfirmSheet({title:uiWkT('empty_t'),text:uiWkT('empty_q'),ok:uiWkT('finish_sm')},go);
   else go();
 }
+function uiPrTypeLabel(t){
+  const cs=uiLang()==='cs';
+  return (cs?{weight:'Váha',reps:'Opakování',time:'Čas',distance:'Vzdálenost',pace:'Tempo'}:{weight:'Weight',reps:'Reps',time:'Time',distance:'Distance',pace:'Pace'})[t]||t;
+}
+function uiPrValue(pr){
+  // [big value, small unit, detail]
+  if(pr.type==='weight') return [uiFmtNum(pr.weight),'kg',`× ${pr.reps}`];
+  if(pr.type==='reps'&&pr.measurement==='weight_reps') return [String(pr.reps),'×',`@ ${uiFmtNum(pr.weight)} kg`];
+  if(pr.type==='reps') return [String(pr.reps),uiLang()==='cs'?'opak.':'reps',''];
+  if(pr.type==='time') return [uiFmtSec(pr.seconds),'',''];
+  if(pr.type==='distance') return [uiFmtNum(pr.distance),'km',pr.seconds?uiFmtSec(pr.seconds):''];
+  return [uiFmtSec(pr.seconds),'',`${uiFmtNum(pr.distance)} km`];
+}
+function uiPrLine(pr){
+  if(pr.measurement==='weight_reps') return `${uiFmtNum(pr.weight)} kg × ${pr.reps}`;
+  if(pr.type==='reps') return `${pr.reps} ${uiLang()==='cs'?'opak.':'reps'}`;
+  if(pr.type==='time') return uiFmtSec(pr.seconds);
+  return [`${uiFmtNum(pr.distance)} km`,pr.seconds?uiFmtSec(pr.seconds):''].filter(Boolean).join(' · ');
+}
+function uiPrList(prs){
+  return `<div class="wk-prs"><div class="kicker">🏆 ${uiLang()==='cs'?'Nové osobní rekordy':'New personal records'}</div>${prs.map(pr=>
+    `<div class="between wk-pr-row"><span class="truncate"><b>${escapeHtml(pr.name)}</b> <span class="sub">· ${uiPrTypeLabel(pr.type)}</span></span><span class="num">${escapeHtml(uiPrLine(pr))}</span></div>`).join('')}</div>`;
+}
 function openWorkoutSummary(w,granted){
   const vol=workoutVolume(w), reps=workoutTotalReps(w);
   const tile=(k,v)=>`<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value">${v}</div></div>`;
@@ -4444,7 +4589,7 @@ function openWorkoutSummary(w,granted){
     <div class="stat-grid cols-2">${tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`)}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
       ${reps?tile(uiWkT('sum_reps'),reps):''}${vol?tile(uiWkT('sum_vol'),`${uiNum(vol)}<small> kg</small>`):''}${tile(uiWkT('sum_ex'),w.entries.filter(en=>workoutWorkingSets(en).length).length)}</div>
     ${granted?`<div class="chip wk-xp">+80 ${uiWkT('xp')}</div>`:''}
-    <div data-slot="performance" hidden></div><div data-slot="prs" hidden></div>
+    <div data-slot="performance" hidden></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
     <button class="btn" id="wkSumOk" style="margin-top:14px">${uiWkT('ok')}</button></div>`);
   inner.querySelector('#wkSumOk').onclick=()=>closeSheets();
   return openSheet(inner);
@@ -4489,7 +4634,7 @@ function renderFitness(){
   </div>`);
   if(prs.length){
     const prList=wrap.querySelector('#prList');
-    prs.slice(0,8).forEach(pr=>prList.appendChild(el(`<div class="pr-card"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${pr.weight}<small> kg</small></div><div class="sub">× ${pr.reps} · ${fmtDate(pr.date)}</div></div>`)));
+    prs.slice(0,8).forEach(pr=>{ const [v,u,d]=uiPrValue(pr); prList.appendChild(el(`<div class="pr-card" data-pr="${escapeHtml(pr.exerciseId)}:${pr.type}"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${escapeHtml(v)}${u?`<small> ${escapeHtml(u)}</small>`:''}</div><div class="sub">${uiPrTypeLabel(pr.type)}${d?' · '+escapeHtml(d):''} · ${fmtDate(pr.date)}</div></div>`)); });
   }
   const list=wrap.querySelector('#wList');
   const sorted=[...done].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -4502,6 +4647,7 @@ function renderFitness(){
         <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(w.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
       <div class="wk-metrics"><span><b>${w.duration||0}</b> ${L.min}</span><span><b>${workoutTotalSets(w)}</b> ${L.sets}</span><span><b>${workoutTotalReps(w)}</b> ${L.reps}</span><span><b>${uiNum(vol)}</b> kg ${L.volume}</span></div>
       ${exRows?`<div class="ex-list">${exRows}</div>`:''}
+      ${(w.result&&w.result.prs||[]).length?`<div class="chips wk-card-prs">${w.result.prs.map(pr=>`<span class="chip">🏆 ${escapeHtml(pr.name)} · ${uiPrTypeLabel(pr.type)}</span>`).join('')}</div>`:''}
       ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);
     it.querySelector('.editBtn').onclick=()=>{ if(Array.isArray(w.entries)){ uiWorkoutView={mode:'edit',id:w.id}; render(); window.scrollTo(0,0); } else openWorkoutForm(w); };
