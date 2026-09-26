@@ -778,7 +778,24 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .wk-prs{margin-top:12px;padding:12px;border-radius:14px;background:var(--gold-muted);border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line))}
 .wk-pr-row{gap:8px;padding:4px 0;font-size:var(--fs-body-sm)}
 .wk-pr-row .num{font-weight:750;white-space:nowrap}
-.wk-card-prs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wk-card-prs,.wk-card-perf{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wk-perf{margin-top:12px;padding:14px;border-radius:14px;background:var(--card2);border:1px solid var(--line)}
+.wk-perf.is-na{color:var(--sub)}
+.wk-perf-top{display:flex;gap:14px;align-items:center;margin-bottom:10px}
+.wk-perf-score{font-size:40px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;color:var(--color-accent)}
+.wk-perf-label{font-weight:750;font-size:var(--fs-body)}
+.wk-perf-label.is-excellent,.wk-perf-label.is-good{color:var(--accent2)}
+.wk-perf-label.is-fair{color:var(--warn)}
+.wk-perf-label.is-weak{color:var(--danger)}
+.wk-perf-part{font-size:var(--fs-body-sm);margin-top:6px}
+.wk-perf-part .bar{margin-top:3px;height:5px}
+.wk-perf-part.is-na{color:var(--sub)}
+.wk-perf-pr{margin-top:8px;font-size:var(--fs-body-sm)}
+.wk-feeling{margin-top:12px}
+.wk-feel-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px}
+@media(min-width:520px){.wk-feel-row{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.wk-feel{min-height:44px;justify-content:center;display:inline-flex;align-items:center;gap:6px}
+.wk-edit-result{margin-top:10px}
 .ex-archived summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
 /* Phase 9: Daily Score */
 .ds-card{cursor:pointer}
@@ -3742,6 +3759,8 @@ function workoutStart(opts){
   const w={id:uid(),name:String(o.name||(t&&t.name)||(cs?'Trénink':'Workout')).trim(),date:o.date||todayStr(),status:'active',
     startedAt:Date.now(),finishedAt:null,templateId:t?t.id:'',plannerBlockId:o.plannerBlockId||'',duration:'',notes:'',exercises:[],
     entries:t?t.exercises.map(te=>workoutNewEntry(te.exerciseId,te)).filter(Boolean):[],createdAt:Date.now()};
+  // the plan as it was at Start (Performance still counts a planned exercise removed from the workout)
+  w.plan=w.entries.filter(en=>en.target).map(en=>({exerciseId:en.exerciseId,name:en.name,measurement:en.measurement,target:en.target}));
   S.workouts.push(w);
   return {ok:true,workout:w};
 }
@@ -3989,6 +4008,100 @@ function exerciseLastPerformance(exerciseId,name,excludeWorkoutId){
   const h=exerciseHistoryBefore(exerciseId,name,excludeWorkoutId?{id:excludeWorkoutId}:null);
   return h?{date:h.date,workoutId:h.workoutId,measurement:h.measurement,sets:h.sets}:null;
 }
+/* ---- Phase 11A step 7: Workout Performance (a snapshot stored at Finish in w.result.performance;
+   never recomputed after edits) and Feeling (separate; never part of any score).
+   score = min(100, round(100 * sum(weight_i * part_i) / sum(weight_i) + prBonus)) over AVAILABLE parts
+     plan   (40): sum over planned exercises of min(done working sets, planned sets) / sum of planned sets
+     target (35): mean over done working sets of planned exercises of the per-set factor
+                  weight_reps min(1,reps/repsMin) x min(1,kg/targetKg) (only the factors that have a target),
+                  reps min(1,reps/repsMin), time min(1,s/targetS), distance_time min(1,km/targetKm)
+     prev   (25): mean over exercises done now AND having an earlier session of the per-exercise score
+                  f(change): > +0.5 % -> 1, within +-0.5 % -> 0.85, drop -> max(0.2, 0.85 - 3 x drop)
+                  change of total work: weight_reps sum(kg x reps) (sum reps if both are 0 kg), reps sum,
+                  time sum s, distance_time sum km (pace when the distance is equal)
+     prBonus: +5 per PR in result.prs, max +10
+   A part without data is N/A and its weight is shared by the others. The plan is the template copy
+   taken at Start (w.plan; older active records: entries with a target); without a template, the
+   latest earlier finished workout with the same name (exerciseKey) is the implicit plan -- its done
+   working sets per exercise are both the planned count and the per-set targets. No plan -> no score. ---- */
+const PERFORMANCE_WEIGHTS={plan:40,target:35,prev:25};
+const FEELINGS=['bad','normal','good','great'];
+function performanceLabelKey(score){ return score==null?null:score>=95?'excellent':score>=85?'good':score>=70?'fair':'weak'; }
+function performanceCompareScore(ch){ return ch>0.005?1:ch>=-0.005?0.85:Math.max(0.2,0.85-3*(-ch)); }
+function performanceChange(measurement,cur,prev){
+  const sum=(a,f)=>a.reduce((x,s)=>x+(Number(s[f])||0),0);
+  const ratio=(c,p)=>p>0?c/p-1:(c>0?1:0);
+  if(measurement==='weight_reps'){
+    const cw=exerciseSessionMetrics('weight_reps',cur).work, pw=exerciseSessionMetrics('weight_reps',prev).work;
+    return pw>0||cw>0?ratio(cw,pw):ratio(sum(cur,'reps'),sum(prev,'reps'));
+  }
+  if(measurement==='reps') return ratio(sum(cur,'reps'),sum(prev,'reps'));
+  if(measurement==='time') return ratio(sum(cur,'seconds'),sum(prev,'seconds'));
+  const cd=sum(cur,'distance'), pd=sum(prev,'distance'), ch=ratio(cd,pd);
+  if(Math.abs(ch)<=0.005){ const cs=sum(cur,'seconds'), ps=sum(prev,'seconds'); if(cs>0&&ps>0) return ps/cs-1; } // same distance: faster = better
+  return ch;
+}
+function workoutPlanItems(w,idx){
+  // [{gid, measurement, sets (planned count), targets:[per-set target] | target}] + source
+  const gidOf=(eid,name)=>{ const g=exerciseHistoryGroup(idx,eid,name); return g?g.id:(eid||'name:'+exerciseKey(name)); };
+  const tpl=Array.isArray(w.plan)&&w.plan.length?w.plan:(w.entries||[]).filter(en=>en.target).map(en=>({exerciseId:en.exerciseId,name:en.name,measurement:en.measurement,target:en.target}));
+  if(tpl.length) return {source:'template',workoutId:null,items:tpl.map(p=>({gid:gidOf(p.exerciseId,p.name),measurement:p.measurement,sets:Number(p.target&&p.target.sets)||0,target:p.target}))};
+  const k=exerciseKey(w.name);
+  const prev=completedWorkouts(S).filter(x=>x.id!==w.id&&exerciseKey(x.name)===k&&workoutChronoCmp(x,w)<0).sort(workoutChronoCmp).pop();
+  if(!prev) return {source:null,workoutId:null,items:[]};
+  const per=new Map();
+  const add=(gid,measurement,sets)=>{ if(!sets.length) return; const it=per.get(gid)||{gid,measurement,targets:[]}; it.targets.push(...sets); per.set(gid,it); };
+  if(Array.isArray(prev.entries)) prev.entries.forEach(en=>add(gidOf(en.exerciseId,en.name),en.measurement,workoutWorkingSets(en).map(s=>({weight:prNum(s.weight),reps:prNum(s.reps),seconds:prNum(s.seconds),distance:prNum(s.distance)}))));
+  else (prev.exercises||[]).forEach(ex=>{ const n=Math.max(0,Math.floor(Number(ex.sets)||0)); if(n&&exerciseKey(ex.name)) add(gidOf(null,ex.name),'weight_reps',Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null}))); });
+  return {source:'previous',workoutId:prev.id,items:[...per.values()].map(it=>Object.assign(it,{sets:it.targets.length}))};
+}
+function performanceSetFactor(measurement,st,t){
+  // null = this set has no target to be judged against (N/A, not 0)
+  if(!t) return null;
+  const f=[];
+  const tr=t.repsMin!=null?t.repsMin:t.reps;
+  if(measurement==='weight_reps'){
+    if(tr>0) f.push(Math.min(1,(Number(st.reps)||0)/tr));
+    if(t.weight>0) f.push(Math.min(1,(Number(st.weight)||0)/t.weight));
+  } else if(measurement==='reps'){ if(tr>0) f.push(Math.min(1,(Number(st.reps)||0)/tr)); }
+  else if(measurement==='time'){ if(t.seconds>0) f.push(Math.min(1,(Number(st.seconds)||0)/t.seconds)); }
+  else if(t.distance>0) f.push(Math.min(1,(Number(st.distance)||0)/t.distance));
+  return f.length?f.reduce((a,b)=>a*b,1):null;
+}
+function workoutPerformance(w,idx){
+  idx=idx||exerciseHistoryIndex();
+  const plan=workoutPlanItems(w,idx);
+  if(!plan.items.length) return {score:null,label:null,parts:{plan:null,target:null,prev:null},prBonus:0,planSource:null,planWorkoutId:null};
+  // this workout's done working sets per exercise group
+  const cur=new Map();
+  (w.entries||[]).forEach(en=>{ const g=exerciseHistoryGroup(idx,en.exerciseId,en.name); const gid=g?g.id:en.exerciseId; const ws=workoutWorkingSets(en);
+    const it=cur.get(gid)||{measurement:en.measurement,exerciseId:en.exerciseId,name:en.name,sets:[]}; it.sets.push(...ws); cur.set(gid,it); });
+  const plannedSets=plan.items.reduce((a,it)=>a+it.sets,0);
+  const planPart=plannedSets?plan.items.reduce((a,it)=>a+Math.min(it.sets,((cur.get(it.gid)||{}).sets||[]).length),0)/plannedSets:null;
+  const factors=[];
+  plan.items.forEach(it=>{ const c=cur.get(it.gid); if(!c) return;
+    c.sets.forEach((st,i)=>{ const t=it.targets?it.targets[Math.min(i,it.targets.length-1)]:it.target; const f=performanceSetFactor(it.measurement,st,t); if(f!=null) factors.push(f); }); });
+  const targetPart=factors.length?factors.reduce((a,b)=>a+b,0)/factors.length:null;
+  const cmp=[];
+  cur.forEach(c=>{ if(!c.sets.length) return; const h=exerciseHistoryBefore(c.exerciseId,c.name,w,idx); if(!h||h.measurement!==c.measurement) return;
+    cmp.push(performanceCompareScore(performanceChange(c.measurement,c.sets,h.sets))); });
+  const prevPart=cmp.length?cmp.reduce((a,b)=>a+b,0)/cmp.length:null;
+  const parts={plan:planPart,target:targetPart,prev:prevPart};
+  const keys=Object.keys(parts).filter(k=>parts[k]!=null);
+  const prs=(w.result&&Array.isArray(w.result.prs))?w.result.prs.length:workoutPRs(w,idx).length;
+  const prBonus=Math.min(10,5*prs);
+  const base=100*keys.reduce((a,k)=>a+PERFORMANCE_WEIGHTS[k]*parts[k],0)/keys.reduce((a,k)=>a+PERFORMANCE_WEIGHTS[k],0);
+  const score=Math.min(100,Math.round(base+prBonus));
+  const pct=v=>v==null?null:Math.round(v*100);
+  return {score,label:performanceLabelKey(score),parts:{plan:pct(planPart),target:pct(targetPart),prev:pct(prevPart)},prBonus,planSource:plan.source,planWorkoutId:plan.workoutId};
+}
+function workoutSetFeeling(wid,feeling){
+  // Optional, changeable any time; stored with the result, never read by any calculation.
+  const w=workoutFindById(wid); if(!w||!isCompletedWorkout(w)) return false;
+  if(feeling!=null&&!FEELINGS.includes(feeling)) return false;
+  w.result=Object.assign({},w.result,{feeling:feeling||null});
+  return true;
+}
 function workoutFinish(wid){
   // The moment a workout counts as done. The rewards below are exactly the ones the Log
   // Workout form grants for a new workout (80 XP STR + 20 VIT + the Phase 5 skill bonus), behind
@@ -3997,7 +4110,9 @@ function workoutFinish(wid){
   w.status='done'; w.finishedAt=Date.now();
   if(!w.duration) w.duration=String(Math.max(1,Math.round((w.finishedAt-(w.startedAt||w.finishedAt))/60000)));
   // Snapshot of the PRs at the moment of finishing (never rewritten; current records stay dynamic).
-  w.result=Object.assign({},w.result,{prs:workoutPRs(w),at:w.finishedAt});
+  const idx=exerciseHistoryIndex();
+  w.result=Object.assign({},w.result,{prs:workoutPRs(w,idx),at:w.finishedAt});
+  w.result.performance=workoutPerformance(w,idx);
   const key=`workout:${w.id}:${w.date}`;
   const granted=grantXp(80,'Workout: '+w.name,'STR',key);
   if(granted){
@@ -4632,6 +4747,7 @@ function renderWorkoutScreen(){
     <div class="sub wk-hint">${uiWkT('wu_hint')}</div>
     <div class="list" id="wkEntries"></div>
     <button class="btn ghost" id="wkAddEx">${uiWkT('add_ex')}</button>
+    ${edit?`<div class="card wk-edit-result">${uiPerformanceBlock(w.result&&w.result.performance)}${w.result&&w.result.performance?`<div class="sub" style="margin-top:6px">${uiPerfT('snap')}</div>`:''}<div data-slot="feeling"></div></div>`:''}
     <div class="card wk-foot"><label for="wk_name">${uiWkT('name')}</label><input id="wk_name" value="${escapeHtml(w.name)}">
       <label for="wk_notes">${uiWkT('notes')}</label><textarea id="wk_notes" rows="2">${escapeHtml(w.notes||'')}</textarea></div>
     ${edit?`<button class="btn" id="wkSaveBack">${uiWkT('save_back')}</button>`
@@ -4641,6 +4757,7 @@ function renderWorkoutScreen(){
   if(!w.entries.length) list.appendChild(el(`<div class="card sub">${uiWkT('no_ex')}</div>`));
   w.entries.forEach(en=>list.appendChild(uiWorkoutEntryCard(w,en)));
   const back=()=>{ uiWorkoutView=null; render(); window.scrollTo(0,0); };
+  if(edit) wrap.querySelector('.wk-edit-result [data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkEditFeel'));
   wrap.querySelector('#wkBack').onclick=back;
   wrap.querySelector('#wkAddEx').onclick=()=>openWorkoutAddExercise(w);
   wrap.querySelector('#wk_name').oninput=e=>{ const v=e.target.value.trim(); if(v){ w.name=v; scheduleSave(); const h=wrap.querySelector('.wk-title'); if(h) h.textContent=v; } };
@@ -4692,6 +4809,36 @@ function uiPrList(prs){
   return `<div class="wk-prs"><div class="kicker">🏆 ${uiLang()==='cs'?'Nové osobní rekordy':'New personal records'}</div>${prs.map(pr=>
     `<div class="between wk-pr-row"><span class="truncate"><b>${escapeHtml(pr.name)}</b> <span class="sub">· ${uiPrTypeLabel(pr.type)}</span></span><span class="num">${escapeHtml(uiPrLine(pr))}</span></div>`).join('')}</div>`;
 }
+function uiPerfT(k){
+  const cs=uiLang()==='cs';
+  return (cs?{title:'Performance',excellent:'Výborný',good:'Dobrý',fair:'Slabší',weak:'Slabý',plan:'Plán',target:'Cíle',prev:'Vs. minule',pr:'PR bonus',na:'—',
+    none:'Bez hodnocení — trénink nemá šablonu ani předchozí trénink se stejným názvem.',src_t:'podle šablony',src_p:'podle minulého tréninku se stejným názvem',
+    snap:'Hodnoceno při dokončení.',feeling:'Jak ses cítil/a?',feeling_opt:'nepovinné',bad:'Špatně',normal:'Normálně',great:'Skvěle',good_f:'Dobře'}
+    :{title:'Performance',excellent:'Excellent',good:'Good',fair:'Below par',weak:'Weak',plan:'Plan',target:'Targets',prev:'Vs. last',pr:'PR bonus',na:'—',
+    none:'Not rated — the workout has no template and no earlier workout with the same name.',src_t:'from the template',src_p:'from the last workout with the same name',
+    snap:'Rated when finished.',feeling:'How did it feel?',feeling_opt:'optional',bad:'Bad',normal:'Normal',great:'Great',good_f:'Good'})[k];
+}
+const UI_FEELING_IC={bad:'😣',normal:'😐',good:'🙂',great:'🤩'};
+function uiFeelingLabel(f){ return uiPerfT(f==='good'?'good_f':f); }
+function uiPerformanceBlock(perf){
+  if(!perf) return '';
+  if(perf.score==null) return `<div class="wk-perf is-na" data-perf="na"><div class="kicker">${uiPerfT('title')}</div><div class="sub">${uiPerfT('none')}</div></div>`;
+  const bar=(k)=>{ const v=perf.parts[k]; return `<div class="wk-perf-part${v==null?' is-na':''}"><div class="between"><span>${uiPerfT(k)}</span><b>${v==null?uiPerfT('na'):v+' %'}</b></div><div class="bar"><i style="width:${v||0}%"></i></div></div>`; };
+  return `<div class="wk-perf" data-perf="${perf.score}"><div class="wk-perf-top"><div class="wk-perf-score">${perf.score}</div><div><div class="kicker">${uiPerfT('title')}</div>
+      <div class="wk-perf-label is-${perf.label}">${uiPerfT(perf.label)}</div><div class="sub">${uiPerfT(perf.planSource==='previous'?'src_p':'src_t')}</div></div></div>
+    ${bar('plan')}${bar('target')}${bar('prev')}${perf.prBonus?`<div class="between wk-perf-pr"><span>🏆 ${uiPerfT('pr')}</span><b>+${perf.prBonus}</b></div>`:''}</div>`;
+}
+function uiFeelingPicker(w,idp){
+  const cur=w.result&&w.result.feeling;
+  const box=el(`<div class="wk-feeling" id="${idp}"><div class="kicker">${uiPerfT('feeling')} <span class="sub">· ${uiPerfT('feeling_opt')}</span></div><div class="wk-feel-row" role="group" aria-label="${uiPerfT('feeling')}">
+    ${FEELINGS.map(f=>`<button type="button" class="pill wk-feel${cur===f?' on':''}" data-feel="${f}" aria-pressed="${cur===f}"><span aria-hidden="true">${UI_FEELING_IC[f]}</span> ${uiFeelingLabel(f)}</button>`).join('')}</div></div>`);
+  box.querySelectorAll('[data-feel]').forEach(b=>b.onclick=()=>{
+    const f=b.dataset.feel, next=(w.result&&w.result.feeling)===f?null:f; // tapping the chosen one again clears it
+    workoutSetFeeling(w.id,next); scheduleSave();
+    box.querySelectorAll('[data-feel]').forEach(x=>{ const on=x.dataset.feel===next; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
+  });
+  return box;
+}
 function openWorkoutSummary(w,granted){
   const vol=workoutVolume(w), reps=workoutTotalReps(w);
   const tile=(k,v)=>`<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value">${v}</div></div>`;
@@ -4699,9 +4846,10 @@ function openWorkoutSummary(w,granted){
     <div class="stat-grid cols-2">${tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`)}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
       ${reps?tile(uiWkT('sum_reps'),reps):''}${vol?tile(uiWkT('sum_vol'),`${uiNum(vol)}<small> kg</small>`):''}${tile(uiWkT('sum_ex'),w.entries.filter(en=>workoutWorkingSets(en).length).length)}</div>
     ${granted?`<div class="chip wk-xp">+80 ${uiWkT('xp')}</div>`:''}
-    <div data-slot="performance" hidden></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
+    <div data-slot="performance"${w.result&&w.result.performance?'':' hidden'}>${uiPerformanceBlock(w.result&&w.result.performance)}</div><div data-slot="feeling"></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
     <button class="btn" id="wkSumOk" style="margin-top:14px">${uiWkT('ok')}</button></div>`);
-  inner.querySelector('#wkSumOk').onclick=()=>closeSheets();
+  inner.querySelector('[data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkSumFeel'));
+  inner.querySelector('#wkSumOk').onclick=()=>{ closeSheets(); render(); };
   return openSheet(inner);
 }
 function openWorkoutAddExercise(w){
@@ -4757,6 +4905,7 @@ function renderFitness(){
         <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(w.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
       <div class="wk-metrics"><span><b>${w.duration||0}</b> ${L.min}</span><span><b>${workoutTotalSets(w)}</b> ${L.sets}</span><span><b>${workoutTotalReps(w)}</b> ${L.reps}</span><span><b>${uiNum(vol)}</b> kg ${L.volume}</span></div>
       ${exRows?`<div class="ex-list">${exRows}</div>`:''}
+      ${w.result&&(w.result.performance&&w.result.performance.score!=null||w.result.feeling)?`<div class="chips wk-card-perf">${w.result.performance&&w.result.performance.score!=null?`<span class="chip">⚡ ${w.result.performance.score} · ${uiPerfT(w.result.performance.label)}</span>`:''}${w.result.feeling?`<span class="chip is-muted">${UI_FEELING_IC[w.result.feeling]} ${uiFeelingLabel(w.result.feeling)}</span>`:''}</div>`:''}
       ${(w.result&&w.result.prs||[]).length?`<div class="chips wk-card-prs">${w.result.prs.map(pr=>`<span class="chip">🏆 ${escapeHtml(pr.name)} · ${uiPrTypeLabel(pr.type)}</span>`).join('')}</div>`:''}
       ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);

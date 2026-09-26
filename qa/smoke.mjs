@@ -2089,6 +2089,182 @@ test('11A UI: suggestions fit 320-1440 px (all kinds) without overflow', async (
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
+// ---------- Phase 11A step 7: Workout Performance + Feeling ----------
+// PUSH A from the approved simulation: bench 4x8@70, incline 3x10@26, ohp 3x8@45, lateral 3x12@10.
+const PFL = [...PRL, ...[['xi', 'Incline press'], ['xo', 'Overhead press'], ['xl', 'Lateral raise'], ['xd', 'Dips']]
+  .map(([id, name]) => ({ id, name, measurement: 'weight_reps', muscles: {}, increment: 2.5, notes: '', archived: false, source: 'user', aliases: [], createdAt: NOW, updatedAt: NOW }))];
+const TG = { xb: [4, 8, 70], xi: [3, 10, 26], xo: [3, 8, 45], xl: [3, 12, 10] };
+const PT = (eid, sets) => ({ ...PE(eid, sets, 'weight_reps', PFL.find(x => x.id === eid).name), target: TG[eid] ? { sets: TG[eid][0], repsMin: TG[eid][1], repsMax: TG[eid][1], weight: TG[eid][2], seconds: null, distance: null, rest: null } : null });
+const rep = (w, ...r) => r.map(x => ({ weight: w, reps: x }));
+const PREV_A = () => PW('prev', '2026-09-20', -72, [PT('xb', rep(70, 8, 8, 8, 8)), PT('xi', rep(26, 10, 10, 10)), PT('xo', rep(45, 8, 8, 8)), PT('xl', rep(10, 12, 12, 12))]);
+const CUR = (o = {}) => { const m = { xb: rep(70, 8, 8, 8, 8), xi: rep(26, 10, 10, 10), xo: rep(45, 8, 8, 8), xl: rep(10, 12, 12, 12), ...o };
+  // w.plan = the template copy taken at Start (so a skipped/removed planned exercise still counts)
+  return { ...PW('cur', '2026-09-23', -1, Object.entries(m).filter(([, v]) => v).map(([k, v]) => PT(k, v))), plan: ['xb', 'xi', 'xo', 'xl'].map(k => { const e = PT(k, []); return { exerciseId: k, name: e.name, measurement: 'weight_reps', target: e.target }; }) }; };
+const perfRun = (page, workouts) => page.evaluate(({ workouts, lib }) => { S.exerciseLibrary = lib; S.workouts = workouts; return workoutPerformance(S.workouts.find(w => w.id === 'cur')); }, { workouts, lib: PFL });
+const sc = p => [p.score, p.parts.plan, p.parts.target, p.parts.prev, p.prBonus];
+
+test('11A performance: the 9 approved scenarios through the real engine (template, work-based comparison, floor 0.2, slope 3)', async ({ page }) => {
+  const P = PREV_A;
+  assert.deepEqual(sc(await perfRun(page, [CUR()])), [100, 100, 100, null, 0], '1 new, no history: prev N/A, renormalized');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR()])), [96, 100, 100, 85, 0], '2 same as last time');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xb: rep(72.5, 8, 8, 8, 8) })])), [100, 100, 100, 89, 5], '3 slightly better + weight PR');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xb: rep(70, 8, 8, 7, 6) })])), [93, 100, 97, 78, 0], '4 slightly worse (fatigue drop is visible)');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xb: rep(67.5, 8, 8, 8, 8) })])), [95, 100, 99, 82, 0], '4b lower weight');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xb: rep(60, 8, 7, 6, 5), xo: rep(40, 7, 6, 6), xi: rep(22, 10, 8, 8) })])), [76, 100, 78, 36, 0], '5 much worse');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xb: [{ weight: 75, reps: 6 }, ...rep(70, 8, 8, 8)] })])), [100, 100, 98, 81, 5], '6 PR');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xd: rep(0, 10, 10, 10) })])), [96, 100, 100, 85, 0], '8 extra exercise without history does not lower it');
+  assert.deepEqual(sc(await perfRun(page, [P(), CUR({ xl: null })])), [87, 77, 100, 85, 0], '9 skipped lateral (10 of 13 planned sets)');
+  const labels = await page.evaluate(() => [100, 95, 94, 85, 84, 70, 69, 0].map(performanceLabelKey));
+  assert.deepEqual(labels, ['excellent', 'excellent', 'good', 'good', 'fair', 'fair', 'weak', 'weak']);
+}, { state: fixtureState() });
+
+test('11A performance: plan and target completion - partial sets, repsMin as the bar, weight target, time, distance_time, N/A factors', async ({ page }) => {
+  const one = (eid, target, sets, meas) => PW('cur', '2026-09-23', -1, [{ ...PE(eid, sets, meas), target }]);
+  const T = (o) => ({ sets: 3, repsMin: null, repsMax: null, weight: null, seconds: null, distance: null, rest: null, ...o });
+  // range 8-10: 8 reps = 100 %, 7 = 87.5 %; weight 65/70 = 92.9 %
+  let p = await perfRun(page, [one('xb', T({ repsMin: 8, repsMax: 10, weight: 70 }), [{ weight: 70, reps: 8 }, { weight: 70, reps: 7 }, { weight: 65, reps: 10 }])]);
+  assert.deepEqual(sc(p), [97, 100, 93, null, 0], 'target = (1 + 0.875 + 0.9286)/3');
+  // partial: 2 of 3 planned sets done (an unfinished and a warm-up set do not count)
+  p = await perfRun(page, [one('xb', T({ repsMin: 8, weight: 70 }), [{ weight: 70, reps: 8 }, { weight: 70, reps: 8 }, { weight: 70, reps: 8, done: false }, { weight: 100, reps: 8, warmup: true }])]);
+  assert.deepEqual(sc(p), [82, 67, 100, null, 0], '(40 x 0.667 + 35 x 1) / 75');
+  // no weight target -> only the reps factor
+  p = await perfRun(page, [one('xb', T({ repsMin: 10 }), [{ weight: 20, reps: 10 }, { weight: 20, reps: 5 }, { weight: 20, reps: 10 }])]);
+  assert.equal(p.parts.target, 83);
+  p = await perfRun(page, [one('xk', T({ seconds: 60 }), [{ seconds: 60 }, { seconds: 45 }, { seconds: 30 }], 'time')]);
+  assert.deepEqual(sc(p), [88, 100, 75, null, 0], 'time: min(1, s / 60); (40 + 35 x 0.75) / 75 = 88.3');
+  p = await perfRun(page, [one('xr', T({ sets: 1, distance: 5 }), [{ distance: 4, seconds: 1500 }], 'distance_time')]);
+  assert.deepEqual(sc(p), [91, 100, 80, null, 0], 'distance_time: min(1, km / 5)');
+  p = await perfRun(page, [one('xr', T({ sets: 1, seconds: 1800 }), [{ distance: 4, seconds: 1500 }], 'distance_time')]);
+  assert.deepEqual(sc(p), [100, 100, null, null, 0], 'no km target -> target N/A (not faked), plan alone');
+  // a planned exercise removed from the workout still counts as planned (w.plan)
+  const r = await page.evaluate(lib => { S.exerciseLibrary = lib; S.workouts = [];
+    const t = templateSave({ name: 'Two', exercises: [{ exerciseId: 'xb', sets: 2, repsMin: 5, weight: 50 }, { exerciseId: 'xi', sets: 2, repsMin: 5, weight: 20 }] }).template;
+    const w = workoutStart({ templateId: t.id }).workout; w.entries[0].sets.forEach(s => s.done = true); workoutRemoveEntry(w.id, w.entries[1].id);
+    return [w.plan.length, workoutFinish(w.id).workout.result.performance.parts.plan]; }, PFL);
+  assert.deepEqual(r, [2, 50]);
+}, { state: fixtureState() });
+
+test('11A performance: compared to previous uses total work / reps / seconds / distance; exercises without history are left out', async ({ page }) => {
+  const ch = (m, cur, prev) => page.evaluate(({ m, cur, prev }) => Math.round(performanceChange(m, cur, prev) * 1000) / 1000, { m, cur, prev });
+  assert.equal(await ch('weight_reps', rep(70, 8, 8, 7, 6), rep(70, 8, 8, 8, 8)), -0.094, 'work 2030 vs 2240 (a best-set comparison would say 0)');
+  assert.equal(await ch('weight_reps', rep(0, 12, 12), rep(0, 10, 10)), 0.2, 'bodyweight logged as 0 kg -> total reps');
+  assert.equal(await ch('reps', [{ reps: 10 }, { reps: 9 }], [{ reps: 10 }, { reps: 10 }]), -0.05);
+  assert.equal(await ch('time', [{ seconds: 90 }], [{ seconds: 60 }]), 0.5);
+  assert.equal(await ch('distance_time', [{ distance: 5, seconds: 1500 }], [{ distance: 5, seconds: 1800 }]), 0.2, 'same distance -> pace');
+  assert.equal(await ch('distance_time', [{ distance: 6, seconds: 2400 }], [{ distance: 5, seconds: 1500 }]), 0.2, 'longer distance');
+  const f = await page.evaluate(() => [0.1, 0.005, 0, -0.005, -0.1, -0.2, -0.3, -0.9].map(c => Math.round(performanceCompareScore(c) * 1000) / 1000));
+  assert.deepEqual(f, [1, 0.85, 0.85, 0.85, 0.55, 0.25, 0.2, 0.2]);
+  // only exercises with history: bench has history (same) -> 85; dips has none -> ignored
+  const p = await perfRun(page, [PW('prev', '2026-09-20', -72, [PT('xb', rep(70, 8, 8, 8, 8))]), PW('cur', '2026-09-23', -1, [PT('xb', rep(70, 8, 8, 8, 8)), PT('xd', rep(0, 10, 10))])]);
+  assert.deepEqual(sc(p), [96, 100, 100, 85, 0]);
+}, { state: fixtureState() });
+
+test('11A performance: no template -> latest earlier same-name workout (exact, case-insensitive) is the plan; none -> "—"', async ({ page }) => {
+  const noTpl = (name, sets) => ({ ...PW('cur', '2026-09-23', -1, [PE('xb', sets), PE('xo', rep(45, 8, 8, 8))]), name });
+  const prevA = (id, name, date, h, sets) => ({ ...PW(id, date, h, [PE('xb', sets), PE('xo', rep(45, 8, 8, 8))]), name });
+  let p = await perfRun(page, [prevA('old', 'Push A', '2026-09-10', -300, rep(60, 5, 5, 5)), prevA('prev', 'PUSH  a', '2026-09-20', -72, rep(70, 8, 8, 8)), noTpl('push A', rep(70, 8, 8, 8))]);
+  assert.deepEqual([...sc(p), p.planSource, p.planWorkoutId], [96, 100, 100, 85, 0, 'previous', 'prev'], 'same performance as the latest same-name workout = 96, not 85');
+  p = await perfRun(page, [prevA('prev', 'Push A', '2026-09-20', -72, rep(70, 8, 8, 8)), noTpl('Push A', rep(70, 8, 6))]);
+  assert.deepEqual(sc(p), [80, 83, 95, 53, 0], 'implicit plan: 5 of 6 sets; targets = last values set by set (4.75/5); bench work -41.7 % -> 0.2, OHP 0.85');
+  p = await perfRun(page, [prevA('prev', 'Push A2', '2026-09-20', -72, rep(70, 8, 8, 8)), noTpl('Push A', rep(70, 8, 8, 8))]);
+  assert.deepEqual([p.score, p.label, p.planSource], [null, null, null], 'no fuzzy name matching -> no plan -> —');
+  p = await perfRun(page, [prevA('later', 'Push A', '2026-09-25', 30, rep(70, 8, 8, 8)), noTpl('Push A', rep(70, 8, 8, 8))]);
+  assert.equal(p.score, null, 'only EARLIER workouts can be the implicit plan');
+  // legacy same-name workout as implicit plan (fixture "Push day": Bench press 4x8@80, Overhead press 3x10@45)
+  const r = await page.evaluate(ws => { S.workouts = ws; S.exerciseLibrary = []; S.exerciseLibrary = exerciseSeedFromHistory(ws);
+    const w = workoutStart({ name: 'Push day' }).workout; const b = workoutAddEntry(w.id, exerciseFind('Bench press').id);
+    b.sets = Array.from({ length: 4 }, () => Object.assign(workoutNewSet(null), { weight: 80, reps: 8, done: true }));
+    return workoutFinish(w.id).workout.result.performance; }, fixtureState().workouts);
+  assert.deepEqual([r.score, r.parts.plan, r.parts.target, r.parts.prev, r.planSource], [79, 57, 100, 85, 'previous'], '4 of 7 planned legacy sets (OHP skipped): 40 x 4/7 + 35 + 25 x 0.85 = 79.1');
+}, { state: fixtureState() });
+
+test('11A performance: PR bonus +5 per record (Weight + Rep on one exercise = +10), never above +10 or 100', async ({ page }) => {
+  const P = PREV_A;
+  let p = await perfRun(page, [P(), CUR({ xb: [{ weight: 75, reps: 6 }, ...rep(70, 8, 8, 8)] })]);
+  assert.equal(p.prBonus, 5);
+  p = await perfRun(page, [P(), CUR({ xl: rep(10, 12, 12, 11), xb: [{ weight: 75, reps: 6 }, { weight: 70, reps: 9 }, ...rep(70, 8, 7)] })]);
+  assert.deepEqual([p.prBonus, p.score], [10, 100], 'weight PR 75x6 + rep PR 70x9 on the bench');
+  const n = await page.evaluate(() => workoutPRs(S.workouts.find(w => w.id === 'cur')).map(x => x.type));
+  assert.deepEqual(n, ['weight', 'reps']);
+  p = await perfRun(page, [P(), CUR({ xb: [{ weight: 75, reps: 6 }, { weight: 70, reps: 9 }, ...rep(70, 8, 8)], xo: [{ weight: 47.5, reps: 8 }, ...rep(45, 8, 8)] })]);
+  assert.equal(p.prBonus, 10, 'three PRs are still +10');
+  p = await perfRun(page, [P(), CUR({ xb: rep(60, 8, 7, 6, 5), xo: [{ weight: 50, reps: 3 }, ...rep(40, 6, 6)], xi: rep(22, 10, 8, 8) })]);
+  assert.equal(p.prBonus, 5); assert.ok(p.score < 100);
+}, { state: fixtureState() });
+
+test('11A performance: snapshot at Finish (score, parts, label); editing the finished workout never rewrites it', async ({ page }) => {
+  await page.evaluate(lib => { S.exerciseLibrary = lib; S.workouts = []; }, PFL);
+  const tid = await page.evaluate(() => templateSave({ name: 'Push A', exercises: [{ exerciseId: 'xb', sets: 2, repsMin: 8, repsMax: 10, weight: 70 }] }).template.id);
+  const finish = async (reps, h) => { await page.clock.setFixedTime(NOW + h * 60e3);
+    return page.evaluate(({ tid, reps }) => { const w = workoutStart({ templateId: tid }).workout; w.entries[0].sets.forEach((s, i) => Object.assign(s, { reps: reps[i], done: true })); return JSON.parse(JSON.stringify(workoutFinish(w.id).workout)); }, { tid, reps }); };
+  await finish([8, 8], 1);
+  const w = await finish([8, 6], 2);
+  assert.deepEqual(w.result.performance, { score: 83, label: 'fair', parts: { plan: 100, target: 88, prev: 48 }, prBonus: 0, planSource: 'template', planWorkoutId: null }, '40 + 35 x 0.875 + 25 x 0.475 = 82.5 -> 83');
+  await page.evaluate(id => { const x = workoutFindById(id); workoutUpdateSet(x.id, x.entries[0].id, x.entries[0].sets[1].id, { reps: 10 }); }, w.id);
+  const after = await page.evaluate(id => { const x = workoutFindById(id); return [x.result.performance, workoutPerformance(x)]; }, w.id);
+  assert.deepEqual(after[0], w.result.performance, 'snapshot unchanged after the edit');
+  assert.notDeepEqual(after[1].score, w.result.performance.score, 'a fresh calculation would differ - proving the snapshot is not recomputed');
+}, { state: fixtureState() });
+
+test('11A UI: summary shows Performance + optional Feeling; Feeling changes later in the editor and never touches score, XP or RPG', async ({ page }) => {
+  await setupTpl(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click(); await setRow(page, 'Bench press', 1).locator('.ws-done').click();
+  await page.click('#wkFinish');
+  const perf = page.locator('#wkSummary [data-slot="performance"]');
+  assert.equal(await perf.isVisible(), true);
+  const wid = await page.evaluate(() => completedWorkouts(S).find(w => w.entries).id);
+  const snap = await page.evaluate(id => workoutFindById(id).result.performance, wid);
+  assert.match(await perf.innerText(), new RegExp(`${snap.score}[\\s\\S]*PERFORMANCE[\\s\\S]*Plán[\\s\\S]*Cíle[\\s\\S]*Vs\\. minule`, 'i'));
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.feeling, wid), undefined, 'Feeling is optional - nothing stored until chosen');
+  const frozen = () => page.evaluate(id => JSON.stringify([workoutFindById(id).result.performance, workoutFindById(id).result.prs, S.totalXp, S.xpLog, S.attrs, S.rpg, S.achievementsUnlocked, S.quests, dailyScore(todayStr()), exercisePRs()]), wid);
+  const f0 = await frozen();
+  await page.click('#wkSumFeel [data-feel="good"]');
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.feeling, wid), 'good');
+  assert.equal(await page.getAttribute('#wkSumFeel [data-feel="good"]', 'aria-pressed'), 'true');
+  await page.click('#wkSumOk');
+  assert.match(await page.locator('.workout-card', { hasText: 'Push A' }).innerText(), new RegExp(`⚡ ${snap.score}[\\s\\S]*🙂 Dobře`));
+  await page.locator('.workout-card', { hasText: 'Push A' }).locator('.editBtn').click();
+  assert.match(await page.locator('.wk-edit-result').innerText(), /Hodnoceno při dokončení/);
+  await page.click('#wkEditFeel [data-feel="bad"]');
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.feeling, wid), 'bad');
+  await page.click('#wkEditFeel [data-feel="bad"]');
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.feeling, wid), null, 'tapping the chosen one again clears it');
+  await page.click('#wkEditFeel [data-feel="great"]');
+  assert.equal(await frozen(), f0, 'Feeling changes nothing else (Performance, PRs, XP, RPG, achievements, quests, Daily Score)');
+  assert.equal(await page.evaluate(id => workoutSetFeeling(id, 'amazing'), wid), false, 'only Bad/Normal/Good/Great');
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(id => workoutFindById(id).result.feeling, wid), 'great');
+}, { state: fixtureState() });
+
+test('11A UI: a workout without plan shows "—" (not rated); Performance/Feeling layouts fit 320-1440 px', async ({ page }) => {
+  await openWorkouts(page);
+  await page.click('#wkBlank');
+  await page.click('#wkAddEx'); await page.click('[data-pick-preset="Plank"]');
+  await setRow(page, 'Plank', 0).locator('[data-f="seconds"]').fill('60'); await setRow(page, 'Plank', 0).locator('.ws-done').click();
+  await page.click('#wkFinish');
+  assert.match(await page.locator('#wkSummary [data-perf="na"]').innerText(), /Bez hodnocení/);
+  assert.equal(await page.evaluate(() => completedWorkouts(S).find(w => w.entries).result.performance.score), null);
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const k of ['summary', 'summary-na', 'edit', 'list']) {
+      await page.evaluate(k => {
+        closeSheets(); uiWorkoutView = null; fitnessTab = 'workouts'; view = 'fitness';
+        const w = completedWorkouts(S).find(x => x.entries); w.result.performance = k === 'summary-na' ? { score: null, label: null, parts: { plan: null, target: null, prev: null }, prBonus: 0, planSource: null, planWorkoutId: null } : { score: 88, label: 'good', parts: { plan: 100, target: 81, prev: null }, prBonus: 5, planSource: 'previous', planWorkoutId: 'x' };
+        w.result.feeling = 'great';
+        if (k === 'edit') uiWorkoutView = { mode: 'edit', id: w.id };
+        render(); if (k.startsWith('summary')) openWorkoutSummary(w, true);
+      }, k);
+      const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i) }; });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
