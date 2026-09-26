@@ -680,6 +680,66 @@ test('9 history: a pre-Phase-9 backup (no dailyScores keys) imports cleanly; res
   assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, null);
 }, { state: fixtureState() });
 
+test('9 UI: Home shows the live Daily Score with all five areas (N/A labelled, never scored as 0)', async ({ page }) => {
+  const r = await page.evaluate(() => dailyScore(todayStr()));
+  const card = page.locator('[data-ds="card"]');
+  assert.equal(await card.count(), 1);
+  assert.equal((await card.locator('.ring > span').innerText()).trim(), String(r.score));
+  for (const k of ['tasks', 'habits', 'nutrition', 'sleep', 'fitness']) {
+    const txt = (await card.locator(`.ds-row[data-area="${k}"] b`).innerText()).trim();
+    assert.equal(txt, r.areas[k].score == null ? 'N/A' : `${r.areas[k].score} %`, k);
+  }
+  assert.equal(r.areas.fitness.score, null, 'fixture has an unplanned workout today -> N/A');
+}, { state: fixtureState() });
+
+test('9 UI: an empty day shows "nothing to score yet", not 0/100', async ({ page }) => {
+  await page.click('.sheet [data-ob="skip"]');
+  const card = page.locator('[data-ds="card"]');
+  assert.equal((await card.locator('.ring > span').innerText()).trim(), '—');
+  assert.match(await card.innerText(), /Dnes zatím není co hodnotit/);
+  assert.doesNotMatch(await card.innerText(), /0 \/ 100|\b0 %/);
+  await card.click();
+  assert.match(await page.locator('[data-ds="detail"]').innerText(), /Dnes zatím není co hodnotit/);
+});
+
+test('9 UI: detail explains every area (including N/A) and marks today as live', async ({ page }) => {
+  await page.click('[data-ds="card"]');
+  const d = page.locator('[data-ds="detail"]');
+  assert.equal(await d.count(), 1);
+  assert.match(await d.innerText(), /průběžné/);
+  for (const k of ['tasks', 'habits', 'nutrition', 'sleep', 'fitness']) {
+    const t = (await d.locator(`.ds-area[data-area="${k}"] .sub`).innerText()).trim();
+    assert.ok(t.length > 10, `reason for ${k}: "${t}"`);
+  }
+  assert.match(await d.locator('.ds-area[data-area="fitness"]').innerText(), /Bonus/);
+  assert.match(await d.innerText(), /oddělené od XP/);
+  await page.waitForFunction(() => !!document.activeElement.closest('.sheet')); // openSheet() moves focus after 30 ms
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.sheet').count(), 0);
+}, { state: fixtureState() });
+
+test('9 UI: widget order/visibility is untouched - hiding Level Progress hides the Daily Score card', async ({ page }) => {
+  await page.evaluate(() => { S.settings.widgets.progress = false; render(); });
+  assert.equal(await page.locator('[data-ds="card"]').count(), 0);
+  await page.evaluate(() => { S.settings.widgets.progress = true; S.settings.widgetOrder = ['tasks', 'progress', ...S.settings.widgetOrder.filter(k => k !== 'tasks' && k !== 'progress')]; render(); });
+  const order = await page.$$eval('.home > *', ns => ns.map(n => n.querySelector('[data-ds]') ? 'ds' : n.querySelector('#hTasks') ? 'tasks' : null).filter(Boolean));
+  assert.deepEqual(order.slice(0, 2), ['tasks', 'ds']);
+}, { state: fixtureState() });
+
+test('9 UI: Daily Score card and detail fit 320/375/390/430 px without overflow', async ({ page }) => {
+  const bad = [];
+  for (const width of [320, 375, 390, 430]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => { closeSheets(); view = 'home'; render(); });
+    for (const where of ['home', 'detail']) {
+      if (where === 'detail') await page.click('[data-ds="card"]');
+      const over = await page.evaluate(() => { const sh = document.querySelector('.sheet'); return Math.max(document.documentElement.scrollWidth - document.documentElement.clientWidth, sh ? sh.scrollWidth - sh.clientWidth : 0); });
+      if (over > 0) bad.push(`${where}@${width}: ${over}px`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

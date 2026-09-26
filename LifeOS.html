@@ -705,6 +705,23 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .char-main .stat-grid.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:700px) and (max-width:1199px){.char-main .stat-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
+/* Phase 9: Daily Score */
+.ds-card{cursor:pointer}
+.ds-card .today-rows{gap:6px}
+.ds-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;font-size:var(--fs-caption);font-weight:650}
+.ds-row>b{font-variant-numeric:tabular-nums;font-size:var(--fs-caption)}
+.ds-row .bar{grid-column:1/3;height:4px;margin-top:2px}
+.ds-row.is-na{color:var(--sub)}
+.ds-row.is-na>b{font-weight:600}
+.ds-counts{margin-top:2px}
+.ring.lg{width:104px;height:104px}.ring.lg::before{width:86px;height:86px}.ring.lg>span{font-size:28px}
+.ds-areas{display:flex;flex-direction:column;gap:8px}
+.ds-detail .section-header h3{font-size:13px;margin:0}
+.ds-area{padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.ds-area.is-na{opacity:.85}
+.ds-area .sub{line-height:1.45}
+@media(max-width:374px){.ring.lg{width:88px;height:88px}.ring.lg::before{width:72px;height:72px}.ring.lg>span{font-size:24px}}
+
 /* Calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal-nav{margin-bottom:10px}
@@ -1766,22 +1783,103 @@ function progressCard(){
 }
 // "Today" block of the HUD: daily progress ring + tasks/habits/XP rows (same counts as above).
 function uiTodayCard(){
+  // Phase 9: the Today card shows the live Daily Score (dailyScore(todayStr())) -- never XP.
   const todayTasks=S.tasks.filter(t=>t.dueDate===todayStr()||(!t.dueDate&&!t.done));
   const doneToday=todayTasks.filter(t=>t.done).length;
   const activeHabits=S.habits.filter(h=>h.active!==false);
   const doneHabits=activeHabits.filter(h=>isDayComplete(h,todayStr())).length;
-  const dayPct=uiPct(doneToday+doneHabits,todayTasks.length+activeHabits.length);
-  const row=(ic,label,v,max,cls)=>`<div class="today-row"><span aria-hidden="true">${ic}</span><span>${label}</span><b>${v}/${max}</b><div class="bar ${cls||''}"><i style="width:${uiPct(v,max)}%"></i></div></div>`;
-  return el(`<section class="card" aria-label="${uiT('today_progress')}">
+  const r=dailyScore(todayStr());
+  const card=el(`<section class="card ds-card" data-ds="card" role="button" tabindex="0" aria-label="Daily Score ${r.score==null?'—':r.score}">
     <div class="today-grid">
-      <div class="ring" style="--p:${dayPct}" role="img" aria-label="${uiT('today_progress')} ${dayPct}%"><span>${dayPct}%</span></div>
+      ${uiDsRing(r.score,'')}
       <div class="today-rows">
-        <div class="kicker">${uiT('today_progress')}</div>
-        ${row('✅',uiT('tasks'),doneToday,todayTasks.length,'is-success')}
-        ${row('🔥',uiT('habits'),doneHabits,activeHabits.length,'is-success')}
+        <div class="between"><span class="kicker">Daily Score</span>${r.score!=null?`<span class="chip ${uiDsTone(r.score)}">${uiDsLabel(r.label)}</span>`:''}</div>
+        ${r.score==null?`<div class="sub">${uiDsT('nothing')}</div>`:uiDsAreaRows(r,true)}
+        <div class="sub ds-counts">✅ ${doneToday}/${todayTasks.length} · 🔥 ${doneHabits}/${activeHabits.length}</div>
       </div>
     </div>
   </section>`);
+  card.onclick=()=>uiOpenDailyScore(todayStr());
+  card.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); card.onclick(); } };
+  return card;
+}
+
+// ---- Phase 9: Daily Score presentation (reads dailyScore()/S.dailyScores only) ----
+const UI_DS={
+  cs:{nothing:'Dnes zatím není co hodnotit',live:'průběžné',excellent:'Výborný den',good:'Dobrý den',solid:'Solidní den',weaker:'Slabší den',tough:'Náročný den',
+    tasks:'Úkoly',habits:'Návyky',nutrition:'Výživa',sleep:'Spánek',fitness:'Fitness',goals:'Cíle',na:'N/A',
+    why:'Proč toto skóre',weights:'Váhy: Úkoly 30 · Návyky 30 · Výživa 15 · Spánek 15 · Fitness 10. Oblasti N/A se nezapočítávají.',
+    separate:'Daily Score je oddělené od XP — nemění level, atributy ani odměny.',nothing_d:'Skóre vznikne, jakmile bude pro den něco relevantního: naplánovaný úkol, návyk na dnešek, zapsané jídlo, spánek nebo naplánovaný trénink.',
+    snap:'uložený snímek dne'},
+  en:{nothing:'Nothing to score yet today',live:'live',excellent:'Excellent day',good:'Good day',solid:'Solid day',weaker:'Weaker day',tough:'Tough day',
+    tasks:'Tasks',habits:'Habits',nutrition:'Nutrition',sleep:'Sleep',fitness:'Fitness',goals:'Goals',na:'N/A',
+    why:'Why this score',weights:'Weights: Tasks 30 · Habits 30 · Nutrition 15 · Sleep 15 · Fitness 10. N/A areas are not counted.',
+    separate:'Daily Score is separate from XP — it never changes level, attributes or rewards.',nothing_d:'A score appears as soon as something is relevant for the day: a planned task, a habit due today, a logged meal, sleep or a planned workout.',
+    snap:'stored day snapshot'},
+};
+function uiDsT(k){ return (UI_DS[uiLang()]||UI_DS.cs)[k]; }
+function uiDsLabel(key){ return key?uiDsT(key):''; }
+function uiDsTone(score){ return score==null?'is-muted':score>=75?'is-success':score>=50?'':'is-warn'; }
+function uiDsRing(score,cls){
+  const c=score==null?'var(--line)':score>=75?'var(--accent2)':score>=50?'var(--accent)':'var(--warn)';
+  return `<div class="ring ${cls||''}" style="--p:${score==null?0:score};--c:${c}" role="img" aria-label="Daily Score ${score==null?'—':score+' / 100'}"><span>${score==null?'—':score}</span></div>`;
+}
+const UI_DS_AREAS=['tasks','habits','nutrition','sleep','fitness'];
+function uiDsAreaRows(r,compact){
+  return UI_DS_AREAS.map(k=>{ const a=r.areas[k]; const na=a.score==null;
+    return `<div class="ds-row${na?' is-na':''}" data-area="${k}"><span>${uiDsT(k)}</span><b>${na?uiDsT('na'):a.score+' %'}</b>${compact?'':''}<div class="bar${na?'':' '+(a.score>=75?'is-success':a.score>=50?'':'is-warn')}"><i style="width:${na?0:a.score}%"></i></div></div>`;
+  }).join('');
+}
+// One plain-language reason per area -- always shown in the detail, including for N/A.
+function uiDsReason(k,a){
+  const cs=uiLang()==='cs';
+  if(k==='tasks'){
+    if(a.score==null) return (cs?'Na tento den nebyly naplánované žádné úkoly.':'No tasks were planned for this day.')+(a.openOverdue?` ${cs?`(${a.openOverdue} po termínu z dřívějška se nezapočítává.)`:`(${a.openOverdue} older overdue not counted.)`}`:'');
+    return (cs?`${a.done} z ${a.total} hotovo, váženo prioritou (Urgent 2×, High 1,5×).`:`${a.done} of ${a.total} done, weighted by priority (Urgent 2×, High 1.5×).`)
+      +(a.lateDone?` ${cs?`Včetně ${a.lateDone} úkolu po termínu dokončeného v tento den.`:`Includes ${a.lateDone} overdue task completed that day.`}`:'')
+      +(a.openOverdue?` ${cs?`${a.openOverdue} starší po termínu se nezapočítává.`:`${a.openOverdue} older overdue not counted.`}`:'');
+  }
+  if(k==='habits'){
+    if(a.score==null) return (cs?'Na tento den nebyl naplánovaný žádný návyk.':'No habit was due this day.')+(a.pending?` ${cs?`${a.pending} zlozvyk čeká na záznam.`:`${a.pending} bad habit not logged yet.`}`:'');
+    return (cs?`${a.done} z ${a.total} splněno (počítadla se počítají poměrem).`:`${a.done} of ${a.total} done (counters count proportionally).`)+(a.pending?` ${cs?`${a.pending} zlozvyk zatím bez záznamu — nepočítá se.`:`${a.pending} bad habit not logged yet — not counted.`}`:'');
+  }
+  if(k==='nutrition'){
+    if(a.score==null) return a.reason==='no_targets'?(cs?'Nejsou nastavené cíle výživy.':'No nutrition targets set.'):(cs?'Žádné jídlo ani voda zapsané — nehodnotí se.':'No meals or water logged — not scored.');
+    const bits=[];
+    if(a.caloriesTarget) bits.push(`${uiNum(a.calories)}/${uiNum(a.caloriesTarget)} kcal (${uiPct(a.calories,a.caloriesTarget)} %)`);
+    if(a.proteinTarget) bits.push(`${cs?'bílkoviny':'protein'} ${a.protein}/${a.proteinTarget} g`);
+    if(a.waterTarget) bits.push(`${cs?'voda':'water'} ${uiNum(a.water)}/${uiNum(a.waterTarget)} ml`);
+    return bits.join(' · ')+'. '+(cs?'Kalorie jsou nejlepší v pásmu 90–110 % cíle.':'Calories score best within 90–110 % of target.');
+  }
+  if(k==='sleep'){
+    if(a.score==null) return cs?'Spánek pro tento den není zapsaný.':'No sleep logged for this day.';
+    return `${String(a.hours).replace('.',cs?',':'.')} h${a.quality?` · ${cs?'kvalita':'quality'} ${a.quality}/5`:''}. ${cs?'Plné skóre v rozmezí 7–9 h.':'Full score between 7 and 9 h.'}`;
+  }
+  if(k==='fitness'){
+    if(a.score==null) return (cs?'Dnes nebyl naplánovaný trénink — nehodnotí se.':'No workout was planned — not scored.')+(a.bonus?` 💪 ${cs?'Bonus: trénink zapsán (mimo skóre).':'Bonus: workout logged (outside the score).'}`:'');
+    return a.workouts?(cs?'Naplánovaný trénink je splněný.':'The planned workout is done.'):(cs?'Trénink byl naplánovaný v kalendáři, ale není zapsaný.':'A workout was planned in the calendar but not logged.');
+  }
+  return '';
+}
+function uiOpenDailyScore(D){
+  const snap=D<todayStr()&&S.dailyScores?S.dailyScores[D]:null;
+  const r=snap?{score:snap.score,label:snap.label,areas:Object.assign({goals:{score:null,milestones:[]}},snap.areas)}:dailyScore(D);
+  const isToday=D===todayStr();
+  const ms=(r.areas.goals&&r.areas.goals.milestones)||[];
+  const content=el(`<div class="ds-detail" data-ds="detail">
+    <h3>Daily Score</h3>
+    <div class="sub" style="margin:-8px 0 14px">${fmtDate(D)}${isToday?' · '+uiDsT('live'):snap?' · '+uiDsT('snap'):''}</div>
+    <div class="today-grid" style="margin-bottom:14px">${uiDsRing(r.score,'lg')}
+      <div>${r.score==null?`<div class="hud-name" style="font-size:18px">${uiDsT('nothing')}</div><p class="sub" style="margin-top:6px">${uiDsT('nothing_d')}</p>`:`<div class="hud-name" style="font-size:20px">${uiDsLabel(r.label)}</div><div class="sub num" style="margin-top:2px">${r.score} / 100</div>`}</div>
+    </div>
+    <div class="section-header" style="margin-top:4px"><h3>${uiDsT('why')}</h3></div>
+    <div class="ds-areas">${UI_DS_AREAS.map(k=>{ const a=r.areas[k]||{score:null}; return `<div class="ds-area${a.score==null?' is-na':''}" data-area="${k}"><div class="between"><b>${uiDsT(k)}</b><span class="chip ${uiDsTone(a.score)}">${a.score==null?uiDsT('na'):a.score+' %'}</span></div>${a.score!=null?`<div class="bar${a.score>=75?' is-success':a.score>=50?'':' is-warn'}" style="margin:8px 0 6px"><i style="width:${a.score}%"></i></div>`:''}<div class="sub">${uiDsReason(k,a)}</div></div>`; }).join('')}
+      ${ms.length?`<div class="ds-area is-na" data-area="goals"><div class="between"><b>${uiDsT('goals')}</b><span class="chip is-muted">${uiDsT('na')}</span></div><div class="sub">🚩 ${ms.map(escapeHtml).join(', ')}</div></div>`:''}
+    </div>
+    <p class="helper-text" style="margin:12px 0 0">${uiDsT('weights')}</p>
+    <p class="helper-text" style="margin:4px 0 0">${uiDsT('separate')}</p>
+  </div>`);
+  openSheet(content);
 }
 function uiGreeting(){
   const h=new Date().getHours();
