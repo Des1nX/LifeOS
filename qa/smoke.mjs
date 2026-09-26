@@ -65,6 +65,9 @@ async function injectRawIdb(page) {
   });
 }
 const settle = page => page.waitForTimeout(450); // > scheduleSave()'s 250 ms debounce
+// Persist through the app's own flushSave() and wait until IndexedDB holds exactly S (for state
+// changed by code paths that don't schedule a save themselves, e.g. boot settling, grantXp()).
+const persist = async page => { await page.evaluate(() => flushSave()); await page.waitForFunction(async () => JSON.stringify(await rawIdbGet()) === JSON.stringify(S)); };
 const stateOf = page => page.evaluate(() => JSON.parse(JSON.stringify(S)));
 const idbState = page => page.evaluate(async () => JSON.parse(JSON.stringify(await rawIdbGet()))); // JSON view, like stateOf (xpLog.key may be undefined)
 const go = (page, v) => page.evaluate(v => { view = v; render(); }, v);
@@ -241,7 +244,7 @@ test('level system: crossing a level pays Skill/Attribute points once and surviv
   assert.deepEqual(d(s.rpg.skillPoints, b.rpg.skillPoints), { available: 1, earned: 1, spent: 0 }, '+1 Skill Point');
   assert.deepEqual(d(s.rpg.attributePoints, b.rpg.attributePoints), { available: 3, earned: 3, spent: 0 }, '+3 Attribute Points');
   assert.equal(s.rpg.activityLog.find(a => a.type === 'levelup').title, 'Level ' + (level + 1));
-  await settle(page); await reload(page);
+  await persist(page); await reload(page);
   const r = await stateOf(page);
   assert.deepEqual(r.rpg, s.rpg, 'reload does not re-pay rewards');
   assert.equal(r.totalXp, s.totalXp);
@@ -256,6 +259,10 @@ test('persistence: IndexedDB round-trip is lossless (fixture -> boot -> save -> 
   for (const k of Object.keys(fx)) if (!DERIVED.includes(k)) assert.deepEqual(booted1[k], fx[k], `migrate keeps ${k} unchanged`);
   assert.deepEqual(booted1.xpLog.slice(0, fx.xpLog.length), fx.xpLog, 'xpLog history kept as prefix');
   for (const [k, v] of Object.entries(fx.settings)) if (k !== 'widgets' && k !== 'widgetOrder') assert.deepEqual(booted1.settings[k], v, `settings.${k}`);
+  // boot() settles derived state in memory but does not itself persist it (that happens on the
+  // next save or on pagehide). Persist it through the app's own flushSave() and wait for the
+  // write, so the reload below really boots the settled state instead of racing the unload.
+  await persist(page);
   await reload(page);
   assert.deepEqual(await stateOf(page), booted1, 'second boot of a settled state changes nothing');
   await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="task"]');
