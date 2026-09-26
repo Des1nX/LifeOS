@@ -481,10 +481,12 @@ test('8B CRUD: every create form saves exactly one record through the redesigned
     await page.evaluate(o => eval(o), open);
     await page.waitForTimeout(40);
     // Fill every empty field the way a person would (text -> "QA x", numbers -> 5, times -> 07:00).
+    const trace = [];
     for (const h of await page.$$('.sheet input:not([type=checkbox]):not([type=file]):not(.hide), .sheet textarea')) {
-      const [type, val] = await h.evaluate(n => [n.type, n.value]);
-      if (val) continue;
-      if (type === 'number') await h.fill('5'); else if (type === 'time') await h.fill('07:00'); else if (type === 'date') continue; else await h.fill('QA ' + coll);
+      const [type, val, id] = await h.evaluate(n => [n.type, n.value, n.id || n.className]);
+      if (val) { trace.push(`${id}:had=${val}`); continue; }
+      if (type === 'number') await h.fill('5'); else if (type === 'time') await h.fill('07:00'); else if (type === 'date') { trace.push(`${id}:date`); continue; } else await h.fill('QA ' + coll);
+      trace.push(`${id}:filled->${await h.evaluate(n => n.value + '|' + (document.activeElement && document.activeElement.id) + '|' + n.isConnected)}`);
     }
     if (coll === 'budgets') await page.selectOption('#b_cat', 'Transport'); // one budget per category is an app rule; Food already has one
     const save = page.locator('.sheet [id$="_save"]').first();
@@ -492,7 +494,11 @@ test('8B CRUD: every create form saves exactly one record through the redesigned
     await save.click();
     await page.waitForTimeout(40);
     const after = await page.evaluate(c => S[c].length, coll);
-    if (after !== before + 1) failures.push(`${open}: ${coll} ${before} -> ${after}`);
+    if (after !== before + 1) {
+      const diag = await page.evaluate(() => ({ sheet: !!document.querySelector('.sheet'), toasts: [...document.querySelectorAll('#toasts .toast')].map(t => t.textContent), queued: uiToastQueue.map(t => t.msg).concat(uiToastBurst),
+        fields: [...document.querySelectorAll('.sheet input, .sheet select, .sheet textarea')].map(n => `${n.id || n.className}=${n.value}`), active: document.activeElement && (document.activeElement.id || document.activeElement.className) }));
+      failures.push(`${open}: ${coll} ${before} -> ${after} ${JSON.stringify(diag)} TRACE ${trace.join(' ')}`);
+    }
   }
   assert.deepEqual(failures, []);
 }, { state: fixtureState() });
@@ -753,6 +759,18 @@ test('9 Statistics: averages/best come from stored snapshots only, missing days 
   const d = page.locator('[data-ds="detail"]');
   assert.match(await d.innerText(), /uložený snímek dne/);
   assert.equal((await d.locator('.ring > span').innerText()).trim(), '90', 'past day shows its stored snapshot, not a recomputation');
+}, { state: fixtureState() });
+
+test('8B fix: a late sheet auto-focus never steals focus from a field the user is typing in', async ({ page }) => {
+  // Reproduces the race found by the CRUD test: openSheet()'s 30 ms focus timer firing late (slow device).
+  await page.evaluate(() => { const o = window.setTimeout; window.setTimeout = (f, ms, ...a) => o(f, ms === 30 ? 400 : ms, ...a); });
+  await page.evaluate(() => openFinanceForm('expense'));
+  await page.focus('#f_desc'); await page.keyboard.type('Groceries');
+  await page.waitForTimeout(500);                                   // the delayed timer has fired by now
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'f_desc', 'focus stays where the user is');
+  await page.keyboard.type(' more');
+  assert.equal(await page.inputValue('#f_desc'), 'Groceries more');
+  assert.equal(await page.inputValue('#f_amt'), '');
 }, { state: fixtureState() });
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {

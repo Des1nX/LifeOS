@@ -5175,7 +5175,8 @@ function openSheet(contentEl){
   bg.onkeydown=(e)=>{ if(e.key==='Escape'&&bg.onclick) bg.remove(); };
   document.body.appendChild(bg);
   const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button');
-  setTimeout(()=>{ try{ (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
+  // Never steal focus from a field the user already moved to (the timer can fire late on slow devices).
+  setTimeout(()=>{ try{ if(sheet.contains(document.activeElement)) return; (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
   sheet.tabIndex=-1;
   return bg;
 }

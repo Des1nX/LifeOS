@@ -7,7 +7,7 @@ everything here is test tooling only (acorn, playwright, pngjs, pixelmatch as de
 cd qa && npm install          # uses the preinstalled Chromium
 npm test                      # fingerprint check + smoke suite
 npm run fingerprint           # business-logic fingerprint vs baseline/fingerprint.json
-npm run smoke                 # Playwright suite (50 tests)
+npm run smoke                 # Playwright suite (51 tests)
 npm run screens:compare       # pixel-compare fresh screenshots with baseline/screens-8b
 npm run screens               # re-record baseline/screens-8b (only after an intended UI change)
 node shot.mjs <dir> <width> <theme> view[:action],...   # dev helper for quick screenshots
