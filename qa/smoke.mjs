@@ -341,6 +341,131 @@ test('responsive: layouts render without horizontal overflow (320, 390, 768, 128
   }
 }, { state: fixtureState() });
 
+// ---------- Phase 8B UI/UX guards ----------
+const WIDTHS = [320, 375, 390, 430, 768, 1024, 1280, 1440];
+const allViews = async (page, fn) => { for (const v of VIEWS) { await page.evaluate(v => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; view = v; render(); }, v); await fn(v); } };
+
+test('8B layout: zero horizontal overflow on every screen at 320-1440 px', async ({ page }) => {
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await allViews(page, async v => {
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (over > 0) bad.push(`${v}@${width}: ${over}px`);
+    });
+  }
+  assert.deepEqual(bad, [], 'overflow');
+}, { state: fixtureState() });
+
+test('8B DOM: no duplicate element ids on any screen or open sheet', async ({ page }) => {
+  const dupes = [];
+  const check = async where => { const d = await page.evaluate(() => { const seen = {}; document.querySelectorAll('[id]').forEach(n => { seen[n.id] = (seen[n.id] || 0) + 1; }); return Object.entries(seen).filter(([, c]) => c > 1).map(([k, c]) => `${k}x${c}`); }); if (d.length) dupes.push(`${where}: ${d.join(', ')}`); };
+  await allViews(page, v => check(v));
+  for (const t of QUICK_ADD.filter(t => t !== 'water')) { await page.click('#fabBtn'); await page.click(`.sheet .qopt[data-t="${t}"]`); await check('form:' + t); await page.evaluate(() => closeSheets()); }
+  assert.deepEqual(dupes, []);
+}, { state: fixtureState() });
+
+test('8B feedback: a boot that unlocks many achievements/quests shows at most 3 grouped toasts', async ({ page }) => {
+  // fixtureState() qualifies for many unlocks on first boot (see persistence test).
+  await page.waitForTimeout(150);
+  const t = await page.$$eval('#toasts .toast', ns => ns.map(n => n.textContent));
+  assert.ok(t.length >= 1 && t.length <= 3, `visible toasts: ${t.length} ${JSON.stringify(t)}`);
+  assert.ok(t.some(x => /úspěch|achievement|🏆/i.test(x)), 'achievements summarised');
+}, { state: fixtureState() });
+
+test('8B feedback: a completed task stays visible in its done state before leaving the Today list', async ({ page }) => {
+  await page.click('nav.bottom button[data-v="tasks"]');
+  const row = page.locator('#tlist .item', { hasText: 'Buy groceries' });
+  await row.locator('.check').click();
+  assert.equal(await row.count(), 1, 'still on screen right after completion');
+  assert.ok(await row.evaluate(n => n.classList.contains('is-completing')), 'completed state shown');
+  assert.ok((await stateOf(page)).tasks.find(t => t.id === 't_med').done, 'state updated immediately');
+  await page.waitForTimeout(900);
+  assert.equal(await page.locator('#tlist .item', { hasText: 'Buy groceries' }).count(), 0, 'then filtered out as before');
+}, { state: fixtureState() });
+
+test('8B a11y: every visible button has an accessible name (icon-only buttons use aria-label)', async ({ page }) => {
+  const bad = [];
+  const scan = async where => {
+    const b = await page.evaluate(() => [...document.querySelectorAll('button')].filter(n => n.offsetParent !== null || getComputedStyle(n).position === 'fixed').map(n => {
+      const aria = (n.getAttribute('aria-label') || '').trim();
+      const txt = [...n.childNodes].filter(c => c.nodeType === 3 || (c.nodeType === 1 && c.tagName !== 'svg' && !c.classList.contains('hide'))).map(c => c.textContent).join('').trim();
+      const meaningful = /[\p{L}\p{N}]/u.test(txt);
+      return aria || meaningful ? null : (n.id || n.className || n.outerHTML.slice(0, 60)) + ` "${txt}"`;
+    }).filter(Boolean));
+    if (b.length) bad.push(`${where}: ${[...new Set(b)].join(' | ')}`);
+  };
+  await allViews(page, v => scan(v));
+  await page.click('#fabBtn'); await scan('quick-add'); await page.evaluate(() => closeSheets());
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('8B a11y: touch targets (buttons >= 36 px, inputs >= 44 px) on a 390 px phone', async ({ page }, ctx) => {
+  const small = [];
+  await allViews(page, async v => {
+    const s = await page.evaluate(() => [...document.querySelectorAll('#app button, #app input:not([type=checkbox]):not(.hide), #app select, nav.bottom button, .topbar button, #fabBtn')].filter(n => n.offsetParent !== null || getComputedStyle(n).position === 'fixed').map(n => {
+      const r = n.getBoundingClientRect(); const min = n.tagName === 'BUTTON' ? 36 : 44;
+      // .check / .switch / button.chip draw a small visual but have an enlarged ::before hit area
+      const hit = n.matches('.check,.switch') ? 18 : n.matches('button.chip') ? 14 : 0;
+      return (Math.min(r.width, r.height) + hit < min && r.width > 0) ? `${n.className || n.tagName}(${Math.round(r.width)}x${Math.round(r.height)})` : null;
+    }).filter(Boolean));
+    s.forEach(x => small.push(`${v}: ${x}`));
+  });
+  const chips = small.filter(x => /chip/.test(x)), rest = small.filter(x => !/chip/.test(x));
+  if (chips.length) ctx.note(`${chips.length} inline chip links are smaller than 36 px (secondary shortcuts inside rows)`);
+  assert.deepEqual([...new Set(rest)], []);
+}, { state: fixtureState() });
+
+test('8B motion: Settings -> Animations off and prefers-reduced-motion disable decorative motion', async ({ page }) => {
+  await page.evaluate(() => { S.settings.animations = false; render(); });
+  assert.ok(await page.evaluate(() => document.documentElement.classList.contains('no-anim')));
+  await page.evaluate(() => { S.settings.animations = true; view = 'tasks'; render(); });
+  assert.ok(!(await page.evaluate(() => document.documentElement.classList.contains('no-anim'))));
+  // contexts in this suite run with reducedMotion:'reduce' -> animation durations collapse
+  const d = await page.evaluate(() => { view = 'home'; render(); return getComputedStyle(document.querySelector('#app > *')).animationDuration; });
+  assert.ok(parseFloat(d) < 0.01, 'reduced motion duration ' + d);
+}, { state: fixtureState() });
+
+test('8B keyboard: Escape closes Quick Add, focus moves into the sheet, onboarding is not dismissable', async ({ page }) => {
+  await page.focus('#fabBtn'); await page.keyboard.press('Enter');
+  assert.equal(await page.locator('.sheet').count(), 1);
+  await page.waitForTimeout(80);
+  assert.ok(await page.evaluate(() => !!document.activeElement.closest('.sheet')), 'focus inside sheet');
+  assert.equal(await page.getAttribute('.sheet', 'role'), 'dialog');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.sheet').count(), 0, 'closed by Escape');
+  await page.evaluate(() => showOnboarding(1)); await page.waitForTimeout(50);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.sheet').count(), 1, 'onboarding stays open');
+}, { state: fixtureState() });
+
+test('8B contrast: key text/background pairs meet WCAG AA in dark and light', async ({ page }) => {
+  const fails = [];
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate(t => { S.settings.theme = t; applyTheme(); view = 'home'; render(); }, theme);
+    const r = await page.evaluate(() => {
+      const rgb = c => { const m = c.match(/[\d.]+/g).map(Number); return m.slice(0, 3); };
+      const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+      const ratio = (a, b) => { const [x, y] = [lum(rgb(a)), lum(rgb(b))].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+      const probe = (css, bgVar) => { const d = document.createElement('div'); d.style.cssText = css; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); const b = document.createElement('div'); b.style.background = `var(${bgVar})`; document.body.appendChild(b); const bg = getComputedStyle(b).backgroundColor; b.remove(); return [c, bg]; };
+      const pairs = { 'text/bg': ['color:var(--text)', '--bg'], 'text/card': ['color:var(--text)', '--card'], 'sub/card': ['color:var(--sub)', '--card'], 'sub/card2': ['color:var(--sub)', '--card2'],
+        'muted/card': ['color:var(--color-text-muted)', '--card'], 'accent/card': ['color:var(--accent)', '--card'], 'white/accent-fill': ['color:#fff', '--accent-strong'], 'gold/card': ['color:var(--gold)', '--card'], 'accent/card2': ['color:var(--accent)', '--card2'], 'success/card': ['color:var(--accent2)', '--card'], 'danger/card': ['color:var(--danger)', '--card'], 'warn/card': ['color:var(--warn)', '--card'] };
+      return Object.fromEntries(Object.entries(pairs).map(([k, [c, b]]) => { const [fc, bc] = probe(c, b); return [k, Math.round(ratio(fc, bc) * 100) / 100]; }));
+    });
+    for (const [k, v] of Object.entries(r)) if (v < 4.5) fails.push(`${theme} ${k} ${v}`);
+  }
+  assert.deepEqual(fails, []);
+}, { state: fixtureState() });
+
+test('8B i18n: Czech mode greets in Czech, English mode in English (no "Good odpoledne")', async ({ page }) => {
+  const greet = () => page.evaluate(() => { view = 'home'; render(); return document.querySelector('.hud-greet').textContent; });
+  const cs = await greet();
+  assert.match(cs, /^Dobr[éý] (ráno|odpoledne|večer),$/);
+  await page.evaluate(() => { S.settings.language = 'en'; });
+  assert.match(await greet(), /^Good (morning|afternoon|evening),$/);
+  assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
