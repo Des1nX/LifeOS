@@ -606,6 +606,41 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .ex-row>span:last-child{flex:none}
 @media(max-width:374px){.wk-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+/* Stats / lists */
+.kv{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent);font-size:var(--fs-body-sm)}
+.kv:last-child{border-bottom:none}
+.kv>span{color:var(--sub);min-width:0}
+.kv>b{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+@media(min-width:900px){.stats-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3);align-items:start}}
+/* Notes / journal / search */
+.search-field{position:relative;margin-bottom:12px}
+.search-field>span{position:absolute;left:14px;top:14px;font-size:15px;pointer-events:none;opacity:.7}
+.search-field input{padding-left:40px;margin:0;border-radius:var(--radius-pill)}
+.search-field.is-lg input{min-height:52px;font-size:17px}
+.notes-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-2)}
+@media(min-width:700px){.notes-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+.note-card{margin:0}
+.note-card.is-pinned{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.note-body{margin-top:8px;color:var(--sub);font-size:var(--fs-body-sm);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.note-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.iconbtn.ghost-ic.is-on{background:var(--color-accent-muted);opacity:1}
+.iconbtn.ghost-ic.pinB:not(.is-on),.iconbtn.ghost-ic.favB:not(.is-on){filter:grayscale(1);opacity:.55}
+.journal-cta{display:flex;align-items:center;gap:12px}
+.journal-card .mood{font-size:26px;line-height:1}
+.search-hit{border:1px solid var(--line)}
+/* Car */
+.car-card .odo{display:flex;align-items:baseline;gap:8px;margin:14px 0 10px;padding:12px 14px;border-radius:14px;background:var(--color-surface-muted);border:1px solid var(--line)}
+.car-card .odo b{font-family:var(--font-display);font-size:28px;font-weight:850;letter-spacing:.02em}
+.car-alerts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;padding:10px 12px;border-radius:14px;background:var(--color-warning-muted);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);font-size:var(--fs-body-sm);font-weight:600}
+.car-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.car-date{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card2);min-width:0}
+.car-date b{font-size:15px;font-variant-numeric:tabular-nums}
+.car-date.is-warn{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 55%,transparent)}
+.car-date.is-warn .sub{color:var(--warn);font-weight:700}
+.car-date.is-danger{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger) 55%,transparent)}
+.car-date.is-danger .sub{color:var(--danger);font-weight:700}
+@media(min-width:700px){.car-dates{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 /* Metric rows (nutrition macros, budgets, targets) */
 .metric{margin-bottom:12px}
 .metric:last-child{margin-bottom:0}
@@ -1829,6 +1864,92 @@ function uiLocale(){ return uiLang()==='cs'?'cs-CZ':'en-US'; }
 function uiNum(n){ return Number(n||0).toLocaleString(uiLocale()); }
 function uiPct(v,max){ return max>0?Math.max(0,Math.min(100,Math.round(v/max*100))):0; }
 function uiTodayLong(){ try{ const s=new Date().toLocaleDateString(uiLocale(),{weekday:'long',day:'numeric',month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return fmtDate(todayStr()); } }
+// Czech rendering of the app's fixed English UI phrases (form labels/titles/buttons, stats,
+// health, car...). Used by uiL() in templates and by uiLocalizeTree() for sheets/forms.
+// Only exact whole-string matches are translated; stored values are never touched.
+const UI_PHRASES_CS={
+  // forms: titles & actions
+  'New Task':'Nový úkol','Edit Task':'Upravit úkol','New Habit':'Nový návyk','Edit Habit':'Upravit návyk','New Goal':'Nový cíl','Edit Goal':'Upravit cíl',
+  'New Milestone':'Nový milník','Edit Milestone':'Upravit milník','New Event':'Nová událost','Edit Event':'Upravit událost','New Note':'Nová poznámka','Edit Note':'Upravit poznámku',
+  'New Budget':'Nový rozpočet','Edit Budget':'Upravit rozpočet','New Expense':'Nový výdaj','Edit Expense':'Upravit výdaj','New Income':'Nový příjem','Edit Income':'Upravit příjem',
+  'Log Workout':'Zapsat trénink','Edit Workout':'Upravit trénink','New Workout':'Nový trénink','Log Meal':'Zapsat jídlo','Edit Meal':'Upravit jídlo','New Meal':'Nové jídlo',
+  "Today's Entry":'Dnešní zápis','Edit Entry':'Upravit zápis','New Entry':'Nový zápis','Journal Entry':'Zápis do deníku','New Vehicle':'Nové vozidlo','Edit Vehicle':'Upravit vozidlo',
+  'New Service':'Nový servis','Edit Service':'Upravit servis','Log Fuel':'Zapsat tankování','Edit Fuel':'Upravit tankování','New Fuel Entry':'Nové tankování','Edit Fuel Entry':'Upravit tankování',
+  'New Subscription':'Nové předplatné','Edit Subscription':'Upravit předplatné','Log Sleep':'Zapsat spánek','Edit Sleep':'Upravit spánek','Log Weight':'Zapsat váhu','Edit Weight':'Upravit váhu',
+  'Log Steps':'Zapsat kroky','Edit Steps':'Upravit kroky','Log Heart Rate':'Zapsat tep','Edit Heart Rate':'Upravit tep','Log Active Calories':'Zapsat aktivní kalorie','Edit Active Calories':'Upravit aktivní kalorie',
+  'Fuel — choose vehicle':'Tankování — vyber vozidlo','Save':'Uložit','Save Changes':'Uložit změny','Add Task':'Přidat úkol','Add Habit':'Přidat návyk','Add Goal':'Přidat cíl',
+  'Add Event':'Přidat událost','Save Note':'Uložit poznámku','Save Entry':'Uložit zápis','Add Meal':'Přidat jídlo','Add Milestone':'Přidat milník','Save Budget':'Uložit rozpočet',
+  'Add Vehicle':'Přidat vozidlo','Save Workout':'Uložit trénink','Add':'Přidat','Cancel':'Zrušit','Delete':'Smazat','Edit':'Upravit','+ Add exercise':'+ Přidat cvik','+ Exercise':'+ Cvik',
+  // labels
+  'Title':'Název','Description':'Popis','Category':'Kategorie','Priority':'Priorita','Due date':'Termín','Goal':'Cíl','XP reward':'Odměna XP','XP reward on completion':'Odměna XP za splnění',
+  'Name':'Název','Type':'Typ','Frequency':'Frekvence','Target':'Cíl','Weekdays':'Dny v týdnu','Reminder':'Připomínka','Reminder time (optional)':'Čas připomínky (nepovinné)','Active':'Aktivní',
+  'Status':'Stav','Progress mode':'Režim postupu','Manual progress (%)':'Ruční postup (%)','Target date':'Cílové datum','Amount':'Částka','Date':'Datum','Payment method':'Platební metoda',
+  'Tags (comma separated)':'Štítky (oddělené čárkou)','Recurring':'Opakování','Monthly limit':'Měsíční limit','Period':'Období','Duration (min)':'Délka (min)','Notes':'Poznámky',
+  'Servings':'Porce','Calories':'Kalorie','Calories (per serving)':'Kalorie (na porci)','Protein (g)':'Bílkoviny (g)','Carbs (g)':'Sacharidy (g)','Fat (g)':'Tuky (g)','Use saved food/recipe':'Použít uložené jídlo/recept',
+  'Body':'Text','Mood':'Nálada','Rating (1-10)':'Hodnocení (1–10)',"What's on your mind?":'Co máš na mysli?','Brand':'Značka','Model':'Model','Year':'Rok','Mileage (km)':'Nájezd (km)','Mileage':'Nájezd',
+  'VIN':'VIN','Registration/STK expiry':'Platnost STK','Insurance expiry':'Konec pojištění','Cost':'Cena','Liters':'Litry','Total cost':'Celková cena','Station':'Čerpací stanice',
+  'Price':'Cena','Next payment date':'Datum další platby','Start time':'Začátek','End time':'Konec','Location':'Místo','Repeat':'Opakovat','Linked Task':'Propojený úkol','Linked Goal':'Propojený cíl',
+  'Linked Habit':'Propojený návyk','Date (wake-up day)':'Datum (den probuzení)','Bedtime':'Usnutí','Wake time':'Probuzení','Quality (1-5)':'Kvalita (1–5)','Weight':'Váha','Unit':'Jednotka',
+  'Steps':'Kroky','Value (bpm)':'Hodnota (tep/min)','Water (ml)':'Voda (ml)','Workouts/week':'Tréninky/týden','Tasks/day':'Úkoly/den','Habits/day':'Návyky/den','Protein':'Bílkoviny',
+  'Pinned':'Připnuto','Favorite':'Oblíbené','Save as favorite custom food':'Uložit jako oblíbené jídlo',
+  // option labels (display only; values stay English)
+  'None':'Žádný','Low':'Nízká','Medium':'Střední','High':'Vysoká','Urgent':'Urgentní','Daily':'Denně','Weekly':'Týdně','Monthly':'Měsíčně','Yearly':'Ročně','none':'neopakovat',
+  'daily':'denně','weekly':'týdně','monthly':'měsíčně','weekdays':'vybrané dny','custom':'vlastní','Good (build)':'Dobrý (budovat)','Bad (avoid)':'Špatný (vyhýbat se)',
+  'Paused':'Pozastavený','Completed':'Splněno','Archived':'Archivovaný','Auto':'Automaticky','Manual':'Ručně','auto':'automaticky','manual':'ručně','Yes':'Ano','No':'Ne',
+  'Breakfast':'Snídaně','Lunch':'Oběd','Dinner':'Večeře','Snack':'Svačina','Oil Change':'Výměna oleje','Tires':'Pneumatiky','Inspection / STK':'Technická kontrola / STK',
+  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Učení','Finance':'Finance','Social':'Sociální',
+  'Home':'Domov','Food':'Jídlo','Transport':'Doprava','Shopping':'Nákupy','Bills':'Účty','Entertainment':'Zábava','Salary':'Mzda','Card':'Karta','Cash':'Hotovost','Bank':'Banka',
+  'general':'obecný','resting':'klidový','workout':'při tréninku','Inactive':'Neaktivní','Productivity':'Produktivita','Mindfulness':'Mindfulness',
+  // statistics / health
+  'Tasks':'Úkoly','Habits':'Návyky','Goals':'Cíle','Created':'Vytvořeno','Completion rate (all-time)':'Úspěšnost (celkem)','Overdue (now)':'Po termínu (nyní)',
+  'Tasks by priority':'Úkoly podle priority','Task completions':'Splněné úkoly','Check-ins (period)':'Splnění (období)','Completion % (period, good habits)':'Úspěšnost % (období, dobré návyky)',
+  'Current streak (best across habits)':'Aktuální streak (nejlepší návyk)','Best streak ever':'Nejlepší streak','Active habits':'Aktivní návyky','Good / Bad':'Dobré / špatné',
+  'Habit completions':'Splnění návyků','Average progress':'Průměrný postup','Milestones completed (period)':'Splněné milníky (období)','Milestones completed (all-time)':'Splněné milníky (celkem)',
+  'Goals by category':'Cíle podle kategorie','XP / RPG':'XP / RPG','XP earned (period)':'Získané XP (období)','XP today':'XP dnes','XP this week':'XP tento týden','XP this month':'XP tento měsíc',
+  'Level':'Level','Progress to next level':'Postup do dalšího levelu','Skill Points available':'Dostupné skill body','Attribute Points available':'Dostupné body atributů','XP trend':'Vývoj XP',
+  'Attributes':'Atributy','Workouts':'Tréninky','Sets':'Série','Reps':'Opakování','Total volume':'Celkový objem','Total duration (min)':'Celková doba (min)','Personal records (all-time)':'Osobní rekordy (celkem)',
+  'Workout volume':'Objem tréninků','Nutrition':'Výživa','Avg calories/day (logged)':'Prům. kalorie/den (zapsané)','Avg protein (g)':'Prům. bílkoviny (g)','Avg carbs (g)':'Prům. sacharidy (g)',
+  'Avg fat (g)':'Prům. tuky (g)','Avg water (ml)':'Prům. voda (ml)','Days logged':'Zapsané dny','Calorie target adherence':'Plnění kalorického cíle','Calories (per day logged)':'Kalorie (za zapsaný den)',
+  'Income':'Příjmy','Expenses':'Výdaje','Balance':'Zůstatek','Savings (positive balance)':'Úspory (kladný zůstatek)','Transactions':'Transakce','Expenses by category':'Výdaje podle kategorií',
+  'Income vs Expenses (net balance)':'Příjmy vs. výdaje (čistý zůstatek)','Sleep / Health':'Spánek / zdraví','Avg sleep (period)':'Prům. spánek (období)','Sleep days logged':'Zapsané noci',
+  'Avg steps/day (period)':'Prům. kroky/den (období)','Steps days logged':'Dny s kroky','Weight trend (period)':'Vývoj váhy (období)','Sleep duration':'Délka spánku','Journal':'Deník','Entries':'Zápisy',
+  'Average rating':'Průměrné hodnocení','Days with an entry':'Dny se zápisem','Mood distribution':'Rozložení nálad','Streaks':'Streaky','Best habit streak (any habit, all-time)':'Nejlepší streak (celkem)',
+  'Current habit streak (any habit)':'Aktuální streak návyku','Current task-completion streak':'Aktuální streak úkolů','Statistics':'Statistiky','Today':'Dnes','Week':'Týden','Month':'Měsíc',
+  'No data for this period.':'Za toto období nejsou data.','No tasks yet.':'Zatím žádné úkoly.','No goals yet.':'Zatím žádné cíle.','No expenses yet.':'Zatím žádné výdaje.','No journal entries yet.':'Zatím žádné zápisy.',
+  "Change-over-period isn't shown: attribute deltas aren't individually tracked per grant, so a per-period breakdown can't be derived from real data without inventing numbers.":'Změna za období se nezobrazuje: přírůstky atributů se jednotlivě neukládají, takže je nelze odvodit z reálných dat bez vymýšlení čísel.',
+  'Last night':'Poslední noc','Avg (30d)':'Průměr (30 d)','Shortest / Longest':'Nejkratší / nejdelší','Consistency':'Pravidelnost','Average quality':'Průměrná kvalita','Latest':'Poslední',
+  'Trend (30d)':'Trend (30 d)','Sleep duration trend (30d)':'Délka spánku (30 d)','Weight trend (30d)':'Vývoj váhy (30 d)','Steps trend (30d)':'Kroky (30 d)','Heart rate trend (30d)':'Tep (30 d)',
+  'Active calories trend (30d)':'Aktivní kalorie (30 d)','No data':'Žádná data','Need 2+ nights':'Potřeba 2+ nocí','Sleep':'Spánek','Heart Rate':'Tep','Active Cal':'Aktivní kcal','Health':'Zdraví',
+  'No sleep logged yet.':'Zatím žádný spánek.','No weight logged yet.':'Zatím žádná váha.','No steps logged yet.':'Zatím žádné kroky.','No heart rate logged yet.':'Zatím žádný tep.','No active calories logged yet.':'Zatím žádné aktivní kalorie.',
+  'quality':'kvalita','steps':'kroků',
+  // car
+  'Services':'Servis','Fuel':'Tankování','No services logged.':'Žádné servisní záznamy.','No fuel entries logged.':'Žádná tankování.','Service':'Servis','Fuel spend':'Palivo celkem','Service spend':'Servis celkem',
+  'Avg consumption':'Prům. spotřeba','Registration/STK':'STK','Oil change':'Výměna oleje','Last oil change':'Poslední výměna oleje','Last tire change':'Poslední přezutí','Car':'Auto',
+  // notes / journal / search
+  'Untitled':'Bez názvu','Pin':'Připnout','Unpin':'Odepnout','Unfavorite':'Odebrat z oblíbených','This month':'Tento měsíc','Search':'Hledat','Type at least 2 characters.':'Napiš aspoň 2 znaky.','No results.':'Žádné výsledky.',
+  'Notes':'Poznámky','Journal':'Deník','Quests':'Výpravy','Subscriptions':'Předplatné','Events':'Události','Milestones':'Milníky','Meals':'Jídla','Vehicles':'Vozidla','Achievements':'Úspěchy',
+  'Could not load your data':'Nepodařilo se načíst data',
+};
+function uiL(s){ return uiLang()==='cs'&&UI_PHRASES_CS[s]!=null?UI_PHRASES_CS[s]:s; }
+// Translates the fixed UI text of a freshly built sheet/form in place: direct text nodes of
+// headings, labels and buttons, and option labels. An <option> without a value attribute takes
+// its value from its text, so its current text is first pinned as the value attribute --
+// every select keeps submitting exactly the same (English) stored value as before.
+function uiLocalizeTree(root){
+  if(uiLang()!=='cs'||!root) return;
+  root.querySelectorAll('h2,h3,h4,label,button,option,.uiL').forEach(n=>{
+    if(n.tagName==='OPTION'){ if(!n.hasAttribute('value')) n.setAttribute('value',n.textContent); }
+    n.childNodes.forEach(c=>{
+      if(c.nodeType!==3) return;
+      const raw=c.nodeValue, t=raw.trim();
+      if(!t) return;
+      let tr2=UI_PHRASES_CS[t];
+      if(tr2==null){ const m=/^([+＋]\s*)(.+)$/.exec(t); if(m&&UI_PHRASES_CS[m[2]]!=null) tr2=m[1]+UI_PHRASES_CS[m[2]]; }
+      if(tr2!=null) c.nodeValue=raw.replace(t,tr2);
+    });
+  });
+  root.querySelectorAll('[placeholder]').forEach(n=>{ const p=n.getAttribute('placeholder'); if(UI_PHRASES_CS[p]!=null) n.setAttribute('placeholder',UI_PHRASES_CS[p]); });
+}
 // Line icons (24px grid, currentColor) for the app chrome; content keeps its emoji icons.
 const UI_ICONS={
   home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
@@ -1849,6 +1970,23 @@ function uiIcon(name,size){ return `<svg viewBox="0 0 24 24" width="${size||22}"
 // Empty state: headline + explanation + optional CTA (wired by the caller via .emptyCta).
 function uiEmpty(ic,title,text,cta){
   return `<div class="empty"><div class="e" aria-hidden="true">${ic}</div><div class="empty-title">${title}</div>${text?`<div class="empty-text">${text}</div>`:''}${cta?`<button class="btn sm emptyCta">${cta}</button>`:''}</div>`;
+}
+// Restores focus + caret to an input that render() just rebuilt (live-filter fields).
+function uiRefocus(id){ const n=document.getElementById(id); if(!n) return; n.focus({preventScroll:true}); try{ const L=n.value.length; n.setSelectionRange(L,L); }catch(e){} }
+// Czech rendering of reminder strings built by getActiveReminders()/carReminders() (numbers unchanged).
+function uiReminderText(t,r){
+  if(uiLang()!=='cs') return t;
+  if(r&&r.prefType==='quest'){ const q=[...DAILY_QUESTS,...WEEKLY_QUESTS].find(x=>x.id===r.id); if(q) return '📜 Výprava: '+uiQuestTitle(q); }
+  return t.replace(/^⏰ Overdue: /,'⏰ Po termínu: ')
+    .replace(/^📅 Today: (.*?)(?: at (.+))?$/,(_,a,c)=>'📅 Dnes: '+a+(c?' v '+c:''))
+    .replace(/^📅 (.*) in (\d+)d$/,'📅 $1 za $2 d')
+    .replace(/^🔥 Habit: /,'🔥 Návyk: ')
+    .replace(/^💳 (.*) renews today$/,'💳 $1 se obnovuje dnes').replace(/^💳 (.*) renews in (\d+)d$/,'💳 $1 se obnoví za $2 d')
+    .replace(/^🎯 Goal due: (.*) \((\d+)d\)$/,'🎯 Termín cíle: $1 ($2 d)')
+    .replace(/^🛢️ Oil change due \((\d+)km \/ (\d+)mo since last\)$/,'🛢️ Čas na výměnu oleje ($1 km / $2 měs. od poslední)')
+    .replace(/^🛞 Tires may need replacing \((\d+)km since last change\)$/,'🛞 Pneumatiky možná potřebují výměnu ($1 km od poslední)')
+    .replace(/^📋 STK\/inspection expired (\d+)d ago$/,'📋 STK prošlá před $1 d').replace(/^📋 STK\/inspection due in (\d+)d$/,'📋 STK za $1 d')
+    .replace(/^🛡️ Insurance expired (\d+)d ago$/,'🛡️ Pojištění skončilo před $1 d').replace(/^🛡️ Insurance renews in (\d+)d$/,'🛡️ Pojištění se obnoví za $1 d');
 }
 function uiBack(label){ return `<div class="back-row"><button class="iconbtn" id="backBtn" aria-label="${uiT('back')}">${uiIcon('back',20)}</button><span class="sub">${label||''}</span></div>`; }
 function uiPageHead(title,subtitle,actionHtml){ return `<div class="page-head"><div><h2>${title}</h2>${subtitle?`<div class="sub">${subtitle}</div>`:''}</div>${actionHtml||''}</div>`; }
@@ -1874,7 +2012,7 @@ function renderHome(){
       const rc=el(`<div class="reminder-strip" id="hRem" role="list" aria-label="${uiT('reminders')}"></div>`);
       const rl=rc;
       items.forEach(r=>{
-        const row=el(`<button class="reminder" role="listitem"><span>${escapeHtml(r.text)}</span></button>`);
+        const row=el(`<button class="reminder" role="listitem"><span>${escapeHtml(uiReminderText(r.text,r))}</span></button>`);
         row.onclick=()=>{
           if(r.navType==='quest'){ searchNavigate('quest',null); return; }
           const obj=resolveReminderEntity(r.navType,r.id);
@@ -3336,25 +3474,28 @@ function openMealForm(existing){
 /* ---- Notes module ---- */
 let noteSearch='';
 function renderNotes(){
-  const wrap=el(`<div><h2>Notes</h2>
-    <input id="nSearch" placeholder="Search notes..." value="${escapeHtml(noteSearch)}">
-    <button class="btn" id="addNote" style="margin-bottom:12px">+ New Note</button>
-    <div class="list" id="noteList"></div>
+  const cs=uiLang()==='cs';
+  const wrap=el(`<div>${uiPageHead(uiL('Notes'),'',`<button class="btn sm" id="addNote">＋ ${cs?'Poznámka':'Note'}</button>`)}
+    <div class="search-field"><span aria-hidden="true">🔎</span><input id="nSearch" type="search" aria-label="${cs?'Hledat v poznámkách':'Search notes'}" placeholder="${cs?'Hledat v poznámkách…':'Search notes...'}" value="${escapeHtml(noteSearch)}"></div>
+    <div class="notes-grid" id="noteList"></div>
   </div>`);
-  wrap.querySelector('#nSearch').oninput=(e)=>{noteSearch=e.target.value;render();};
+  // render() rebuilds the screen on every keystroke; keep focus + caret in the search field.
+  wrap.querySelector('#nSearch').oninput=(e)=>{noteSearch=e.target.value;render();uiRefocus('nSearch');};
   const list=wrap.querySelector('#noteList');
   let notes=[...S.notes].sort((a,b)=>(b.pinned-a.pinned)||(b.updatedAt-a.updatedAt));
   if(noteSearch){
     const q=noteSearch.toLowerCase();
     notes=notes.filter(n=>(n.title+' '+n.body+' '+(n.tags||[]).join(' ')).toLowerCase().includes(q));
   }
-  if(!notes.length) list.appendChild(el(`<div class="empty"><div class="e">📝</div>No notes found.</div>`));
+  if(!notes.length){ const e=el(`<div class="card">${noteSearch?uiEmpty('🔎',cs?'Nic nenalezeno':'No notes found',cs?'Zkus jiný výraz.':'Try a different search.',''):uiEmpty('📝',cs?'Zatím žádné poznámky':'No notes yet',cs?'Zapiš si nápad, seznam nebo cokoli k zapamatování.':'Capture an idea, a list or anything worth keeping.','＋ '+(cs?'Poznámka':'Note'))}</div>`); const c=e.querySelector('.emptyCta'); if(c) c.onclick=()=>openNoteForm(); list.appendChild(e); }
   notes.forEach(n=>{
-    const it=el(`<div class="card">
-      <div class="between"><div class="item-title">${n.pinned?'📌 ':''}${n.favorite?'⭐ ':''}${escapeHtml(n.title||'Untitled')}</div><span class="sub">${n.category||''}</span></div>
-      <div class="sub" style="margin:6px 0;white-space:pre-wrap">${escapeHtml((n.body||'').slice(0,140))}${(n.body||'').length>140?'…':''}</div>
-      ${(n.tags||[]).length?`<div class="sub" style="margin-bottom:6px">${(n.tags||[]).map(t=>'#'+escapeHtml(t)).join(' ')}</div>`:''}
-      <div class="row" style="gap:8px"><button class="pill sm pinB">${n.pinned?'Unpin':'Pin'}</button><button class="pill sm favB">${n.favorite?'Unfavorite':'Favorite'}</button><button class="pill sm editBtn">Edit</button><button class="delbtn">✕ Delete</button></div>
+    const ttl=escapeHtml(n.title||uiL('Untitled'));
+    const it=el(`<div class="card note-card${n.pinned?' is-pinned':''}">
+      <div class="between" style="align-items:flex-start"><div class="item-title">${ttl}</div>${n.category?`<span class="chip is-muted">${escapeHtml(uiL(n.category))}</span>`:''}</div>
+      ${n.body?`<div class="note-body">${escapeHtml((n.body||'').slice(0,220))}${(n.body||'').length>220?'…':''}</div>`:''}
+      ${(n.tags||[]).length?`<div class="row" style="gap:5px;flex-wrap:wrap;margin-top:8px">${(n.tags||[]).map(t=>`<span class="chip">#${escapeHtml(t)}</span>`).join('')}</div>`:''}
+      <div class="note-foot"><span class="sub">${n.updatedAt?fmtDate(uiIsoDate(n.updatedAt)):''}</span>
+        <div class="item-actions"><button class="iconbtn ghost-ic pinB${n.pinned?' is-on':''}" aria-pressed="${!!n.pinned}" aria-label="${uiL(n.pinned?'Unpin':'Pin')}: ${ttl}" title="${uiL(n.pinned?'Unpin':'Pin')}">📌</button><button class="iconbtn ghost-ic favB${n.favorite?' is-on':''}" aria-pressed="${!!n.favorite}" aria-label="${uiL(n.favorite?'Unfavorite':'Favorite')}: ${ttl}" title="${uiL(n.favorite?'Unfavorite':'Favorite')}">⭐</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${ttl}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${ttl}">✕</button></div></div>
     </div>`);
     it.querySelector('.pinB').onclick=()=>{n.pinned=!n.pinned;scheduleSave();render();};
     it.querySelector('.favB').onclick=()=>{n.favorite=!n.favorite;scheduleSave();render();};
@@ -3406,21 +3547,22 @@ function renderJournal(){
   const monthEntries=S.journal.filter(j=>j.date&&j.date.startsWith(ym));
   const avgRating = monthEntries.length ? Math.round(monthEntries.reduce((a,j)=>a+(Number(j.rating)||0),0)/monthEntries.length*10)/10 : null;
   const todaysEntry=S.journal.find(j=>j.date===today);
-  const wrap=el(`<div><h2>Journal</h2>
-    ${monthEntries.length?`<div class="card"><div class="between"><span class="sub">This month</span><b>${monthEntries.length} entries</b></div><div class="between" style="margin-top:6px"><span class="sub">Average rating</span><b>${avgRating}/10</b></div></div>`:''}
-    <button class="btn" id="addJ" style="margin-bottom:12px">${todaysEntry?"Edit Today's Entry":"+ Today's Entry"}</button>
+  const cs=uiLang()==='cs';
+  const wrap=el(`<div>${uiPageHead(uiL('Journal'))}
+    <button class="card is-link journal-cta" id="addJ" style="width:100%;text-align:left;font:inherit;color:inherit"><span class="icon-circle" aria-hidden="true">${todaysEntry?'✏️':'📔'}</span><span style="flex:1;min-width:0"><b>${todaysEntry?(cs?'Upravit dnešní zápis':"Edit today's entry"):(cs?'Napsat dnešní zápis':"Write today's entry")}</b><span class="sub" style="display:block">${uiTodayLong()}</span></span><span class="sub" aria-hidden="true">›</span></button>
+    ${monthEntries.length?`<div class="stat-grid"><div class="stat-card"><div class="stat-label">${uiL('This month')}</div><div class="stat-value">${monthEntries.length}</div></div><div class="stat-card"><div class="stat-label">${uiL('Average rating')}</div><div class="stat-value">${avgRating}<small>/10</small></div></div></div>`:''}
     <div class="list" id="jList"></div>
   </div>`);
   const list=wrap.querySelector('#jList');
   const entries=[...S.journal].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!entries.length) list.appendChild(el(`<div class="empty"><div class="e">📔</div>No journal entries yet.</div>`));
+  if(!entries.length) list.appendChild(el(`<div class="card">${uiEmpty('📔',uiL('No journal entries yet.'),cs?'Pár vět denně pomůže vidět, jak se ti daří.':'A few lines a day show how you are really doing.','')}</div>`));
   const moodIc={1:'😞',2:'😕',3:'😐',4:'🙂',5:'😄'};
   entries.forEach(j=>{
-    const it=el(`<div class="card">
-      <div class="between"><span class="item-title">${moodIc[j.mood]||'😐'} ${fmtDate(j.date)}</span><span class="sub">${j.rating||''}/10</span></div>
-      <div class="sub" style="margin:6px 0;white-space:pre-wrap">${escapeHtml(j.text||'')}</div>
-      ${(j.tags||[]).length?`<div class="sub" style="margin-bottom:6px">${(j.tags||[]).map(t=>'#'+escapeHtml(t)).join(' ')}</div>`:''}
-      <div class="row" style="gap:8px"><button class="pill sm editBtn">Edit</button><button class="delbtn">✕ Delete</button></div>
+    const it=el(`<div class="card journal-card">
+      <div class="between"><span class="row" style="gap:10px"><span class="mood" aria-label="mood ${j.mood||''}">${moodIc[j.mood]||'😐'}</span><span class="item-title">${fmtDate(j.date)}</span></span>${j.rating?`<span class="chip ${Number(j.rating)>=7?'is-success':Number(j.rating)<=4?'is-warn':'is-muted'}">${j.rating}/10</span>`:''}</div>
+      ${j.text?`<div class="note-body">${escapeHtml(j.text||'')}</div>`:''}
+      ${(j.tags||[]).length?`<div class="row" style="gap:5px;flex-wrap:wrap;margin-top:8px">${(j.tags||[]).map(t=>`<span class="chip">#${escapeHtml(t)}</span>`).join('')}</div>`:''}
+      <div class="note-foot"><span></span><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${fmtDate(j.date)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${fmtDate(j.date)}">✕</button></div></div>
     </div>`);
     it.querySelector('.editBtn').onclick=()=>openJournalForm(j);
     it.querySelector('.delbtn').onclick=()=>{
@@ -3500,12 +3642,12 @@ function carReminders(v){
   return out;
 }
 function renderCar(){
-  const wrap=el(`<div><h2>Car</h2>
-    <button class="btn" id="addV" style="margin-bottom:12px">+ Add Vehicle</button>
+  const cs=uiLang()==='cs';
+  const wrap=el(`<div>${uiPageHead(uiL('Car'),'',`<button class="btn sm" id="addV">＋ ${cs?'Vozidlo':'Vehicle'}</button>`)}
     <div class="list" id="vList"></div>
   </div>`);
   const vl=wrap.querySelector('#vList');
-  if(!S.vehicles.length) vl.appendChild(el(`<div class="empty"><div class="e">🚗</div>No vehicles added yet.</div>`));
+  if(!S.vehicles.length){ const e=el(`<div class="card">${uiEmpty('🚗',cs?'Zatím žádné vozidlo':'No vehicles yet',cs?'Přidej auto a sleduj spotřebu, servis, STK a pojištění.':'Add a car to track consumption, service, inspection and insurance.','＋ '+(cs?'Vozidlo':'Vehicle'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openVehicleForm(); vl.appendChild(e); }
   S.vehicles.forEach(v=>{
     const services=S.carServices.filter(s=>s.vehicleId===v.id).sort((a,b)=>b.date.localeCompare(a.date));
     const fuels=[...S.fuelEntries.filter(f=>f.vehicleId===v.id)].sort((a,b)=>b.date.localeCompare(a.date));
@@ -3513,17 +3655,28 @@ function renderCar(){
     const serviceCost=services.reduce((a,b)=>a+Number(b.cost||0),0);
     const cons=fuelConsumptionStats(v.id);
     const reminders=carReminders(v);
-    const card=el(`<div class="card">
-      <div class="between"><div class="item-title">🚗 ${escapeHtml(v.name)}</div><div class="row" style="gap:6px"><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div></div>
-      <div class="sub" style="margin-bottom:10px">${v.brand||''} ${v.model||''} ${v.year||''} · ${v.mileage||0} km${v.vin?' · VIN '+escapeHtml(v.vin):''}</div>
-      ${reminders.length?`<div class="card" style="border-color:var(--warn);margin-bottom:10px">${reminders.map(r=>`<div class="sub" style="margin-bottom:4px">${r}</div>`).join('')}</div>`:''}
-      <div class="row" style="gap:8px;margin-bottom:10px">
-        <button class="pill sm addS">+ Service</button>
-        <button class="pill sm addF">+ Fuel</button>
+    const dayChip=(label,d)=>{ if(!d) return `<div class="car-date"><span class="kicker">${label}</span><b>—</b></div>`; const days=Math.round((new Date(d+'T00:00')-new Date(todayStr()+'T00:00'))/86400000); return `<div class="car-date${days<0?' is-danger':days<=30?' is-warn':''}"><span class="kicker">${label}</span><b>${fmtDate(d)}</b><span class="sub">${days<0?(cs?`prošlé ${-days} d`:`expired ${-days}d`):(cs?`za ${days} d`:`in ${days}d`)}</span></div>`; };
+    const lastOf=type=>services.find(x=>x.type===type);
+    const lastOil=lastOf('Oil Change'), lastTires=lastOf('Tires');
+    const card=el(`<div class="card car-card">
+      <div class="between" style="align-items:flex-start"><div class="row" style="min-width:0"><span class="icon-circle car-ic" aria-hidden="true">🚗</span><div style="min-width:0"><div class="item-title truncate" style="font-size:17px">${escapeHtml(v.name)}</div><div class="item-meta">${escapeHtml([v.brand,v.model,v.year].filter(Boolean).join(' '))}${v.vin?' · VIN '+escapeHtml(v.vin):''}</div></div></div>
+        <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(v.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(v.name)}">✕</button></div></div>
+      <div class="odo"><span class="kicker">${uiL('Mileage')}</span><b class="num">${uiNum(v.mileage||0)}</b><span class="sub">km</span></div>
+      ${reminders.length?`<div class="car-alerts" role="status">${reminders.map(r=>`<div>${escapeHtml(uiReminderText(r))}</div>`).join('')}</div>`:''}
+      <div class="car-dates">${dayChip('STK',v.regExpiry)}${dayChip(uiL('Insurance'),v.insuranceExpiry)}
+        <div class="car-date"><span class="kicker">🛢️ ${uiL('Oil Change')}</span><b>${lastOil?fmtDate(lastOil.date):'—'}</b>${lastOil&&lastOil.mileage?`<span class="sub">${uiNum(lastOil.mileage)} km</span>`:''}</div>
+        <div class="car-date"><span class="kicker">🛞 ${uiL('Tires')}</span><b>${lastTires?fmtDate(lastTires.date):'—'}</b>${lastTires&&lastTires.mileage?`<span class="sub">${uiNum(lastTires.mileage)} km</span>`:''}</div></div>
+      <div class="stat-grid cols-3" style="margin:12px 0">
+        <div class="stat-card"><div class="stat-label">⛽ ${uiL('Avg consumption')}</div><div class="stat-value">${cons.avgL100?cons.avgL100+'<small> L/100</small>':'—'}</div></div>
+        <div class="stat-card"><div class="stat-label">${uiL('Fuel spend')}</div><div class="stat-value">${uiNum(Math.round(fuelCost))}</div></div>
+        <div class="stat-card"><div class="stat-label">${uiL('Service spend')}</div><div class="stat-value">${uiNum(Math.round(serviceCost))}<small> (${services.length})</small></div></div>
       </div>
-      <div class="sub">Fuel spend: ${fuelCost.toFixed(0)}${cons.avgL100?' · avg '+cons.avgL100+' L/100km':''} · Service spend: ${serviceCost.toFixed(0)} (${services.length})</div>
-      <h4 style="margin:10px 0 4px;font-size:13px">Services</h4><div class="list" id="svc-${v.id}"></div>
-      <h4 style="margin:10px 0 4px;font-size:13px">Fuel</h4><div class="list" id="fuel-${v.id}"></div>
+      <div class="btn-row">
+        <button class="btn ghost sm addS">🔧 ＋ ${uiL('Service')}</button>
+        <button class="btn ghost sm addF">⛽ ＋ ${uiL('Fuel')}</button>
+      </div>
+      <div class="section-header"><h3>${uiL('Services')}</h3></div><div class="list" id="svc-${v.id}"></div>
+      <div class="section-header"><h3>${uiL('Fuel')}</h3></div><div class="list" id="fuel-${v.id}"></div>
     </div>`);
     card.querySelector('.editBtn').onclick=()=>openVehicleForm(v);
     card.querySelector('.delbtn').onclick=()=>{
@@ -3536,9 +3689,9 @@ function renderCar(){
     card.querySelector('.addS').onclick=()=>openServiceForm(v.id);
     card.querySelector('.addF').onclick=()=>openFuelForm(v.id);
     const sc=card.querySelector('#svc-'+v.id);
-    if(!services.length) sc.appendChild(el(`<div class="empty">No services logged.</div>`));
+    if(!services.length) sc.appendChild(el(`<div class="sub" style="padding:4px 2px">${uiL('No services logged.')}</div>`));
     services.slice(0,5).forEach(s=>{
-      const it=el(`<div class="item"><span style="font-size:16px">🔧</span><div style="flex:1"><div class="item-title">${escapeHtml(s.type)}</div><div class="item-meta">${fmtDate(s.date)} · ${s.mileage||0}km · ${s.cost||0}</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+      const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">🔧</span><div style="flex:1;min-width:0"><div class="item-title">${escapeHtml(uiL(s.type))}</div><div class="item-meta">${fmtDate(s.date)} · ${uiNum(s.mileage||0)} km · ${uiNum(s.cost||0)}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
       it.querySelector('.editBtn').onclick=()=>openServiceForm(v.id,s);
       it.querySelector('.delbtn').onclick=()=>{
         if(!confirm('Delete this service record?')) return;
@@ -3547,9 +3700,9 @@ function renderCar(){
       sc.appendChild(it);
     });
     const fc=card.querySelector('#fuel-'+v.id);
-    if(!fuels.length) fc.appendChild(el(`<div class="empty">No fuel entries logged.</div>`));
+    if(!fuels.length) fc.appendChild(el(`<div class="sub" style="padding:4px 2px">${uiL('No fuel entries logged.')}</div>`));
     fuels.slice(0,5).forEach(f=>{
-      const it=el(`<div class="item"><span style="font-size:16px">⛽</span><div style="flex:1"><div class="item-title">${f.liters||0} L · ${f.total||0}</div><div class="item-meta">${fmtDate(f.date)} · ${f.mileage||0}km${f.station?' · '+escapeHtml(f.station):''}</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+      const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">⛽</span><div style="flex:1;min-width:0"><div class="item-title">${f.liters||0} L · ${uiNum(f.total||0)}</div><div class="item-meta">${fmtDate(f.date)} · ${uiNum(f.mileage||0)} km${f.station?' · '+escapeHtml(f.station):''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
       it.querySelector('.editBtn').onclick=()=>openFuelForm(v.id,f);
       it.querySelector('.delbtn').onclick=()=>{
         if(!confirm('Delete this fuel entry?')) return;
@@ -3987,38 +4140,43 @@ function bucketSum(buckets,items,dateOf,valueFn){
 }
 function chartValuesForLog(log,period,valueFn){ return bucketSum(periodBuckets(period),log,x=>x.date,valueFn); }
 function svgBarChart(values,opts){
-  opts=opts||{}; const w=opts.width||280,h=opts.height||60,gap=2;
+  opts=opts||{}; const w=opts.width||280,h=opts.height||72,gap=Math.max(1,Math.min(4,Math.round(90/Math.max(1,values.length))));
   const max=Math.max(1,...values.map(v=>Math.abs(v)));
   const n=values.length||1; const bw=Math.max(1,(w-gap*(n-1))/n);
   let bars='';
   values.forEach((v,i)=>{
-    const bh=Math.max(1,(Math.abs(v)/max)*(h-4));
+    const bh=v?Math.max(2,(Math.abs(v)/max)*(h-4)):2;
     const x=i*(bw+gap), y=h-bh;
-    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="var(--accent)"></rect>`;
+    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="${Math.min(4,bw/2).toFixed(1)}" fill="${v<0?'var(--danger)':v?'var(--accent)':'var(--line)'}" opacity="${v?1:.8}"></rect>`;
   });
-  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">${bars}</svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" aria-hidden="true">${bars}</svg>`;
 }
+
 function svgLineChart(values,opts){
-  opts=opts||{}; const w=opts.width||280,h=opts.height||60;
+  opts=opts||{}; const w=opts.width||280,h=opts.height||72;
   if(values.length<2) return svgBarChart(values,opts);
   const max=Math.max(...values), min=Math.min(...values);
   const range=(max-min)||1;
   const n=values.length;
-  const pts=values.map((v,i)=>{ const x=(i/(n-1))*w; const y=h-2-((v-min)/range)*(h-4); return `${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ');
-  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--accent2)" stroke-width="2"></polyline></svg>`;
+  const pts=values.map((v,i)=>{ const x=(i/(n-1))*w; const y=h-4-((v-min)/range)*(h-10); return `${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,${h} ${pts} ${w},${h}" fill="var(--accent2)" opacity=".12"></polygon><polyline points="${pts}" fill="none" stroke="var(--accent2)" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline></svg>`;
 }
+
 // Returns an HTML string (not a node) so callers can drop it straight into a template literal.
 function chartCard(title,values,labels,opts){
   opts=opts||{};
   const empty=!values||!values.length||values.every(v=>!v);
-  const body = empty ? `<div class="empty" style="padding:16px"><div class="e">📊</div>No data for this period.</div>`
+  const nz=(values||[]).filter(v=>v);
+  const summary=empty?'':`<span class="sub num">max ${uiNum(Math.round(Math.max(...nz.map(Math.abs))*10)/10)}</span>`;
+  const body = empty ? `<div class="chart-empty"><span aria-hidden="true" style="font-size:22px">📊</span>${uiL('No data for this period.')}</div>`
     : (opts.type==='line'?svgLineChart(values,opts):svgBarChart(values,opts));
-  return `<div style="margin:10px 0"><div class="sub" style="margin-bottom:6px">${escapeHtml(title)}</div>${body}</div>`;
+  return `<div class="card chart" role="figure" aria-label="${escapeHtml(title)}"><div class="between" style="margin-bottom:10px"><span class="kicker">${escapeHtml(title)}</span>${summary}</div>${body}</div>`;
 }
+
 
 let statsPeriod='week';
 function periodStart(p){const d=new Date();if(p==='today')return todayStr();if(p==='week'){const s=new Date();s.setDate(s.getDate()-7);return s.toISOString().slice(0,10);}if(p==='month'){const s=new Date();s.setMonth(s.getMonth()-1);return s.toISOString().slice(0,10);}const s=new Date();s.setFullYear(s.getFullYear()-1);return s.toISOString().slice(0,10);}
-function statRow(label,val){return `<div class="between item"><span>${label}</span><b>${val}</b></div>`;}
+function statRow(label,val){return `<div class="kv"><span>${label}</span><b>${val}</b></div>`;}
 function currentTaskStreak(){
   // Consecutive days (ending today, with a same-day grace like the habit streak logic) that
   // have at least one task completed due that day -- a simple, real, deterministic activity
@@ -4029,6 +4187,7 @@ function currentTaskStreak(){
   while(hasDoneOn(d)&&guard<3660){n++;d=addDays(d,-1);guard++;}
   return n;
 }
+
 function habitCompletionStatsForPeriod(since){
   // % of scheduled good-habit-days in the period that were actually completed, using the same
   // isScheduledDate/isDayComplete real logic as every other habit screen -- never a second,
@@ -4156,60 +4315,66 @@ function computeStats(period){
   };
 }
 function statCard(title,rows){
-  return `<div class="card"><h3>${escapeHtml(title)}</h3>${rows.map(([l,v])=>`<div class="between item" style="margin-bottom:6px"><span>${escapeHtml(l)}</span><b>${v}</b></div>`).join('')}</div>`;
+  return `<div class="card"><h3>${escapeHtml(uiL(title))}</h3>${rows.map(([l,v])=>`<div class="kv"><span>${escapeHtml(uiL(l))}</span><b>${v}</b></div>`).join('')}</div>`;
 }
+
 function renderStats(){
-  const wrap=el(`<div><h2>Statistics</h2><div class="period-selector" id="spTabs"></div></div>`);
+  const wrap=el(`<div>${uiPageHead(uiL('Statistics'))}<div class="period-selector" id="spTabs" role="tablist"></div></div>`);
   const tabs=wrap.querySelector('#spTabs');
   [['today','Today'],['week','Week'],['month','Month'],['year','Year']].forEach(([k,l])=>{
-    const b=el(`<button class="${statsPeriod===k?'on':''}">${l}</button>`);
+    const b=el(`<button class="${statsPeriod===k?'on':''}" data-p="${k}" role="tab" aria-selected="${statsPeriod===k}">${l==='Year'&&uiLang()==='cs'?'Rok':uiL(l)}</button>`);
     b.onclick=()=>{statsPeriod=k;render();};
     tabs.appendChild(b);
   });
   const st=computeStats(statsPeriod);
-  const body=el(`<div></div>`);
+  const body=el(`<div class="stats-body"></div>`);
+  const kpi=(ic,label,v)=>`<div class="stat-card"><div class="stat-label">${ic} ${uiL(label)}</div><div class="stat-value">${v}</div></div>`;
+  wrap.appendChild(el(`<div class="stat-grid cols-4 stats-kpis">
+    ${kpi('✨','XP earned (period)',uiNum(st.xp.xpEarned))}${kpi('✅','Tasks',st.tasks.tasksCompleted)}${kpi('🔥','Check-ins (period)',st.habits.checks)}
+    ${kpi('🏋️','Workouts',st.fitness.count)}${kpi('💰','Balance',`<span style="color:${st.finance.balance>=0?'var(--accent2)':'var(--danger)'}">${uiNum(Math.round(st.finance.balance))}</span>`)}${kpi('😴','Avg sleep (period)',st.health.avgSleep?st.health.avgSleep.toFixed(1)+'<small> h</small>':'—')}
+  </div>`));
 
   body.appendChild(el(statCard('Tasks',[
     ['Completed',st.tasks.tasksCompleted],['Created',st.tasks.tasksCreated],
     ['Completion rate (all-time)',st.tasks.completionRate+'%'],['Overdue (now)',st.tasks.overdueTasks],
   ])));
-  const priRows=Object.keys(st.tasks.byPriority).length?Object.entries(st.tasks.byPriority).map(([p,c])=>`<div class="between item" style="margin-bottom:6px"><span>${escapeHtml(p)}</span><b>${c}</b></div>`).join(''):`<div class="empty" style="padding:8px">No tasks yet.</div>`;
-  body.appendChild(el(`<div class="card"><h3>Tasks by priority</h3>${priRows}</div>`));
-  body.appendChild(el(chartCard('Task completions',chartValuesForTaskCompletions(statsPeriod),null,{})));
+  const priRows=Object.keys(st.tasks.byPriority).length?Object.entries(st.tasks.byPriority).map(([p,c])=>`<div class="kv"><span>${escapeHtml(uiL(p))}</span><b>${c}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No tasks yet.')}</div>`;
+  body.appendChild(el(`<div class="card"><h3>${uiL('Tasks by priority')}</h3>${priRows}</div>`));
+  body.appendChild(el(chartCard(uiL('Task completions'),chartValuesForTaskCompletions(statsPeriod),null,{})));
 
   body.appendChild(el(statCard('Habits',[
     ['Check-ins (period)',st.habits.checks],['Completion % (period, good habits)',st.habits.completion.pct+'%'],
     ['Current streak (best across habits)',st.habits.currentStreakOverall],['Best streak ever',st.habits.bestStreakOverall],
     ['Active habits',st.habits.activeCount],['Good / Bad',st.habits.goodHabits+' / '+st.habits.badHabits],
   ])));
-  body.appendChild(el(chartCard('Habit completions',chartValuesForHabitCompletions(statsPeriod),null,{})));
+  body.appendChild(el(chartCard(uiL('Habit completions'),chartValuesForHabitCompletions(statsPeriod),null,{})));
 
   body.appendChild(el(statCard('Goals',[
     ['Active',st.goals.activeGoals],['Completed',st.goals.completedGoals],
     ['Average progress',st.goals.avgGoalProgress+'%'],
     ['Milestones completed (period)',st.goals.completedMilestonesInPeriod],['Milestones completed (all-time)',st.goals.completedMilestonesAll],
   ])));
-  const catRows=Object.keys(st.goals.goalsByCategory).length?Object.entries(st.goals.goalsByCategory).map(([c,n])=>`<div class="between item" style="margin-bottom:6px"><span>${escapeHtml(c)}</span><b>${n}</b></div>`).join(''):`<div class="empty" style="padding:8px">No goals yet.</div>`;
-  body.appendChild(el(`<div class="card"><h3>Goals by category</h3>${catRows}</div>`));
+  const catRows=Object.keys(st.goals.goalsByCategory).length?Object.entries(st.goals.goalsByCategory).map(([c,n])=>`<div class="kv"><span>${escapeHtml(uiL(c))}</span><b>${n}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No goals yet.')}</div>`;
+  body.appendChild(el(`<div class="card"><h3>${uiL('Goals by category')}</h3>${catRows}</div>`));
 
   body.appendChild(el(statCard('XP / RPG',[
     ['XP earned (period)',st.xp.xpEarned],['XP today',st.xp.xpTodayVal],['XP this week',st.xp.xpThisWeek],['XP this month',st.xp.xpThisMonth],
     ['Level',st.xp.level],['Progress to next level',st.xp.into+' / '+st.xp.need],
     ['Skill Points available',st.xp.skillPoints],['Attribute Points available',st.xp.attributePoints],
   ])));
-  body.appendChild(el(chartCard('XP trend',chartValuesForLog(S.xpLog.map(x=>({date:new Date(x.ts).toISOString().slice(0,10),amount:x.amount})),statsPeriod,x=>x.amount),null,{type:'line'})));
+  body.appendChild(el(chartCard(uiL('XP trend'),chartValuesForLog(S.xpLog.map(x=>({date:new Date(x.ts).toISOString().slice(0,10),amount:x.amount})),statsPeriod,x=>x.amount),null,{type:'line'})));
 
   const attrRows=Object.keys(ATTRS).map(k=>{
     const val=S.attrs[k]||0; const into2=val%50;
-    return `<div class="between item" style="margin-bottom:6px"><span>${k}</span><b>${val} <span class="sub">(${into2}/50 to next)</span></b></div>`;
+    return `<div class="kv"><span>${k}</span><b>${val} <span class="sub">(${into2}/50)</span></b></div>`;
   }).join('');
-  body.appendChild(el(`<div class="card"><h3>Attributes</h3>${attrRows}<div class="sub" style="margin-top:8px">Change-over-period isn't shown: attribute deltas aren't individually tracked per grant, so a per-period breakdown can't be derived from real data without inventing numbers.</div></div>`));
+  body.appendChild(el(`<div class="card"><h3>${uiL('Attributes')}</h3>${attrRows}<div class="sub" style="margin-top:8px">${uiL("Change-over-period isn't shown: attribute deltas aren't individually tracked per grant, so a per-period breakdown can't be derived from real data without inventing numbers.")}</div></div>`));
 
   body.appendChild(el(statCard('Fitness',[
     ['Workouts',st.fitness.count],['Sets',st.fitness.sets],['Reps',st.fitness.reps],
     ['Total volume',st.fitness.volume],['Total duration (min)',st.fitness.duration],['Personal records (all-time)',st.fitness.prs.length],
   ])));
-  body.appendChild(el(chartCard('Workout volume',chartValuesForLog(S.workouts,statsPeriod,w=>workoutVolume(w)),null,{})));
+  body.appendChild(el(chartCard(uiL('Workout volume'),chartValuesForLog(S.workouts,statsPeriod,w=>workoutVolume(w)),null,{})));
 
   body.appendChild(el(statCard('Nutrition',[
     ['Avg calories/day (logged)',Math.round(st.nutrition.avgCalories)],['Avg protein (g)',Math.round(st.nutrition.avgProtein)],
@@ -4217,15 +4382,15 @@ function renderStats(){
     ['Avg water (ml)',Math.round(st.nutrition.avgWater)],['Days logged',st.nutrition.daysLogged],
     ['Calorie target adherence',S.nutritionTargets.calories?Math.round(st.nutrition.avgCalories/S.nutritionTargets.calories*100)+'%':'—'],
   ])));
-  body.appendChild(el(chartCard('Calories (per day logged)',chartValuesForLog(S.meals,statsPeriod,m=>Number(m.calories||0)*(Number(m.servings)||1)),null,{type:'line'})));
+  body.appendChild(el(chartCard(uiL('Calories (per day logged)'),chartValuesForLog(S.meals,statsPeriod,m=>Number(m.calories||0)*(Number(m.servings)||1)),null,{type:'line'})));
 
   body.appendChild(el(statCard('Finance',[
     ['Income',st.finance.income.toFixed(0)],['Expenses',st.finance.expenses.toFixed(0)],['Balance',st.finance.balance.toFixed(0)],
     ['Savings (positive balance)',st.finance.savings.toFixed(0)],['Transactions',st.finance.transactions],
   ])));
-  const finCatRows=Object.keys(st.finance.byCategory).length?Object.entries(st.finance.byCategory).map(([c,a])=>`<div class="between item" style="margin-bottom:6px"><span>${escapeHtml(c)}</span><b>${a.toFixed(0)}</b></div>`).join(''):`<div class="empty" style="padding:8px">No expenses yet.</div>`;
-  body.appendChild(el(`<div class="card"><h3>Expenses by category</h3>${finCatRows}</div>`));
-  body.appendChild(el(chartCard('Income vs Expenses (net balance)',chartValuesForNetBalance(statsPeriod),null,{})));
+  const finCatRows=Object.keys(st.finance.byCategory).length?Object.entries(st.finance.byCategory).map(([c,a])=>`<div class="kv"><span>${escapeHtml(uiL(c))}</span><b>${uiNum(Math.round(a))}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No expenses yet.')}</div>`;
+  body.appendChild(el(`<div class="card"><h3>${uiL('Expenses by category')}</h3>${finCatRows}</div>`));
+  body.appendChild(el(chartCard(uiL('Income vs Expenses (net balance)'),chartValuesForNetBalance(statsPeriod),null,{})));
 
   body.appendChild(el(statCard('Sleep / Health',[
     ['Avg sleep (period)',st.health.avgSleep?st.health.avgSleep.toFixed(1)+'h':'—'],['Sleep days logged',st.health.sleepDaysLogged],
@@ -4233,15 +4398,15 @@ function renderStats(){
     ['Weight trend (period)',st.health.weightTrend!=null?(st.health.weightTrend>0?'+':'')+st.health.weightTrend.toFixed(1):'—'],
   ])));
   const sleepChartValues=chartValuesForLog(S.sleepLog,statsPeriod,sleepDuration);
-  body.appendChild(el(chartCard('Sleep duration',sleepChartValues,null,{type:'line'})));
+  body.appendChild(el(chartCard(uiL('Sleep duration'),sleepChartValues,null,{type:'line'})));
 
   body.appendChild(el(statCard('Journal',[
     ['Entries',st.journal.count],['Average rating',st.journal.avgRating!=null?st.journal.avgRating.toFixed(1)+'/10':'—'],
     ['Days with an entry',st.journal.daysLogged],
   ])));
   const moodIc={1:'😞',2:'😕',3:'😐',4:'🙂',5:'😄'};
-  const moodRows=Object.keys(st.journal.moodCounts).map(m=>`<div class="between item" style="margin-bottom:6px"><span>${moodIc[m]} ${m}</span><b>${st.journal.moodCounts[m]}</b></div>`).join('');
-  body.appendChild(el(`<div class="card"><h3>Mood distribution</h3>${st.journal.count?moodRows:'<div class="empty" style="padding:8px">No journal entries yet.</div>'}</div>`));
+  const moodRows=Object.keys(st.journal.moodCounts).map(m=>`<div class="kv"><span>${moodIc[m]} ${m}</span><b>${st.journal.moodCounts[m]}</b></div>`).join('');
+  body.appendChild(el(`<div class="card"><h3>${uiL('Mood distribution')}</h3>${st.journal.count?moodRows:'<div class="sub" style="padding:6px 0">'+uiL('No journal entries yet.')+'</div>'}</div>`));
 
   body.appendChild(el(statCard('Streaks',[
     ['Best habit streak (any habit, all-time)',st.streaks.habitBest],['Current habit streak (any habit)',st.streaks.habitCurrent],
@@ -4330,27 +4495,30 @@ function searchGroups(q){
   ];
 }
 function renderSearch(){
-  const wrap=el(`<div><h2>Search</h2><input id="gs" placeholder="Search tasks, habits, goals, notes, finance, car, journal, quests..."><div class="list" id="gsRes"></div></div>`);
+  const cs=uiLang()==='cs';
+  const wrap=el(`<div>${uiPageHead(uiL('Search'))}<div class="search-field is-lg"><span aria-hidden="true">🔎</span><input id="gs" type="search" aria-label="${uiL('Search')}" placeholder="${cs?'Úkoly, návyky, cíle, poznámky, finance, auto, deník…':'Search tasks, habits, goals, notes, finance, car, journal, quests...'}"></div><div class="list" id="gsRes" aria-live="polite"></div></div>`);
   const input=wrap.querySelector('#gs'), res=wrap.querySelector('#gsRes');
   function run(q){
     res.innerHTML='';
-    if(!q||q.length<2){res.appendChild(el(`<div class="empty">Type at least 2 characters.</div>`));return;}
+    if(!q||q.length<2){res.appendChild(el(`<div class="card">${uiEmpty('🔎',uiL('Search'),uiL('Type at least 2 characters.'),'')}</div>`));return;}
     q=q.toLowerCase();
     let any=false;
     searchGroups(q).forEach(([label,icon,type,items])=>{
       if(!items.length)return; any=true;
-      res.appendChild(el(`<div class="sub" style="margin:10px 0 4px">${label}</div>`));
+      res.appendChild(el(`<div class="section-header"><h3>${uiL(label)} · ${items.length}</h3></div>`));
       items.forEach(r=>{
-        const it=el(`<div class="item" style="cursor:pointer"><span style="font-size:18px">${icon}</span>
-          <div style="flex:1;min-width:0"><div class="item-title">${escapeHtml(r.title)}</div><div class="item-meta">${escapeHtml(r.meta||'')}</div></div>
-          <span class="sub">›</span></div>`);
+        const it=el(`<button class="item search-hit" style="cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit"><span class="icon-circle" aria-hidden="true">${icon}</span>
+          <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(r.title)}</div><div class="item-meta truncate">${escapeHtml(r.meta||'')}</div></div>
+          <span class="sub" aria-hidden="true">›</span></button>`);
         it.onclick=()=>searchNavigate(type,r.obj);
         res.appendChild(it);
       });
     });
-    if(!any) res.appendChild(el(`<div class="empty">No results.</div>`));
+    if(!any) res.appendChild(el(`<div class="card">${uiEmpty('🤷',uiL('No results.'),'','')}</div>`));
   }
   input.oninput=(e)=>run(e.target.value);
+  run('');
+  setTimeout(()=>{ if(view==='search'&&document.activeElement===document.body) input.focus({preventScroll:true}); },0);
   return wrap;
 }
 
@@ -4413,10 +4581,10 @@ function healthDashboardData(period){
 
 let healthTab='sleep';
 function renderHealth(){
-  const wrap=el(`<div><h2>Health</h2><div class="tabs" id="hTabs"></div><div id="hBody"></div></div>`);
+  const wrap=el(`<div>${uiPageHead(uiL('Health'))}<div class="period-selector" id="hTabs" role="tablist"></div><div id="hBody"></div></div>`);
   const tabs=wrap.querySelector('#hTabs');
   [['sleep','😴 Sleep'],['weight','⚖️ Weight'],['steps','👟 Steps'],['heartrate','❤️ Heart Rate'],['activecal','🔥 Active Cal']].forEach(([k,l])=>{
-    const b=el(`<button class="pill ${healthTab===k?'on':''}">${l}</button>`);
+    const b=el(`<button class="pill ${healthTab===k?'on':''}" data-k="${k}" role="tab" aria-selected="${healthTab===k}">${l.split(' ')[0]} ${uiL(l.split(' ').slice(1).join(' '))}</button>`);
     b.onclick=()=>{healthTab=k;render();};
     tabs.appendChild(b);
   });
@@ -4431,23 +4599,23 @@ function renderHealth(){
 }
 function renderHealthSleepTab(data){
   const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="grid2">
-    <div class="card"><div class="sub">Last night</div><div class="big">${data.sleepToday?sleepDuration(data.sleepToday)+'h':'—'}</div></div>
-    <div class="card"><div class="sub">Avg (30d)</div><div class="big">${data.sleep.avg?data.sleep.avg.toFixed(1)+'h':'—'}</div></div>
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Last night')}</div><div class="stat-value">${data.sleepToday?sleepDuration(data.sleepToday)+'h':'—'}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.sleep.avg?data.sleep.avg.toFixed(1)+'h':'—'}</div></div>
   </div>`));
-  wrap.appendChild(el(`<div class="grid2">
-    <div class="card"><div class="sub">Shortest / Longest</div><div class="item-meta" style="margin-top:4px">${data.sleep.durations.length?data.sleep.shortest+'h / '+data.sleep.longest+'h':'No data'}</div></div>
-    <div class="card"><div class="sub">Consistency</div><div class="item-meta" style="margin-top:4px">${data.sleep.consistency!=null?data.sleep.consistency+'/100':'Need 2+ nights'}</div></div>
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Shortest / Longest')}</div><div class="stat-value" style="font-size:17px">${data.sleep.durations.length?data.sleep.shortest+'h / '+data.sleep.longest+'h':uiL('No data')}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Consistency')}</div><div class="stat-value" style="font-size:17px">${data.sleep.consistency!=null?data.sleep.consistency+'/100':uiL('Need 2+ nights')}</div></div>
   </div>`));
-  if(data.sleep.avgQuality!=null) wrap.appendChild(el(`<div class="card"><div class="sub">Average quality</div><div class="big">${data.sleep.avgQuality.toFixed(1)}/5</div></div>`));
-  wrap.appendChild(el(chartCard('Sleep duration trend (30d)', chartValuesForLog(S.sleepLog,'month',sleepDuration), null, {type:'line'})));
-  wrap.appendChild(el(`<button class="btn" id="addSleep" style="margin:12px 0">+ Log Sleep</button>`));
+  if(data.sleep.avgQuality!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${data.sleep.avgQuality.toFixed(1)}/5</div></div>`));
+  wrap.appendChild(el(chartCard(uiL('Sleep duration trend (30d)'), chartValuesForLog(S.sleepLog,'month',sleepDuration), null, {type:'line'})));
+  wrap.appendChild(el(`<button class="btn ghost" id="addSleep" style="margin:4px 0 12px">＋ ${uiL('Log Sleep')}</button>`));
   wrap.querySelector('#addSleep').onclick=()=>openSleepForm();
   const sl=el(`<div class="list" id="slList"></div>`);
   const sorted=[...S.sleepLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) sl.appendChild(el(`<div class="empty"><div class="e">😴</div>No sleep logged yet.</div>`));
+  if(!sorted.length) sl.appendChild(el(`<div class="card">${uiEmpty('😴',uiL('No sleep logged yet.'),'','')}</div>`));
   sorted.slice(0,30).forEach(s=>{
-    const it=el(`<div class="item"><span style="font-size:18px">😴</span><div style="flex:1"><div class="item-title">${fmtDate(s.date)}</div><div class="item-meta">${sleepDuration(s)}h · ${formatTimeDisplay(s.bedtime)}–${formatTimeDisplay(s.wake)}${s.quality?' · quality '+s.quality+'/5':''}</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">😴</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(s.date)}</div><div class="item-meta">${sleepDuration(s)}h · ${formatTimeDisplay(s.bedtime)}–${formatTimeDisplay(s.wake)}${s.quality?' · '+uiL('quality')+' '+s.quality+'/5':''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openSleepForm(s);
     it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this sleep entry?'))return; S.sleepLog=S.sleepLog.filter(x=>x.id!==s.id);scheduleSave();render(); };
     sl.appendChild(it);
@@ -4457,18 +4625,18 @@ function renderHealthSleepTab(data){
 }
 function renderHealthWeightTab(data){
   const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="grid2">
-    <div class="card"><div class="sub">Latest</div><div class="big">${data.latestWeight?data.latestWeight.weight+(data.latestWeight.unit||'kg'):'—'}</div></div>
-    <div class="card"><div class="sub">Trend (30d)</div><div class="big" style="color:${data.weight.trend>0?'var(--warn)':data.weight.trend<0?'var(--accent2)':'var(--text)'}">${data.weight.trend!=null?(data.weight.trend>0?'+':'')+data.weight.trend.toFixed(1):'—'}</div></div>
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Latest')}</div><div class="stat-value">${data.latestWeight?data.latestWeight.weight+(data.latestWeight.unit||'kg'):'—'}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Trend (30d)')}</div><div class="stat-value" style="color:${data.weight.trend>0?'var(--warn)':data.weight.trend<0?'var(--accent2)':'var(--text)'}">${data.weight.trend!=null?(data.weight.trend>0?'+':'')+data.weight.trend.toFixed(1):'—'}</div></div>
   </div>`));
-  wrap.appendChild(el(chartCard('Weight trend (30d)', chartValuesForLog(S.weightLog,'month',w=>Number(w.weight)||0), null, {type:'line'})));
-  wrap.appendChild(el(`<button class="btn" id="addW" style="margin:12px 0">+ Log Weight</button>`));
+  wrap.appendChild(el(chartCard(uiL('Weight trend (30d)'), chartValuesForLog(S.weightLog,'month',w=>Number(w.weight)||0), null, {type:'line'})));
+  wrap.appendChild(el(`<button class="btn ghost" id="addW" style="margin:4px 0 12px">＋ ${uiL('Log Weight')}</button>`));
   wrap.querySelector('#addW').onclick=()=>openWeightForm();
   const list=el(`<div class="list" id="wtList"></div>`);
   const sorted=[...S.weightLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) list.appendChild(el(`<div class="empty"><div class="e">⚖️</div>No weight logged yet.</div>`));
+  if(!sorted.length) list.appendChild(el(`<div class="card">${uiEmpty('⚖️',uiL('No weight logged yet.'),'','')}</div>`));
   sorted.slice(0,30).forEach(w=>{
-    const it=el(`<div class="item"><span style="font-size:18px">⚖️</span><div style="flex:1"><div class="item-title">${fmtDate(w.date)}</div><div class="item-meta">${w.weight} ${w.unit||'kg'}</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">⚖️</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(w.date)}</div><div class="item-meta">${w.weight} ${w.unit||'kg'}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openWeightForm(w);
     it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this weight entry?'))return; S.weightLog=S.weightLog.filter(x=>x.id!==w.id);scheduleSave();render(); };
     list.appendChild(it);
@@ -4478,18 +4646,18 @@ function renderHealthWeightTab(data){
 }
 function renderHealthStepsTab(data){
   const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="grid2">
-    <div class="card"><div class="sub">Today</div><div class="big">${data.stepsToday?Number(data.stepsToday.steps).toLocaleString():'—'}</div></div>
-    <div class="card"><div class="sub">Avg (30d)</div><div class="big">${data.steps.avg?Math.round(data.steps.avg).toLocaleString():'—'}</div></div>
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Today')}</div><div class="stat-value">${data.stepsToday?Number(data.stepsToday.steps).toLocaleString():'—'}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.steps.avg?Math.round(data.steps.avg).toLocaleString():'—'}</div></div>
   </div>`));
-  wrap.appendChild(el(chartCard('Steps trend (30d)', chartValuesForLog(S.stepsLog,'month',x=>Number(x.steps)||0), null, {})));
-  wrap.appendChild(el(`<button class="btn" id="addSt" style="margin:12px 0">+ Log Steps</button>`));
+  wrap.appendChild(el(chartCard(uiL('Steps trend (30d)'), chartValuesForLog(S.stepsLog,'month',x=>Number(x.steps)||0), null, {})));
+  wrap.appendChild(el(`<button class="btn ghost" id="addSt" style="margin:4px 0 12px">＋ ${uiL('Log Steps')}</button>`));
   wrap.querySelector('#addSt').onclick=()=>openStepsForm();
   const list=el(`<div class="list" id="stList"></div>`);
   const sorted=[...S.stepsLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) list.appendChild(el(`<div class="empty"><div class="e">👟</div>No steps logged yet.</div>`));
+  if(!sorted.length) list.appendChild(el(`<div class="card">${uiEmpty('👟',uiL('No steps logged yet.'),'','')}</div>`));
   sorted.slice(0,30).forEach(x=>{
-    const it=el(`<div class="item"><span style="font-size:18px">👟</span><div style="flex:1"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${Number(x.steps).toLocaleString()} steps</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">👟</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${uiNum(x.steps)} ${uiL('steps')}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openStepsForm(x);
     it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this steps entry?'))return; S.stepsLog=S.stepsLog.filter(y=>y.id!==x.id);scheduleSave();render(); };
     list.appendChild(it);
@@ -4499,18 +4667,18 @@ function renderHealthStepsTab(data){
 }
 function renderHealthHeartRateTab(data){
   const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="grid2">
-    <div class="card"><div class="sub">Latest</div><div class="big">${data.latestHeartRate?data.latestHeartRate.value+' bpm':'—'}</div></div>
-    <div class="card"><div class="sub">Avg (30d)</div><div class="big">${data.heartRate.avg?Math.round(data.heartRate.avg)+' bpm':'—'}</div></div>
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Latest')}</div><div class="stat-value">${data.latestHeartRate?data.latestHeartRate.value+' bpm':'—'}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.heartRate.avg?Math.round(data.heartRate.avg)+' bpm':'—'}</div></div>
   </div>`));
-  wrap.appendChild(el(chartCard('Heart rate trend (30d)', chartValuesForLog(S.heartRateLog,'month',x=>Number(x.value)||0), null, {type:'line'})));
-  wrap.appendChild(el(`<button class="btn" id="addHr" style="margin:12px 0">+ Log Heart Rate</button>`));
+  wrap.appendChild(el(chartCard(uiL('Heart rate trend (30d)'), chartValuesForLog(S.heartRateLog,'month',x=>Number(x.value)||0), null, {type:'line'})));
+  wrap.appendChild(el(`<button class="btn ghost" id="addHr" style="margin:4px 0 12px">＋ ${uiL('Log Heart Rate')}</button>`));
   wrap.querySelector('#addHr').onclick=()=>openHeartRateForm();
   const list=el(`<div class="list" id="hrList"></div>`);
   const sorted=[...S.heartRateLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) list.appendChild(el(`<div class="empty"><div class="e">❤️</div>No heart rate logged yet.</div>`));
+  if(!sorted.length) list.appendChild(el(`<div class="card">${uiEmpty('❤️',uiL('No heart rate logged yet.'),'','')}</div>`));
   sorted.slice(0,30).forEach(x=>{
-    const it=el(`<div class="item"><span style="font-size:18px">❤️</span><div style="flex:1"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${x.value} bpm${x.type?' · '+x.type:''}</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">❤️</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${x.value} bpm${x.type?' · '+uiL(x.type):''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openHeartRateForm(x);
     it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this heart rate entry?'))return; S.heartRateLog=S.heartRateLog.filter(y=>y.id!==x.id);scheduleSave();render(); };
     list.appendChild(it);
@@ -4520,18 +4688,18 @@ function renderHealthHeartRateTab(data){
 }
 function renderHealthActiveCalTab(data){
   const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="grid2">
-    <div class="card"><div class="sub">Today</div><div class="big">${data.activeCaloriesToday?Number(data.activeCaloriesToday.calories).toLocaleString():'—'}</div></div>
-    <div class="card"><div class="sub">Avg (30d)</div><div class="big">${data.activeCalories.avg?Math.round(data.activeCalories.avg).toLocaleString():'—'}</div></div>
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Today')}</div><div class="stat-value">${data.activeCaloriesToday?Number(data.activeCaloriesToday.calories).toLocaleString():'—'}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.activeCalories.avg?Math.round(data.activeCalories.avg).toLocaleString():'—'}</div></div>
   </div>`));
-  wrap.appendChild(el(chartCard('Active calories trend (30d)', chartValuesForLog(S.activeCaloriesLog,'month',x=>Number(x.calories)||0), null, {})));
-  wrap.appendChild(el(`<button class="btn" id="addAc" style="margin:12px 0">+ Log Active Calories</button>`));
+  wrap.appendChild(el(chartCard(uiL('Active calories trend (30d)'), chartValuesForLog(S.activeCaloriesLog,'month',x=>Number(x.calories)||0), null, {})));
+  wrap.appendChild(el(`<button class="btn ghost" id="addAc" style="margin:4px 0 12px">＋ ${uiL('Log Active Calories')}</button>`));
   wrap.querySelector('#addAc').onclick=()=>openActiveCaloriesForm();
   const list=el(`<div class="list" id="acList"></div>`);
   const sorted=[...S.activeCaloriesLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) list.appendChild(el(`<div class="empty"><div class="e">🔥</div>No active calories logged yet.</div>`));
+  if(!sorted.length) list.appendChild(el(`<div class="card">${uiEmpty('🔥',uiL('No active calories logged yet.'),'','')}</div>`));
   sorted.slice(0,30).forEach(x=>{
-    const it=el(`<div class="item"><span style="font-size:18px">🔥</span><div style="flex:1"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${Number(x.calories).toLocaleString()} kcal</div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
+    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">🔥</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${Number(x.calories).toLocaleString()} kcal</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openActiveCaloriesForm(x);
     it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this entry?'))return; S.activeCaloriesLog=S.activeCaloriesLog.filter(y=>y.id!==x.id);scheduleSave();render(); };
     list.appendChild(it);
@@ -4665,11 +4833,19 @@ function doReset(){
 /* ---- Quick Add ---- */
 function openSheet(contentEl){
   const bg=el(`<div class="sheet-bg"></div>`);
-  const sheet=el(`<div class="sheet"></div>`);
+  const sheet=el(`<div class="sheet" role="dialog" aria-modal="true"></div>`);
   sheet.appendChild(contentEl);
   bg.appendChild(sheet);
   bg.onclick=(e)=>{if(e.target===bg)bg.remove();};
+  // Phase 8B presentation: localized fixed labels, dialog semantics, Escape closes (same as a
+  // backdrop tap -- onboarding clears bg.onclick, so it stays non-dismissable), focus moves in.
+  uiLocalizeTree(sheet);
+  const h=sheet.querySelector('h2,h3'); if(h){ if(!h.id) h.id='uiSheetTitle'+Math.random().toString(36).slice(2,7); sheet.setAttribute('aria-labelledby',h.id); }
+  bg.onkeydown=(e)=>{ if(e.key==='Escape'&&bg.onclick) bg.remove(); };
   document.body.appendChild(bg);
+  const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button');
+  setTimeout(()=>{ try{ (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
+  sheet.tabIndex=-1;
   return bg;
 }
 function catOptions(){return CAT_LIST.map(c=>`<option value="${c}">${CATS[c].ic} ${c}</option>`).join('');}

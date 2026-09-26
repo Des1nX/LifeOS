@@ -44,7 +44,7 @@ const NAV_CALLS = new Set(['render', 'searchNavigate']);
 // still walked, so what it does to the data is captured.
 const DOM_SINKS = new Set(['onclick', 'onchange', 'oninput', 'onkeydown', 'onkeyup', 'onsubmit', 'onblur',
   'onfocus', 'textContent', 'innerHTML', 'innerText', 'className', 'hidden', 'disabled', 'src', 'href',
-  'download', 'title', 'placeholder', 'scrollTop', 'scrollLeft', 'open', 'selected', 'cssText', 'lang', 'tabIndex']);
+  'download', 'title', 'placeholder', 'scrollTop', 'scrollLeft', 'open', 'selected', 'cssText', 'lang', 'tabIndex', 'id', 'nodeValue', 'onkeydown']);
 const MUTATING_METHODS = new Set(['push', 'splice', 'unshift', 'pop', 'shift', 'sort', 'reverse', 'fill', 'copyWithin']);
 
 export function extractScript(html) {
