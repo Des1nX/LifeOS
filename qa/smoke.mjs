@@ -2061,7 +2061,7 @@ test('11A UI: "Použít doporučení" prefills only this workout; template, hist
   const w = await active(page);
   assert.deepEqual(w.entries[0].sets.map(s => [s.weight, s.reps, s.done]), [[70, 9, true], [72.5, 8, false], [72.5, 8, false]]);
   assert.equal(await entryCard(page, 'Bench press').locator('.wkApplySug').isDisabled(), true);
-  assert.match(await entryCard(page, 'Bench press').locator('.wkApplySug').innerText(), /Použito/);
+  assert.match(await entryCard(page, 'Bench press').locator('.wkApplySug').innerText(), /Odpovídá/);
   assert.equal(await frozen(), f0, 'template, finished history, XP/RPG/quests/achievements/Daily Score and PRs unchanged');
   assert.equal(await page.evaluate(id => templateFind(id).exercises[0].weight, tid), 70, 'template weight is still 70');
   await persist(page); await reload(page);
@@ -2676,6 +2676,133 @@ test('11A planner UI: planner with workout blocks, the block form and Home fit 3
       const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
         return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i) }; });
       if (r.over > 0 || r.sheetOver > 0 || r.dup.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+// ---------- Phase 11A step 10: final QA regressions ----------
+test('11A QA fix: a suggestion is never shown as applied unless its values are really in place; the redundant no-history "plan" box is hidden', async ({ page }) => {
+  await plSetup(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  assert.equal(await entryCard(page, 'Bench press').locator('[data-slot="suggestion"]').isHidden(), false, 'history exists (legacy 4x8@80) -> a real suggestion');
+  await page.evaluate(() => { const w = activeWorkout(); workoutDiscard(w.id); exerciseAddPreset('Plank'); templateSave({ name: 'Core', exercises: [{ exerciseId: exerciseFind('Plank').id, sets: 2, seconds: 60 }] }); });
+  await openWorkouts(page);
+  await page.locator('[data-start-tpl]', { hasText: 'Core' }).locator('.wkStartTpl').click();
+  assert.equal(await entryCard(page, 'Plank').locator('[data-slot="suggestion"]').isHidden(), true, 'no history + prefilled = plan -> nothing to suggest');
+  // with history: the button is active until the user applies it, then "Odpovídá"
+  await page.evaluate(() => { const w = activeWorkout(); w.entries[0].sets.forEach(s => s.done = true); w.date = '2026-09-22'; workoutFinish(w.id); });
+  await openWorkouts(page);
+  await page.locator('[data-start-tpl]', { hasText: 'Core' }).locator('.wkStartTpl').click();
+  const btn = entryCard(page, 'Plank').locator('.wkApplySug');
+  assert.deepEqual([await btn.isDisabled(), (await btn.innerText()).trim()], [false, 'Použít doporučení']);
+  await btn.click();
+  assert.deepEqual([await entryCard(page, 'Plank').locator('.wkApplySug').isDisabled(), (await entryCard(page, 'Plank').locator('.wkApplySug').innerText()).trim()], [true, '✓ Odpovídá']);
+}, { state: fixtureState() });
+
+test('11A QA fix: history and Home "Naposledy" are newest-first by real time; Search opens the right editor for new and legacy workouts', async ({ page }) => {
+  await page.clock.setFixedTime(NOW + 3600e3);
+  const wid = await page.evaluate(() => { const w = workoutStart({ name: 'Evening push' }).workout; workoutFinish(w.id); return w.id; });
+  await openWorkouts(page);
+  assert.deepEqual((await page.locator('#wList .workout-card .item-title').allInnerTexts()).slice(0, 2), ['Evening push', 'Pull day'], 'same day: the later one first');
+  await page.evaluate(() => { view = 'home'; render(); });
+  assert.match(await appText(page), /Naposledy: Evening push/);
+  await page.evaluate(id => searchNavigate('workout', workoutFindById(id)), wid);
+  assert.equal(await page.locator('.wk-edit-head').count(), 1, 'Fitness 2.0 workout -> entries editor');
+  assert.equal(await page.locator('#w_name').count(), 0);
+  await page.evaluate(() => { uiWorkoutView = null; searchNavigate('workout', workoutFindById('w2')); });
+  assert.equal(await page.inputValue('#w_name'), 'Pull day', 'legacy workout -> legacy form');
+}, { state: fixtureState() });
+
+test('11A QA fix: a finished workout shows plan, Performance, Feeling, PRs and Muscle XP in history and in its detail; PR strip reads "9 opak."', async ({ page }) => {
+  await plSetup(page);
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  await setRow(page, 'Bench press', 0).locator('[data-f="reps"]').fill('9');
+  for (const i of [0, 1]) await setRow(page, 'Bench press', i).locator('.ws-done').click();
+  await page.click('#wkFinish'); await page.click('#wkSumFeel [data-feel="great"]'); await page.click('#wkSumOk');
+  const card = page.locator('.workout-card', { hasText: 'Push A' });
+  const t = await card.innerText();
+  for (const re of [/2× · 80 kg × 9, 8/, /⚡ \d+ · /, /🤩 Skvěle/, /🏆 Bench press · Opakování/, /💪 \+\d+ Muscle XP/, /📋 Plán: Push A · 1 cviků · 3 sérií/]) assert.match(t, re);
+  await card.locator('.editBtn').click();
+  const d = await page.locator('.wk-edit-result').innerText();
+  for (const re of [/Plán: Push A/, /PERFORMANCE/i, /SVALY[\s\S]*Prsa \+\d+ XP/i, /NOVÉ OSOBNÍ REKORDY[\s\S]*80 kg × 9/i, /Jak ses cítil/i]) assert.match(d, re);
+  await page.click('#wkBack');
+  assert.match(await page.locator('#prList').innerText(), /9\s*opak\.[\s\S]*Opakování · @ 80 kg/);
+}, { state: fixtureState() });
+
+test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -> Finish -> edit -> delete, and every Fitness collection survives export/import/reset', async ({ page }) => {
+  const { tid, bid } = await plSetup(page);
+  const u0 = await untouchable(page);
+  await plView(page);
+  await page.click(`[data-block="${bid}"] .plWkStart`);
+  await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  assert.equal(await untouchable(page), u0, 'nothing granted before Finish');
+  assert.equal(await page.evaluate(() => S.muscleProgress.log.length), 0);
+  await persist(page); await reload(page);
+  await page.evaluate(() => { view = 'calendar'; render(); view = 'home'; render(); });
+  await page.locator(`[data-plan="home"] [data-block="${bid}"] .planWkGo`).click();
+  await setRow(page, 'Bench press', 1).locator('[data-f="reps"]').fill('10'); await setRow(page, 'Bench press', 1).locator('.ws-done').click();
+  await entryCard(page, 'Bench press').locator('.wkAddWu').click(); await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  const x0 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
+  await page.click('#wkFinish');
+  const w = await page.evaluate(() => JSON.parse(JSON.stringify(completedWorkouts(S).find(x => x.entries))));
+  const x1 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
+  assert.equal(x1.VIT - x0.VIT, 20); assert.ok(x1.xp - x0.xp >= 80, '80 workout XP (+ any achievement the finish unlocks via the unchanged rules)');
+  assert.equal(await page.evaluate(id => S.xpLog.filter(e => e.key === `workout:${id}:${todayStr()}`).map(e => e.amount).join(), w.id), '80');
+  assert.deepEqual([w.status, w.result.prs.map(p => p.type), w.result.performance.planSource, w.plannerBlockId, (await blk(page, bid)).completed], ['done', ['reps'], 'template', bid, false]);
+  assert.deepEqual(await page.evaluate(id => S.muscleProgress.log.filter(r => r.workoutId === id).map(r => [r.units, r.prXp, r.xp]), w.id), [[2, 15, { Chest: 25, Triceps: 7, Shoulders: 3 }]], '2 working sets (warm-up ignored) + PR');
+  await page.click('#wkSumOk');
+  // edit: snapshots stay; current records follow; delete: Muscle XP stays
+  await page.evaluate(id => { const x = workoutFindById(id); workoutUpdateSet(x.id, x.entries[0].id, x.entries[0].sets.find(s => !s.warmup && s.reps === 10).id, { reps: 8 }); }, w.id);
+  const after = await page.evaluate(id => { const x = workoutFindById(id); return [x.result, workoutPRs(x).length, exercisePRs().length]; }, w.id);
+  assert.deepEqual(after[0], w.result, 'PR + Performance snapshots unchanged'); assert.deepEqual([after[1], after[2]], [0, 0], 'current records recomputed');
+  await page.evaluate(id => { const x = workoutFindById(id); x.entries[0].sets.find(s => !s.warmup && s.reps === 8 && s.done).reps = 10; }, w.id);
+  const keep = await page.evaluate(() => JSON.stringify(['workouts', 'workoutTemplates', 'exerciseLibrary', 'muscleProgress', 'plannerBlocks'].map(k => S[k])));
+  await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  await page.evaluate(() => { S.workouts = []; S.workoutTemplates = []; S.exerciseLibrary = []; S.muscleProgress = { log: [] }; S.plannerBlocks = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.workoutTemplates.length === 1);
+  assert.equal(await page.evaluate(() => JSON.stringify(['workouts', 'workoutTemplates', 'exerciseLibrary', 'muscleProgress', 'plannerBlocks'].map(k => S[k]))), keep, 'export/import: identical');
+  await reload(page);
+  assert.equal(await page.evaluate(() => JSON.stringify(['workouts', 'workoutTemplates', 'exerciseLibrary', 'muscleProgress', 'plannerBlocks'].map(k => S[k]))), keep, 'reload: identical');
+  const mx = await totals(page);
+  await page.evaluate(id => { S.workouts = S.workouts.filter(x => x.id !== id); }, w.id);
+  assert.deepEqual(await totals(page), mx, 'deleting the workout keeps its Muscle XP');
+  page.on('dialog', d => d.accept());
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  assert.deepEqual(await page.evaluate(() => [S.workouts, S.workoutTemplates, S.exerciseLibrary, S.muscleProgress, S.plannerBlocks]), [[], [], [], { log: [] }, []], 'reset empties every Fitness 2.0 collection');
+  void tid;
+}, { state: fixtureState() });
+
+test('11A final: Fitness screens at 320/375/390/430/768/1024/1440 - no overflow, no clipped values, buttons >= 36 px, no duplicate ids', async ({ page }) => {
+  const { bid } = await plSetup(page);
+  await page.evaluate(() => { templateSave({ name: 'A really very long template name that keeps going on and on', exercises: [{ exerciseId: exerciseFind('Deadlift').id, sets: 3, repsMin: 5 }] }); });
+  await page.evaluate(id => { const w = plannerStartWorkout(id).workout; w.entries[0].sets.forEach(s => Object.assign(s, { reps: 12, done: true })); w.name = 'Push A with an extremely long workout name for tiny screens'; workoutFinish(w.id); plannerStartWorkout(id); }, bid);
+  const screens = ['workouts', 'templates', 'library', 'muscles', 'live', 'edit', 'summary', 'tplform', 'planner', 'home'];
+  const bad = [];
+  for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const k of screens) {
+      await page.evaluate(k => {
+        closeSheets(); uiWorkoutView = null; view = 'fitness'; fitnessTab = ['templates', 'library', 'muscles'].includes(k) ? k : 'workouts'; uiPlannerDay = todayStr();
+        const done = completedWorkouts(S).find(w => w.entries);
+        if (k === 'live') uiWorkoutView = { mode: 'active' }; if (k === 'edit') uiWorkoutView = { mode: 'edit', id: done.id };
+        if (k === 'planner' || k === 'home') view = k;
+        render(); if (k === 'summary') openWorkoutSummary(done, true); if (k === 'tplform') openTemplateForm(S.workoutTemplates[0]);
+      }, k);
+      const r = await page.evaluate(() => {
+        const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
+        const scope = s || document.getElementById('app');
+        const small = [...scope.querySelectorAll('button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36 && !b.closest('.pl-block.is-compact') && !b.matches('.check, button.chip')) /* 8B: .check has a 46 px ::before hit area; chips are 30 px by design */.map(b => b.className.split(' ')[0] || b.textContent.trim());
+        const clipped = [...scope.querySelectorAll('.stat-value,.pr-v,.wk-perf-score,.mu-lvl,.ws-in,.wk-sug-main')].filter(n => n.offsetParent && n.scrollWidth > n.clientWidth + 1).map(n => n.className);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i), small, clipped };
+      });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length || r.small.length || r.clipped.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
     }
   }
   assert.deepEqual(bad, []);

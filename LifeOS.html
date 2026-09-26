@@ -796,6 +796,8 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 @media(min-width:520px){.wk-feel-row{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .wk-feel{min-height:44px;justify-content:center;display:inline-flex;align-items:center;gap:6px}
 .wk-edit-result{margin-top:10px}
+.wk-plan-line{margin-bottom:4px}
+.wk-card-perf .chip{white-space:normal}
 .mu-intro{margin:0 2px 12px}
 .pl-type{display:flex;gap:6px;margin-bottom:12px}
 .pl-type .pill{flex:1;min-height:44px;justify-content:center}
@@ -2643,7 +2645,7 @@ function renderHome(){
       if(W.fitness===false) return null;
       const done=completedWorkouts(S);
       const todayWorkout=done.find(w=>w.date===todayStr());
-      const sorted=[...done].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+      const sorted=[...done].sort((a,b)=>workoutChronoCmp(b,a));
       const last=sorted[0];
       const fitc=el(`<div class="card snap${done.length?'':' is-empty'}" data-nav="fitness" role="button" tabindex="0"><div class="snap-k">🏋️ ${uiT('fitness')}</div></div>`);
       if(!done.length){
@@ -4688,7 +4690,7 @@ function uiWkT(k){
   const T=cs?{live:'Probíhá',cont:'Pokračovat',active_t:'Rozpracovaný trénink',start_t:'Začít trénink',blank:'Prázdný trénink',start:'Start',
     no_tpl:'Šablona ti připraví cviky a série. Nebo začni prázdný trénink a cviky přidávej průběžně.',make_tpl:'Vytvořit šablonu',
     back:'Zpět na Fitness',finish:'Dokončit trénink',finish_sm:'Dokončit',discard:'Zahodit trénink',add_ex:'+ Přidat cvik',add_set:'+ Série',add_wu:'+ Rozcvička',
-    plan:'Plán',last:'Minule',sug:'Doporučení',sug_apply:'Použít doporučení',sug_done:'Použito',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
+    plan:'Plán',last:'Minule',sug:'Doporučení',sug_apply:'Použít doporučení',sug_done:'Odpovídá',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
     sets_done:'sérií hotovo',rm_set:'Odebrat sérii',rm_ex:'Odebrat cvik',toggle_wu:'přepnout rozcvičku',mark_done:'označit jako hotovou',
     name:'Název',notes:'Poznámka',date:'Datum',duration:'Délka (min)',edit_t:'Upravit trénink',save_back:'Hotovo',
     empty_t:'Prázdný trénink',empty_q:'Tento trénink nemá žádnou dokončenou sérii. Opravdu ho chceš dokončit?',cancel:'Zrušit',
@@ -4699,7 +4701,7 @@ function uiWkT(k){
     :{live:'In progress',cont:'Continue',active_t:'Workout in progress',start_t:'Start a workout',blank:'Empty workout',start:'Start',
     no_tpl:'A template prepares exercises and sets for you. Or start an empty workout and add exercises as you go.',make_tpl:'Create a template',
     back:'Back to Fitness',finish:'Finish workout',finish_sm:'Finish',discard:'Discard workout',add_ex:'+ Add exercise',add_set:'+ Set',add_wu:'+ Warm-up',
-    plan:'Plan',last:'Last',sug:'Suggestion',sug_apply:'Use suggestion',sug_done:'Applied',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
+    plan:'Plan',last:'Last',sug:'Suggestion',sug_apply:'Use suggestion',sug_done:'Matches',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
     sets_done:'sets done',rm_set:'Remove set',rm_ex:'Remove exercise',toggle_wu:'toggle warm-up',mark_done:'mark as done',
     name:'Name',notes:'Notes',date:'Date',duration:'Duration (min)',edit_t:'Edit workout',save_back:'Done',
     empty_t:'Empty workout',empty_q:'This workout has no completed set. Do you really want to finish it?',cancel:'Cancel',
@@ -4850,7 +4852,8 @@ function uiWorkoutEntryCard(w,en){
   </div>`);
   // Suggestion: only while the workout is in progress; a proposal the user applies explicitly.
   const sug=w.status==='active'?exerciseSuggestion(en,w):null;
-  if(sug){
+  // a no-history "plan" suggestion that the prefilled sets already match adds nothing -> not shown
+  if(sug&&!(sug.kind==='plan'&&uiSuggestionApplied(en,sug))){
     const slot=card.querySelector('[data-slot="suggestion"]'), tx=uiSuggestionText(sug), done=uiSuggestionApplied(en,sug);
     slot.hidden=false;
     slot.innerHTML=`<div class="wk-sug-txt"><span class="kicker">${uiWkT('sug')}</span> <b class="wk-sug-main">${escapeHtml(tx.main)}</b><div class="sub">${escapeHtml(tx.note)}</div></div>
@@ -4899,7 +4902,7 @@ function renderWorkoutScreen(){
     <div class="sub wk-hint">${uiWkT('wu_hint')}</div>
     <div class="list" id="wkEntries"></div>
     <button class="btn ghost" id="wkAddEx">${uiWkT('add_ex')}</button>
-    ${edit?`<div class="card wk-edit-result">${uiPerformanceBlock(w.result&&w.result.performance)}${w.result&&w.result.performance?`<div class="sub" style="margin-top:6px">${uiPerfT('snap')}</div>`:''}<div data-slot="feeling"></div></div>`:''}
+    ${edit?`<div class="card wk-edit-result">${uiWorkoutPlanLine(w)?`<div class="sub wk-plan-line">${uiWorkoutPlanLine(w)}</div>`:''}${uiPerformanceBlock(w.result&&w.result.performance)}${w.result&&w.result.performance?`<div class="sub" style="margin-top:6px">${uiPerfT('snap')}</div>`:''}${uiMuscleSummary(w.id)}${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}<div data-slot="feeling"></div></div>`:''}
     <div class="card wk-foot"><label for="wk_name">${uiWkT('name')}</label><input id="wk_name" value="${escapeHtml(w.name)}">
       <label for="wk_notes">${uiWkT('notes')}</label><textarea id="wk_notes" rows="2">${escapeHtml(w.notes||'')}</textarea></div>
     ${edit?`<button class="btn" id="wkSaveBack">${uiWkT('save_back')}</button>`
@@ -4945,7 +4948,7 @@ function uiPrTypeLabel(t){
 function uiPrValue(pr){
   // [big value, small unit, detail]
   if(pr.type==='weight') return [uiFmtNum(pr.weight),'kg',`× ${pr.reps}`];
-  if(pr.type==='reps'&&pr.measurement==='weight_reps') return [String(pr.reps),'×',`@ ${uiFmtNum(pr.weight)} kg`];
+  if(pr.type==='reps'&&pr.measurement==='weight_reps') return [String(pr.reps),uiLang()==='cs'?'opak.':'reps',`@ ${uiFmtNum(pr.weight)} kg`];
   if(pr.type==='reps') return [String(pr.reps),uiLang()==='cs'?'opak.':'reps',''];
   if(pr.type==='time') return [uiFmtSec(pr.seconds),'',''];
   if(pr.type==='distance') return [uiFmtNum(pr.distance),'km',pr.seconds?uiFmtSec(pr.seconds):''];
@@ -4990,6 +4993,13 @@ function uiFeelingPicker(w,idp){
     box.querySelectorAll('[data-feel]').forEach(x=>{ const on=x.dataset.feel===next; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
   });
   return box;
+}
+function uiWorkoutPlanLine(w){
+  // where the plan of a finished workout came from (template copy taken at Start) -- informative only
+  const pl=Array.isArray(w.plan)?w.plan:[];
+  if(!pl.length) return '';
+  const t=w.templateId?templateFind(w.templateId):null, sets=pl.reduce((a,p)=>a+(Number(p.target&&p.target.sets)||0),0), cs=uiLang()==='cs';
+  return `📋 ${cs?'Plán':'Plan'}: ${escapeHtml(t?t.name:(cs?'šablona':'template'))} · ${pl.length} ${uiTplT('n_ex')} · ${sets} ${uiTplT('n_sets')}`;
 }
 function openWorkoutSummary(w,granted){
   const vol=workoutVolume(w), reps=workoutTotalReps(w);
@@ -5072,7 +5082,7 @@ function renderFitness(){
     prs.slice(0,8).forEach(pr=>{ const [v,u,d]=uiPrValue(pr); prList.appendChild(el(`<div class="pr-card" data-pr="${escapeHtml(pr.exerciseId)}:${pr.type}"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${escapeHtml(v)}${u?`<small> ${escapeHtml(u)}</small>`:''}</div><div class="sub">${uiPrTypeLabel(pr.type)}${d?' · '+escapeHtml(d):''} · ${fmtDate(pr.date)}</div></div>`)); });
   }
   const list=wrap.querySelector('#wList');
-  const sorted=[...done].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const sorted=[...done].sort((a,b)=>workoutChronoCmp(b,a));
   if(!sorted.length){ const e=el(`<div class="card">${uiEmpty('🏋️',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openWorkoutForm(); list.appendChild(e); }
   sorted.forEach(w=>{
     const vol=workoutVolume(w);
@@ -5083,6 +5093,7 @@ function renderFitness(){
       <div class="wk-metrics"><span><b>${w.duration||0}</b> ${L.min}</span><span><b>${workoutTotalSets(w)}</b> ${L.sets}</span><span><b>${workoutTotalReps(w)}</b> ${L.reps}</span><span><b>${uiNum(vol)}</b> kg ${L.volume}</span></div>
       ${exRows?`<div class="ex-list">${exRows}</div>`:''}
       ${w.result&&(w.result.performance&&w.result.performance.score!=null||w.result.feeling)?`<div class="chips wk-card-perf">${w.result.performance&&w.result.performance.score!=null?`<span class="chip">⚡ ${w.result.performance.score} · ${uiPerfT(w.result.performance.label)}</span>`:''}${w.result.feeling?`<span class="chip is-muted">${UI_FEELING_IC[w.result.feeling]} ${uiFeelingLabel(w.result.feeling)}</span>`:''}</div>`:''}
+      ${Array.isArray(w.entries)?(()=>{ const mx=Object.values(workoutMuscleXp(w.id)).reduce((a,v)=>a+v,0), pl=uiWorkoutPlanLine(w); return mx||pl?`<div class="chips wk-card-perf">${mx?`<span class="chip is-muted" data-card-mxp>💪 +${mx} Muscle XP</span>`:''}${pl?`<span class="chip is-muted" data-card-plan>${pl}</span>`:''}</div>`:''; })():''}
       ${(w.result&&w.result.prs||[]).length?`<div class="chips wk-card-prs">${w.result.prs.map(pr=>`<span class="chip">🏆 ${escapeHtml(pr.name)} · ${uiPrTypeLabel(pr.type)}</span>`).join('')}</div>`:''}
       ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);
@@ -6253,7 +6264,7 @@ function searchNavigate(type,obj){
   else if(type==='expense'){ view='finance'; render(); openFinanceForm('expense',obj); }
   else if(type==='income'){ view='finance'; render(); openFinanceForm('income',obj); }
   else if(type==='subscription'){ view='subscriptions'; render(); openSubForm(obj); }
-  else if(type==='workout'){ view='fitness'; render(); openWorkoutForm(obj); }
+  else if(type==='workout'){ view='fitness'; if(Array.isArray(obj.entries)){ fitnessTab='workouts'; uiWorkoutView={mode:'edit',id:obj.id}; render(); window.scrollTo(0,0); } else { render(); openWorkoutForm(obj); } }
   else if(type==='meal'){ view='nutrition'; render(); openMealForm(obj); }
   else if(type==='journal'){ view='journal'; render(); openJournalForm(obj); }
   else if(type==='vehicle'){ view='car'; render(); openVehicleForm(obj); }
