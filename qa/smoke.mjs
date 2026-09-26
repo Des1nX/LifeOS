@@ -512,16 +512,16 @@ async function golden(page) {
 }
 
 // ---------- screenshots ----------
-async function screens(outDir) {
-  const variants = [
-    { name: 'mobile-dark', viewport: { width: 390, height: 844 }, theme: 'dark' },
-    { name: 'mobile-light', viewport: { width: 390, height: 844 }, theme: 'light' },
-    { name: 'desktop-dark', viewport: { width: 1280, height: 800 }, theme: 'dark' },
-  ];
+// Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.
+// The original pre-8B set (mobile-dark/mobile-light/desktop-dark) lives in baseline/screens.
+const SCREEN_VARIANTS = [375, 390, 430, 1280, 1440].flatMap(w => ['dark', 'light'].map(theme => ({ name: `${w}-${theme}`, viewport: { width: w, height: w >= 1000 ? 800 : 844 }, theme })));
+async function screens(outDir, variants = SCREEN_VARIANTS) {
   for (const v of variants) {
     const dir = path.join(outDir, v.name); mkdirSync(dir, { recursive: true });
     const errors = [];
     const { context, page } = await openApp({ state: { ...fixtureState(), settings: { ...fixtureState().settings, theme: v.theme } }, viewport: v.viewport, errors });
+    // Queued boot toasts keep appearing for a few seconds; they are not part of the screens.
+    await page.addStyleTag({ content: '#toasts{display:none!important}' });
     for (const [i, view] of VIEWS.entries()) {
       await page.evaluate(() => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; });
       await go(page, view);
@@ -529,20 +529,48 @@ async function screens(outDir) {
       await page.screenshot({ path: path.join(dir, `${String(i + 1).padStart(2, '0')}-${view}.png`), fullPage: true, animations: 'disabled' });
     }
     await go(page, 'home'); await page.evaluate(() => document.getElementById('toasts').replaceChildren()); await page.click('#fabBtn');
+    await page.waitForTimeout(150); // openSheet() moves focus after 30 ms
     await page.screenshot({ path: path.join(dir, '22-quick-add.png'), animations: 'disabled' });
+    await page.evaluate(() => closeSheets()); await go(page, 'tasks'); await page.click('#uiAddTask');
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: path.join(dir, '24-task-form.png'), animations: 'disabled' });
     await context.close();
     const ob = await openApp({ viewport: v.viewport, errors });
     await ob.page.evaluate(t => { S.settings.theme = t; applyTheme(); }, v.theme);
+    await ob.page.waitForTimeout(150);
     await ob.page.screenshot({ path: path.join(dir, '23-onboarding.png'), animations: 'disabled' });
     await ob.context.close();
-    console.log(`${v.name}: ${VIEWS.length + 2} screenshots -> ${path.relative(process.cwd(), dir)}${errors.length ? '  ERRORS: ' + errors.join('; ') : ''}`);
+    console.log(`${v.name}: ${VIEWS.length + 3} screenshots -> ${path.relative(process.cwd(), dir)}${errors.length ? '  ERRORS: ' + errors.join('; ') : ''}`);
   }
+}
+// Pixel comparison of a fresh capture against a stored set (default baseline/screens-8b).
+async function compareScreens(refDir) {
+  const { PNG } = await import('pngjs');
+  const { default: pixelmatch } = await import('pixelmatch');
+  const { readdirSync } = await import('node:fs');
+  const tmp = path.join(here, 'out', 'compare'); await screens(tmp);
+  let worst = 0, diffs = [];
+  for (const v of SCREEN_VARIANTS) for (const f of readdirSync(path.join(tmp, v.name))) {
+    const ref = path.join(refDir, v.name, f);
+    if (!existsSync(ref)) { diffs.push(`${v.name}/${f}: no reference`); continue; }
+    const a = PNG.sync.read(readFileSync(ref)), b = PNG.sync.read(readFileSync(path.join(tmp, v.name, f)));
+    if (a.width !== b.width || a.height !== b.height) { diffs.push(`${v.name}/${f}: size ${a.width}x${a.height} -> ${b.width}x${b.height}`); continue; }
+    const n = pixelmatch(a.data, b.data, null, a.width, a.height, { threshold: 0.1 });
+    const pct = n / (a.width * a.height) * 100; worst = Math.max(worst, pct);
+    if (pct > 0.1) diffs.push(`${v.name}/${f}: ${pct.toFixed(2)}% pixels differ`);
+  }
+  console.log(`compared against ${path.relative(process.cwd(), refDir)}; worst diff ${worst.toFixed(3)}%`);
+  if (diffs.length) { console.log('DIFFERENCES:\n  ' + diffs.join('\n  ')); return 1; }
+  console.log('SCREENSHOTS MATCH'); return 0;
 }
 
 // ---------- runner ----------
 let failed = 0;
+const argAfter = flag => { const v = args[args.indexOf(flag) + 1]; return v && !v.startsWith('--') ? v : null; };
 if (args.includes('--screens')) {
-  await screens(path.resolve(args[args.indexOf('--screens') + 1] && !args[args.indexOf('--screens') + 1].startsWith('--') ? args[args.indexOf('--screens') + 1] : path.join(here, 'out', 'screens')));
+  await screens(path.resolve(argAfter('--screens') || path.join(here, 'out', 'screens')));
+} else if (args.includes('--compare-screens')) {
+  failed = await compareScreens(path.resolve(argAfter('--compare-screens') || path.join(here, 'baseline', 'screens-8b')));
 } else {
   const only = process.env.ONLY;
   for (const t of tests) {

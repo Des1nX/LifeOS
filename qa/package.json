@@ -7,11 +7,14 @@
     "fingerprint": "node fingerprint.mjs --check",
     "fingerprint:update": "node fingerprint.mjs --write",
     "smoke": "node smoke.mjs",
-    "screens": "node smoke.mjs --screens",
-    "test": "node fingerprint.mjs --check && node smoke.mjs"
+    "screens": "node smoke.mjs --screens baseline/screens-8b",
+    "test": "node fingerprint.mjs --check && node smoke.mjs",
+    "screens:compare": "node smoke.mjs --compare-screens baseline/screens-8b"
   },
   "devDependencies": {
     "acorn": "8.15.0",
-    "playwright": "1.56.1"
+    "pixelmatch": "6.0.0",
+    "playwright": "1.56.1",
+    "pngjs": "7.0.0"
   }
 }
