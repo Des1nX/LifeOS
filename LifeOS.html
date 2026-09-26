@@ -734,6 +734,40 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .ds-bar.is-live span{color:var(--accent);font-weight:800}
 .ds-bar:disabled{opacity:1}
 
+/* Phase 10: Daily Planner */
+.pl-daybar{display:flex;align-items:center;gap:10px;padding:10px}
+.pl-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
+.pl-day b{font-size:16px}
+.pl-todaybtn{margin:-4px 0 12px}
+.pl-allday{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pl-timeline{padding:12px 10px 16px 6px;--pl-gutter:52px}
+.pl-grid{position:relative}
+.pl-hour{position:absolute;left:0;right:0;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);height:0}
+.pl-hour span{position:absolute;left:4px;top:-8px;font-size:var(--fs-micro);color:var(--sub);font-variant-numeric:tabular-nums;background:var(--card);padding-right:4px}
+.pl-now{position:absolute;left:var(--pl-gutter);right:0;height:2px;background:var(--danger);z-index:3}
+.pl-now::before{content:'';position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--danger)}
+.pl-block{position:absolute;display:flex;align-items:flex-start;gap:6px;padding:6px 6px 6px 8px;border-radius:12px;overflow:hidden;min-width:0;z-index:2;
+  background:color-mix(in srgb,var(--pl-c,var(--accent)) 16%,var(--card2));border:1px solid color-mix(in srgb,var(--pl-c,var(--accent)) 40%,var(--line));box-shadow:inset 3px 0 0 var(--pl-c,var(--accent))}
+.pl-block.is-done{opacity:.7}
+.pl-block.is-done .pl-t{text-decoration:line-through;text-decoration-color:var(--sub)}
+.pl-block.is-event{background:transparent;border:1.5px dashed var(--line);box-shadow:none;flex-direction:column;gap:2px;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.pl-block .check{width:26px;height:26px;margin-top:1px;flex:none}
+.pl-open{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;background:none;border:none;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;min-height:32px}
+.pl-t{font-weight:700;font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block}
+.pl-m{font-size:var(--fs-caption);color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.pl-chips .chip{font-size:10.5px;padding:2px 7px}
+.pl-block.is-compact .pl-open{flex-direction:row;align-items:baseline;gap:6px}
+.plan-list{display:flex;flex-direction:column;gap:2px}
+.plan-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;padding:4px 2px;border:none;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.plan-row:last-child{border-bottom:none}
+.plan-row b{font-variant-numeric:tabular-nums;color:var(--accent);font-size:var(--fs-body-sm)}
+.plan-row.is-done span{text-decoration:line-through;color:var(--sub)}
+@media(min-width:900px){.pl-timeline{--pl-gutter:64px;padding:16px}}
+
+.task-plan{margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+.plan-card{margin-bottom:var(--sp-2)}
+
 /* Calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal-nav{margin-bottom:10px}
@@ -1749,7 +1783,7 @@ function render(){
   app.innerHTML='';
   const map={home:renderHome,tasks:renderTasks,habits:renderHabits,goals:renderGoals,character:renderCharacter,
     more:renderMore,finance:renderFinance,fitness:renderFitness,nutrition:renderNutrition,notes:renderNotes,journal:renderJournal,
-    car:renderCar,subscriptions:renderSubs,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
+    car:renderCar,subscriptions:renderSubs,planner:renderPlanner,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
   // Phase 9: store finished days' Daily Score snapshots (no-op unless a day has ended).
   if(finalizeDailyScores()) scheduleSave();
@@ -1819,6 +1853,148 @@ function uiTodayCard(){
   return card;
 }
 
+// ---- Phase 10: Daily Planner presentation ----
+let uiPlannerDay=null;
+const UI_PL={
+  cs:{title:'Plánovač',add:'Blok',new:'Nový blok',edit:'Upravit blok',today:'Dnes',prev:'Předchozí den',next:'Další den',
+    blocks:'bloků',planned:'naplánováno',done:'hotovo',empty_t:'Den je zatím prázdný',empty_d:'Naplánuj si, kdy co uděláš — úkol, trénink nebo učení.',
+    from_cal:'Z kalendáře',allday:'celý den',task:'Úkol',goal:'Cíl',workout:'Trénink',none:'Žádný',complete:'Označit blok jako splněný',uncomplete:'Zrušit splnění bloku',
+    f_title:'Název',f_date:'Datum',f_start:'Začátek',f_end:'Konec',f_cat:'Kategorie',f_task:'Propojený úkol',f_goal:'Propojený cíl',f_workout:'Propojený trénink',
+    f_desc:'Popis',f_notes:'Poznámky',save:'Uložit blok',saved:'Blok uložen',updated:'Blok upraven',deleted:'Blok smazán',del:'Smazat blok',confirm_del:'Smazat tento blok?',
+    e_required:'Vyplň název',e_invalid:'Neplatná hodnota',e_order:'Konec musí být po začátku',task_done:'úkol hotový',missing:'smazáno',
+    plan:'Naplánovat',plan_hint:'Úkol zůstane beze změny — vznikne jen plánovací blok.',scheduled:'Naplánováno',todays_plan:'Dnešní plán',open:'Plánovač',
+    calendar_hint:'Události z kalendáře jsou jen pro kontext a nekopírují se.',block_done:'splněno'},
+  en:{title:'Planner',add:'Block',new:'New block',edit:'Edit block',today:'Today',prev:'Previous day',next:'Next day',
+    blocks:'blocks',planned:'planned',done:'done',empty_t:'Nothing planned yet',empty_d:'Plan when you will do things — a task, a workout or study time.',
+    from_cal:'From calendar',allday:'all day',task:'Task',goal:'Goal',workout:'Workout',none:'None',complete:'Mark block as done',uncomplete:'Mark block as not done',
+    f_title:'Title',f_date:'Date',f_start:'Start',f_end:'End',f_cat:'Category',f_task:'Linked task',f_goal:'Linked goal',f_workout:'Linked workout',
+    f_desc:'Description',f_notes:'Notes',save:'Save block',saved:'Block saved',updated:'Block updated',deleted:'Block deleted',del:'Delete block',confirm_del:'Delete this block?',
+    e_required:'Title required',e_invalid:'Invalid value',e_order:'End must be after start',task_done:'task done',missing:'deleted',
+    plan:'Schedule',plan_hint:'The task stays unchanged — only a planner block is created.',scheduled:'Scheduled',todays_plan:"Today's plan",open:'Planner',
+    calendar_hint:'Calendar events are shown for context only and are not copied.',block_done:'done'},
+};
+function uiPlT(k){ return (UI_PL[uiLang()]||UI_PL.cs)[k]; }
+function uiPlDur(min){ const h=Math.floor(min/60), m=min%60; return h?`${h} h${m?` ${m} min`:''}`:`${m} min`; }
+function uiPlColor(cat){ const c=CATS[cat]; return c&&ATTRS[c.a]?ATTRS[c.a].c:'var(--accent)'; }
+function uiPlIcon(b){ return (CATS[b.category]||{}).ic||'🗓️'; }
+function uiTaskBlocks(t){ return (S.plannerBlocks||[]).filter(b=>b.taskId===t.id).sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime)); }
+function uiTaskNextBlock(t){ const today=todayStr(); return uiTaskBlocks(t).find(b=>b.date>=today)||null; }
+function uiTaskPlanBlock(t){
+  const bl=uiTaskBlocks(t);
+  return `<div class="task-plan"><button class="btn ghost" id="f_plan">🗓️ ${uiPlT('plan')}</button>${bl.length?`<div class="sub" style="margin-top:8px">${uiPlT('scheduled')}:</div><div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">${bl.map(b=>`<button class="chip" data-plan-day="${b.date}">🗓️ ${fmtDate(b.date)} ${b.startTime}–${b.endTime}${b.completed?' ✓':''}</button>`).join('')}</div>`:''}</div>`;
+}
+// Home: compact "Today's plan" (inside the existing Today's Tasks widget -- no new widget key).
+function uiTodaysPlanCard(){
+  const bl=plannerBlocksOn(todayStr());
+  if(!bl.length) return null;
+  const c=el(`<div class="card plan-card" data-plan="home"><div class="between" style="margin-bottom:4px"><span class="kicker">🗓️ ${uiPlT('todays_plan')}</span><button class="action section-open" style="background:none;border:none;color:var(--accent);font-weight:650;min-height:44px;cursor:pointer">${uiPlT('open')} ›</button></div>
+    <div class="plan-list">${bl.slice(0,5).map(b=>`<button class="plan-row${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><span class="truncate">${uiPlIcon(b)} ${escapeHtml(b.title)}</span>${b.completed?'<span class="chip is-success">✓</span>':'<span></span>'}</button>`).join('')}</div>
+    ${bl.length>5?`<div class="sub" style="margin-top:4px">+${bl.length-5}</div>`:''}</div>`);
+  c.querySelectorAll('button').forEach(b=>b.onclick=()=>uiOpenPlanner(todayStr()));
+  return c;
+}
+function uiOpenPlanner(D){ uiPlannerDay=D||todayStr(); view='planner'; render(); window.scrollTo(0,0); }
+function renderPlanner(){
+  const D=uiPlannerDay||todayStr(), today=todayStr();
+  const blocks=plannerBlocksOn(D), sum=plannerDaySummary(D);
+  const evs=uiEventsOn(D), timedEvs=evs.filter(e=>plannerTimeToMin(e.start)!=null), allDay=evs.filter(e=>plannerTimeToMin(e.start)==null);
+  const dayLabel=(()=>{ try{ const s=new Date(D+'T00:00').toLocaleDateString(uiLocale(),{weekday:'long',day:'numeric',month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return fmtDate(D); } })();
+  const wrap=el(`<div class="planner">${uiPageHead(uiPlT('title'),'',`<button class="btn sm" id="uiAddBlock">＋ ${uiPlT('add')}</button>`)}
+    <section class="card pl-daybar">
+      <button class="iconbtn" id="plPrev" aria-label="${uiPlT('prev')}">‹</button>
+      <div class="pl-day"><b>${dayLabel}</b><span class="sub">${sum.planned} ${uiPlT('blocks')} · ${uiPlDur(sum.plannedMin)} ${uiPlT('planned')} · ${sum.completed} ${uiPlT('done')}</span></div>
+      <button class="iconbtn" id="plNext" aria-label="${uiPlT('next')}">›</button>
+    </section>
+    ${D!==today?`<button class="btn ghost sm pl-todaybtn" id="plToday">${uiPlT('today')}</button>`:''}
+    ${allDay.length?`<div class="pl-allday">${allDay.map(e=>`<span class="chip is-muted">📅 ${escapeHtml(e.title)} · ${uiPlT('allday')}</span>`).join('')}</div>`:''}
+    <div id="plBody"></div>
+    ${evs.length?`<p class="helper-text" style="margin-top:10px">${uiPlT('calendar_hint')}</p>`:''}
+  </div>`);
+  wrap.querySelector('#uiAddBlock').onclick=()=>openPlannerForm(null,{date:D});
+  wrap.querySelector('#plPrev').onclick=()=>uiOpenPlanner(addDays(D,-1));
+  wrap.querySelector('#plNext').onclick=()=>uiOpenPlanner(addDays(D,1));
+  const tb=wrap.querySelector('#plToday'); if(tb) tb.onclick=()=>uiOpenPlanner(today);
+  const body=wrap.querySelector('#plBody');
+  if(!blocks.length&&!timedEvs.length){
+    const e=el(`<div class="card">${uiEmpty('🗓️',uiPlT('empty_t'),uiPlT('empty_d'),'＋ '+uiPlT('add'))}</div>`);
+    e.querySelector('.emptyCta').onclick=()=>openPlannerForm(null,{date:D});
+    body.appendChild(e); return wrap;
+  }
+  // Timeline: 06:00–22:00 by default, widened to include every block/event of the day.
+  const items=[...blocks.map(b=>({id:b.id,start:plannerTimeToMin(b.startTime),end:plannerTimeToMin(b.endTime),b})),
+    ...timedEvs.map(e=>{ const s0=plannerTimeToMin(e.start), e0=plannerTimeToMin(e.end); return {id:'ev_'+e.id,start:s0,end:e0!=null&&e0>s0?e0:Math.min(1440,s0+60),ev:e}; })];
+  let from=6*60, to=22*60;
+  items.forEach(it=>{ from=Math.min(from,Math.floor(it.start/60)*60); to=Math.max(to,Math.ceil(it.end/60)*60); });
+  const PX=1.1, lay=plannerLayout(items);
+  const tl=el(`<section class="card pl-timeline" aria-label="${dayLabel}"><div class="pl-grid" id="plTimeline" style="height:${Math.round((to-from)*PX)}px"></div></section>`);
+  const grid=tl.querySelector('#plTimeline');
+  for(let h=from;h<=to;h+=60) grid.appendChild(el(`<div class="pl-hour" style="top:${Math.round((h-from)*PX)}px"><span>${plannerMinToTime(Math.min(h,1439)).replace('23:59','24:00')}</span></div>`));
+  if(D===today){ const n=new Date(), nm=n.getHours()*60+n.getMinutes(); if(nm>=from&&nm<=to) grid.appendChild(el(`<div class="pl-now" style="top:${Math.round((nm-from)*PX)}px" aria-hidden="true"></div>`)); }
+  items.forEach(it=>{
+    const L=lay[it.id], top=Math.round((it.start-from)*PX), h=Math.max(44,Math.round((it.end-it.start)*PX));
+    const pos=`top:${top}px;height:${h}px;left:calc(var(--pl-gutter) + (100% - var(--pl-gutter)) * ${L.col} / ${L.cols});width:calc((100% - var(--pl-gutter)) / ${L.cols} - 4px)`;
+    if(it.ev){
+      const e=it.ev;
+      const n=el(`<button class="pl-block is-event" style="${pos}" data-event="${e.id}" aria-label="${uiPlT('from_cal')}: ${escapeHtml(e.title)}"><span class="pl-t">📅 ${escapeHtml(e.title)}</span><span class="pl-m">${formatTimeDisplay(e.start)}${e.end?'–'+formatTimeDisplay(e.end):''} · ${uiPlT('from_cal')}</span></button>`);
+      n.onclick=()=>{ uiCalDay=D; uiCalMode='month'; view='calendar'; render(); window.scrollTo(0,0); };
+      grid.appendChild(n); return;
+    }
+    const b=it.b, lk=plannerLinks(b), compact=h<64;
+    const linkTxt=[lk.task?` · ${uiPlT('task')}: ${escapeHtml(lk.task.title)}${lk.task.done?' ('+uiPlT('task_done')+')':''}`:'',lk.goal?` · ${uiPlT('goal')}: ${escapeHtml(lk.goal.title)}`:'',lk.workout?` · ${uiPlT('workout')}: ${escapeHtml(lk.workout.name)}`:''].join('');
+    const chips=[lk.task?`<span class="chip ${lk.task.done?'is-success':''}">✅ ${escapeHtml(lk.task.title)}${lk.task.done?' · '+uiPlT('task_done'):''}</span>`:(b.taskId?`<span class="chip is-muted">✅ ${uiPlT('missing')}</span>`:''),
+      lk.goal?`<span class="chip">🎯 ${escapeHtml(lk.goal.title)}</span>`:'', lk.workout?`<span class="chip">🏋️ ${escapeHtml(lk.workout.name)}</span>`:''].filter(Boolean).join('');
+    const n=el(`<div class="pl-block${b.completed?' is-done':''}${compact?' is-compact':''}" style="${pos};--pl-c:${uiPlColor(b.category)}" data-block="${b.id}">
+      <button class="check plCheck ${b.completed?'done':''}" aria-pressed="${b.completed}" aria-label="${uiPlT(b.completed?'uncomplete':'complete')}: ${escapeHtml(b.title)}">${b.completed?'✓':''}</button>
+      <button class="pl-open" aria-label="${uiPlT('edit')}: ${escapeHtml(b.title)}${linkTxt}"><span class="pl-t">${uiPlIcon(b)} ${escapeHtml(b.title)}${compact&&lk.task&&lk.task.done?' <span title="'+uiPlT('task_done')+'">✅</span>':''}</span><span class="pl-m">${b.startTime}–${b.endTime}${compact?'':' · '+uiPlDur(plannerDuration(b))}</span>${!compact&&chips?`<span class="pl-chips">${chips}</span>`:''}</button>
+    </div>`);
+    n.querySelector('.plCheck').onclick=(ev)=>{ ev.stopPropagation(); plannerToggleCompleted(b.id); render(); };
+    n.querySelector('.pl-open').onclick=()=>openPlannerForm(b);
+    grid.appendChild(n);
+  });
+  body.appendChild(tl);
+  return wrap;
+}
+function openPlannerForm(existing,preset){
+  const b=existing, p=Object.assign({},preset||{});
+  const today=todayStr(), date=b?b.date:(p.date||today);
+  let start=b?b.startTime:p.startTime, end=b?b.endTime:p.endTime;
+  if(!start){ const n=new Date(); const m=date===today?Math.min(22*60,(n.getHours()+1)*60):9*60; start=plannerMinToTime(m); end=plannerMinToTime(Math.min(1439,m+60)); }
+  const cur=b||p;
+  const taskOpts=S.tasks.filter(t=>!t.done||t.id===cur.taskId).map(t=>`<option value="${t.id}" ${t.id===cur.taskId?'selected':''}>${escapeHtml(t.title)}${t.dueDate?' · '+fmtDate(t.dueDate):''}</option>`).join('');
+  const goalOpts=S.goals.filter(g=>g.status==='Active'||g.id===cur.goalId).map(g=>`<option value="${g.id}" ${g.id===cur.goalId?'selected':''}>${escapeHtml(g.title)}</option>`).join('');
+  const wkOpts=[...S.workouts].sort((a,c)=>(c.date||'').localeCompare(a.date||'')).filter((w,i)=>i<30||w.id===cur.workoutId).map(w=>`<option value="${w.id}" ${w.id===cur.workoutId?'selected':''}>${escapeHtml(w.name)} · ${fmtDate(w.date)}</option>`).join('');
+  const inner=el(`<div class="pl-form"><h3>${uiPlT(b?'edit':'new')}</h3>
+    ${p.taskId&&!b?`<p class="helper-text" style="margin:-6px 0 12px">${uiPlT('plan_hint')}</p>`:''}
+    <label for="pb_title">${uiPlT('f_title')}</label><input id="pb_title" value="${escapeHtml(cur.title||'')}" autocomplete="off"><div class="field-error" data-err="title"></div>
+    <label for="pb_date">${uiPlT('f_date')}</label><input type="date" id="pb_date" value="${date}"><div class="field-error" data-err="date"></div>
+    <div class="grid2"><div><label for="pb_start">${uiPlT('f_start')}</label><input type="time" id="pb_start" value="${start}" step="300"><div class="field-error" data-err="startTime"></div></div>
+      <div><label for="pb_end">${uiPlT('f_end')}</label><input type="time" id="pb_end" value="${end}" step="300"><div class="field-error" data-err="endTime"></div></div></div>
+    <label for="pb_cat">${uiPlT('f_cat')}</label><select id="pb_cat"><option value="">${uiPlT('none')}</option>${catOptions()}</select>
+    <label for="pb_task">${uiPlT('f_task')}</label><select id="pb_task"><option value="">${uiPlT('none')}</option>${taskOpts}</select>
+    <label for="pb_goal">${uiPlT('f_goal')}</label><select id="pb_goal"><option value="">${uiPlT('none')}</option>${goalOpts}</select>
+    <label for="pb_workout">${uiPlT('f_workout')}</label><select id="pb_workout"><option value="">${uiPlT('none')}</option>${wkOpts}</select>
+    <label for="pb_desc">${uiPlT('f_desc')}</label><textarea id="pb_desc" rows="2">${escapeHtml(cur.description||'')}</textarea>
+    <label for="pb_notes">${uiPlT('f_notes')}</label><textarea id="pb_notes" rows="2">${escapeHtml(cur.notes||'')}</textarea>
+    <button class="btn" id="pb_save">${uiPlT('save')}</button>
+    ${b?`<button class="btn danger" id="pb_delete" style="margin-top:8px">${uiPlT('del')}</button>`:''}
+  </div>`);
+  inner.querySelector('#pb_cat').value=cur.category||'';
+  inner.querySelectorAll('.field-error').forEach(n=>n.hidden=true);
+  inner.querySelector('#pb_save').onclick=()=>{
+    const fields={title:inner.querySelector('#pb_title').value,date:inner.querySelector('#pb_date').value,startTime:inner.querySelector('#pb_start').value,endTime:inner.querySelector('#pb_end').value,
+      category:inner.querySelector('#pb_cat').value,taskId:inner.querySelector('#pb_task').value,goalId:inner.querySelector('#pb_goal').value,workoutId:inner.querySelector('#pb_workout').value,
+      description:inner.querySelector('#pb_desc').value,notes:inner.querySelector('#pb_notes').value};
+    const r=plannerSaveBlock(fields,b);
+    const idOf={title:'pb_title',date:'pb_date',startTime:'pb_start',endTime:'pb_end'};
+    Object.keys(idOf).forEach(k=>{ const inp=inner.querySelector('#'+idOf[k]), msg=inner.querySelector(`[data-err="${k}"]`); const code=r.errors[k];
+      inp.classList.toggle('invalid',!!code); inp.setAttribute('aria-invalid',code?'true':'false'); msg.hidden=!code; msg.textContent=code?uiPlT(code==='required'?'e_required':code==='end_before_start'?'e_order':'e_invalid'):''; });
+    if(!r.ok){ const first=inner.querySelector('.invalid'); if(first) first.focus(); return; }
+    closeSheets(); uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved'));
+  };
+  const del=inner.querySelector('#pb_delete');
+  if(del) del.onclick=()=>{ if(!confirm(uiPlT('confirm_del'))) return; plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); };
+  openSheet(inner);
+}
 // ---- Phase 9: Daily Score presentation (reads dailyScore()/S.dailyScores only) ----
 const UI_DS={
   cs:{nothing:'Dnes zatím není co hodnotit',live:'průběžné',excellent:'Výborný den',good:'Dobrý den',solid:'Solidní den',weaker:'Slabší den',tough:'Náročný den',
@@ -1980,10 +2156,10 @@ const UI_I18N={
     more:'Více', productivity:'Produktivita', body:'Tělo', money:'Peníze', life:'Život', system:'Systém',
     m_goals:'Cíle', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Výživa', m_notes:'Poznámky', m_journal:'Deník', m_car:'Auto',
     m_subscriptions:'Předplatné', m_calendar:'Kalendář', m_quests:'Výpravy', m_statistics:'Statistiky', m_search:'Hledat', m_health:'Zdraví',
-    m_character:'Postava', m_settings:'Nastavení',
+    m_character:'Postava', m_settings:'Nastavení', m_planner:'Plánovač',
     // quick add
     quick_add:'Rychlé přidání', qa_task:'Úkol', qa_habit:'Návyk', qa_goal:'Cíl', qa_expense:'Výdaj', qa_income:'Příjem', qa_workout:'Trénink',
-    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování',
+    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování', qa_planner:'Blok plánu',
     // onboarding
     ob_step:'Krok {n} ze 6', skip:'Přeskočit', next_btn:'Pokračovat', back_btn:'Zpět', start_sample:'Začít s ukázkovými daty', finish:'Začít s prázdným profilem',
     // toasts
@@ -2027,9 +2203,9 @@ const UI_I18N={
     more:'More', productivity:'Productivity', body:'Body', money:'Money', life:'Life', system:'System',
     m_goals:'Goals', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Nutrition', m_notes:'Notes', m_journal:'Journal', m_car:'Car',
     m_subscriptions:'Subscriptions', m_calendar:'Calendar', m_quests:'Quests', m_statistics:'Statistics', m_search:'Search', m_health:'Health',
-    m_character:'Character', m_settings:'Settings',
+    m_character:'Character', m_settings:'Settings', m_planner:'Planner',
     quick_add:'Quick Add', qa_task:'Task', qa_habit:'Habit', qa_goal:'Goal', qa_expense:'Expense', qa_income:'Income', qa_workout:'Workout',
-    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel',
+    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel', qa_planner:'Planner block',
     ob_step:'Step {n} of 6', skip:'Skip', next_btn:'Continue', back_btn:'Back', start_sample:'Start with sample data', finish:'Start with an empty profile',
     toast_n_achievements:'{n} achievements unlocked', toast_n_quests:'{n} quests completed', toast_n_rewards:'{n} rewards',
     theme_to_light:'Switch to light theme', theme_to_dark:'Switch to dark theme',
@@ -2109,7 +2285,7 @@ const UI_PHRASES_CS={
   // notes / journal / search
   'Untitled':'Bez názvu','Pin':'Připnout','Unpin':'Odepnout','Unfavorite':'Odebrat z oblíbených','This month':'Tento měsíc','Search':'Hledat','Type at least 2 characters.':'Napiš aspoň 2 znaky.','No results.':'Žádné výsledky.',
   'Notes':'Poznámky','Journal':'Deník','Quests':'Výpravy','Subscriptions':'Předplatné','Events':'Události','Milestones':'Milníky','Meals':'Jídla','Vehicles':'Vozidla','Achievements':'Úspěchy',
-  'Could not load your data':'Nepodařilo se načíst data',
+  'Could not load your data':'Nepodařilo se načíst data', 'Planner':'Plánovač',
   // placeholders / misc form text
   'Exercise':'Cvik','Muscle':'Sval','Rest':'Pauza','Exercises':'Cviky','+ Add Exercise':'+ Přidat cvik','No goal':'Bez cíle','— pick to autofill —':'— vyber pro doplnění —','optional':'nepovinné',
   'e.g. Finish report':'např. Dokončit report','e.g. Card, Cash':'např. Karta, Hotovost','e.g. Chicken & rice':'např. Kuře s rýží','e.g. Dentist appointment':'např. Zubař',
@@ -2225,6 +2401,7 @@ function renderHome(){
       const todayTasks=S.tasks.filter(t=>!t.done && (t.dueDate===todayStr()||!t.dueDate)).slice(0,5);
       const tc=el(`<section>${sectionHead(uiT('todays_tasks'),uiT('see_all'),'tasks')}<div class="list" id="hTasks"></div></section>`);
       const tl=tc.querySelector('#hTasks');
+      const plan=uiTodaysPlanCard(); if(plan) tl.appendChild(plan); // Phase 10
       if(!todayTasks.length){ const e=el(`<div class="card">${uiEmpty('🌤️',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openForm('task'); tl.appendChild(e); }
       todayTasks.forEach(t=>tl.appendChild(taskItem(t)));
       return tc;
@@ -2380,11 +2557,13 @@ function taskItem(t){
   const linkedGoal=t.goalId?S.goals.find(g=>g.id===t.goalId):null;
   const shownXp=t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10); // display of the same rule the check handler uses
   const overdue=!t.done&&t.dueDate&&t.dueDate<todayStr();
+  const planned=uiTaskNextBlock(t); // Phase 10: earliest planner block for this task from today on
   const meta=[
     t.priority?`<span class="chip ${t.priority==='Urgent'?'is-danger':t.priority==='High'?'is-warn':'is-muted'}">${uiPrioLabel(t.priority)}</span>`:'',
     t.dueDate?`<span class="${overdue?'chip is-danger':''}">📅 ${uiDueLabel(t.dueDate)}</span>`:'',
     t.category?`<span>${escapeHtml(t.category)}</span>`:'',
     linkedGoal?`<button class="chip linkGoal">🎯 ${escapeHtml(linkedGoal.title)}</button>`:'',
+    planned?`<button class="chip planLink" aria-label="${uiPlT('scheduled')}: ${fmtDate(planned.date)} ${planned.startTime}">🗓️ ${planned.date===todayStr()?'':fmtDate(planned.date)+' '}${planned.startTime}</button>`:'',
     t.done?'':`<span class="xp-tag">+${shownXp} XP</span>`,
   ].filter(Boolean).join(' ');
   const it=el(`<div class="item task-item" data-prio="${t.done?'':escapeHtml(t.priority||'')}">
@@ -2415,6 +2594,7 @@ function taskItem(t){
   };
   it.querySelector('.editBtn').onclick=()=>openTaskEditForm(t);
   const lg=it.querySelector('.linkGoal'); if(lg) lg.onclick=(ev)=>{ev.stopPropagation();searchNavigate('goal',linkedGoal);};
+  const pl=it.querySelector('.planLink'); if(pl) pl.onclick=(ev)=>{ ev.stopPropagation(); uiOpenPlanner(planned.date); };
   it.querySelector('.delbtn').onclick=()=>{S.tasks=S.tasks.filter(x=>x.id!==t.id);scheduleSave();render();};
   return it;
 }
@@ -2439,6 +2619,7 @@ function openTaskEditForm(t){
     <label>Goal</label><select id="f_goal">${goalOptions(t.goalId)}</select>
     <label>XP reward</label><input type="number" id="f_xp" min="0" value="${t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10)}">
     <button class="btn" id="f_save">Save Changes</button>
+    ${uiTaskPlanBlock(t)}
   </div>`);
   inner.querySelector('#f_cat').value=t.category||'';
   inner.querySelector('#f_pri').value=t.priority||'Medium';
@@ -2450,6 +2631,9 @@ function openTaskEditForm(t){
     t.xpReward=parseFloat(inner.querySelector('#f_xp').value)||0;
     scheduleSave();closeSheets();render();toast('Task updated');
   };
+  // Phase 10: schedule this task in the planner (creates a linked block; the task is not changed).
+  inner.querySelector('#f_plan').onclick=()=>{ closeSheets(); openPlannerForm(null,{taskId:t.id,title:t.title,category:t.category,date:t.dueDate&&t.dueDate>=todayStr()?t.dueDate:todayStr()}); };
+  inner.querySelectorAll('[data-plan-day]').forEach(b=>b.onclick=()=>{ closeSheets(); uiOpenPlanner(b.dataset.planDay); });
   openSheet(inner);
 }
 
@@ -3252,6 +3436,7 @@ function renderMore(){
     {v:'car',ic:'🚗',label:'Car'},
     {v:'subscriptions',ic:'💳',label:'Subscriptions'},
     {v:'calendar',ic:'📅',label:'Calendar'},
+    {v:'planner',ic:'🗓️',label:'Planner'},
     {v:'quests',ic:'📜',label:'Quests'},
     {v:'statistics',ic:'📊',label:'Statistics'},
     {v:'search',ic:'🔎',label:'Search'},
@@ -3260,7 +3445,7 @@ function renderMore(){
     {v:'settings',ic:'⚙️',label:'Settings'},
   ];
   // Phase 8B: same 15 destinations, grouped into sections.
-  const groups=[['productivity',['goals','calendar','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
+  const groups=[['productivity',['planner','calendar','goals','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
     ['money',['finance','subscriptions']],['life',['car']],['system',['statistics','character','settings']]];
   const g=wrap.querySelector('#moreGrid');
   groups.forEach(([gk,keys])=>{
@@ -3268,7 +3453,7 @@ function renderMore(){
     const grid=sec.querySelector('.more-grid');
     keys.map(k=>items.find(it=>it.v===k)).forEach(it=>{
       const b=el(`<button class="qopt" data-v="${it.v}"><span class="ic" aria-hidden="true">${it.ic}</span>${uiT('m_'+it.v)||it.label}</button>`);
-      b.onclick=()=>{view=it.v;render();window.scrollTo(0,0);};
+      b.onclick=()=>{ if(it.v==='planner') uiPlannerDay=todayStr(); view=it.v;render();window.scrollTo(0,0);};
       grid.appendChild(b);
     });
     g.appendChild(sec);
@@ -4656,6 +4841,7 @@ function searchNavigate(type,obj){
   else if(type==='carService'){ view='car'; render(); openServiceForm(obj.vehicleId,obj); }
   else if(type==='fuel'){ view='car'; render(); openFuelForm(obj.vehicleId,obj); }
   else if(type==='quest'){ view='quests'; render(); }
+  else if(type==='plannerBlock'){ uiPlannerDay=obj.date; view='planner'; render(); openPlannerForm(obj); }
   else if(type==='achievement'){ view='character'; render(); }
   else { view='home'; render(); }
 }
@@ -4666,6 +4852,8 @@ function searchGroups(q){
       .map(t=>({title:t.title,meta:[t.priority,t.dueDate?fmtDate(t.dueDate):''].filter(Boolean).join(' · '),obj:t}))],
     ['Events','📅','event', S.events.filter(e=>searchMatch([e.title,e.description,e.location,e.category],q))
       .map(e=>({title:e.title,meta:fmtDate(e.date),obj:e}))],
+    ['Planner','🗓️','plannerBlock', (S.plannerBlocks||[]).filter(b=>searchMatch([b.title,b.description,b.notes],q))
+      .map(b=>({title:b.title,meta:fmtDate(b.date)+' · '+b.startTime+'–'+b.endTime,obj:b}))],
     ['Habits','🔥','habit', S.habits.filter(h=>searchMatch([h.name,h.description,h.category],q))
       .map(h=>({title:h.name,meta:h.category||'',obj:h}))],
     ['Goals','🎯','goal', S.goals.filter(g=>searchMatch([g.title,g.description,g.category],q))
@@ -5257,7 +5445,7 @@ function openSheet(contentEl){
 function catOptions(){return CAT_LIST.map(c=>`<option value="${c}">${CATS[c].ic} ${c}</option>`).join('');}
 
 function openQuickAdd(){
-  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽']];
+  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽'],['planner','🗓️']];
   const content=el(`<div>
     <h3>${uiT('quick_add')}</h3>
     <div class="qgrid">${opts.map(([t,ic])=>`<button class="qopt" data-t="${t}"><span class="ic" aria-hidden="true">${ic}</span>${uiT('qa_'+t)}</button>`).join('')}</div>
@@ -5276,6 +5464,7 @@ function openQuickAdd(){
     else if(t==='habit') openHabitForm();
     else if(t==='water') quickAddWater();
     else if(t==='fuel') openFuelQuickAdd();
+    else if(t==='planner') openPlannerForm(null,{date:todayStr()});
     else openForm(t);
   });
 }

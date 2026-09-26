@@ -2612,6 +2612,93 @@
    ]
   ],
   [
+   "Planner",
+   "🗓️",
+   "plannerBlock",
+   [
+    {
+     "title": "Škola",
+     "meta": "23.09.2026 · 08:00–09:00",
+     "obj": {
+      "id": "pb_school",
+      "date": "2026-09-23",
+      "startTime": "08:00",
+      "endTime": "09:00",
+      "title": "Škola",
+      "description": "",
+      "category": "Learning",
+      "taskId": "",
+      "goalId": "",
+      "workoutId": "",
+      "completed": true,
+      "notes": "",
+      "createdAt": "<time>",
+      "updatedAt": "<time>"
+     }
+    },
+    {
+     "title": "Matematika",
+     "meta": "23.09.2026 · 15:00–16:00",
+     "obj": {
+      "id": "pb_math",
+      "date": "2026-09-23",
+      "startTime": "15:00",
+      "endTime": "16:00",
+      "title": "Matematika",
+      "description": "Kapitola 4",
+      "category": "Learning",
+      "taskId": "t_open",
+      "goalId": "",
+      "workoutId": "",
+      "completed": false,
+      "notes": "",
+      "createdAt": "<time>",
+      "updatedAt": "<time>"
+     }
+    },
+    {
+     "title": "Konzultace",
+     "meta": "23.09.2026 · 15:30–16:30",
+     "obj": {
+      "id": "pb_call",
+      "date": "2026-09-23",
+      "startTime": "15:30",
+      "endTime": "16:30",
+      "title": "Konzultace",
+      "description": "",
+      "category": "Work",
+      "taskId": "",
+      "goalId": "",
+      "workoutId": "",
+      "completed": false,
+      "notes": "Zoom",
+      "createdAt": "<time>",
+      "updatedAt": "<time>"
+     }
+    },
+    {
+     "title": "PUSH A",
+     "meta": "23.09.2026 · 17:00–18:15",
+     "obj": {
+      "id": "pb_push",
+      "date": "2026-09-23",
+      "startTime": "17:00",
+      "endTime": "18:15",
+      "title": "PUSH A",
+      "description": "",
+      "category": "Fitness",
+      "taskId": "",
+      "goalId": "g_fit",
+      "workoutId": "w2",
+      "completed": false,
+      "notes": "",
+      "createdAt": "<time>",
+      "updatedAt": "<time>"
+     }
+    }
+   ]
+  ],
+  [
    "Habits",
    "🔥",
    "habit",
