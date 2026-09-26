@@ -121,7 +121,7 @@ test('onboarding: full 6-step wizard via UI persists answers', async ({ page }) 
 
 test('onboarding: Skip finishes immediately and never re-traps', async ({ page }) => {
   await page.fill('#ob_name', 'Skipper'); await page.click('.sheet .btn:not(.ghost)');
-  await page.locator('.sheet button', { hasText: 'Skip' }).click();
+  await page.click('.sheet [data-ob="skip"]'); // 8B: localized label, stable data-ob hook
   await settle(page);
   const s = await stateOf(page);
   assert.equal(s.settings.onboarded, true);
