@@ -860,7 +860,7 @@ test('10 planner: create / edit / delete through the CRUD functions; invalid inp
   assert.ok(r.ok && r.id);
   let s = await stateOf(page);
   const b = s.plannerBlocks.find(x => x.id === r.id);
-  assert.deepEqual({ ...b, id: 0, createdAt: 0, updatedAt: 0 }, { id: 0, date: TODAY, startTime: '15:00', endTime: '16:00', title: 'Matematika', description: '', category: 'Learning', taskId: '', goalId: '', workoutId: '', notes: '', completed: false, createdAt: 0, updatedAt: 0 });
+  assert.deepEqual({ ...b, id: 0, createdAt: 0, updatedAt: 0 }, { id: 0, date: TODAY, startTime: '15:00', endTime: '16:00', title: 'Matematika', description: '', category: 'Learning', taskId: '', goalId: '', workoutId: '', notes: '', workoutTemplateId: '', completed: false, createdAt: 0, updatedAt: 0 }); // 11A-9 adds the optional workoutTemplateId
   const bad = await page.evaluate(f => plannerSaveBlock(f), PB({ startTime: '17:00', endTime: '16:00' }));
   assert.equal(bad.ok, false); assert.equal((await stateOf(page)).plannerBlocks.length, 1, 'invalid block not saved');
   await page.evaluate(id => plannerSaveBlock({ ...S.plannerBlocks.find(b => b.id === id), title: 'Matika', endTime: '16:30' }, { id }), r.id);
@@ -905,7 +905,7 @@ test('10 planner: deleting a linked task (or goal/workout) leaves the block work
   await page.evaluate(() => { S.plannerBlocks = []; }); // start from an empty planner (fixture has blocks)
   await page.evaluate(() => plannerSaveBlock({ date: todayStr(), startTime: '15:00', endTime: '16:00', title: 'x', taskId: 't_open', goalId: 'g_fit', workoutId: 'w2' }));
   await page.evaluate(() => { S.tasks = S.tasks.filter(t => t.id !== 't_open'); S.goals = S.goals.filter(g => g.id !== 'g_fit'); S.workouts = S.workouts.filter(w => w.id !== 'w2'); });
-  assert.deepEqual(await page.evaluate(() => plannerLinks(S.plannerBlocks[0])), { task: null, goal: null, workout: null });
+  assert.deepEqual(await page.evaluate(() => plannerLinks(S.plannerBlocks[0])), { task: null, goal: null, workout: null, template: null }); // 11A-9: + template link
   assert.equal(await page.evaluate(() => plannerDaySummary(todayStr()).planned), 1);
 }, { state: fixtureState() });
 
@@ -2494,6 +2494,188 @@ test('11A UI: Svaly tab, 4 Fitness tabs and the summary with muscles fit 320-144
       const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
         return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i), cards: document.querySelectorAll('.mu-card').length }; });
       if (r.over > 0 || r.sheetOver > 0 || r.dup.length || (k === 'muscles' && r.cards !== 9)) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+// ---------- Phase 11A step 9: Planner <-> Workout Template <-> Active Workout ----------
+// Fixture: old planner blocks (pb_math, pb_push ... no workoutTemplateId) + a "Push A" template (Bench press 3 x 8-10 @ 80).
+const plSetup = page => page.evaluate(() => {
+  const bench = exerciseFind('Bench press'); bench.muscles = { Chest: 70, Triceps: 20, Shoulders: 10 };
+  const t = templateSave({ name: 'Push A', exercises: [{ exerciseId: bench.id, sets: 3, repsMin: 8, repsMax: 10, weight: 80 }] }).template;
+  const b = plannerSaveBlock({ title: 'Push A', date: todayStr(), startTime: '14:00', endTime: '15:15', category: 'Fitness', workoutTemplateId: t.id, notes: 'heavy' }).block;
+  return { tid: t.id, bid: b.id };
+});
+const blk = (page, id) => page.evaluate(id => JSON.parse(JSON.stringify(S.plannerBlocks.find(b => b.id === id))), id);
+const plView = page => page.evaluate(() => { closeSheets(); uiWorkoutView = null; uiPlannerDay = todayStr(); view = 'planner'; render(); });
+
+test('11A planner: workout block model - template reference only, edit template/date/time, old blocks unchanged, reload + export/import keep links', async ({ page }) => {
+  const old0 = await page.evaluate(() => JSON.stringify([S.plannerBlocks, S.plannerBlocks.map(plannerLinks)]));
+  const { tid, bid } = await plSetup(page);
+  let b = await blk(page, bid);
+  assert.equal(b.workoutTemplateId, tid);
+  assert.ok(!('exercises' in b) && !('plan' in b), 'the template is referenced, never copied into the block');
+  assert.equal(await page.evaluate(id => plannerLinks(S.plannerBlocks.find(x => x.id === id)).template.name, bid), 'Push A');
+  assert.equal(await page.evaluate(o => JSON.stringify([S.plannerBlocks.filter(b => b.id !== o), S.plannerBlocks.filter(b => b.id !== o).map(plannerLinks)]), bid), old0, 'old blocks (no workoutTemplateId) and their links unchanged');
+  const t2 = await page.evaluate(() => templateSave({ name: 'Pull B', exercises: [{ exerciseId: exerciseFind('Deadlift').id, sets: 3, repsMin: 5 }] }).template.id);
+  await page.evaluate(({ bid, t2 }) => { const b = S.plannerBlocks.find(x => x.id === bid); plannerSaveBlock(Object.assign({}, b, { workoutTemplateId: t2, date: addDays(todayStr(), 1), startTime: '07:00', endTime: '08:30' }), b); }, { bid, t2 });
+  b = await blk(page, bid);
+  assert.deepEqual([b.workoutTemplateId, b.date, b.startTime, b.endTime, b.notes, b.completed], [t2, await page.evaluate(() => addDays(todayStr(), 1)), '07:00', '08:30', 'heavy', false]);
+  await persist(page); await reload(page);
+  assert.deepEqual(await blk(page, bid), b, 'reload');
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).plannerBlocks.find(x => x.id === bid), b);
+  await page.evaluate(() => { S.plannerBlocks = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(id => S.plannerBlocks.some(x => x.id === id), bid);
+  assert.deepEqual(await blk(page, bid), b, 'export/import');
+  assert.equal(await page.evaluate(id => plannerLinks(S.plannerBlocks.find(x => x.id === id)).template.name, bid), 'Pull B');
+}, { state: fixtureState() });
+
+test('11A planner: Start creates one standard active workout (plan snapshot, plannerBlockId) - no XP, no quest, no Daily Score change, block not completed', async ({ page }) => {
+  const { tid, bid } = await plSetup(page);
+  const u0 = await untouchable(page);
+  await plView(page);
+  await page.click(`[data-block="${bid}"] .plWkStart`);
+  assert.equal(await page.locator('#wkLive').count(), 1, 'live workout screen');
+  const w = await active(page);
+  assert.deepEqual([w.templateId, w.plannerBlockId, w.status, w.date], [tid, bid, 'active', TODAY]);
+  assert.deepEqual(w.plan.map(p => [p.name, p.target.sets, p.target.repsMin, p.target.repsMax, p.target.weight]), [['Bench press', 3, 8, 10, 80]], 'w.plan = the template at Start');
+  const b = await blk(page, bid);
+  assert.deepEqual([b.completed, b.workoutId], [false, w.id], 'block: only a reference to the workout');
+  assert.equal(await untouchable(page), u0, 'Start from the planner: 0 XP, no quest/achievement, Daily Score unchanged');
+  // editing the template or the block afterwards never changes the running workout
+  await page.evaluate(({ tid, bid }) => { templateSave({ name: 'Push A v2', exercises: [{ exerciseId: exerciseFind('Deadlift').id, sets: 5, repsMin: 3 }] }, tid);
+    const b = S.plannerBlocks.find(x => x.id === bid); plannerSaveBlock(Object.assign({}, b, { startTime: '16:00', endTime: '17:00', title: 'Moved' }), b); }, { tid, bid });
+  assert.deepEqual(await active(page), w, 'template/block edits do not touch the active workout');
+  // second Start from the same block: continue, no second workout
+  await plView(page);
+  await page.click(`[data-block="${bid}"] .plWkStart`);
+  assert.equal(await page.evaluate(() => S.workouts.filter(x => x.status === 'active').length), 1);
+  assert.equal(await page.locator('#wkLive').count(), 1);
+}, { state: fixtureState() });
+
+test('11A planner: an active workout from elsewhere is offered for continuation, never a second one', async ({ page }) => {
+  const { bid } = await plSetup(page);
+  await page.evaluate(() => workoutStart({ name: 'Spontaneous' }));
+  await plView(page);
+  await page.click(`[data-block="${bid}"] .plWkStart`);
+  assert.match(await page.locator('.cf-sheet').innerText(), /Trénink už probíhá[\s\S]*Máš rozpracovaný trénink „Spontaneous“/);
+  await page.click('#cf_cancel');
+  assert.equal(await page.evaluate(() => S.workouts.filter(x => x.status === 'active').length), 1);
+  await page.click(`[data-block="${bid}"] .plWkStart`); await page.click('#cf_ok');
+  assert.equal((await active(page)).name, 'Spontaneous', 'continues the existing workout');
+  assert.equal(await page.evaluate(() => S.workouts.filter(x => x.status === 'active').length), 1);
+  assert.deepEqual(await page.evaluate(id => [S.plannerBlocks.find(x => x.id === id).workoutId, plannerBlockWorkoutState(S.plannerBlocks.find(x => x.id === id))], bid), ['', null], 'the block is not linked to someone else\'s workout');
+}, { state: fixtureState() });
+
+test('11A planner: finishing the workout never completes the block and completing the block never finishes the workout; the usual rewards only', async ({ page }) => {
+  const { bid } = await plSetup(page);
+  const wid = await page.evaluate(id => plannerStartWorkout(id).workout.id, bid);
+  await page.evaluate(id => plannerToggleCompleted(id), bid);
+  assert.deepEqual([(await blk(page, bid)).completed, (await active(page)).status], [true, 'active'], 'block done, workout still active');
+  await page.evaluate(id => plannerToggleCompleted(id), bid);
+  const x0 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
+  await page.evaluate(id => { const w = workoutFindById(id); w.entries[0].sets.forEach(s => s.done = true); workoutFinish(id); }, wid);
+  const x1 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
+  assert.deepEqual([x1.xp - x0.xp, x1.VIT - x0.VIT], [80, 20], 'standard 80 Character XP + VIT, nothing for "following the plan"');
+  const b = await blk(page, bid);
+  assert.equal(b.completed, false, 'workout finished, block not completed');
+  assert.equal(await page.evaluate(id => plannerBlockWorkoutState(S.plannerBlocks.find(x => x.id === id)), bid), 'done', 'informative state only');
+  // the planner reference does not influence Performance, PRs, Muscle XP, Feeling or Daily Score
+  const probe = () => page.evaluate(id => { const w = workoutFindById(id); return JSON.stringify([workoutPerformance(w), workoutPRs(w), w.result.feeling || null, dailyScore(todayStr()),
+    (() => { const st = JSON.parse(JSON.stringify(S)); const c = st.workouts.find(x => x.id === id); st.muscleProgress = { log: [] }; muscleAwardWorkout(c, st); return muscleTotals(st); })()]); }, wid);
+  const p0 = await probe();
+  await page.evaluate(id => { workoutFindById(id).plannerBlockId = ''; }, wid);
+  assert.equal(await probe(), p0, 'same results without the planner reference');
+  assert.deepEqual(JSON.parse(p0)[4], await page.evaluate(id => workoutMuscleXp(id), wid), 'Muscle XP paid = Muscle XP of the same workout without the reference');
+  await page.evaluate(({ id, bid }) => { workoutFindById(id).plannerBlockId = bid; workoutSetFeeling(id, 'good'); }, { id: wid, bid });
+  assert.equal((await blk(page, bid)).completed, false, 'Feeling does not touch the block either');
+}, { state: fixtureState() });
+
+test('11A planner: a deleted or unknown template never breaks the planner - "Šablona není dostupná", no Start, reference kept on save', async ({ page }) => {
+  const { tid, bid } = await plSetup(page);
+  const unknown = await page.evaluate(() => plannerSaveBlock({ title: 'Legs', date: todayStr(), startTime: '19:00', endTime: '20:00', workoutTemplateId: 'tpl_never_existed' }).block.id);
+  await page.evaluate(id => templateDelete(id), tid);
+  await plView(page);
+  for (const id of [bid, unknown]) {
+    assert.match(await page.locator(`[data-block="${id}"]`).innerText(), /Šablona není dostupná/);
+    assert.equal(await page.locator(`[data-block="${id}"] .plWkStart`).count(), 0, 'no Start without a template');
+  }
+  assert.deepEqual(await page.evaluate(id => plannerStartWorkout(id), bid), { ok: false, reason: 'no_template' });
+  await page.click(`[data-block="${bid}"] .pl-open`);
+  assert.equal(await page.locator('#pb_tpl').inputValue(), tid, 'the missing template stays selected (never auto-replaced)');
+  assert.match(await page.locator('#pb_tpl option:checked').innerText(), /Šablona není dostupná/);
+  await page.fill('#pb_notes', 'still here'); await page.click('#pb_save');
+  assert.deepEqual([(await blk(page, bid)).workoutTemplateId, (await blk(page, bid)).notes], [tid, 'still here']);
+  await page.evaluate(() => { view = 'home'; render(); view = 'search'; render(); });
+  assert.equal(await page.evaluate(() => activeWorkout()), null);
+  // note: templates have no archive state in the current model (only delete), so "archived" = unavailable = this case
+}, { state: fixtureState() });
+
+test('11A planner UI: Home Today\'s plan shows the workout block (icon, template, time) with Pokračovat / Dokončeno; other blocks as before', async ({ page }) => {
+  const { bid } = await plSetup(page);
+  await page.evaluate(() => { view = 'home'; render(); });
+  const row = page.locator(`[data-plan="home"] [data-block="${bid}"]`);
+  assert.match(await row.innerText(), /14:00[\s\S]*🏋️ Push A/);
+  assert.equal(await row.locator('.planWkGo').count(), 0);
+  await page.evaluate(id => plannerStartWorkout(id), bid);
+  await page.evaluate(() => { view = 'home'; render(); });
+  await row.locator('.planWkGo').click();
+  assert.equal(await page.locator('#wkLive').count(), 1, 'Pokračovat opens the active workout');
+  await page.click('#wkFinish'); await page.click('#cf_ok'); await page.click('#wkSumOk');
+  await page.evaluate(() => { view = 'home'; render(); });
+  assert.match(await row.innerText(), /Dokončeno/);
+  assert.equal((await blk(page, bid)).completed, false, 'informative only');
+  assert.match(await page.locator('[data-plan="home"] [data-block="pb_math"]').innerText(), /15:00[\s\S]*Matematika/, 'other rows unchanged');
+  assert.equal(await page.locator('[data-plan="home"] button[data-block="pb_math"]').count(), 1);
+}, { state: fixtureState() });
+
+test('11A planner UI: Quick Add -> Planner block -> Trénink (template required), then Search finds it, opens it and Start works; Fitness shows "Naplánováno na"', async ({ page }) => {
+  await page.evaluate(() => { const bench = exerciseFind('Bench press'); templateSave({ name: 'Push A', exercises: [{ exerciseId: bench.id, sets: 3, repsMin: 8, weight: 80 }] }); });
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="planner"]');
+  await page.click('[data-pbtype="workout"]');
+  assert.equal(await page.inputValue('#pb_cat'), 'Fitness');
+  await page.fill('#pb_start', '18:00'); await page.fill('#pb_end', '19:00');
+  await page.click('#pb_save');
+  assert.match(await page.locator('[data-err="workoutTemplateId"]').innerText(), /Vyber šablonu/);
+  const n0 = await page.evaluate(() => S.plannerBlocks.length);
+  const tid = await page.evaluate(() => S.workoutTemplates[0].id);
+  await page.selectOption('#pb_tpl', tid);
+  assert.equal(await page.inputValue('#pb_title'), 'Push A', 'title filled from the template');
+  await page.click('#pb_save');
+  const b = (await stateOf(page)).plannerBlocks.find(x => x.startTime === '18:00');
+  assert.deepEqual([b.workoutTemplateId, b.title, b.category, (await stateOf(page)).plannerBlocks.length], [tid, 'Push A', 'Fitness', n0 + 1]);
+  // a general block from the same form has no template
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="planner"]');
+  await page.fill('#pb_title', 'Čtení'); await page.fill('#pb_start', '21:00'); await page.fill('#pb_end', '21:30'); await page.click('#pb_save');
+  assert.equal((await stateOf(page)).plannerBlocks.find(x => x.title === 'Čtení').workoutTemplateId, '');
+  // Search
+  const g = await page.evaluate(() => searchGroups('push a').find(x => x[2] === 'plannerBlock')[3].map(i => [i.title, i.meta]));
+  assert.ok(g.some(([t, m]) => t === 'Push A' && /18:00–19:00 · 🏋️ Push A/.test(m)));
+  await page.evaluate(id => searchNavigate('plannerBlock', S.plannerBlocks.find(x => x.id === id)), b.id);
+  await page.click('#pb_startwk');
+  const w = await active(page);
+  assert.deepEqual([w.plannerBlockId, w.templateId], [b.id, tid]);
+  await page.click('#wkBack');
+  assert.match(await page.locator('#wkResume').innerText(), /Naplánováno na: 18:00 – Push A/);
+}, { state: fixtureState() });
+
+test('11A planner UI: planner with workout blocks, the block form and Home fit 320-1440 px', async ({ page }) => {
+  const { bid } = await plSetup(page);
+  await page.evaluate(() => { plannerSaveBlock({ title: 'A very long workout block title for narrow screens', date: todayStr(), startTime: '14:30', endTime: '15:00', workoutTemplateId: 'gone' }); });
+  await page.evaluate(id => plannerStartWorkout(id), bid);
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const k of ['planner', 'form', 'home', 'fitness']) {
+      await page.evaluate(({ k, bid }) => { closeSheets(); uiWorkoutView = null; fitnessTab = 'workouts'; uiPlannerDay = todayStr(); view = k === 'form' ? 'planner' : k; render(); if (k === 'form') openPlannerForm(S.plannerBlocks.find(x => x.id === bid)); }, { k, bid });
+      const r = await page.evaluate(() => { const s = document.querySelector('.sheet'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i) }; });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
     }
   }
   assert.deepEqual(bad, []);

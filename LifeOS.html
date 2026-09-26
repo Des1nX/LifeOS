@@ -797,6 +797,16 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .wk-feel{min-height:44px;justify-content:center;display:inline-flex;align-items:center;gap:6px}
 .wk-edit-result{margin-top:10px}
 .mu-intro{margin:0 2px 12px}
+.pl-type{display:flex;gap:6px;margin-bottom:12px}
+.pl-type .pill{flex:1;min-height:44px;justify-content:center}
+.pl-wk-head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+.pl-wk-head .btn{margin-top:4px}
+.pl-wk-head .helper-text{width:100%;margin:4px 0 0}
+.pl-block .plWkStart{position:absolute;right:4px;top:4px;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;background:var(--accent-grad);color:#fff;border:none;font-size:13px}
+.pl-block.is-workout .pl-open{padding-right:42px}
+.plan-row.plan-wk{cursor:default}
+.plan-row .plan-open{background:none;border:0;color:inherit;font:inherit;text-align:left;min-height:44px;cursor:pointer;padding:0}
+.wk-sched{margin-bottom:2px}
 #fitTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
 #fitTabs .pill{padding-left:4px;padding-right:4px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:430px){#fitTabs .tab-ic{display:none}}
@@ -1980,7 +1990,9 @@ const UI_PL={
     f_desc:'Popis',f_notes:'Poznámky',save:'Uložit blok',saved:'Blok uložen',updated:'Blok upraven',deleted:'Blok smazán',del:'Smazat blok',confirm_del:'Smazat tento blok?',
     e_required:'Vyplň název',e_invalid:'Neplatná hodnota',e_order:'Konec musí být po začátku',task_done:'úkol hotový',missing:'smazáno',
     plan:'Naplánovat',plan_hint:'Úkol zůstane beze změny — vznikne jen plánovací blok.',scheduled:'Naplánováno',todays_plan:'Dnešní plán',open:'Plánovač',
-    calendar_hint:'Události z kalendáře jsou jen pro kontext a nekopírují se.',block_done:'splněno'},
+    calendar_hint:'Události z kalendáře jsou jen pro kontext a nekopírují se.',block_done:'splněno',
+    f_type:'Typ',type_general:'Blok',type_workout:'Trénink',f_tpl:'Šablona tréninku',tpl_pick:'Vyber šablonu',tpl_missing:'Šablona není dostupná',no_tpls:'Zatím nemáš žádnou šablonu — vytvoř ji ve Fitness → Šablony.',e_tpl:'Vyber šablonu',
+    start_wk:'Spustit trénink',continue_wk:'Pokračovat',wk_active:'Probíhá',wk_done:'Trénink dokončen',wk_active_t:'Trénink už probíhá',wk_active_q:'Máš rozpracovaný trénink',scheduled_for:'Naplánováno na',wk_hint:'Blok a trénink se dokončují zvlášť.'},
   en:{title:'Planner',add:'Block',new:'New block',edit:'Edit block',today:'Today',prev:'Previous day',next:'Next day',
     blocks:'blocks',planned:'planned',done:'done',empty_t:'Nothing planned yet',empty_d:'Plan when you will do things — a task, a workout or study time.',
     from_cal:'From calendar',allday:'all day',task:'Task',goal:'Goal',workout:'Workout',none:'None',complete:'Mark block as done',uncomplete:'Mark block as not done',
@@ -1988,7 +2000,9 @@ const UI_PL={
     f_desc:'Description',f_notes:'Notes',save:'Save block',saved:'Block saved',updated:'Block updated',deleted:'Block deleted',del:'Delete block',confirm_del:'Delete this block?',
     e_required:'Title required',e_invalid:'Invalid value',e_order:'End must be after start',task_done:'task done',missing:'deleted',
     plan:'Schedule',plan_hint:'The task stays unchanged — only a planner block is created.',scheduled:'Scheduled',todays_plan:"Today's plan",open:'Planner',
-    calendar_hint:'Calendar events are shown for context only and are not copied.',block_done:'done'},
+    calendar_hint:'Calendar events are shown for context only and are not copied.',block_done:'done',
+    f_type:'Type',type_general:'Block',type_workout:'Workout',f_tpl:'Workout template',tpl_pick:'Pick a template',tpl_missing:'Template not available',no_tpls:'No templates yet — create one in Fitness → Templates.',e_tpl:'Pick a template',
+    start_wk:'Start workout',continue_wk:'Continue',wk_active:'In progress',wk_done:'Workout finished',wk_active_t:'A workout is already in progress',wk_active_q:'You have a workout in progress',scheduled_for:'Scheduled for',wk_hint:'The block and the workout are completed separately.'},
 };
 function uiPlT(k){ return (UI_PL[uiLang()]||UI_PL.cs)[k]; }
 function uiPlDur(min){ const h=Math.floor(min/60), m=min%60; return h?`${h} h${m?` ${m} min`:''}`:`${m} min`; }
@@ -2005,12 +2019,32 @@ function uiTodaysPlanCard(){
   const bl=plannerBlocksOn(todayStr());
   if(!bl.length) return null;
   const c=el(`<div class="card plan-card" data-plan="home"><div class="between" style="margin-bottom:4px"><span class="kicker">🗓️ ${uiPlT('todays_plan')}</span><button class="action section-open" style="background:none;border:none;color:var(--accent);font-weight:650;min-height:44px;cursor:pointer">${uiPlT('open')} ›</button></div>
-    <div class="plan-list">${bl.slice(0,5).map(b=>`<button class="plan-row${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><span class="truncate">${uiPlIcon(b)} ${escapeHtml(b.title)}</span>${b.completed?'<span class="chip is-success">✓</span>':'<span></span>'}</button>`).join('')}</div>
+    <div class="plan-list">${bl.slice(0,5).map(b=>{ if(b.workoutTemplateId){ const wi=uiPlannerWorkoutInfo(b);
+      return `<div class="plan-row plan-wk${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><button class="plan-open truncate">🏋️ ${escapeHtml(wi.t?wi.t.name:b.title)}</button>${wi.st==='active'?`<button class="btn sm planWkGo">▶ ${uiPlT('continue_wk')}</button>`:wi.st==='done'?`<span class="chip is-success" data-wk-done>${uiLang()==='cs'?'Dokončeno':'Finished'}</span>`:(b.completed?'<span class="chip is-success">✓</span>':'<span></span>')}</div>`; }
+      return `<button class="plan-row${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><span class="truncate">${uiPlIcon(b)} ${escapeHtml(b.title)}</span>${b.completed?'<span class="chip is-success">✓</span>':'<span></span>'}</button>`; }).join('')}</div>
     ${bl.length>5?`<div class="sub" style="margin-top:4px">+${bl.length-5}</div>`:''}</div>`);
   c.querySelectorAll('button').forEach(b=>b.onclick=()=>uiOpenPlanner(todayStr()));
+  c.querySelectorAll('.planWkGo').forEach(b=>b.onclick=e=>{ e.stopPropagation(); uiGoActiveWorkout(); });
   return c;
 }
 function uiOpenPlanner(D){ uiPlannerDay=D||todayStr(); view='planner'; render(); window.scrollTo(0,0); }
+function uiGoActiveWorkout(){ closeSheets(); uiWorkoutView={mode:'active'}; fitnessTab='workouts'; view='fitness'; render(); window.scrollTo(0,0); }
+function uiPlannerStartWorkout(b){
+  const r=plannerStartWorkout(b.id);
+  if(r.ok){ scheduleSave(); uiGoActiveWorkout(); return; }
+  if(r.reason==='active_exists'){
+    if(r.workout.plannerBlockId===b.id){ uiGoActiveWorkout(); return; }
+    closeSheets(); uiConfirmSheet({title:uiPlT('wk_active_t'),text:`${uiPlT('wk_active_q')} „${r.workout.name}“.`,ok:uiPlT('continue_wk')},uiGoActiveWorkout); return;
+  }
+  toast(uiPlT('tpl_missing'));
+}
+// the block's workout part: template name (or "not available"), informative state, start/continue action
+function uiPlannerWorkoutInfo(b){
+  const t=templateFind(b.workoutTemplateId), st=plannerBlockWorkoutState(b);
+  return {t,st,tplChip:t?`<span class="chip">📋 ${escapeHtml(t.name)}</span>`:`<span class="chip is-muted" data-tpl-missing>📋 ${uiPlT('tpl_missing')}</span>`,
+    stChip:st==='active'?`<span class="chip is-warn">● ${uiPlT('wk_active')}</span>`:st==='done'?`<span class="chip is-success" data-wk-done>🏋️ ${uiPlT('wk_done')}</span>`:'',
+    action:st==='active'?uiPlT('continue_wk'):(t?uiPlT('start_wk'):'')};
+}
 function renderPlanner(){
   const D=uiPlannerDay||todayStr(), today=todayStr();
   const blocks=plannerBlocksOn(D), sum=plannerDaySummary(D);
@@ -2060,12 +2094,15 @@ function renderPlanner(){
     const linkTxt=[lk.task?` · ${uiPlT('task')}: ${escapeHtml(lk.task.title)}${lk.task.done?' ('+uiPlT('task_done')+')':''}`:'',lk.goal?` · ${uiPlT('goal')}: ${escapeHtml(lk.goal.title)}`:'',lk.workout?` · ${uiPlT('workout')}: ${escapeHtml(lk.workout.name)}`:''].join('');
     const chips=[lk.task?`<span class="chip ${lk.task.done?'is-success':''}">✅ ${escapeHtml(lk.task.title)}${lk.task.done?' · '+uiPlT('task_done'):''}</span>`:(b.taskId?`<span class="chip is-muted">✅ ${uiPlT('missing')}</span>`:''),
       lk.goal?`<span class="chip">🎯 ${escapeHtml(lk.goal.title)}</span>`:'', lk.workout?`<span class="chip">🏋️ ${escapeHtml(lk.workout.name)}</span>`:''].filter(Boolean).join('');
-    const n=el(`<div class="pl-block${b.completed?' is-done':''}${compact?' is-compact':''}" style="${pos};--pl-c:${uiPlColor(b.category)}" data-block="${b.id}">
+    const wi=b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+    const n=el(`<div class="pl-block${b.completed?' is-done':''}${compact?' is-compact':''}${wi?' is-workout':''}" style="${pos};--pl-c:${uiPlColor(b.category)}" data-block="${b.id}">
       <button class="check plCheck ${b.completed?'done':''}" aria-pressed="${b.completed}" aria-label="${uiPlT(b.completed?'uncomplete':'complete')}: ${escapeHtml(b.title)}">${b.completed?'✓':''}</button>
-      <button class="pl-open" aria-label="${uiPlT('edit')}: ${escapeHtml(b.title)}${linkTxt}"><span class="pl-t">${uiPlIcon(b)} ${escapeHtml(b.title)}${compact&&lk.task&&lk.task.done?' <span title="'+uiPlT('task_done')+'">✅</span>':''}</span><span class="pl-m">${b.startTime}–${b.endTime}${compact?'':' · '+uiPlDur(plannerDuration(b))}</span>${!compact&&chips?`<span class="pl-chips">${chips}</span>`:''}</button>
+      <button class="pl-open" aria-label="${uiPlT('edit')}: ${escapeHtml(b.title)}${linkTxt}"><span class="pl-t">${uiPlIcon(b)} ${escapeHtml(b.title)}${compact&&lk.task&&lk.task.done?' <span title="'+uiPlT('task_done')+'">✅</span>':''}</span><span class="pl-m">${b.startTime}–${b.endTime}${compact?'':' · '+uiPlDur(plannerDuration(b))}</span>${!compact&&(chips||wi)?`<span class="pl-chips">${wi?wi.tplChip+wi.stChip:''}${chips}</span>`:''}</button>
+      ${wi&&wi.action?`<button class="iconbtn plWkStart" aria-label="${wi.action}: ${escapeHtml(b.title)}">▶</button>`:''}
     </div>`);
     n.querySelector('.plCheck').onclick=(ev)=>{ ev.stopPropagation(); plannerToggleCompleted(b.id); render(); };
     n.querySelector('.pl-open').onclick=()=>openPlannerForm(b);
+    const ws=n.querySelector('.plWkStart'); if(ws) ws.onclick=(ev)=>{ ev.stopPropagation(); uiPlannerStartWorkout(b); };
     grid.appendChild(n);
   });
   body.appendChild(tl);
@@ -2080,8 +2117,14 @@ function openPlannerForm(existing,preset){
   const taskOpts=S.tasks.filter(t=>!t.done||t.id===cur.taskId).map(t=>`<option value="${t.id}" ${t.id===cur.taskId?'selected':''}>${escapeHtml(t.title)}${t.dueDate?' · '+fmtDate(t.dueDate):''}</option>`).join('');
   const goalOpts=S.goals.filter(g=>g.status==='Active'||g.id===cur.goalId).map(g=>`<option value="${g.id}" ${g.id===cur.goalId?'selected':''}>${escapeHtml(g.title)}</option>`).join('');
   const wkOpts=[...S.workouts].sort((a,c)=>(c.date||'').localeCompare(a.date||'')).filter((w,i)=>i<30||w.id===cur.workoutId).map(w=>`<option value="${w.id}" ${w.id===cur.workoutId?'selected':''}>${escapeHtml(w.name)} · ${fmtDate(w.date)}</option>`).join('');
+  const tplId=cur.workoutTemplateId||'', tpls=[...(S.workoutTemplates||[])].sort((x,y)=>x.name.localeCompare(y.name,uiLocale()));
+  const tplOpts=`<option value="">${uiPlT('tpl_pick')}</option>${tplId&&!templateFind(tplId)?`<option value="${escapeHtml(tplId)}" selected>${uiPlT('tpl_missing')}</option>`:''}${tpls.map(t=>`<option value="${t.id}" ${t.id===tplId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}`;
+  const wi=b&&b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
   const inner=el(`<div class="pl-form"><h3>${uiPlT(b?'edit':'new')}</h3>
     ${p.taskId&&!b?`<p class="helper-text" style="margin:-6px 0 12px">${uiPlT('plan_hint')}</p>`:''}
+    ${wi?`<div class="pl-wk-head">${wi.tplChip}${wi.stChip}${wi.action?`<button class="btn" id="pb_startwk">▶ ${wi.action}</button>`:''}<p class="helper-text">${uiPlT('wk_hint')}</p></div>`:''}
+    <label>${uiPlT('f_type')}</label><div class="seg pl-type" role="group" aria-label="${uiPlT('f_type')}"><button type="button" class="pill ${tplId?'':'on'}" data-pbtype="general" aria-pressed="${!tplId}">🗓️ ${uiPlT('type_general')}</button><button type="button" class="pill ${tplId?'on':''}" data-pbtype="workout" aria-pressed="${!!tplId}">🏋️ ${uiPlT('type_workout')}</button></div>
+    <div id="pb_tplRow" ${tplId?'':'hidden'}><label for="pb_tpl">${uiPlT('f_tpl')}</label>${tpls.length||tplId?`<select id="pb_tpl">${tplOpts}</select>`:`<p class="helper-text" id="pb_notpl">${uiPlT('no_tpls')}</p><select id="pb_tpl" hidden>${tplOpts}</select>`}<div class="field-error" data-err="workoutTemplateId"></div></div>
     <label for="pb_title">${uiPlT('f_title')}</label><input id="pb_title" value="${escapeHtml(cur.title||'')}" autocomplete="off"><div class="field-error" data-err="title"></div>
     <label for="pb_date">${uiPlT('f_date')}</label><input type="date" id="pb_date" value="${date}"><div class="field-error" data-err="date"></div>
     <div class="grid2"><div><label for="pb_start">${uiPlT('f_start')}</label><input type="time" id="pb_start" value="${start}" step="300"><div class="field-error" data-err="startTime"></div></div>
@@ -2097,8 +2140,23 @@ function openPlannerForm(existing,preset){
   </div>`);
   inner.querySelector('#pb_cat').value=cur.category||'';
   inner.querySelectorAll('.field-error').forEach(n=>n.hidden=true);
+  let pbType=tplId?'workout':'general';
+  const tplSel=inner.querySelector('#pb_tpl'), titleIn=inner.querySelector('#pb_title');
+  let autoTitle=tplId&&templateFind(tplId)&&titleIn.value===templateFind(tplId).name;
+  inner.querySelectorAll('[data-pbtype]').forEach(btn=>btn.onclick=()=>{
+    pbType=btn.dataset.pbtype;
+    inner.querySelectorAll('[data-pbtype]').forEach(x=>{ const on=x===btn; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
+    inner.querySelector('#pb_tplRow').hidden=pbType!=='workout';
+    if(pbType==='workout'&&!inner.querySelector('#pb_cat').value) inner.querySelector('#pb_cat').value='Fitness';
+  });
+  tplSel.onchange=()=>{ const t=templateFind(tplSel.value); if(t&&(!titleIn.value.trim()||autoTitle)){ titleIn.value=t.name; autoTitle=true; } };
+  titleIn.addEventListener('input',()=>{ autoTitle=false; });
+  const sw=inner.querySelector('#pb_startwk'); if(sw) sw.onclick=()=>uiPlannerStartWorkout(b);
   inner.querySelector('#pb_save').onclick=()=>{
-    const fields={title:inner.querySelector('#pb_title').value,date:inner.querySelector('#pb_date').value,startTime:inner.querySelector('#pb_start').value,endTime:inner.querySelector('#pb_end').value,
+    const tplErr=inner.querySelector('[data-err="workoutTemplateId"]');
+    if(pbType==='workout'&&!tplSel.value){ tplErr.hidden=false; tplErr.textContent=uiPlT('e_tpl'); tplSel.setAttribute('aria-invalid','true'); if(!tplSel.hidden) tplSel.focus(); return; }
+    tplErr.hidden=true; tplSel.removeAttribute('aria-invalid');
+    const fields={title:inner.querySelector('#pb_title').value,date:inner.querySelector('#pb_date').value,startTime:inner.querySelector('#pb_start').value,endTime:inner.querySelector('#pb_end').value,workoutTemplateId:pbType==='workout'?tplSel.value:'',
       category:inner.querySelector('#pb_cat').value,taskId:inner.querySelector('#pb_task').value,goalId:inner.querySelector('#pb_goal').value,workoutId:inner.querySelector('#pb_workout').value,
       description:inner.querySelector('#pb_desc').value,notes:inner.querySelector('#pb_notes').value};
     const r=plannerSaveBlock(fields,b);
@@ -4702,6 +4760,7 @@ function uiWorkoutStartPanel(){
     const p=uiWkProgress(a);
     const c=el(`<div class="card wk-live wk-resume" id="wkResume"><div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiWkT('active_t')}</div>
       <div class="item-title truncate">${escapeHtml(a.name)}</div>
+      ${(()=>{ const pb=a.plannerBlockId&&(S.plannerBlocks||[]).find(x=>x.id===a.plannerBlockId); return pb?`<div class="sub wk-sched">🗓️ ${uiPlT('scheduled_for')}: ${pb.startTime} – ${escapeHtml(pb.title)}</div>`:''; })()}
       <div class="sub">${uiWkT('started')} ${fmtDate(a.date)} · <span data-elapsed="${a.startedAt}">${uiFmtSec((Date.now()-a.startedAt)/1000)}</span> · ${p.done}/${p.planned} ${uiWkT('sets_done')}</div>
       <button class="btn" id="wkContinue">▶ ${uiWkT('cont')}</button></div>`);
     c.querySelector('#wkContinue').onclick=()=>{ uiWorkoutView={mode:'active'}; render(); window.scrollTo(0,0); };
@@ -6212,8 +6271,8 @@ function searchGroups(q){
       .map(t=>({title:t.title,meta:[t.priority,t.dueDate?fmtDate(t.dueDate):''].filter(Boolean).join(' · '),obj:t}))],
     ['Events','📅','event', S.events.filter(e=>searchMatch([e.title,e.description,e.location,e.category],q))
       .map(e=>({title:e.title,meta:fmtDate(e.date),obj:e}))],
-    ['Planner','🗓️','plannerBlock', (S.plannerBlocks||[]).filter(b=>searchMatch([b.title,b.description,b.notes],q))
-      .map(b=>({title:b.title,meta:fmtDate(b.date)+' · '+b.startTime+'–'+b.endTime,obj:b}))],
+    ['Planner','🗓️','plannerBlock', (S.plannerBlocks||[]).filter(b=>searchMatch([b.title,b.description,b.notes,...(b.workoutTemplateId?[(templateFind(b.workoutTemplateId)||{}).name]:[])],q))
+      .map(b=>({title:b.title,meta:fmtDate(b.date)+' · '+b.startTime+'–'+b.endTime+(b.workoutTemplateId?' · 🏋️ '+((templateFind(b.workoutTemplateId)||{}).name||uiPlT('tpl_missing')):''),obj:b}))],
     ['Habits','🔥','habit', S.habits.filter(h=>searchMatch([h.name,h.description,h.category],q))
       .map(h=>({title:h.name,meta:h.category||'',obj:h}))],
     ['Goals','🎯','goal', S.goals.filter(g=>searchMatch([g.title,g.description,g.category],q))
@@ -6324,7 +6383,27 @@ function plannerLayout(items){
 }
 function plannerLinks(b){
   return {task:b.taskId?S.tasks.find(t=>t.id===b.taskId)||null:null, goal:b.goalId?S.goals.find(g=>g.id===b.goalId)||null:null,
-    workout:b.workoutId?S.workouts.find(w=>w.id===b.workoutId)||null:null};
+    workout:b.workoutId?S.workouts.find(w=>w.id===b.workoutId)||null:null,
+    template:b.workoutTemplateId?templateFind(b.workoutTemplateId):null};
+}
+/* ---- Phase 11A step 9: Planner <-> Workout Template <-> Active Workout, by reference only.
+   A block may carry workoutTemplateId (the template is never copied into the block); starting it
+   runs the normal workoutStart({templateId, plannerBlockId}) -> a standard active workout with its
+   own w.plan snapshot. The block's `completed` and the workout's status stay independent; no XP. */
+function plannerBlockWorkouts(b){ return (S.workouts||[]).filter(w=>w.plannerBlockId===b.id); }
+function plannerBlockWorkoutState(b){
+  // informative only: 'active' while a workout started from this block runs, 'done' once one finished
+  const ws=plannerBlockWorkouts(b);
+  if(ws.some(w=>w.status==='active')) return 'active';
+  return ws.some(isCompletedWorkout)?'done':null;
+}
+function plannerStartWorkout(blockId){
+  const b=(S.plannerBlocks||[]).find(x=>x.id===blockId); if(!b||!b.workoutTemplateId) return {ok:false,reason:'no_block'};
+  const cur=activeWorkout(); if(cur) return {ok:false,reason:'active_exists',workout:cur};
+  if(!templateFind(b.workoutTemplateId)) return {ok:false,reason:'no_template'};
+  const r=workoutStart({templateId:b.workoutTemplateId,plannerBlockId:b.id});
+  if(r.ok&&!b.workoutId){ b.workoutId=r.workout.id; b.updatedAt=Date.now(); } // reference for the existing "linked workout" chip
+  return r;
 }
 function plannerDaySummary(D){
   const bl=plannerBlocksOn(D);
@@ -6333,7 +6412,8 @@ function plannerDaySummary(D){
 // CRUD. Save validates first and never touches the linked records.
 function plannerSaveBlock(fields,existing){
   const f={date:fields.date,startTime:String(fields.startTime||'').trim(),endTime:String(fields.endTime||'').trim(),title:String(fields.title||'').trim(),
-    description:fields.description||'',category:fields.category||'',taskId:fields.taskId||'',goalId:fields.goalId||'',workoutId:fields.workoutId||'',notes:fields.notes||''};
+    description:fields.description||'',category:fields.category||'',taskId:fields.taskId||'',goalId:fields.goalId||'',workoutId:fields.workoutId||'',notes:fields.notes||'',
+    workoutTemplateId:fields.workoutTemplateId||''};
   const errors=plannerValidate(f);
   if(Object.keys(errors).length) return {ok:false,errors};
   if(!Array.isArray(S.plannerBlocks)) S.plannerBlocks=[];
