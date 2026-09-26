@@ -686,6 +686,17 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .ob-avatars .iconbtn.is-selected{transform:scale(1.03)}
 .ob-actions .btn[data-ob="back"]{font-size:22px;padding:0 16px}
 
+/* Workout form exercise editor */
+.ex-edit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 44px;gap:6px;padding:10px;margin-bottom:8px;border-radius:14px;background:var(--card2);border:1px solid var(--line)}
+.ex-edit input{margin:0;min-height:44px;padding:10px 12px}
+.ex-edit .exn{grid-column:1/4}
+.ex-edit .rmEx{grid-column:4;grid-row:1}
+.ex-edit .exs,.ex-edit .exm{grid-column:1}
+.ex-edit .exr,.ex-edit .exrpe{grid-column:2}
+.ex-edit .exw,.ex-edit .exrest{grid-column:3}
+.char-main .stat-grid.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:700px) and (max-width:1199px){.char-main .stat-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 /* Calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal-nav{margin-bottom:10px}
@@ -758,7 +769,7 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
   .topbar .brand{visibility:hidden}
   #app{margin-left:calc(var(--sidebar-w) + max(0px,(100vw - var(--sidebar-w) - var(--content-max)) / 2));margin-right:auto;max-width:var(--content-max);padding:var(--sp-4) 40px var(--sp-9)}
   .fab{bottom:32px;right:32px}
-  .reminder-strip{margin-left:0;margin-right:0;padding-left:0;padding-right:0;flex-wrap:wrap}
+  .reminder-strip{margin-left:0;margin-right:0;padding-left:0;padding-right:0}
   .reminder{max-width:100%}
 }
 @media(min-width:1200px){
@@ -1941,6 +1952,12 @@ const UI_PHRASES_CS={
   'Untitled':'Bez názvu','Pin':'Připnout','Unpin':'Odepnout','Unfavorite':'Odebrat z oblíbených','This month':'Tento měsíc','Search':'Hledat','Type at least 2 characters.':'Napiš aspoň 2 znaky.','No results.':'Žádné výsledky.',
   'Notes':'Poznámky','Journal':'Deník','Quests':'Výpravy','Subscriptions':'Předplatné','Events':'Události','Milestones':'Milníky','Meals':'Jídla','Vehicles':'Vozidla','Achievements':'Úspěchy',
   'Could not load your data':'Nepodařilo se načíst data',
+  // placeholders / misc form text
+  'Exercise':'Cvik','Muscle':'Sval','Rest':'Pauza','Exercises':'Cviky','+ Add Exercise':'+ Přidat cvik','No goal':'Bez cíle','— pick to autofill —':'— vyber pro doplnění —','optional':'nepovinné',
+  'e.g. Finish report':'např. Dokončit report','e.g. Card, Cash':'např. Karta, Hotovost','e.g. Chicken & rice':'např. Kuře s rýží','e.g. Dentist appointment':'např. Zubař',
+  'e.g. Drink water':'např. Pít vodu','e.g. My Car':'např. Moje auto','e.g. Netflix':'např. Netflix','e.g. Push Day':'např. Push den','e.g. Read 20 min':'např. Číst 20 min',
+  'e.g. Run a 10K':'např. Uběhnout 10 km','e.g. Run first 5K':'např. První 5 km','e.g. Salary':'např. Mzda','e.g. recipe, travel':'např. recept, cestování',
+  'e.g. work, gratitude':'např. práce, vděčnost','e.g. work, trip':'např. práce, výlet',
   // settings: dashboard widgets + notification types
   'Reminders':'Připomínky','Level Progress':'Level a postup',"Today's Tasks":'Dnešní úkoly','Nutrition Today':'Výživa dnes',
   'Task reminders':'Připomínky úkolů','Event reminders':'Připomínky událostí','Habit reminders':'Připomínky návyků','Goal reminders':'Připomínky cílů',
@@ -3334,15 +3351,16 @@ function openWorkoutForm(existing){
   const exWrap=inner.querySelector('#exWrap');
   function addExRow(ex){
     ex=ex||{};
-    const row=el(`<div class="row" style="margin-bottom:8px;flex-wrap:wrap">
-      <input placeholder="Exercise" class="exn" style="flex:2;margin-bottom:4px" value="${ex.name?escapeHtml(ex.name):''}">
-      <input type="number" placeholder="Sets" class="exs" style="flex:1;margin-bottom:4px" value="${ex.sets||''}">
-      <input type="number" placeholder="Reps" class="exr" style="flex:1;margin-bottom:4px" value="${ex.reps||''}">
-      <input type="number" placeholder="kg" class="exw" style="flex:1;margin-bottom:4px" value="${ex.weight||''}">
-      <input placeholder="Muscle" class="exm" style="flex:1;margin-bottom:4px" value="${ex.muscle?escapeHtml(ex.muscle):''}">
-      <input type="number" placeholder="RPE" class="exrpe" style="flex:1;margin-bottom:4px" value="${ex.rpe||''}">
-      <input placeholder="Rest" class="exrest" style="flex:1;margin-bottom:4px" value="${ex.rest?escapeHtml(ex.rest):''}">
-      <button type="button" class="delbtn rmEx" style="flex:none">✕</button>
+    // Phase 8B: same inputs/classes, laid out as a small card (name row + 2x3 grid).
+    const row=el(`<div class="ex-edit">
+      <input placeholder="${uiL('Exercise')}" aria-label="${uiL('Exercise')}" class="exn" value="${ex.name?escapeHtml(ex.name):''}">
+      <button type="button" class="delbtn rmEx" aria-label="${uiT('delete')}">✕</button>
+      <input type="number" inputmode="numeric" placeholder="${uiL('Sets')}" aria-label="${uiL('Sets')}" class="exs" value="${ex.sets||''}">
+      <input type="number" inputmode="numeric" placeholder="${uiLang()==='cs'?'Opak.':'Reps'}" aria-label="${uiL('Reps')}" class="exr" value="${ex.reps||''}">
+      <input type="number" inputmode="decimal" placeholder="kg" aria-label="kg" class="exw" value="${ex.weight||''}">
+      <input placeholder="${uiL('Muscle')}" aria-label="${uiL('Muscle')}" class="exm" value="${ex.muscle?escapeHtml(ex.muscle):''}">
+      <input type="number" inputmode="numeric" placeholder="RPE" aria-label="RPE" class="exrpe" value="${ex.rpe||''}">
+      <input placeholder="${uiL('Rest')}" aria-label="${uiL('Rest')}" class="exrest" value="${ex.rest?escapeHtml(ex.rest):''}">
     </div>`);
     row.querySelector('.rmEx').onclick=()=>row.remove();
     exWrap.appendChild(row);
