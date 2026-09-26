@@ -1,6 +1,6 @@
 {
  "logicHash": "67d404e670b0ab9f",
- "effectsHash": "19271b39bf9ec425",
+ "effectsHash": "5d0f480e5aff84b0",
  "effectful": [
   "applyCategoryAttrSkillBonus",
   "applyFinanceAttrSkillBonus",
@@ -316,13 +316,15 @@
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "666c8e39f3ce33a1",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "el": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "da12923c58600f09",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "render": {
    "effectsHash": "c3dd31a841a4c26b",
@@ -330,19 +332,24 @@
    "shapeHash": "2642f515b9edb341",
    "effects": [
     "call checkBrowserNotifications()  #2f6a8c73"
+   ],
+   "data": [
+    "call:2f6a8c7390e59a85"
    ]
   },
   "progressCard": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "ad7dfb0569101872",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "greet": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "2ad822889c8fd7cd",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "renderHome": {
    "effectsHash": "e3b0c44298fc1c14",
@@ -360,7 +367,8 @@
     "nav render()  #37391697",
     "nav view='health'  #06927d92",
     "nav render()  #37391697"
-   ]
+   ],
+   "data": []
   },
   "taskItem": {
    "effectsHash": "83534fec16585014",
@@ -377,13 +385,22 @@
     "set S.tasks=S.tasks.filter(x=>x.id!==t.id)  #11d72de4",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:0a926ac9758cbfe2",
+    "call:c57eaec79f767864",
+    "call:10f8ce4e5689be91",
+    "call:d125fc8ea79c87db",
+    "set:11d72de4ca88c125",
+    "call:d125fc8ea79c87db"
    ]
   },
   "goalOptions": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "26d4bfee6ebd9d22",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "openTaskEditForm": {
    "effectsHash": "ee74341511ef5184",
@@ -400,6 +417,17 @@
     "set t.xpReward=parseFloat(inner.querySelector('#f_xp').value)||0  #86d2ed78",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:d60581692a4a24af",
+    "set:363d1966218c1fc5",
+    "set:938ac386d91acc01",
+    "set:fb8b347ad3676702",
+    "set:f0f5aa804b63d860",
+    "set:959327586a5dba73",
+    "set:2385383b8a7efa0b",
+    "set:86d2ed7823c0cc55",
+    "call:d125fc8ea79c87db"
    ]
   },
   "habitItem": {
@@ -418,6 +446,14 @@
     "set S.habits=S.habits.filter(x=>x.id!==h.id)  #5abc450f",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "call:78423098f92d5a25",
+    "call:b9ccfba9aae1396d",
+    "call:dd9192b3ea37c309",
+    "call:4477ec393a6d9395",
+    "set:5abc450f0b467d83",
+    "call:d125fc8ea79c87db"
    ]
   },
   "goalMini": {
@@ -428,7 +464,8 @@
     "nav currentGoalId=g.id  #7503f920",
     "nav view='goalDetail'  #e6dd0ec9",
     "nav render()  #37391697"
-   ]
+   ],
+   "data": []
   },
   "renderTasks": {
    "effectsHash": "e3b0c44298fc1c14",
@@ -438,7 +475,8 @@
     "nav taskFilter=f  #21562e9d",
     "nav render()  #37391697",
     "nav taskItem(t)  #65782fae"
-   ]
+   ],
+   "data": []
   },
   "renderHabits": {
    "effectsHash": "2ef2ed692daad8c4",
@@ -458,6 +496,15 @@
     "set S.habits=S.habits.filter(x=>x.id!==h.id)  #5abc450f",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "call:b9ccfba9aae1396d",
+    "call:78423098f92d5a25",
+    "call:dd9192b3ea37c309",
+    "call:e5763562b48bd731",
+    "call:4477ec393a6d9395",
+    "set:5abc450f0b467d83",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderHabitDetail": {
@@ -470,7 +517,8 @@
     "nav view='habits'  #4ec6343e",
     "nav render()  #37391697",
     "nav openHabitForm(h)  #76da2089"
-   ]
+   ],
+   "data": []
   },
   "openHabitForm": {
    "effectsHash": "0a55cca9fc6353da",
@@ -486,6 +534,15 @@
     "nav view='habits'  #21f0c251",
     "nav render()  #37391697",
     "call checkAchievements()  #05038667"
+   ],
+   "data": [
+    "set:ba4cac9f12485683",
+    "set:eb746bf755ffd811",
+    "set:62d7e7299a65d6b2",
+    "set:f08d0949949ace4f",
+    "mutate:7e36591f85187b28",
+    "call:d125fc8ea79c87db",
+    "call:05038667ac4f207e"
    ]
   },
   "renderGoals": {
@@ -506,6 +563,13 @@
     "set S.goals=S.goals.filter(x=>x.id!==g.id)  #adba04da",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "call:4c405aa1a8edd5cb",
+    "set:5c3381dc0b653842",
+    "set:b286670a3a968b9e",
+    "set:adba04da4788e0cc",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openGoalForm": {
@@ -529,6 +593,22 @@
     "call scheduleSave()  #d125fc8e",
     "nav view='goals'  #d37940af",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:d13c6ce5999dabef",
+    "set:664bb5cbf25bb04a",
+    "set:affb283dac0f4112",
+    "set:cf3df9e6f26adac8",
+    "set:a206e3a4457c23a8",
+    "set:e1bd344cf4626d92",
+    "set:d53ded1acef73533",
+    "set:ae48864d35e5d8c6",
+    "set:4e7ebd4b077ba590",
+    "call:eac68f6f1d8b145b",
+    "set:f0f0e52822638acf",
+    "call:780678b9bcc85889",
+    "mutate:e090d78532740014",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderGoalDetail": {
@@ -552,6 +632,12 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openMilestoneForm(g.id)  #400d3b80"
+   ],
+   "data": [
+    "call:ba4fd7aea2ca0c42",
+    "call:d8e2536781ae21a2",
+    "set:6e85cd4544eaa0fa",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openMilestoneForm": {
@@ -564,6 +650,12 @@
     "mutate S.milestones.push({id:uid(),goalId,title,description:inner.querySelector('#ms_desc').value, xpReward:parseFloat(inner.querySelector('#ms_xp'  #25c717ab",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:334b4fa7665ff279",
+    "set:50ff4b015367da22",
+    "mutate:25c717ab6fc71af6",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderCharacter": {
@@ -577,6 +669,10 @@
     "nav render()  #37391697",
     "nav view='settings'  #86921cc1",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "call:acf6b529e828c854",
+    "call:1d49f4aec3b475b7"
    ]
   },
   "renderSettings": {
@@ -626,6 +722,39 @@
     "set S.dailyTargets.workoutsPerWeek=v  #bc868ebc",
     "set S.dailyTargets.tasksPerDay=v  #692eec76",
     "set S.dailyTargets.habitsPerDay=v  #16d08295"
+   ],
+   "data": [
+    "set:6513206528ee34ae",
+    "call:d125fc8ea79c87db",
+    "set:a8088180c674bba0",
+    "call:d125fc8ea79c87db",
+    "set:8ce1528a5eb40073",
+    "call:d125fc8ea79c87db",
+    "set:5172987887af816f",
+    "call:d125fc8ea79c87db",
+    "set:859727182596c8f5",
+    "call:d125fc8ea79c87db",
+    "set:cda2738cc023698c",
+    "call:d125fc8ea79c87db",
+    "set:9e8d8e2e92133018",
+    "call:d125fc8ea79c87db",
+    "set:1279c14db758bb03",
+    "call:d125fc8ea79c87db",
+    "call:c57a20a4554e6a2b",
+    "call:d125fc8ea79c87db",
+    "set:aabac2940d64909a",
+    "call:d125fc8ea79c87db",
+    "set:1baabca50cfd8646",
+    "call:d125fc8ea79c87db",
+    "set:86b31e7455744963",
+    "call:d125fc8ea79c87db",
+    "call:d125fc8ea79c87db",
+    "set:2469c6cafe22cf75",
+    "set:9545bffef8e6a860",
+    "set:e9a8a6786307433f",
+    "set:bc868ebc1db588a5",
+    "set:692eec7600440c54",
+    "set:16d082958f384e27"
    ]
   },
   "renderMore": {
@@ -635,7 +764,8 @@
    "effects": [
     "nav view=it.v  #c2460662",
     "nav render()  #37391697"
-   ]
+   ],
+   "data": []
   },
   "renderFinance": {
    "effectsHash": "bb670713399ae3aa",
@@ -654,6 +784,13 @@
     "nav openFinanceForm('expense')  #6d6b8f38",
     "nav openFinanceForm('income')  #b39a7060",
     "nav openBudgetForm()  #1b30bef6"
+   ],
+   "data": [
+    "set:a878d34f972d4208",
+    "call:d125fc8ea79c87db",
+    "set:fc4e504cad5c1963",
+    "set:a93dd3d4770d0dd0",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openBudgetForm": {
@@ -670,6 +807,16 @@
     "mutate S.budgets.push({id:uid(),category:cat,amount:amt,period,createdAt:Date.now()})  #db7aa7d5",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:de9d0f9e886a12ba",
+    "set:ee984a6a8a93c319",
+    "set:18bf572dbb347dd5",
+    "set:183e66af86aec5d6",
+    "set:8d8b554d66e75984",
+    "set:860da441bb2a37cd",
+    "mutate:db7aa7d5023a5fbb",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openFinanceForm": {
@@ -685,6 +832,15 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:bf7b3324ad4060bf",
+    "set:83800a8d86853c2d",
+    "mutate:2a2c603fc8bb6b21",
+    "mutate:d9dcd08c9c8962cf",
+    "call:5f078f74045b590c",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderFitness": {
@@ -697,6 +853,10 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openWorkoutForm()  #59831739"
+   ],
+   "data": [
+    "set:537356d95c0f37db",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openWorkoutForm": {
@@ -711,13 +871,22 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:7092da5a7f869683",
+    "call:318e5bf66f16889b",
+    "set:6702f782b3014438",
+    "call:494a952529b31b71",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "macroRow": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "4af0e56b9202efaf",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "renderNutrition": {
    "effectsHash": "20faf1a430136d6a",
@@ -738,13 +907,25 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:82a19e55f72e6516",
+    "call:63a8691610cf4dba",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db",
+    "set:6ad49e91e1391c9e",
+    "call:d125fc8ea79c87db",
+    "mutate:8d965b2170e51cd7",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "savedFoodOptions": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "253d0c628ab634e1",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "openMealForm": {
    "effectsHash": "ff529f97b26c583c",
@@ -763,6 +944,19 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:91d796a936108526",
+    "set:33956af94c21527c",
+    "set:6cf6a4b42e4a3ac1",
+    "set:dba74dda244fe769",
+    "set:da19b862d781091d",
+    "set:fe7505a5ec54f73c",
+    "mutate:3ee28bbfee3b6963",
+    "mutate:3be0827220aa6cdc",
+    "call:63a8691610cf4dba",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderNotes": {
@@ -783,6 +977,14 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openNoteForm()  #3e2cb855"
+   ],
+   "data": [
+    "set:375a016f13128cdf",
+    "call:d125fc8ea79c87db",
+    "set:1a87f0db3807f1cf",
+    "call:d125fc8ea79c87db",
+    "set:18ed81d1cca6c6fd",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openNoteForm": {
@@ -798,6 +1000,15 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:51108b47fa4d8560",
+    "set:83b4de75f0e75953",
+    "set:6513696daf3198e0",
+    "set:6b18acfa2291d5bb",
+    "mutate:88cbc96ebc8ed28a",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderJournal": {
@@ -810,6 +1021,10 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openJournalForm(todaysEntry)  #d16710fe"
+   ],
+   "data": [
+    "set:5f67ba0a52e0fdf8",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openJournalForm": {
@@ -823,6 +1038,13 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:8c03329bac4049e5",
+    "mutate:90b3cb6e285b3d2a",
+    "call:3b15e71a8461d396",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderCar": {
@@ -847,6 +1069,16 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openVehicleForm()  #e6f70b91"
+   ],
+   "data": [
+    "set:65c93c218697d506",
+    "set:475fdc1f3bbc0cc2",
+    "set:a6baf3adc9a19f7b",
+    "call:d125fc8ea79c87db",
+    "set:9fca0435459b6cf0",
+    "call:d125fc8ea79c87db",
+    "set:af47cd629da70fc2",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openVehicleForm": {
@@ -858,6 +1090,11 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:609b5d3c136e78c8",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openServiceForm": {
@@ -869,6 +1106,11 @@
     "mutate S.carServices.push(Object.assign({id:uid(),vehicleId,createdAt:Date.now()},fields))  #c7e52c79",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:8c97ccc01da56111",
+    "mutate:c7e52c79ac49401a",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openFuelForm": {
@@ -879,6 +1121,10 @@
     "mutate S.fuelEntries.push(Object.assign({id:uid(),vehicleId,createdAt:Date.now()},fields))  #4254d6a8",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:4254d6a842a7389f",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderSubs": {
@@ -896,6 +1142,14 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openSubForm()  #b92d0d74"
+   ],
+   "data": [
+    "set:73945608602b2c98",
+    "call:d125fc8ea79c87db",
+    "set:40131af7dc525d91",
+    "call:d125fc8ea79c87db",
+    "set:1c04d0b9ba938dae",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openSubForm": {
@@ -910,6 +1164,14 @@
     "call checkAchievements()  #05038667",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:c4c5fcfc7b11173f",
+    "set:07b485b5433fbc08",
+    "set:511970e47ac7018e",
+    "mutate:b68543416167fc8b",
+    "call:05038667ac4f207e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderQuests": {
@@ -918,16 +1180,19 @@
    "shapeHash": "e502c70a35388edd",
    "effects": [
     "call checkQuests()  #b48cd845"
+   ],
+   "data": [
+    "call:b48cd845b1210448"
    ]
   },
   "renderCalendar": {
-   "effectsHash": "8b676db5a4fec08d",
-   "navHash": "2ff3d6c74961fc75",
+   "effectsHash": "8431441632a81258",
+   "navHash": "86200142c555ab47",
    "shapeHash": "0bfb1ada01ba276b",
    "effects": [
-    "set calOffset--  #e45313a1",
+    "nav calOffset--  #e45313a1",
     "nav render()  #37391697",
-    "set calOffset++  #750c1276",
+    "nav calOffset++  #750c1276",
     "nav render()  #37391697",
     "nav searchNavigate('task',linkedTask)  #b8abafc4",
     "nav searchNavigate('goal',linkedGoal)  #cbb2a2e8",
@@ -937,6 +1202,10 @@
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697",
     "nav openEventForm()  #01861a04"
+   ],
+   "data": [
+    "set:7840ec080999762d",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openEventForm": {
@@ -949,37 +1218,48 @@
     "mutate S.events.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #32c475a1",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:bc8de2980722ddab",
+    "set:0c737714958c41fa",
+    "mutate:32c475a1f309277b",
+    "call:d125fc8ea79c87db"
    ]
   },
   "svgBarChart": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "bed77b3c52182661",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "svgLineChart": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "caf886cbe857626e",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "chartCard": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "cbc05c30e15773a6",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "statRow": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "180dafbfd0882b54",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "statCard": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "b5b41606dfbef251",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "renderStats": {
    "effectsHash": "e3b0c44298fc1c14",
@@ -988,7 +1268,8 @@
    "effects": [
     "nav statsPeriod=k  #e65d8641",
     "nav render()  #37391697"
-   ]
+   ],
+   "data": []
   },
   "renderSearch": {
    "effectsHash": "e3b0c44298fc1c14",
@@ -996,7 +1277,8 @@
    "shapeHash": "1430017f566a4ec9",
    "effects": [
     "nav searchNavigate(type,r.obj)  #42cdb111"
-   ]
+   ],
+   "data": []
   },
   "renderHealth": {
    "effectsHash": "e3b0c44298fc1c14",
@@ -1010,7 +1292,8 @@
     "nav renderHealthStepsTab(data)  #9e31b908",
     "nav renderHealthHeartRateTab(data)  #51a129f6",
     "nav renderHealthActiveCalTab(data)  #e5a41de8"
-   ]
+   ],
+   "data": []
   },
   "renderHealthSleepTab": {
    "effectsHash": "a6abcd96ef4027de",
@@ -1022,6 +1305,10 @@
     "set S.sleepLog=S.sleepLog.filter(x=>x.id!==s.id)  #8d483971",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:8d483971cb7910c0",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderHealthWeightTab": {
@@ -1034,6 +1321,10 @@
     "set S.weightLog=S.weightLog.filter(x=>x.id!==w.id)  #bec068d9",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:bec068d923c0aa89",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderHealthStepsTab": {
@@ -1046,6 +1337,10 @@
     "set S.stepsLog=S.stepsLog.filter(y=>y.id!==x.id)  #f7b34b6f",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:f7b34b6f3a2b8f93",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderHealthHeartRateTab": {
@@ -1058,6 +1353,10 @@
     "set S.heartRateLog=S.heartRateLog.filter(y=>y.id!==x.id)  #354dc8b3",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:354dc8b3efa25d80",
+    "call:d125fc8ea79c87db"
    ]
   },
   "renderHealthActiveCalTab": {
@@ -1070,6 +1369,10 @@
     "set S.activeCaloriesLog=S.activeCaloriesLog.filter(y=>y.id!==x.id)  #48befb6d",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "set:48befb6dacd2f36e",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openSleepForm": {
@@ -1081,6 +1384,11 @@
     "call grantXp(10,'Sleep logged','VIT',`sleep:${id}`)  #237e3168",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:9f1bc4a0de81ec6d",
+    "call:237e316867c8fea7",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openWeightForm": {
@@ -1091,6 +1399,10 @@
     "mutate S.weightLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #f50cd22f",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:f50cd22fc66eae48",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openStepsForm": {
@@ -1101,6 +1413,10 @@
     "mutate S.stepsLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #d6a0585a",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:d6a0585ad3b82d83",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openHeartRateForm": {
@@ -1111,6 +1427,10 @@
     "mutate S.heartRateLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #fe918f1e",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:fe918f1e8ea5d792",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openActiveCaloriesForm": {
@@ -1121,19 +1441,25 @@
     "mutate S.activeCaloriesLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields))  #aec0a376",
     "call scheduleSave()  #d125fc8e",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:aec0a3764e88a441",
+    "call:d125fc8ea79c87db"
    ]
   },
   "openSheet": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "aa62d2dd73b6afbb",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "catOptions": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "5f2165f05e784392",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "openQuickAdd": {
    "effectsHash": "b61f1145632a0339",
@@ -1151,6 +1477,9 @@
     "call quickAddWater()  #5470de60",
     "nav openFuelQuickAdd()  #e03bfc53",
     "nav openForm(t)  #5540fa8c"
+   ],
+   "data": [
+    "call:5470de601badddae"
    ]
   },
   "openForm": {
@@ -1171,13 +1500,23 @@
     "call scheduleSave()  #d125fc8e",
     "nav view='goals'  #4044b10a",
     "nav render()  #37391697"
+   ],
+   "data": [
+    "mutate:fb74034ebf7dc858",
+    "call:d125fc8ea79c87db",
+    "mutate:840a98d9970b9b42",
+    "call:d125fc8ea79c87db",
+    "call:05038667ac4f207e",
+    "mutate:0c78931452b3e503",
+    "call:d125fc8ea79c87db"
    ]
   },
   "closeSheets": {
    "effectsHash": "e3b0c44298fc1c14",
    "navHash": "e3b0c44298fc1c14",
    "shapeHash": "fd5e2a9f484bc309",
-   "effects": []
+   "effects": [],
+   "data": []
   },
   "openFuelQuickAdd": {
    "effectsHash": "e3b0c44298fc1c14",
@@ -1186,7 +1525,8 @@
    "effects": [
     "nav openFuelForm(S.vehicles[0].id)  #c5abe03c",
     "nav openFuelForm(v.id)  #285bbeac"
-   ]
+   ],
+   "data": []
   },
   "showOnboarding": {
    "effectsHash": "7cc1cee6804ba5b1",
@@ -1215,6 +1555,18 @@
     "call finishOnboardingWizard(data,false,true)  #7cd2be90",
     "call finishOnboardingWizard(data,false,false)  #ce7252f1",
     "nav showOnboarding(5,data)  #23bc5fa0"
+   ],
+   "data": [
+    "call:87e330bb62df4e2f",
+    "set:8861b7ad9f63a7b1",
+    "set:68a465636ec5e13e",
+    "set:796ec5082c6801df",
+    "set:19e1947117b8c7a9",
+    "mutate:0856745061d35966",
+    "mutate:63b963f4813c69b0",
+    "set:9a21a9f05ba3cc93",
+    "call:7cd2be908beea04d",
+    "call:ce7252f1ca38cdb8"
    ]
   }
  }

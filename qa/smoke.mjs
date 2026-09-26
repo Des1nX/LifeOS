@@ -141,7 +141,7 @@ test('navigation: bottom nav, More grid, settings button and detail links', asyn
   for (const v of NAV) { await page.click(`nav.bottom button[data-v="${v}"]`); assert.equal(await page.evaluate(() => view), v); assert.equal(await page.locator(`nav.bottom button[data-v="${v}"].on`).count(), 1); }
   for (const [i, v] of MORE_ITEMS.entries()) {
     await page.click('nav.bottom button[data-v="more"]');
-    await page.locator('#moreGrid > *').nth(i).click();
+    await page.click(`#moreGrid [data-v="${v}"]`); // 8B: grouped sections, stable data-v hooks
     assert.equal(await page.evaluate(() => view), v, `More item ${i}`);
   }
   await page.click('#settingsBtn'); assert.equal(await page.evaluate(() => view), 'settings');
@@ -195,7 +195,7 @@ test('tasks: add, edit (same id), complete, delete through the UI', async ({ pag
   assert.ok(s.tasks.find(x => x.id === t.id).done);
   assert.ok(s.xpLog.some(x => x.key === `task:${t.id}:${TODAY}` && x.amount === 30));
   assert.ok(s.totalXp >= xp0 + 30);
-  await page.locator('#tf button', { hasText: 'Completed' }).click(); // done tasks leave the Today tab
+  await page.click('#tf [data-f="Completed"]'); // done tasks leave the Today tab
   await page.locator('.item', { hasText: 'QA task edited' }).locator('.delbtn').click();
   assert.ok(!(await stateOf(page)).tasks.some(x => x.id === t.id), 'deleted');
 }, { state: fixtureState() });
@@ -203,7 +203,7 @@ test('tasks: add, edit (same id), complete, delete through the UI', async ({ pag
 test('XP: task/habit completion is exact and idempotent; xpLog sums match totalXp', async ({ page }) => {
   const before = await stateOf(page);
   await page.click('nav.bottom button[data-v="tasks"]');
-  const check = tab => page.locator('#tf button', { hasText: tab }).click().then(() => page.locator('.item', { hasText: 'Buy groceries' }).locator('.check').click());
+  const check = tab => page.locator(`#tf [data-f="${tab}"]`).click().then(() => page.locator('.item', { hasText: 'Buy groceries' }).locator('.check').click());
   await check('Today');
   let s = await stateOf(page);
   const key = `task:t_med:${TODAY}`;

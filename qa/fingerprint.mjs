@@ -149,6 +149,8 @@ function collectEffects(fnNode, src, effectful) {
     if (target.type === 'Identifier') return !all.has(target.name);
     const root = memberRoot(target);
     if (root && root.type === 'Identifier') return !fresh.has(root.name);
+    if (root && (root.type === 'LogicalExpression' || root.type === 'ConditionalExpression')) // (a[k]||a.other).push()
+      return [root.left ?? root.consequent, root.right ?? root.alternate].some(touchesState);
     return !(root && freshExpr(root));
   };
   const visit = n => {
@@ -163,7 +165,7 @@ function collectEffects(fnNode, src, effectful) {
     } else if (n.type === 'AssignmentExpression') {
       if (!isDomSink(n.left) && touchesState(n.left)) add(n, n.left.type === 'Identifier' && NAV_STATE.has(n.left.name) ? 'nav' : 'set');
     } else if (n.type === 'UpdateExpression' || (n.type === 'UnaryExpression' && n.operator === 'delete')) {
-      if (touchesState(n.argument)) add(n, 'set');
+      if (touchesState(n.argument)) add(n, n.argument.type === 'Identifier' && NAV_STATE.has(n.argument.name) ? 'nav' : 'set');
     }
     for (const k of Object.keys(n)) if (k !== 'type') visit(n[k]);
   };
@@ -207,6 +209,7 @@ export function fingerprint(html) {
         navHash: h(effects.filter(e => e.why === 'nav').map(e => e.hash).sort().join('|')),
         shapeHash: h(canon(stmt, true)),
         effects: effects.map(e => `${e.why} ${e.src}  #${e.hash.slice(0, 8)}`),
+        data: effects.filter(e => e.why !== 'nav').map(e => e.why + ':' + e.hash),
       };
     } else if (name) {
       logic[name] = h(canon(stmt, false));
@@ -231,13 +234,18 @@ function compare(base, cur) {
   const bs = base.statements.map(s => s.hash), cs = cur.statements.map(s => s.hash);
   base.statements.filter(s => !cs.includes(s.hash)).forEach(s => fails.push(`top-level statement changed/removed: ${s.src}`));
   cur.statements.filter(s => !bs.includes(s.hash)).forEach(s => fails.push(`top-level statement added: ${s.src}`));
+  // Data effects may move between UI functions (e.g. a row builder extracted into a ui* helper):
+  // that is only REVIEW when the multiset of data effects over all UI functions is unchanged.
+  const bag = ui => { const m = new Map(); for (const v of Object.values(ui)) for (const d of v.data || []) m.set(d, (m.get(d) || 0) + 1); return m; };
+  const bb = bag(base.ui), cb = bag(cur.ui);
+  const sameBag = bb.size === cb.size && [...bb].every(([k, v]) => cb.get(k) === v);
   for (const k of new Set([...Object.keys(base.ui), ...Object.keys(cur.ui)])) {
     const b = base.ui[k], c = cur.ui[k];
     if (!c) { fails.push(`UI function removed: ${k}`); continue; }
     if (!b) { reviews.push(`UI function added: ${k} (effects: ${c.effects.length})`); if (c.effects.length) reviews.push(...c.effects.map(e => `    ${e}`)); continue; }
     if (b.effectsHash !== c.effectsHash) {
       const gone = b.effects.filter(e => !c.effects.includes(e)), added = c.effects.filter(e => !b.effects.includes(e));
-      fails.push(`UI effects changed in ${k}:` + gone.map(e => `\n    - ${e}`).join('') + added.map(e => `\n    + ${e}`).join(''));
+      (sameBag ? reviews : fails).push(`UI effects ${sameBag ? 'moved (global data effects identical)' : 'changed'} in ${k}:` + gone.map(e => `\n    - ${e}`).join('') + added.map(e => `\n    + ${e}`).join(''));
     } else if (b.navHash !== c.navHash) {
       const nb = b.effects.filter(e => e.startsWith('nav ')), nc = c.effects.filter(e => e.startsWith('nav '));
       reviews.push(`UI navigation changed (data effects identical): ${k}` + nb.filter(e => !nc.includes(e)).map(e => `\n    - ${e}`).join('') + nc.filter(e => !nb.includes(e)).map(e => `\n    + ${e}`).join(''));

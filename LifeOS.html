@@ -616,6 +616,19 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 
 /* Calendar */
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-nav{margin-bottom:10px}
+.cal-month{font-size:16px;text-transform:capitalize;text-align:center}
+.cal-day{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:44px;border-radius:12px;border:1px solid transparent;
+  background:transparent;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;padding:4px 0;font-variant-numeric:tabular-nums}
+.cal-day:hover{background:var(--card2)}
+.cal-day.is-today{color:var(--accent);font-weight:800}
+.cal-day.is-selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cal-dots{display:flex;gap:3px;height:5px}
+.cal-dots i{width:5px;height:5px;border-radius:50%}
+.cal-dots .ev{background:var(--accent2)}.cal-dots .tk{background:var(--info)}
+.cal-day.is-selected .cal-dots i{background:#fff}
+.cal-today{padding:4px 2px}
+.event-item .ev-time{flex:none;min-width:44px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums;color:var(--accent)}
 .cal-dow{text-align:center;font-size:var(--fs-micro);font-weight:750;color:var(--sub);letter-spacing:.05em;padding:4px 0;text-transform:uppercase}
 
 /* Charts */
@@ -2233,10 +2246,12 @@ function toggleMilestone(m){
 /* ---- Tasks view ---- */
 let taskFilter='Today';
 function renderTasks(){
-  const wrap=el(`<div><h2>Tasks</h2><div class="tabs" id="tf"></div><div class="list" id="tlist"></div></div>`);
+  const openN=S.tasks.filter(t=>!t.done).length;
+  const wrap=el(`<div>${uiPageHead(uiT('tasks'),uiT('open_count',{n:openN}),`<button class="btn sm" id="uiAddTask">＋ ${uiT('qa_task')}</button>`)}<div class="period-selector" id="tf" role="tablist"></div><div class="list" id="tlist"></div></div>`);
+  wrap.querySelector('#uiAddTask').onclick=()=>openForm('task');
   const tf=wrap.querySelector('#tf');
   ['Today','Upcoming','Overdue','All','Completed'].forEach(f=>{
-    const b=el(`<button class="pill ${f===taskFilter?'on':''}">${f}</button>`);
+    const b=el(`<button class="pill ${f===taskFilter?'on':''}" data-f="${f}" role="tab" aria-selected="${f===taskFilter}">${uiT('f_'+f)}</button>`);
     b.onclick=()=>{taskFilter=f;render();};
     tf.appendChild(b);
   });
@@ -2249,48 +2264,61 @@ function renderTasks(){
   else if(taskFilter==='Completed') items=items.filter(t=>t.done);
   else items=items.filter(t=>!t.done);
   items.sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
-  if(!items.length) list.appendChild(el(`<div class="empty"><div class="e">✅</div>Nothing here. Tap + to add a task.</div>`));
+  if(!items.length){
+    const doneTodayN=S.tasks.filter(t=>t.done&&t.dueDate===today).length;
+    const e=el(`<div class="card">${taskFilter==='Today'&&doneTodayN?uiEmpty('🎉',uiT('all_done'),uiT('done_today')+': '+doneTodayN,uiT('add_task')):uiEmpty('✅',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`);
+    e.querySelector('.emptyCta').onclick=()=>openForm('task');
+    list.appendChild(e);
+  }
   items.forEach(t=>list.appendChild(taskItem(t)));
   return wrap;
 }
-
 /* ---- Habits view ---- */
+function uiFreqLabel(h){
+  const f=h.frequency||'daily';
+  const base=uiT('freq_'+f);
+  return (h.target||1)>1?`${base} · ${h.target}×`:base;
+}
 function renderHabits(){
-  const wrap=el(`<div><h2>Habits</h2><button class="btn" id="addHabitBtn" style="margin-bottom:12px">+ New Habit</button><div class="list" id="hlist"></div></div>`);
+  const active=S.habits.filter(h=>h.active!==false);
+  const doneN=active.filter(h=>isDayComplete(h,todayStr())).length;
+  const wrap=el(`<div>${uiPageHead(uiT('habits'),active.length?`${doneN}/${active.length} ${uiT('done_today').toLowerCase()}`:'',`<button class="btn sm" id="addHabitBtn">＋ ${uiT('new_habit')}</button>`)}<div class="list" id="hlist"></div></div>`);
   wrap.querySelector('#addHabitBtn').onclick=()=>openHabitForm();
   const list=wrap.querySelector('#hlist');
-  if(!S.habits.length) list.appendChild(el(`<div class="empty"><div class="e">🔥</div>No habits tracked yet.</div>`));
+  if(!S.habits.length){ const e=el(`<div class="card">${uiEmpty('🔥',uiT('empty_habits_t'),uiT('empty_habits_d'),uiT('add_habit'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openHabitForm(); list.appendChild(e); }
   S.habits.forEach(h=>{
     const streak=currentStreak(h), best=bestStreak(h);
     const c30=last30(h);
     const doneToday=isDayComplete(h,todayStr());
     const isBad=h.type==='bad';
     const brokeToday=isBad&&(h.brokenDates||[]).includes(todayStr());
+    const nm=escapeHtml(h.name);
     const controlHtml = isBad
-      ? `<div class="row" style="gap:6px"><button class="pill sm cleanBtn ${doneToday?'on':''}">✓ Clean</button><button class="pill sm brokeBtn ${brokeToday?'on':''}">✗ Broke</button></div>`
+      ? `<div class="seg"><button class="pill sm cleanBtn ${doneToday?'on':''}" aria-pressed="${doneToday}">✓ ${uiT('clean')}</button><button class="pill sm brokeBtn ${brokeToday?'on':''}" aria-pressed="${brokeToday}">✗ ${uiT('broke')}</button></div>`
       : habitUsesDayCounter(h)
-        ? `<div class="row" style="gap:6px;align-items:center"><button class="iconbtn decBtn">−</button><b style="min-width:28px;text-align:center">${(h.completions||[]).filter(d=>d===todayStr()).length}/${h.target}</b><button class="iconbtn incBtn">+</button></div>`
-        : `<button class="check ${doneToday?'done':''}" style="width:34px;height:34px">${doneToday?'✓':''}</button>`;
-    const card=el(`<div class="card">
-      <div class="between">
-        <div class="row hTap" style="cursor:pointer"><span style="font-size:20px">${h.icon||'🔥'}</span><div>
-          <div class="item-title">${escapeHtml(h.name)}${isBad?' <span class="sub">(avoid)</span>':''}${h.active===false?' <span class="sub">· inactive</span>':''}</div>
-          <div class="item-meta">${h.category||''} · 🔥${streak} current · best ${best}</div>
+        ? `<div class="counter"><button class="iconbtn decBtn" aria-label="${uiT('decrement')}: ${nm}">−</button><b>${(h.completions||[]).filter(d=>d===todayStr()).length}/${h.target}</b><button class="iconbtn incBtn" aria-label="${uiT('increment')}: ${nm}">+</button></div>`
+        : `<button class="check ${doneToday?'done':''}" aria-label="${uiT(doneToday?'unmark_habit':'mark_habit')}: ${nm}" aria-pressed="${doneToday}">${doneToday?'✓':''}</button>`;
+    const card=el(`<div class="card habit-card${isBad?' is-bad':''}${doneToday?' is-done':''}">
+      <div class="habit-head">
+        <div class="row hTap" role="button" tabindex="0" aria-label="${uiT('habit_detail')}: ${nm}"><span class="habit-icon" aria-hidden="true">${h.icon||'🔥'}</span><div style="min-width:0">
+          <div class="item-title">${nm}${h.active===false?` <span class="chip is-muted">${uiT('inactive')}</span>`:''}</div>
+          <div class="item-meta">${isBad?uiT('avoid'):uiFreqLabel(h)}${h.category?' · '+escapeHtml(h.category):''} · +${h.xpReward||15} XP</div>
         </div></div>
         ${controlHtml}
       </div>
-      <div class="row" style="margin-top:10px;gap:4px" id="hm"></div>
-      <div class="row" style="margin-top:10px;gap:8px">
-        <button class="pill sm editBtn">Edit</button>
-        <button class="delbtn" aria-label="Delete">✕</button>
+      <div class="habit-stats"><span class="chip ${streak?'is-warn':'is-muted'}">🔥 ${streak} ${uiT('streak')}</span><span class="chip is-muted">🏆 ${best} ${uiT('best')}</span>${isBad||habitUsesDayCounter(h)||h.frequency==='weekly'||h.frequency==='custom'?`<span class="chip is-muted">${uiHabitLabel(h)}</span>`:''}</div>
+      <div class="habit-foot">
+        <div class="habit-heatmap" role="img" aria-label="${uiT('last_30')}"></div>
+        <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${nm}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${nm}">✕</button></div>
       </div>
     </div>`);
-    const hm=card.querySelector('#hm');
+    const hm=card.querySelector('.habit-heatmap');
     c30.forEach(d=>{
-      const sq=el(`<div style="width:9px;height:9px;border-radius:3px;background:${d.done?'var(--accent2)':(d.broken?'var(--danger,#c0392b)':'var(--card2)')}"></div>`);
+      const sq=el(`<i class="hm-cell${d.done?' is-done':(d.broken?' is-broken':'')}${d.d===todayStr()?' is-today':''}" title="${fmtDate(d.d)}"></i>`);
       hm.appendChild(sq);
     });
     card.querySelectorAll('.hTap').forEach(x=>x.onclick=()=>{currentHabitId=h.id;view='habitDetail';render();window.scrollTo(0,0);});
+    card.querySelectorAll('.hTap').forEach(x=>x.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); x.onclick(); } });
     if(isBad){
       card.querySelector('.cleanBtn').onclick=()=>markHabitClean(h,todayStr());
       card.querySelector('.brokeBtn').onclick=()=>markHabitBroken(h,todayStr());
@@ -2327,31 +2355,35 @@ function renderHabitDetail(){
   const totalDoneDays=[...new Set((h.completions||[]).filter(d=>isDayComplete(h,d)))].length;
   const pctAllTime = totalTracked? Math.round(totalDoneDays/Math.max(totalTracked,daysThisMonth.length||1)*100) : 0;
   const linkedGoal=h.goalId?S.goals.find(g=>g.id===h.goalId):null;
+  const stat=(label,v)=>`<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${v}</div></div>`;
   const wrap=el(`<div>
-    <button class="iconbtn" id="backBtn" aria-label="Back" style="margin-bottom:10px">←</button>
-    <h2>${h.icon||'🔥'} ${escapeHtml(h.name)}</h2>
-    <div class="card">
-      <div class="sub">${escapeHtml(h.description||'')}</div>
-      <div class="item-meta" style="margin-top:4px">${h.type==='bad'?'Avoid':'Build'} · ${h.frequency}${h.frequency==='weekdays'?' ('+(h.weekdays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')+')':''} · target ${h.target||1}${linkedGoal?' · 🎯 '+escapeHtml(linkedGoal.title):''}</div>
-      <div class="grid2" style="margin-top:14px">
-        <div class="item" style="justify-content:space-between"><span>🔥 Current streak</span><b>${streak}</b></div>
-        <div class="item" style="justify-content:space-between"><span>🏆 Best streak</span><b>${best}</b></div>
-        <div class="item" style="justify-content:space-between"><span>This week</span><b>${doneThisWeek}${h.frequency==='weekly'||h.frequency==='custom'?'/'+(h.target||1):''}</b></div>
-        <div class="item" style="justify-content:space-between"><span>This month</span><b>${doneThisMonth}/${daysThisMonth.length}</b></div>
-        ${h.type==='bad'?`<div class="item" style="justify-content:space-between"><span>Days maintained</span><b>${totalDoneDays}</b></div><div class="item" style="justify-content:space-between"><span>Days broken</span><b>${(h.brokenDates||[]).length}</b></div>`:`<div class="item" style="justify-content:space-between"><span>Completion %</span><b>${pctAllTime}%</b></div>`}
+    ${uiBack(uiT('habits'))}
+    <section class="card hud">
+      <div class="hud-top"><span class="habit-icon" style="width:56px;height:56px;font-size:28px" aria-hidden="true">${h.icon||'🔥'}</span>
+        <div class="hud-id"><h2 style="margin:0">${escapeHtml(h.name)}</h2>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${h.type==='bad'?'is-warn':'is-success'}">${h.type==='bad'?uiT('avoid'):uiT('build')}</span><span class="chip is-muted">${h.frequency}${h.frequency==='weekdays'?' ('+(h.weekdays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')+')':''} · target ${h.target||1}</span><span class="chip is-gold">+${h.xpReward||15} XP</span>${linkedGoal?`<span class="chip">🎯 ${escapeHtml(linkedGoal.title)}</span>`:''}</div></div>
       </div>
-      <div class="row" style="gap:8px;margin-top:12px">
-        <button class="pill sm" id="editHabitBtn">Edit Habit</button>
+      ${h.description?`<p class="sub" style="margin-top:12px">${escapeHtml(h.description)}</p>`:''}
+      <div class="row" style="gap:8px;margin-top:14px">
+        <button class="btn ghost sm" id="editHabitBtn">${uiIcon('edit',16)} ${uiT('edit')}</button>
       </div>
+    </section>
+    <div class="stat-grid">
+      ${stat('🔥 '+uiT('current_streak'),streak)}
+      ${stat('🏆 '+uiT('best_streak'),best)}
+      ${stat(uiT('this_week'),doneThisWeek+(h.frequency==='weekly'||h.frequency==='custom'?'<small>/'+(h.target||1)+'</small>':''))}
+      ${stat(uiT('this_month_c'),doneThisMonth+'<small>/'+daysThisMonth.length+'</small>')}
+      ${h.type==='bad'?stat(uiT('days_kept'),totalDoneDays)+stat(uiT('days_broken'),(h.brokenDates||[]).length):stat(uiT('completion'),pctAllTime+'<small>%</small>')}
     </div>
-    <h3>Last 90 days</h3>
-    <div id="heatmap" style="display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-bottom:16px"></div>
+    <section class="card"><div class="section-header"><h3>${uiT('last_90')}</h3></div>
+    <div id="heatmap" class="heatmap90" role="img" aria-label="${uiT('last_90')}"></div>
+    <div class="legend"><span><i style="background:var(--accent2)"></i>${uiT('done')}</span>${h.type==='bad'?`<span><i style="background:var(--danger)"></i>${uiT('broken')}</span>`:''}<span><i style="background:var(--card2);box-shadow:inset 0 0 0 1px var(--line)"></i>${uiT('missed')}</span></div></section>
   </div>`);
   wrap.querySelector('#backBtn').onclick=()=>{view='habits';render();};
   wrap.querySelector('#editHabitBtn').onclick=()=>openHabitForm(h);
   const hmap=wrap.querySelector('#heatmap');
   c90.forEach(x=>{
-    hmap.appendChild(el(`<div title="${x.d}" style="width:100%;padding-top:100%;border-radius:3px;background:${x.done?'var(--accent2)':(x.broken?'var(--danger,#c0392b)':'var(--card2)')}"></div>`));
+    hmap.appendChild(el(`<i class="hm-cell${x.done?' is-done':(x.broken?' is-broken':'')}${x.d===todayStr()?' is-today':''}" title="${fmtDate(x.d)}"></i>`));
   });
   return wrap;
 }
@@ -2414,32 +2446,42 @@ function openHabitForm(existing){
 let goalFilter='Active';
 let currentGoalId=null;
 function renderGoals(){
-  const wrap=el(`<div><h2>Goals</h2><div class="tabs" id="gf"></div><button class="btn" id="addGoalBtn" style="margin-bottom:12px">+ New Goal</button><div class="list" id="glist"></div></div>`);
+  const wrap=el(`<div>${uiPageHead(uiT('goals'),'',`<button class="btn sm" id="addGoalBtn">＋ ${uiT('new_goal')}</button>`)}<div class="period-selector" id="gf" role="tablist"></div><div class="list" id="glist"></div></div>`);
   const gf=wrap.querySelector('#gf');
   ['Active','Completed','Paused','Archived','All'].forEach(f=>{
-    const b=el(`<button class="pill ${f===goalFilter?'on':''}">${f}</button>`);
+    const b=el(`<button class="pill ${f===goalFilter?'on':''}" data-f="${f}" role="tab" aria-selected="${f===goalFilter}">${uiT('g_'+f)}</button>`);
     b.onclick=()=>{goalFilter=f;render();};
     gf.appendChild(b);
   });
   wrap.querySelector('#addGoalBtn').onclick=()=>openGoalForm();
   const list=wrap.querySelector('#glist');
   const items=S.goals.filter(g=>goalFilter==='All'||g.status===goalFilter);
-  if(!items.length) list.appendChild(el(`<div class="empty"><div class="e">🎯</div>No goals here. Set your first one.</div>`));
+  if(!items.length){ const e=el(`<div class="card">${uiEmpty('🎯',uiT('empty_goals_t'),uiT('empty_goals_d'),uiT('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openGoalForm(); list.appendChild(e); }
   items.forEach(g=>{
     const pct=goalProgress(g);
-    const card=el(`<div class="card">
-      <div class="between gTap" style="cursor:pointer"><div class="item-title">🎯 ${escapeHtml(g.title)}</div><span class="badge">${g.status}</span></div>
-      <div class="sub gTap" style="margin:4px 0 10px;cursor:pointer">${escapeHtml(g.description||'')}${g.targetDate?' · by '+fmtDate(g.targetDate):''}</div>
-      <div class="bar gTap" style="cursor:pointer"><i style="width:${pct}%"></i></div>
-      <div class="between" style="margin-top:10px">
-        <span class="sub">${pct}% complete · ${g.mode==='manual'?'manual':'auto'}</span>
-        <div class="row">
-          ${g.status!=='Completed'?'<button class="pill sm-done">Mark Complete</button>':''}
-          <button class="delbtn" aria-label="Delete">✕</button>
-        </div>
+    const msAll=S.milestones.filter(m=>m.goalId===g.id), msDone=msAll.filter(m=>m.completed).length;
+    const overdue=g.status==='Active'&&g.targetDate&&g.targetDate<todayStr();
+    const card=el(`<div class="card goal-card">
+      <div class="goal-top gTap" role="button" tabindex="0">
+        <div style="flex:1;min-width:0"><div class="goal-title">🎯 ${escapeHtml(g.title)}</div>
+        ${g.description?`<div class="sub" style="margin-top:3px">${escapeHtml(g.description)}</div>`:''}</div>
+        <div class="goal-pct">${pct}<small>%</small></div>
+      </div>
+      <div class="bar gTap${pct>=100?' is-success':''}" style="cursor:pointer" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
+      <div class="goal-meta">
+        <span class="chip ${g.status==='Completed'?'is-success':g.status==='Active'?'':'is-muted'}">${uiT('g_'+g.status)}</span>
+        ${g.targetDate?`<span class="chip ${overdue?'is-danger':'is-muted'}">⏳ ${fmtDate(g.targetDate)}</span>`:''}
+        ${msAll.length?`<span class="chip is-muted">🚩 ${msDone}/${msAll.length}</span>`:''}
+        <span class="chip is-gold">+${g.xpReward||200} XP</span>
+        <span class="sub">${g.mode==='manual'?uiT('progress_manual'):'auto'}</span>
+      </div>
+      <div class="goal-actions">
+        ${g.status!=='Completed'?`<button class="pill sm sm-done">✓ ${uiT('mark_complete')}</button>`:''}
+        <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(g.title)}">✕</button>
       </div>
     </div>`);
     card.querySelectorAll('.gTap').forEach(elx=>elx.onclick=()=>{currentGoalId=g.id;view='goalDetail';render();window.scrollTo(0,0);});
+    card.querySelectorAll('.gTap[role="button"]').forEach(x=>x.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); x.onclick(); } });
     const mc=card.querySelector('.sm-done');
     if(mc) mc.onclick=(e)=>{e.stopPropagation();completeGoal(g);render();};
     card.querySelector('.delbtn').onclick=(e)=>{
@@ -2504,43 +2546,44 @@ function renderGoalDetail(){
   const milestones=S.milestones.filter(m=>m.goalId===g.id);
   const linkedHabits=S.habits.filter(h=>h.goalId===g.id);
   const progressSource=linkedTasks.length?'linked tasks':milestones.length?'milestones':linkedHabits.length?'linked habits':'manual fallback';
+  const srcLabel=uiT(linkedTasks.length?'src_tasks':milestones.length?'src_ms':linkedHabits.length?'src_habits':'src_manual');
   const wrap=el(`<div>
-    <button class="iconbtn" id="backBtn" aria-label="Back" style="margin-bottom:10px">←</button>
-    <h2>🎯 ${escapeHtml(g.title)}</h2>
-    <div class="card">
-      <div class="sub">${escapeHtml(g.description||'')}</div>
-      <div class="between" style="margin:8px 0 4px"><span class="badge">${g.status}</span><span class="sub">${g.targetDate?'by '+fmtDate(g.targetDate):''}</span></div>
-      <div class="bar" style="margin-top:8px"><i style="width:${pct}%"></i></div>
-      <div class="sub" style="margin-top:6px">${pct}% complete · ${g.mode==='manual'?'manual progress':'automatic from '+progressSource}</div>
-      <div class="row" style="gap:8px;margin-top:12px">
-        <button class="pill sm" id="editGoalBtn">Edit Goal</button>
-        ${g.status!=='Completed'?'<button class="pill sm doneBtn">Mark Complete</button>':''}
+    ${uiBack(uiT('goals'))}
+    <section class="card hud goal-card">
+      <div class="goal-top"><div style="flex:1;min-width:0"><div class="kicker">🎯 ${uiT('goals')}</div><h2 style="margin:4px 0 0">${escapeHtml(g.title)}</h2>
+        ${g.description?`<p class="sub" style="margin-top:6px">${escapeHtml(g.description)}</p>`:''}</div>
+        <div class="goal-pct" style="font-size:40px">${pct}<small>%</small></div></div>
+      <div class="bar${pct>=100?' is-success':''}" style="height:12px;margin:14px 0 10px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
+      <div class="goal-meta"><span class="chip ${g.status==='Completed'?'is-success':''}">${uiT('g_'+g.status)}</span>${g.targetDate?`<span class="chip is-muted">⏳ ${uiT('by')} ${fmtDate(g.targetDate)}</span>`:''}<span class="chip is-gold">+${g.xpReward||200} XP</span></div>
+      <div class="sub" style="margin-top:8px" data-source="${progressSource}">${g.mode==='manual'?uiT('progress_manual'):uiT('progress_auto',{s:srcLabel})}</div>
+      <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn ghost sm" id="editGoalBtn">${uiIcon('edit',16)} ${uiT('edit')}</button>
+        ${g.status!=='Completed'?`<button class="btn sm doneBtn">✓ ${uiT('mark_complete')}</button>`:''}
       </div>
-    </div>
-    <h3>Linked Tasks (${linkedTasks.length})</h3>
-    <div class="list" id="ltList" style="margin-bottom:16px"></div>
-    ${linkedHabits.length?`<h3>Linked Habits (${linkedHabits.length})</h3><div class="list" id="lhList" style="margin-bottom:16px"></div>`:''}
-    <div class="between"><h3>Milestones (${milestones.filter(m=>m.completed).length}/${milestones.length})</h3></div>
-    <button class="btn ghost" id="addMs" style="margin-bottom:10px">+ Add Milestone</button>
-    <div class="list" id="msList"></div>
+    </section>
+    <div class="section-header"><h3>🚩 ${uiT('milestones')} · ${milestones.filter(m=>m.completed).length}/${milestones.length}</h3><button class="action" id="addMs">＋ ${uiT('add_milestone')}</button></div>
+    <div class="tree"><div class="list" id="msList"></div></div>
+    <div class="section-header"><h3>✅ ${uiT('linked_tasks')} · ${linkedTasks.length}</h3></div>
+    <div class="tree"><div class="list" id="ltList"></div></div>
+    ${linkedHabits.length?`<div class="section-header"><h3>🔥 ${uiT('linked_habits')} · ${linkedHabits.length}</h3></div><div class="tree"><div class="list" id="lhList"></div></div>`:''}
   </div>`);
   wrap.querySelector('#backBtn').onclick=()=>{view='goals';render();};
   wrap.querySelector('#editGoalBtn').onclick=()=>openGoalForm(g);
   const db=wrap.querySelector('.doneBtn'); if(db) db.onclick=()=>{completeGoal(g);render();};
   const lt=wrap.querySelector('#ltList');
-  if(!linkedTasks.length) lt.appendChild(el(`<div class="empty">No tasks linked yet. Link a task to this goal from the task's edit screen.</div>`));
+  if(!linkedTasks.length) lt.appendChild(el(`<div class="card">${uiEmpty('✅',uiT('linked_tasks'),uiT('no_linked_tasks'),'')}</div>`));
   linkedTasks.forEach(t=>lt.appendChild(taskItem(t)));
   const lh=wrap.querySelector('#lhList');
   if(lh) linkedHabits.forEach(h=>lh.appendChild(habitItem(h)));
   const msList=wrap.querySelector('#msList');
-  if(!milestones.length) msList.appendChild(el(`<div class="empty"><div class="e">🚩</div>No milestones yet.</div>`));
+  if(!milestones.length) msList.appendChild(el(`<div class="card">${uiEmpty('🚩',uiT('no_milestones'),'','')}</div>`));
   milestones.forEach(m=>{
     const it=el(`<div class="item">
-      <button class="check ${m.completed?'done':''}">${m.completed?'✓':''}</button>
-      <div style="flex:1"><div class="item-title ${m.completed?'done':''}">${escapeHtml(m.title)}</div>
-      <div class="item-meta">${escapeHtml(m.description||'')}${m.description?' · ':''}+${m.xpReward||25} XP</div></div>
-      <button class="pill sm editMs">Edit</button>
-      <button class="delbtn" aria-label="Delete">✕</button>
+      <button class="check ${m.completed?'done':''}" aria-label="${escapeHtml(m.title)}" aria-pressed="${m.completed?'true':'false'}">${m.completed?'✓':''}</button>
+      <div style="flex:1;min-width:0"><div class="item-title ${m.completed?'done':''}">${escapeHtml(m.title)}</div>
+      <div class="item-meta meta-row">${m.description?`<span>${escapeHtml(m.description)}</span>`:''}<span class="xp-tag">+${m.xpReward||25} XP</span></div></div>
+      <div class="item-actions"><button class="iconbtn ghost-ic editMs" aria-label="${uiT('edit')}: ${escapeHtml(m.title)}">${uiIcon('edit',18)}</button>
+      <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.title)}">✕</button></div>
     </div>`);
     it.querySelector('.check').onclick=()=>{toggleMilestone(m);render();};
     it.querySelector('.editMs').onclick=()=>openMilestoneForm(g.id,m);
@@ -2834,7 +2877,7 @@ function renderSettings(){
 
 /* ---- More menu ---- */
 function renderMore(){
-  const wrap=el(`<div><h2>More</h2><div class="qgrid" id="moreGrid" style="grid-template-columns:1fr 1fr"></div></div>`);
+  const wrap=el(`<div>${uiPageHead(uiT('more'))}<div id="moreGrid"></div></div>`);
   const items=[
     {v:'goals',ic:'🎯',label:'Goals'},
     {v:'finance',ic:'💰',label:'Finance'},
@@ -2852,15 +2895,22 @@ function renderMore(){
     {v:'character',ic:'🧙',label:'Character'},
     {v:'settings',ic:'⚙️',label:'Settings'},
   ];
+  // Phase 8B: same 15 destinations, grouped into sections.
+  const groups=[['productivity',['goals','calendar','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
+    ['money',['finance','subscriptions']],['life',['car']],['system',['statistics','character','settings']]];
   const g=wrap.querySelector('#moreGrid');
-  items.forEach(it=>{
-    const b=el(`<div class="qopt"><span class="ic">${it.ic}</span>${it.label}</div>`);
-    b.onclick=()=>{view=it.v;render();window.scrollTo(0,0);};
-    g.appendChild(b);
+  groups.forEach(([gk,keys])=>{
+    const sec=el(`<section class="more-section"><div class="section-header"><h3>${uiT(gk)}</h3></div><div class="more-grid"></div></section>`);
+    const grid=sec.querySelector('.more-grid');
+    keys.map(k=>items.find(it=>it.v===k)).forEach(it=>{
+      const b=el(`<button class="qopt" data-v="${it.v}"><span class="ic" aria-hidden="true">${it.ic}</span>${uiT('m_'+it.v)||it.label}</button>`);
+      b.onclick=()=>{view=it.v;render();window.scrollTo(0,0);};
+      grid.appendChild(b);
+    });
+    g.appendChild(sec);
   });
   return wrap;
 }
-
 /* ---- Finance module ---- */
 function financeGrantXp(){
   const today=todayStr();
@@ -3705,6 +3755,37 @@ function eventUpcomingDate(e){
   while(d<todayStr()&&guard<3660){ const next=stepEventDate(d,e.recurring); if(!next) break; d=next; guard++; }
   return d;
 }
+// Phase 8B calendar presentation state: selected day + Today/Week/Month mode (UI only).
+let uiCalDay=null, uiCalMode='month';
+// An event "is on" a day by the same rule the month dots always used: its stored date or its
+// next upcoming occurrence (eventUpcomingDate) -- no extra recurrence expansion is invented.
+function uiEventsOn(ds){ return S.events.filter(e=>e.date===ds||eventUpcomingDate(e)===ds); }
+function uiEventRow(e,next){
+  // Links are resolved by ID (dangling-safe): if the linked task/goal/habit was since
+  // deleted, .find() returns undefined and that link is simply omitted — never a crash.
+  const linkedTask=e.linkedTaskId?S.tasks.find(t=>t.id===e.linkedTaskId):null;
+  const linkedGoal=e.linkedGoalId?S.goals.find(g=>g.id===e.linkedGoalId):null;
+  const linkedHabit=e.linkedHabitId?S.habits.find(h=>h.id===e.linkedHabitId):null;
+  const time=e.start?formatTimeDisplay(e.start)+(e.end?'–'+formatTimeDisplay(e.end):''):'';
+  const it=el(`<div class="item event-item"><div class="ev-time">${time?`<b>${formatTimeDisplay(e.start)}</b>`:'<span aria-hidden="true">📅</span>'}</div><div style="flex:1;min-width:0"><div class="item-title">${escapeHtml(e.title)}${e.recurring&&e.recurring!=='none'?' <span title="recurring">🔁</span>':''}</div><div class="item-meta">${fmtDate(next)}${time?' · '+time:''}${e.location?' · 📍 '+escapeHtml(e.location):''}</div><div class="row linkRow" style="gap:6px;margin-top:6px;flex-wrap:wrap"></div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(e.title)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(e.title)}">✕</button></div></div>`);
+  const linkRow=it.querySelector('.linkRow');
+  if(linkedTask){ const b=el(`<button class="chip linkBtn">✅ ${escapeHtml(linkedTask.title)}</button>`); b.onclick=()=>searchNavigate('task',linkedTask); linkRow.appendChild(b); }
+  if(linkedGoal){ const b=el(`<button class="chip linkBtn">🎯 ${escapeHtml(linkedGoal.title)}</button>`); b.onclick=()=>searchNavigate('goal',linkedGoal); linkRow.appendChild(b); }
+  if(linkedHabit){ const b=el(`<button class="chip linkBtn">🔥 ${escapeHtml(linkedHabit.name)}</button>`); b.onclick=()=>searchNavigate('habit',linkedHabit); linkRow.appendChild(b); }
+  if(!linkRow.children.length) linkRow.remove();
+  it.querySelector('.editBtn').onclick=()=>openEventForm(e);
+  it.querySelector('.delbtn').onclick=()=>{
+    if(!confirm(`Delete event "${e.title}"?`)) return;
+    S.events=S.events.filter(x=>x.id!==e.id);scheduleSave();render();toast('Event deleted');
+  };
+  return it;
+}
+function uiDayAgenda(ds,host){
+  const evs=uiEventsOn(ds), tasks=S.tasks.filter(t=>t.dueDate===ds);
+  if(!evs.length&&!tasks.length){ host.appendChild(el(`<div class="card"><div class="sub" style="text-align:center;padding:6px 0">${uiLang()==='cs'?'Na tento den nic naplánováno.':'Nothing scheduled for this day.'}</div></div>`)); return; }
+  evs.forEach(e=>host.appendChild(uiEventRow(e,ds)));
+  tasks.forEach(t=>host.appendChild(taskItem(t)));
+}
 function renderCalendar(){
   const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+calOffset);
   const y=base.getFullYear(), m=base.getMonth();
@@ -3713,49 +3794,64 @@ function renderCalendar(){
   // column + header labels); weekStart()/quest-week logic stays Monday-based and untouched.
   const fdow=(S.settings&&S.settings.firstDayOfWeek)==='sunday'?'sunday':'monday';
   const startDow = fdow==='sunday' ? first.getDay() : (first.getDay()+6)%7;
-  const dowLabels = fdow==='sunday' ? ['Su','Mo','Tu','We','Th','Fr','Sa'] : ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  const dowCs=['Ne','Po','Út','St','Čt','Pá','So'], dowEn=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const dowAll=uiLang()==='cs'?dowCs:dowEn;
+  const dowLabels = fdow==='sunday' ? dowAll : [...dowAll.slice(1),dowAll[0]];
   const daysInMonth=new Date(y,m+1,0).getDate();
-  const monthLabel=base.toLocaleDateString(undefined,{month:'long',year:'numeric'});
-  const wrap=el(`<div><h2>Calendar</h2>
-    <div class="between" style="margin-bottom:10px">
-      <button class="iconbtn" id="prevM" aria-label="Previous month">‹</button><b>${monthLabel}</b><button class="iconbtn" id="nextM" aria-label="Next month">›</button>
+  const monthLabel=base.toLocaleDateString(uiLocale(),{month:'long',year:'numeric'});
+  const today=todayStr();
+  if(!uiCalDay) uiCalDay=today;
+  const L=uiLang()==='cs'?{cal:'Kalendář',add:'Událost',today:'Dnes',week:'Týden',month:'Měsíc',upcoming:'Nadcházející',none:'Žádné nadcházející události',none_d:'Naplánuj si schůzku, narozeniny nebo trénink.',prev:'Předchozí',next:'Další'}
+    :{cal:'Calendar',add:'Event',today:'Today',week:'Week',month:'Month',upcoming:'Upcoming',none:'No upcoming events',none_d:'Plan a meeting, a birthday or a workout.',prev:'Previous',next:'Next'};
+  const wrap=el(`<div>${uiPageHead(L.cal,'',`<button class="btn sm" id="addEv">＋ ${L.add}</button>`)}
+    <div class="period-selector" id="calMode" role="tablist">
+      <button data-m="today" role="tab" class="${uiCalMode==='today'?'on':''}">${L.today}</button><button data-m="week" role="tab" class="${uiCalMode==='week'?'on':''}">${L.week}</button><button data-m="month" role="tab" class="${uiCalMode==='month'?'on':''}">${L.month}</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px" id="calGrid"></div>
-    <button class="btn" id="addEv" style="margin-bottom:12px">+ Add Event</button>
-    <h3>Upcoming</h3><div class="list" id="evList"></div>
+    <section class="card cal-card" id="calBody"></section>
+    <div class="section-header"><h3 id="agendaTitle"></h3></div><div class="list" id="agenda"></div>
+    <div class="section-header"><h3>${L.upcoming}</h3></div><div class="list" id="evList"></div>
   </div>`);
-  const grid=wrap.querySelector('#calGrid');
-  dowLabels.forEach(d=>grid.appendChild(el(`<div class="sub" style="text-align:center;font-size:11px">${d}</div>`)));
-  for(let i=0;i<startDow;i++) grid.appendChild(el(`<div></div>`));
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const has=S.tasks.some(t=>t.dueDate===ds)||S.events.some(e=>e.date===ds||eventUpcomingDate(e)===ds);
-    const isToday=ds===todayStr();
-    grid.appendChild(el(`<div style="text-align:center;padding:6px 0;border-radius:8px;font-size:13px;background:${isToday?'var(--accent)':'transparent'};color:${isToday?'#fff':'var(--text)'}">${d}${has?'<div style="width:4px;height:4px;border-radius:50%;background:var(--accent2);margin:2px auto 0"></div>':''}</div>`));
+  wrap.querySelectorAll('#calMode button').forEach(b=>b.onclick=()=>{ uiCalMode=b.dataset.m; if(uiCalMode==='today'){ uiCalDay=today; calOffset=0; } render(); });
+  const body=wrap.querySelector('#calBody');
+  const dayCell=(ds,label,muted)=>{
+    const hasTask=S.tasks.some(t=>t.dueDate===ds), hasEv=uiEventsOn(ds).length>0;
+    const b=el(`<button class="cal-day${ds===today?' is-today':''}${ds===uiCalDay?' is-selected':''}${muted?' is-muted':''}" data-day="${ds}" aria-label="${fmtDate(ds)}" aria-pressed="${ds===uiCalDay}"><span>${label}</span><span class="cal-dots">${hasEv?'<i class="ev"></i>':''}${hasTask?'<i class="tk"></i>':''}</span></button>`);
+    b.onclick=()=>{ uiCalDay=ds; render(); };
+    return b;
+  };
+  if(uiCalMode==='month'){
+    body.appendChild(el(`<div class="between cal-nav"><button class="iconbtn" id="prevM" aria-label="${L.prev}">‹</button><b class="cal-month">${monthLabel}</b><button class="iconbtn" id="nextM" aria-label="${L.next}">›</button></div>`));
+    const grid=el(`<div class="cal-grid" id="calGrid"></div>`);
+    dowLabels.forEach(d=>grid.appendChild(el(`<div class="cal-dow">${d}</div>`)));
+    for(let i=0;i<startDow;i++) grid.appendChild(el(`<div></div>`));
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      grid.appendChild(dayCell(ds,d));
+    }
+    body.appendChild(grid);
+    body.querySelector('#prevM').onclick=()=>{calOffset--;render();};
+    body.querySelector('#nextM').onclick=()=>{calOffset++;render();};
+  } else if(uiCalMode==='week'){
+    const sel=new Date(uiCalDay+'T00:00');
+    const off=fdow==='sunday'?sel.getDay():(sel.getDay()+6)%7;
+    const ws=addDays(uiCalDay,-off);
+    body.appendChild(el(`<div class="between cal-nav"><button class="iconbtn" id="prevW" aria-label="${L.prev}">‹</button><b class="cal-month">${fmtDate(ws)} – ${fmtDate(addDays(ws,6))}</b><button class="iconbtn" id="nextW" aria-label="${L.next}">›</button></div>`));
+    const grid=el(`<div class="cal-grid"></div>`);
+    dowLabels.forEach(d=>grid.appendChild(el(`<div class="cal-dow">${d}</div>`)));
+    for(let i=0;i<7;i++){ const ds=addDays(ws,i); grid.appendChild(dayCell(ds,+ds.slice(8))); }
+    body.appendChild(grid);
+    body.querySelector('#prevW').onclick=()=>{ uiCalDay=addDays(uiCalDay,-7); render(); };
+    body.querySelector('#nextW').onclick=()=>{ uiCalDay=addDays(uiCalDay,7); render(); };
+  } else {
+    body.appendChild(el(`<div class="cal-today"><div class="kicker">${L.today}</div><div class="hud-name">${uiTodayLong()}</div></div>`));
   }
-  wrap.querySelector('#prevM').onclick=()=>{calOffset--;render();};
-  wrap.querySelector('#nextM').onclick=()=>{calOffset++;render();};
+  const agendaDay=uiCalMode==='today'?today:uiCalDay;
+  wrap.querySelector('#agendaTitle').textContent=(agendaDay===today?L.today+' · ':'')+fmtDate(agendaDay);
+  uiDayAgenda(agendaDay,wrap.querySelector('#agenda'));
   const evl=wrap.querySelector('#evList');
   const upcoming=S.events.map(e=>({e,next:eventUpcomingDate(e)})).filter(x=>x.next).sort((a,b)=>a.next.localeCompare(b.next)).slice(0,15);
-  if(!upcoming.length) evl.appendChild(el(`<div class="empty"><div class="e">📅</div>No upcoming events.</div>`));
-  upcoming.forEach(({e,next})=>{
-    // Links are resolved by ID (dangling-safe): if the linked task/goal/habit was since
-    // deleted, .find() returns undefined and that link is simply omitted — never a crash.
-    const linkedTask=e.linkedTaskId?S.tasks.find(t=>t.id===e.linkedTaskId):null;
-    const linkedGoal=e.linkedGoalId?S.goals.find(g=>g.id===e.linkedGoalId):null;
-    const linkedHabit=e.linkedHabitId?S.habits.find(h=>h.id===e.linkedHabitId):null;
-    const it=el(`<div class="item"><span style="font-size:18px">📅</span><div style="flex:1;min-width:0"><div class="item-title">${escapeHtml(e.title)}${e.recurring&&e.recurring!=='none'?' 🔁':''}</div><div class="item-meta">${fmtDate(next)}${e.start?' · '+formatTimeDisplay(e.start):''}${e.end?'–'+formatTimeDisplay(e.end):''}${e.location?' · '+escapeHtml(e.location):''}</div><div class="row linkRow" style="gap:6px;margin-top:4px;flex-wrap:wrap"></div></div><button class="pill sm editBtn">Edit</button><button class="delbtn" aria-label="Delete">✕</button></div>`);
-    const linkRow=it.querySelector('.linkRow');
-    if(linkedTask){ const b=el(`<button class="pill sm linkBtn">✅ ${escapeHtml(linkedTask.title)}</button>`); b.onclick=()=>searchNavigate('task',linkedTask); linkRow.appendChild(b); }
-    if(linkedGoal){ const b=el(`<button class="pill sm linkBtn">🎯 ${escapeHtml(linkedGoal.title)}</button>`); b.onclick=()=>searchNavigate('goal',linkedGoal); linkRow.appendChild(b); }
-    if(linkedHabit){ const b=el(`<button class="pill sm linkBtn">🔥 ${escapeHtml(linkedHabit.name)}</button>`); b.onclick=()=>searchNavigate('habit',linkedHabit); linkRow.appendChild(b); }
-    it.querySelector('.editBtn').onclick=()=>openEventForm(e);
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete event "${e.title}"?`)) return;
-      S.events=S.events.filter(x=>x.id!==e.id);scheduleSave();render();toast('Event deleted');
-    };
-    evl.appendChild(it);
-  });
+  if(!upcoming.length){ const e=el(`<div class="card">${uiEmpty('📅',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openEventForm(); evl.appendChild(e); }
+  upcoming.forEach(({e,next})=>evl.appendChild(uiEventRow(e,next)));
   wrap.querySelector('#addEv').onclick=()=>openEventForm();
   return wrap;
 }
@@ -4514,22 +4610,10 @@ function openSheet(contentEl){
 function catOptions(){return CAT_LIST.map(c=>`<option value="${c}">${CATS[c].ic} ${c}</option>`).join('');}
 
 function openQuickAdd(){
+  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽']];
   const content=el(`<div>
-    <h3>Quick Add</h3>
-    <div class="qgrid">
-      <div class="qopt" data-t="task"><span class="ic">✅</span>Task</div>
-      <div class="qopt" data-t="habit"><span class="ic">🔥</span>Habit</div>
-      <div class="qopt" data-t="goal"><span class="ic">🎯</span>Goal</div>
-      <div class="qopt" data-t="expense"><span class="ic">💸</span>Expense</div>
-      <div class="qopt" data-t="income"><span class="ic">💵</span>Income</div>
-      <div class="qopt" data-t="workout"><span class="ic">🏋️</span>Workout</div>
-      <div class="qopt" data-t="meal"><span class="ic">🍽️</span>Meal</div>
-      <div class="qopt" data-t="note"><span class="ic">📝</span>Note</div>
-      <div class="qopt" data-t="journal"><span class="ic">📔</span>Journal</div>
-      <div class="qopt" data-t="event"><span class="ic">📅</span>Event</div>
-      <div class="qopt" data-t="water"><span class="ic">💧</span>Water</div>
-      <div class="qopt" data-t="fuel"><span class="ic">⛽</span>Fuel</div>
-    </div>
+    <h3>${uiT('quick_add')}</h3>
+    <div class="qgrid">${opts.map(([t,ic])=>`<button class="qopt" data-t="${t}"><span class="ic" aria-hidden="true">${ic}</span>${uiT('qa_'+t)}</button>`).join('')}</div>
   </div>`);
   const sheet=openSheet(content);
   content.querySelectorAll('.qopt').forEach(o=>o.onclick=()=>{
