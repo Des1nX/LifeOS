@@ -4583,6 +4583,122 @@ function sleepDuration(s){
   if(w<=b) w=new Date('2000-01-02T'+s.wake);
   return Math.round((w-b)/3600000*100)/100;
 }
+/* ================= Phase 9: Daily Score (0–100) =================
+   How well a single day went, measured only against what was actually relevant for that day.
+   Strictly read-only: never grants XP, never touches level/attributes/points/achievements/quests.
+   Every area returns {score:0..100|null, ...details}; null = N/A (not relevant or no data) and
+   N/A areas are left out of the weighted average entirely (weights re-normalize). ---- */
+const DAILY_SCORE_ALGO=1;
+const DAILY_SCORE_WEIGHTS={tasks:30,habits:30,nutrition:15,sleep:15,fitness:10}; // goals: info only (weight 0)
+const DAILY_SCORE_PRIORITY_WEIGHT={Low:1,Medium:1,High:1.5,Urgent:2};
+function dailyScoreLabelKey(score){
+  if(score==null) return null;
+  return score>=90?'excellent':score>=75?'good':score>=50?'solid':score>=25?'weaker':'tough';
+}
+// Tasks: due on D (done or not) + overdue tasks completed on D (xpLog key task:<id>:<D>, the only
+// completion-date record the model has). Open overdue tasks are informational only (no snowball).
+function dailyScoreTasks(D){
+  const due=S.tasks.filter(t=>t.dueDate===D);
+  const lateDone=S.tasks.filter(t=>t.done && t.dueDate && t.dueDate<D && S.xpLog.some(x=>x.key===`task:${t.id}:${D}`));
+  const openOverdue=S.tasks.filter(t=>!t.done && t.dueDate && t.dueDate<D).length;
+  const items=[...due,...lateDone];
+  if(!items.length) return {score:null,reason:'none_planned',openOverdue};
+  let wAll=0,wDone=0,done=0;
+  items.forEach(t=>{ const w=DAILY_SCORE_PRIORITY_WEIGHT[t.priority]||1; wAll+=w; if(t.done){ wDone+=w; done++; } });
+  return {score:Math.round(wDone/wAll*100),done,total:items.length,lateDone:lateDone.length,openOverdue};
+}
+// Weekly/custom habits count only on a day they are necessary: the completions still needed this
+// week (target capped to the days the habit exists this week) >= days left including D.
+function dailyScoreHabitNeeded(h,D){
+  const ws=habitWeekStart(D);
+  const first=h.startDate&&h.startDate>ws?h.startDate:ws;
+  const dayIdx=d=>Math.round((new Date(d+'T00:00')-new Date(ws+'T00:00'))/86400000);
+  const target=Math.min(h.target||1,7-dayIdx(first));
+  const doneBefore=[...new Set((h.completions||[]).filter(x=>x>=ws&&x<D))].length;
+  const remaining=target-doneBefore;
+  return remaining>0 && remaining>=7-dayIdx(D);
+}
+function dailyScoreHabits(D){
+  let sum=0,n=0,done=0,pending=0;
+  S.habits.forEach(h=>{
+    if(h.active===false) return;
+    if(h.startDate && D<h.startDate) return;
+    if(h.type==='bad'){
+      if((h.completions||[]).includes(D)){ sum+=1; n++; done++; }
+      else if((h.brokenDates||[]).includes(D)){ n++; }
+      else pending++; // nothing logged yet: not evidence either way
+      return;
+    }
+    if(h.frequency==='weekly'||h.frequency==='custom'){
+      if(!dailyScoreHabitNeeded(h,D)) return;
+      const ok=(h.completions||[]).includes(D); sum+=ok?1:0; n++; if(ok) done++;
+      return;
+    }
+    if(!isScheduledDate(h,D)) return;
+    if(habitUsesDayCounter(h)){
+      const c=(h.completions||[]).filter(x=>x===D).length;
+      const part=Math.min(1,c/(h.target||1)); sum+=part; n++; if(part>=1) done++;
+      return;
+    }
+    const ok=isDayComplete(h,D); sum+=ok?1:0; n++; if(ok) done++;
+  });
+  if(!n) return {score:null,reason:'none_scheduled',pending};
+  return {score:Math.round(sum/n*100),done,total:n,pending};
+}
+// Nutrition vs the user's own targets. Calories use a symmetric band (90–110 % = 100, 0 at 50 %
+// and at 150 %) so eating far below target is never rewarded.
+function dailyScoreCalorieBand(r){
+  if(r>=0.9&&r<=1.1) return 100;
+  return r<0.9 ? Math.max(0,(r-0.5)/0.4*100) : Math.max(0,(1.5-r)/0.4*100);
+}
+function dailyScoreNutrition(D){
+  const hasMeal=S.meals.some(m=>m.date===D), hasWater=S.waterLog.some(w=>w.date===D);
+  if(!hasMeal&&!hasWater) return {score:null,reason:'no_data'};
+  const tg=S.nutritionTargets||{}, tot=nutriTotals(D), water=waterOnDate(D);
+  const parts=[];
+  if(Number(tg.calories)>0) parts.push({k:'calories',w:60,s:dailyScoreCalorieBand(tot.calories/Number(tg.calories))});
+  if(Number(tg.protein)>0) parts.push({k:'protein',w:25,s:Math.min(100,tot.protein/Number(tg.protein)*100)});
+  if(Number(tg.water)>0) parts.push({k:'water',w:15,s:Math.min(100,water/Number(tg.water)*100)});
+  if(!parts.length) return {score:null,reason:'no_targets'};
+  const wAll=parts.reduce((a,p)=>a+p.w,0);
+  return {score:Math.round(parts.reduce((a,p)=>a+p.w*p.s,0)/wAll),calories:Math.round(tot.calories),caloriesTarget:Number(tg.calories)||0,
+    protein:Math.round(tot.protein),proteinTarget:Number(tg.protein)||0,water:Math.round(water),waterTarget:Number(tg.water)||0,
+    parts:Object.fromEntries(parts.map(p=>[p.k,Math.round(p.s)]))};
+}
+// Sleep: the entry dated D (wake-up day); duplicates -> the longer one. 7–9 h = 100, 0 at 4 h,
+// 70 at 11 h. Not a health assessment.
+function dailyScoreSleepBand(h){
+  if(h>=7&&h<=9) return 100;
+  if(h<7) return Math.max(0,(h-4)/3*100);
+  return Math.max(70,100-(h-9)/2*30);
+}
+function dailyScoreSleep(D){
+  const entries=S.sleepLog.filter(x=>x.date===D);
+  if(!entries.length) return {score:null,reason:'no_data'};
+  const best=entries.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a);
+  const hours=sleepDuration(best);
+  return {score:Math.round(dailyScoreSleepBand(hours)),hours,quality:best.quality!=null&&best.quality!==''?Number(best.quality):null};
+}
+// Fitness is scored only when a workout was planned: a Fitness-category calendar event on D
+// (same "stored date or next occurrence" rule as the calendar). Unplanned workouts = bonus info.
+function dailyScoreFitness(D){
+  const planned=S.events.some(e=>e.category==='Fitness'&&(e.date===D||eventUpcomingDate(e)===D));
+  const workouts=S.workouts.filter(w=>w.date===D).length;
+  if(!planned) return {score:null,reason:'not_planned',bonus:workouts>0,workouts};
+  return {score:workouts>0?100:0,planned:true,workouts};
+}
+// Goals: information only in algo 1 (never part of the score).
+function dailyScoreGoals(D){
+  const ms=S.milestones.filter(m=>m.completed&&m.completedAt&&(()=>{const d=new Date(m.completedAt);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})()===D);
+  return {score:null,reason:'info_only',milestones:ms.map(m=>m.title)};
+}
+function dailyScore(D){
+  const areas={tasks:dailyScoreTasks(D),habits:dailyScoreHabits(D),nutrition:dailyScoreNutrition(D),sleep:dailyScoreSleep(D),fitness:dailyScoreFitness(D),goals:dailyScoreGoals(D)};
+  let wAll=0,acc=0,relevant=0;
+  Object.keys(DAILY_SCORE_WEIGHTS).forEach(k=>{ const a=areas[k]; if(a.score==null) return; wAll+=DAILY_SCORE_WEIGHTS[k]; acc+=DAILY_SCORE_WEIGHTS[k]*a.score; relevant++; });
+  const score=wAll?Math.round(acc/wAll):null;
+  return {date:D,algo:DAILY_SCORE_ALGO,score,label:dailyScoreLabelKey(score),relevant,areas};
+}
 /* ---- Phase 7: Health/Sleep statistics — always computed fresh from the real logs, never
    cached, so editing/deleting a log entry is instantly reflected everywhere it's shown. ---- */
 function sleepStats(period){

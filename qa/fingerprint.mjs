@@ -17,7 +17,7 @@
 //
 // Usage: node fingerprint.mjs --write   (record baseline/fingerprint.json)
 //        node fingerprint.mjs --check   (compare against it; exit 1 on FAIL)
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -26,6 +26,11 @@ import * as acorn from 'acorn';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const APP = process.env.LIFEOS_HTML ? path.resolve(process.env.LIFEOS_HTML) : path.resolve(here, '..', 'LifeOS.html');
 const BASELINE = path.join(here, 'baseline', 'fingerprint.json');
+// Deliberately approved deviations from the pre-8B baseline (new features such as Phase 9 Daily
+// Score). Each entry pins the exact current hash, so any later edit of an approved declaration
+// fails again. Written only by `--approve "<reason>"`.
+const APPROVED = path.join(here, 'baseline', 'approved.json');
+const loadApproved = () => existsSync(APPROVED) ? JSON.parse(readFileSync(APPROVED, 'utf8')) : { logic: {}, statements: [], uiEffects: [], reasons: [] };
 
 const UI_NAMES = new Set([
   'el', 'render', 'progressCard', 'greet', 'taskItem', 'habitItem', 'goalMini', 'macroRow', 'statRow',
@@ -225,26 +230,33 @@ export function fingerprint(html) {
   return { logicHash, effectsHash, effectful: [...effectful].sort(), logic, statements, ui };
 }
 
-function compare(base, cur) {
+function compare(base, cur, approved = loadApproved()) {
   const fails = [], reviews = [];
+  const okLogic = k => approved.logic[k] !== undefined && approved.logic[k] === (cur.logic[k] ?? null);
   for (const k of new Set([...Object.keys(base.logic), ...Object.keys(cur.logic)])) {
-    if (!(k in cur.logic)) fails.push(`logic removed: ${k}`);
-    else if (!(k in base.logic)) fails.push(`logic added: ${k}`);
-    else if (base.logic[k] !== cur.logic[k]) fails.push(`logic changed: ${k}`);
+    let msg = null;
+    if (!(k in cur.logic)) msg = `logic removed: ${k}`;
+    else if (!(k in base.logic)) msg = `logic added: ${k}`;
+    else if (base.logic[k] !== cur.logic[k]) msg = `logic changed: ${k}`;
+    if (msg) (okLogic(k) ? reviews : fails).push(okLogic(k) ? `APPROVED ${msg}` : msg);
   }
   const bs = base.statements.map(s => s.hash), cs = cur.statements.map(s => s.hash);
   base.statements.filter(s => !cs.includes(s.hash)).forEach(s => fails.push(`top-level statement changed/removed: ${s.src}`));
-  cur.statements.filter(s => !bs.includes(s.hash)).forEach(s => fails.push(`top-level statement added: ${s.src}`));
+  cur.statements.filter(s => !bs.includes(s.hash)).forEach(s => (approved.statements.includes(s.hash) ? reviews : fails).push(`${approved.statements.includes(s.hash) ? 'APPROVED ' : ''}top-level statement added: ${s.src}`));
   // Data effects may move between UI functions (e.g. a row builder extracted into a ui* helper):
   // that is only REVIEW when the multiset of data effects over all UI functions is unchanged.
   const bag = ui => { const m = new Map(); for (const v of Object.values(ui)) for (const d of v.data || []) m.set(d, (m.get(d) || 0) + 1); return m; };
   const bb = bag(base.ui), cb = bag(cur.ui);
+  for (const d of approved.uiEffects) if (cb.get(d)) { cb.set(d, cb.get(d) - 1); if (!cb.get(d)) cb.delete(d); reviews.push(`APPROVED new UI data effect ${d}`); }
   const sameBag = bb.size === cb.size && [...bb].every(([k, v]) => cb.get(k) === v);
   for (const k of new Set([...Object.keys(base.ui), ...Object.keys(cur.ui)])) {
     const b = base.ui[k], c = cur.ui[k];
     if (!c) { fails.push(`UI function removed: ${k}`); continue; }
     if (!b) { reviews.push(`UI function added: ${k} (effects: ${c.effects.length})`); if (c.effects.length) reviews.push(...c.effects.map(e => `    ${e}`)); continue; }
-    if (b.effectsHash !== c.effectsHash) {
+    if (b.effectsHash !== c.effectsHash && sameBag && b.data && c.data) {
+      const gone = b.effects.filter(e => !c.effects.includes(e)), added = c.effects.filter(e => !b.effects.includes(e));
+      reviews.push(`UI effects moved/approved in ${k}:` + gone.map(e => `\n    - ${e}`).join('') + added.map(e => `\n    + ${e}`).join(''));
+    } else if (b.effectsHash !== c.effectsHash) {
       const gone = b.effects.filter(e => !c.effects.includes(e)), added = c.effects.filter(e => !b.effects.includes(e));
       (sameBag ? reviews : fails).push(`UI effects ${sameBag ? 'moved (global data effects identical)' : 'changed'} in ${k}:` + gone.map(e => `\n    - ${e}`).join('') + added.map(e => `\n    + ${e}`).join(''));
     } else if (b.navHash !== c.navHash) {
@@ -258,7 +270,23 @@ function compare(base, cur) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fp = fingerprint(readFileSync(APP, 'utf8'));
   const summary = `logic declarations: ${Object.keys(fp.logic).length}, top-level statements: ${fp.statements.length}, UI functions: ${Object.keys(fp.ui).length}`;
-  if (process.argv.includes('--write')) {
+  if (process.argv.includes('--approve')) {
+    const reason = process.argv[process.argv.indexOf('--approve') + 1];
+    if (!reason || reason.startsWith('--')) { console.error('usage: --approve "<reason>"'); process.exit(2); }
+    const base = JSON.parse(readFileSync(BASELINE, 'utf8')), ap = loadApproved();
+    const changed = Object.keys(fp.logic).filter(k => base.logic[k] !== fp.logic[k]);
+    Object.keys(base.logic).filter(k => !(k in fp.logic)).forEach(k => changed.push(k));
+    changed.forEach(k => { ap.logic[k] = fp.logic[k] ?? null; });
+    const bs = base.statements.map(s => s.hash);
+    ap.statements = [...new Set([...ap.statements, ...fp.statements.filter(s => !bs.includes(s.hash)).map(s => s.hash)])];
+    const bag = ui => { const m = new Map(); for (const v of Object.values(ui)) for (const d of v.data || []) m.set(d, (m.get(d) || 0) + 1); return m; };
+    const bb = bag(base.ui), extra = [];
+    for (const [d, n] of bag(fp.ui)) for (let i = 0; i < n - (bb.get(d) || 0); i++) extra.push(d);
+    ap.uiEffects = extra;
+    ap.reasons.push({ reason, logic: changed, at: new Date().toISOString().slice(0, 10) });
+    writeFileSync(APPROVED, JSON.stringify(ap, null, 1) + '\n');
+    console.log(`approved -> ${path.relative(process.cwd(), APPROVED)}\n  logic: ${changed.join(', ') || '-'}\n  statements: ${ap.statements.length}\n  ui data effects: ${extra.join(', ') || '-'}`);
+  } else if (process.argv.includes('--write')) {
     writeFileSync(BASELINE, JSON.stringify(fp, null, 1) + '\n');
     console.log(`baseline written -> ${path.relative(process.cwd(), BASELINE)}\n${summary}\nlogicHash=${fp.logicHash} effectsHash=${fp.effectsHash}`);
   } else {

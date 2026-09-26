@@ -497,6 +497,126 @@ test('8B CRUD: every create form saves exactly one record through the redesigned
   assert.deepEqual(failures, []);
 }, { state: fixtureState() });
 
+// ---------- Phase 9: Daily Score ----------
+// Runs dailyScore(D) against a crafted state (defaultState() + patch, through migrate()).
+const dsRun = (page, patch, D = TODAY) => page.evaluate(({ patch, D }) => { S = migrate(Object.assign(defaultState(), JSON.parse(JSON.stringify(patch)))); return dailyScore(D); }, { patch, D });
+const T = (id, o) => ({ id, title: id, category: 'Work', priority: 'Medium', dueDate: TODAY, done: false, createdAt: NOW, ...o });
+const H = (id, o) => ({ id, name: id, category: 'Health', type: 'good', frequency: 'daily', target: 1, weekdays: [], active: true, startDate: '2026-01-01', completions: [], brokenDates: [], createdAt: NOW, ...o });
+const dayOff = n => { const x = new Date(`${TODAY}T00:00`); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+
+test('9 Daily Score: empty day has no score (never 0/100) and every area is N/A', async ({ page }) => {
+  const r = await dsRun(page, {});
+  assert.equal(r.score, null); assert.equal(r.label, null); assert.equal(r.relevant, 0); assert.equal(r.algo, 1);
+  for (const k of ['tasks', 'habits', 'nutrition', 'sleep', 'fitness', 'goals']) assert.equal(r.areas[k].score, null, k);
+});
+
+test('9 Daily Score: tasks only - priority weights, overdue done today counts, open overdue is info only', async ({ page }) => {
+  const r = await dsRun(page, {
+    tasks: [T('u', { priority: 'Urgent', done: true }), T('m', { priority: 'Medium' }), T('l', { priority: 'Low', done: true }),
+      T('tomorrow', { dueDate: dayOff(1) }), T('undated', { dueDate: '' , done: true }),
+      T('lateOpen', { dueDate: dayOff(-3) }), T('lateDoneToday', { dueDate: dayOff(-2), done: true, priority: 'High' }), T('lateDoneEarlier', { dueDate: dayOff(-5), done: true })],
+    xpLog: [{ id: 'x1', amount: 30, reason: 'Task', ts: NOW, key: `task:lateDoneToday:${TODAY}` }, { id: 'x2', amount: 10, reason: 'Task', ts: NOW, key: `task:lateDoneEarlier:${dayOff(-5)}` }],
+  });
+  const t = r.areas.tasks;
+  // weights: Urgent 2 (done) + Medium 1 + Low 1 (done) + High 1.5 (late, done today) = 5.5, done 4.5 -> 82
+  assert.equal(t.total, 4); assert.equal(t.done, 3); assert.equal(t.lateDone, 1); assert.equal(t.openOverdue, 1);
+  assert.equal(t.score, 82); assert.equal(r.score, 82); assert.equal(r.relevant, 1);
+});
+
+test('9 Daily Score: completed vs incomplete - unchecking a task lowers the score again', async ({ page }) => {
+  const done = await dsRun(page, { tasks: [T('a', { done: true }), T('b', { done: true })], xpLog: [{ id: 'x', amount: 10, reason: 'Task', ts: NOW, key: `task:a:${TODAY}` }] });
+  assert.equal(done.score, 100);
+  const unchecked = await dsRun(page, { tasks: [T('a', { done: false }), T('b', { done: true })], xpLog: [{ id: 'x', amount: 10, reason: 'Task', ts: NOW, key: `task:a:${TODAY}` }] });
+  assert.equal(unchecked.score, 50, 'xpLog key alone does not count as done');
+  const none = await dsRun(page, { tasks: [T('a'), T('b')] });
+  assert.equal(none.score, 0, 'planned but nothing done is a real 0');
+});
+
+test('9 Daily Score: habits only - scheduled, counters, bad habits, weekly necessity, inactive/future ignored', async ({ page }) => {
+  const r = await dsRun(page, { habits: [
+    H('dailyDone', { completions: [TODAY] }), H('dailyOpen'),
+    H('notToday', { frequency: 'weekdays', weekdays: [1] }),                 // Monday only; TODAY is Wednesday
+    H('counter', { target: 8, completions: [TODAY, TODAY, TODAY] }),          // 3/8
+    H('badClean', { type: 'bad', completions: [TODAY] }), H('badBroken', { type: 'bad', brokenDates: [TODAY] }), H('badPending', { type: 'bad' }),
+    H('inactive', { active: false }), H('future', { startDate: dayOff(2) }),
+    H('weeklySlack', { frequency: 'weekly', target: 3 }),                     // Wed: 3 needed, 5 days left -> not needed
+    H('weeklyNeeded', { frequency: 'weekly', target: 5 }),                    // Wed: 5 needed, 5 days left -> needed today, not done
+  ] });
+  const h = r.areas.habits;
+  // (1 + 0 + 0.375 + 1 + 0 + 0) / 6 = 39.6 -> 40
+  assert.equal(h.total, 6); assert.equal(h.done, 2); assert.equal(h.pending, 1); assert.equal(h.score, 40); assert.equal(r.score, 40);
+  const onlyInactive = await dsRun(page, { habits: [H('i', { active: false }), H('w', { frequency: 'weekly', target: 1 })] });
+  assert.equal(onlyInactive.areas.habits.score, null, 'nothing required today -> N/A');
+});
+
+test('9 Daily Score: nutrition uses real targets, symmetric calorie band never rewards under-eating', async ({ page }) => {
+  const targets = { calories: 2000, protein: 100, carbs: 250, fat: 70, water: 2000 };
+  const meal = (kcal, p) => ({ id: 'm' + kcal, name: 'm', type: 'Lunch', date: TODAY, calories: String(kcal), protein: String(p), carbs: '0', fat: '0', servings: 1 });
+  const water = ml => ({ id: 'w' + ml, date: TODAY, amount: ml });
+  const perfect = await dsRun(page, { nutritionTargets: targets, meals: [meal(2000, 100)], waterLog: [water(2000)] });
+  assert.equal(perfect.areas.nutrition.score, 100);
+  const edge = await dsRun(page, { nutritionTargets: targets, meals: [meal(1800, 100)], waterLog: [water(2000)] });
+  assert.equal(edge.areas.nutrition.parts.calories, 100, '90 % is inside the band');
+  const starving = await dsRun(page, { nutritionTargets: targets, meals: [meal(600, 100)], waterLog: [water(2000)] });
+  assert.equal(starving.areas.nutrition.parts.calories, 0, '30 % of target scores 0 calories');
+  assert.ok(starving.areas.nutrition.score < 50);
+  const over = await dsRun(page, { nutritionTargets: targets, meals: [meal(3000, 100)], waterLog: [water(2000)] });
+  assert.equal(over.areas.nutrition.parts.calories, 0, '150 % of target scores 0 calories');
+  const servings = await dsRun(page, { nutritionTargets: targets, meals: [{ ...meal(1000, 50), servings: 2 }], waterLog: [water(2000)] });
+  assert.equal(servings.areas.nutrition.score, 100, 'servings multiply like nutriTotals()');
+  assert.equal((await dsRun(page, { nutritionTargets: targets })).areas.nutrition.score, null, 'no data -> N/A');
+  assert.equal((await dsRun(page, { nutritionTargets: { calories: 0, protein: 0, water: 0 }, meals: [meal(500, 10)] })).areas.nutrition.reason, 'no_targets');
+});
+
+test('9 Daily Score: sleep band 7-9 h, longer duplicate wins, no entry = N/A', async ({ page }) => {
+  const sl = (id, bed, wake, date = TODAY) => ({ id, date, bedtime: bed, wake, quality: '3', notes: '' });
+  const s = async list => (await dsRun(page, { sleepLog: list })).areas.sleep;
+  assert.equal((await s([sl('a', '23:00', '07:00')])).score, 100);
+  assert.equal((await s([sl('a', '01:30', '07:00')])).score, 50);   // 5.5 h
+  assert.equal((await s([sl('a', '22:00', '08:00')])).score, 85);   // 10 h
+  assert.equal((await s([sl('a', '20:00', '08:00')])).score, 70);   // 12 h -> floor 70
+  assert.equal((await s([sl('a', '03:00', '06:00')])).score, 0);    // 3 h
+  const dup = await s([sl('short', '02:00', '07:00'), sl('long', '23:00', '07:00')]);
+  assert.equal(dup.hours, 8); assert.equal(dup.score, 100, 'the longer entry is used, not the sum');
+  assert.equal((await s([sl('y', '23:00', '07:00', dayOff(-1))])).score, null, 'yesterday\'s entry does not count today');
+});
+
+test('9 Daily Score: fitness only when planned; unplanned workout is a bonus outside the score', async ({ page }) => {
+  const ev = { id: 'e1', title: 'Gym', date: TODAY, category: 'Fitness', recurring: 'none' };
+  const wk = { id: 'w1', name: 'Push', date: TODAY, duration: '40', exercises: [] };
+  const bonus = await dsRun(page, { workouts: [wk] });
+  assert.equal(bonus.areas.fitness.score, null); assert.equal(bonus.areas.fitness.bonus, true); assert.equal(bonus.score, null, 'bonus never creates a score');
+  assert.equal((await dsRun(page, { events: [ev], workouts: [wk] })).areas.fitness.score, 100);
+  assert.equal((await dsRun(page, { events: [ev] })).areas.fitness.score, 0);
+  assert.equal((await dsRun(page, { events: [{ ...ev, category: 'Work' }] })).areas.fitness.score, null, 'non-fitness events do not plan a workout');
+});
+
+test('9 Daily Score: combination re-normalizes weights over relevant areas only; goals are info only', async ({ page }) => {
+  const r = await dsRun(page, {
+    tasks: [T('a', { done: true }), T('b', { done: true }), T('c', { done: true }), T('d')],              // 75
+    sleepLog: [{ id: 's', date: TODAY, bedtime: '23:00', wake: '07:00' }],                                 // 100
+    workouts: [{ id: 'w', name: 'x', date: TODAY, exercises: [] }],                                        // unplanned -> N/A
+    goals: [{ id: 'g', title: 'G', status: 'Active', createdAt: NOW }],
+    milestones: [{ id: 'm', goalId: 'g', title: 'Step', completed: true, completedAt: NOW, xpReward: 25 }],
+  });
+  // (30*75 + 15*100) / 45 = 83.3 -> 83
+  assert.equal(r.score, 83); assert.equal(r.relevant, 2); assert.equal(r.label, 'good');
+  assert.equal(r.areas.goals.score, null); assert.deepEqual(r.areas.goals.milestones, ['Step']);
+  const all100 = await dsRun(page, { tasks: [T('a', { done: true })], habits: [H('h', { completions: [TODAY] })] });
+  assert.equal(all100.score, 100); assert.equal(all100.label, 'excellent');
+});
+
+test('9 Daily Score: labels follow the approved thresholds', async ({ page }) => {
+  const labels = await page.evaluate(() => [100, 90, 89, 75, 74, 50, 49, 25, 24, 0, null].map(dailyScoreLabelKey));
+  assert.deepEqual(labels, ['excellent', 'excellent', 'good', 'good', 'solid', 'solid', 'weaker', 'weaker', 'tough', 'tough', null]);
+});
+
+test('9 Daily Score: computing scores never changes any data (XP, level, attributes, points, achievements, quests)', async ({ page }) => {
+  const before = await stateOf(page);
+  await page.evaluate(() => { for (let i = -20; i <= 1; i++) { const d = new Date(); d.setDate(d.getDate() + i); dailyScore(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')); } });
+  assert.deepEqual(await stateOf(page), before);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

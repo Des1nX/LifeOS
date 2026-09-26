@@ -1,0 +1,42 @@
+{
+ "logic": {
+  "DAILY_SCORE_ALGO": "baf6c15c5b1d8604",
+  "DAILY_SCORE_WEIGHTS": "3d7387646669efb1",
+  "DAILY_SCORE_PRIORITY_WEIGHT": "2c1c096dcf7063fb",
+  "dailyScoreLabelKey": "e164a5e198bcfb8b",
+  "dailyScoreTasks": "e0e171eeca4d27f9",
+  "dailyScoreHabitNeeded": "17bf9a382b52bdec",
+  "dailyScoreHabits": "8580f8957b9daebb",
+  "dailyScoreCalorieBand": "5c1109defee6e13a",
+  "dailyScoreNutrition": "0c1bcee9dbc871d3",
+  "dailyScoreSleepBand": "24089c26e2c026d1",
+  "dailyScoreSleep": "54db549da39beb13",
+  "dailyScoreFitness": "ec90a72648e9e4ef",
+  "dailyScoreGoals": "763c964355d3b3ce",
+  "dailyScore": "b05a0436a0e42c5e"
+ },
+ "statements": [],
+ "uiEffects": [],
+ "reasons": [
+  {
+   "reason": "Phase 9 step 2: pure read-only Daily Score calculator (approved algorithm, algo 1)",
+   "logic": [
+    "DAILY_SCORE_ALGO",
+    "DAILY_SCORE_WEIGHTS",
+    "DAILY_SCORE_PRIORITY_WEIGHT",
+    "dailyScoreLabelKey",
+    "dailyScoreTasks",
+    "dailyScoreHabitNeeded",
+    "dailyScoreHabits",
+    "dailyScoreCalorieBand",
+    "dailyScoreNutrition",
+    "dailyScoreSleepBand",
+    "dailyScoreSleep",
+    "dailyScoreFitness",
+    "dailyScoreGoals",
+    "dailyScore"
+   ],
+   "at": "2026-09-26"
+  }
+ ]
+}
