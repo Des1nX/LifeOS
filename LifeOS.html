@@ -770,6 +770,11 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .wk-xp{margin-top:12px}
 .wk-snap-live{display:flex;align-items:center;color:var(--accent2);font-weight:700}
 .cf-sheet p{margin:6px 0 16px}
+.wk-suggestion{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding:10px 12px;border-radius:12px;background:var(--color-accent-muted);border:1px dashed color-mix(in srgb,var(--accent) 45%,var(--line))}
+.wk-suggestion[hidden]{display:none}
+.wk-sug-txt{min-width:0;flex:1 1 180px}
+.wk-sug-main{color:var(--color-accent);font-size:var(--fs-body)}
+.wk-suggestion .btn{flex:0 0 auto}
 .wk-prs{margin-top:12px;padding:12px;border-radius:14px;background:var(--gold-muted);border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line))}
 .wk-pr-row{gap:8px;padding:4px 0;font-size:var(--fs-body-sm)}
 .wk-pr-row .num{font-weight:750;white-space:nowrap}
@@ -3805,11 +3810,11 @@ function exerciseHistoryIndex(){
   ws.forEach((w,order)=>{
     const per=new Map();
     const add=(gid,measurement,sets)=>{ if(!sets.length) return; const s=per.get(gid)||{measurement,sets:[]}; s.sets.push(...sets); per.set(gid,s); };
-    if(Array.isArray(w.entries)) w.entries.forEach(en=>{ if(en.exerciseId) add(en.exerciseId,en.measurement,workoutWorkingSets(en).map(s=>({weight:prNum(s.weight),reps:prNum(s.reps),seconds:prNum(s.seconds),distance:prNum(s.distance)}))); });
+    if(Array.isArray(w.entries)) w.entries.forEach(en=>{ if(en.exerciseId) add(en.exerciseId,en.measurement,workoutWorkingSets(en).map(s=>({weight:prNum(s.weight),reps:prNum(s.reps),seconds:prNum(s.seconds),distance:prNum(s.distance),rpe:prNum(s.rpe)}))); });
     else (w.exercises||[]).forEach(ex=>{
       const name=String(ex.name||'').trim().replace(/\s+/g,' '), k=exerciseKey(name), n=Math.max(0,Math.floor(Number(ex.sets)||0));
       if(!k||!n) return;
-      add(legacyOwner(k,name),'weight_reps',Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null})));
+      add(legacyOwner(k,name),'weight_reps',Array.from({length:n},()=>({weight:Number(ex.weight)||0,reps:Number(ex.reps)||0,seconds:null,distance:null,rpe:prNum(ex.rpe)})));
     });
     per.forEach((v,gid)=>groups.get(gid).sessions.push({workoutId:w.id,date:w.date,order,measurement:v.measurement,sets:v.sets}));
   });
@@ -3907,6 +3912,78 @@ function exerciseHistoryBefore(exerciseId,name,w,idx){
   const prev=before[before.length-1]; if(!prev) return null;
   const m=exerciseSessionMetrics(prev.measurement,prev.sets);
   return {workoutId:prev.workoutId,date:prev.date,measurement:prev.measurement,sets:prev.sets,best:m.best,work:m.work,seconds:m.seconds};
+}
+/* ---- Phase 11A step 6: progressive overload suggestion (a proposal only). Inputs: the entry's
+   plan copy (target), the exercise's progression step, and the working sets of the previous
+   finished session (warm-ups never; historical RPE when present). Never uses feeling,
+   Performance, Muscle XP or Character XP. Applying it only prefills unfinished working sets of
+   the current workout (workoutApplySuggestion) -- templates and history are never touched.
+   Rules (weight_reps with a template rep range repsMin..repsMax), on the sets at last time's top weight W:
+     below:    every set < repsMin            -> repeat W with last reps (neutral wording)
+     hold:     any set RPE >= 9.5             -> repeat W with last reps (no weight increase)
+     increase: every set >= repsMax           -> W + step, repsMin
+     reps:     otherwise                      -> W, +1 rep on the weakest set (capped at repsMax)
+   weight_reps without a range (no template): W, +1 rep on the weakest set (RPE >= 9.5 -> hold).
+   reps: +1 rep on the weakest set.  time: + step seconds on the weakest set.
+   No history: the plan itself (kind 'plan') when there is one.  distance_time: none. ---- */
+const SUGGEST_RPE_HOLD=9.5;
+function exerciseSuggestion(en,w,idx){
+  if(!en||en.measurement==='distance_time') return null;
+  const t=en.target||null;
+  const lib=(S.exerciseLibrary||[]).find(x=>x.id===en.exerciseId);
+  const step=Number(lib&&lib.increment)>0?Number(lib.increment):MEASUREMENT_DEFAULT_INCREMENT[en.measurement];
+  const h=exerciseHistoryBefore(en.exerciseId,en.name,w,idx);
+  const last=h&&h.measurement===en.measurement?h.sets:null;
+  const nWork=(en.sets||[]).filter(s=>!s.warmup).length;
+  const n=nWork||(t&&Number(t.sets))||(last?last.length:0)||1;
+  const fromLast=f=>Array.from({length:n},(_,i)=>last[Math.min(i,last.length-1)][f]);
+  const bumpWeakest=(arr,by,cap)=>{
+    const out=arr.slice(); let k=-1;
+    out.forEach((v,i)=>{ if((cap==null||v<cap)&&(k<0||v<out[k])) k=i; });
+    if(k>=0) out[k]=cap==null?out[k]+by:Math.min(cap,out[k]+by);
+    return {values:out,changed:k>=0};
+  };
+  const base={exerciseId:en.exerciseId,measurement:en.measurement,step,basisWorkoutId:h?h.workoutId:null};
+  if(!last){
+    if(!t) return null;
+    if(en.measurement==='time'&&t.seconds!=null) return Object.assign(base,{kind:'plan',sets:Array.from({length:n},()=>({seconds:t.seconds}))});
+    if((en.measurement==='weight_reps'||en.measurement==='reps')&&t.repsMin!=null)
+      return Object.assign(base,{kind:'plan',sets:Array.from({length:n},()=>en.measurement==='reps'?{reps:t.repsMin}:{weight:t.weight,reps:t.repsMin})});
+    return null;
+  }
+  if(en.measurement==='reps'){
+    const r=bumpWeakest(fromLast('reps').map(v=>Number(v)||0),1,null);
+    return Object.assign(base,{kind:'reps',sets:r.values.map(v=>({reps:v}))});
+  }
+  if(en.measurement==='time'){
+    const r=bumpWeakest(fromLast('seconds').map(v=>Number(v)||0),step,null);
+    return Object.assign(base,{kind:'time',sets:r.values.map(v=>({seconds:v}))});
+  }
+  // weight_reps: judge the sets done at last time's top weight
+  const W=Math.max(...last.map(s=>Number(s.weight)||0));
+  const top=last.filter(s=>(Number(s.weight)||0)===W);
+  const reps=Array.from({length:n},(_,i)=>Number(top[Math.min(i,top.length-1)].reps)||0);
+  const rpeHigh=top.some(s=>s.rpe!=null&&s.rpe>=SUGGEST_RPE_HOLD);
+  const ranged=t&&t.repsMin!=null&&t.repsMax!=null;
+  const same=kind=>Object.assign(base,{kind,weight:W,sets:reps.map(r=>({weight:W,reps:r}))});
+  if(ranged&&top.every(s=>(Number(s.reps)||0)<t.repsMin)) return same('below');
+  if(rpeHigh) return same('hold');
+  if(ranged&&top.every(s=>(Number(s.reps)||0)>=t.repsMax)){
+    const nw=Math.round((W+step)*1000)/1000;
+    return Object.assign(base,{kind:'increase',weight:nw,prevWeight:W,sets:Array.from({length:n},()=>({weight:nw,reps:t.repsMin}))});
+  }
+  const r=bumpWeakest(reps,1,ranged?t.repsMax:null);
+  return Object.assign(base,{kind:ranged?'reps':'baseline',weight:W,sets:r.values.map(v=>({weight:W,reps:v}))});
+}
+function workoutApplySuggestion(wid,entryId,sug){
+  // Prefill only this workout's unfinished working sets (done sets and warm-ups are kept);
+  // missing working sets are added. No XP, no template or history change.
+  const w=workoutFindById(wid); const en=w&&(w.entries||[]).find(e=>e.id===entryId);
+  if(!en||!sug||!Array.isArray(sug.sets)) return false;
+  let work=en.sets.filter(s=>!s.warmup);
+  while(work.length<sug.sets.length){ en.sets.push(workoutNewSet(null)); work=en.sets.filter(s=>!s.warmup); }
+  sug.sets.forEach((v,i)=>{ const st=work[i]; if(!st||st.done) return; ['weight','reps','seconds'].forEach(f=>{ if(f in v) st[f]=v[f]==null?null:Number(v[f]); }); });
+  return true;
 }
 function exerciseLastPerformance(exerciseId,name,excludeWorkoutId){
   const h=exerciseHistoryBefore(exerciseId,name,excludeWorkoutId?{id:excludeWorkoutId}:null);
@@ -4345,7 +4422,7 @@ function uiWkT(k){
   const T=cs?{live:'Probíhá',cont:'Pokračovat',active_t:'Rozpracovaný trénink',start_t:'Začít trénink',blank:'Prázdný trénink',start:'Start',
     no_tpl:'Šablona ti připraví cviky a série. Nebo začni prázdný trénink a cviky přidávej průběžně.',make_tpl:'Vytvořit šablonu',
     back:'Zpět na Fitness',finish:'Dokončit trénink',finish_sm:'Dokončit',discard:'Zahodit trénink',add_ex:'+ Přidat cvik',add_set:'+ Série',add_wu:'+ Rozcvička',
-    plan:'Plán',last:'Minule',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
+    plan:'Plán',last:'Minule',sug:'Doporučení',sug_apply:'Použít doporučení',sug_done:'Použito',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
     sets_done:'sérií hotovo',rm_set:'Odebrat sérii',rm_ex:'Odebrat cvik',toggle_wu:'přepnout rozcvičku',mark_done:'označit jako hotovou',
     name:'Název',notes:'Poznámka',date:'Datum',duration:'Délka (min)',edit_t:'Upravit trénink',save_back:'Hotovo',
     empty_t:'Prázdný trénink',empty_q:'Tento trénink nemá žádnou dokončenou sérii. Opravdu ho chceš dokončit?',cancel:'Zrušit',
@@ -4356,7 +4433,7 @@ function uiWkT(k){
     :{live:'In progress',cont:'Continue',active_t:'Workout in progress',start_t:'Start a workout',blank:'Empty workout',start:'Start',
     no_tpl:'A template prepares exercises and sets for you. Or start an empty workout and add exercises as you go.',make_tpl:'Create a template',
     back:'Back to Fitness',finish:'Finish workout',finish_sm:'Finish',discard:'Discard workout',add_ex:'+ Add exercise',add_set:'+ Set',add_wu:'+ Warm-up',
-    plan:'Plan',last:'Last',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
+    plan:'Plan',last:'Last',sug:'Suggestion',sug_apply:'Use suggestion',sug_done:'Applied',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
     sets_done:'sets done',rm_set:'Remove set',rm_ex:'Remove exercise',toggle_wu:'toggle warm-up',mark_done:'mark as done',
     name:'Name',notes:'Notes',date:'Date',duration:'Duration (min)',edit_t:'Edit workout',save_back:'Done',
     empty_t:'Empty workout',empty_q:'This workout has no completed set. Do you really want to finish it?',cancel:'Cancel',
@@ -4461,6 +4538,30 @@ function uiWorkoutSetRow(w,en,st,workIdx,ph){
   row.querySelector('.ws-rm').onclick=()=>{ workoutRemoveSet(w.id,en.id,st.id); scheduleSave(); uiRedrawEntry(w,en,null,null); };
   return row;
 }
+function uiSuggestionText(sug){
+  const cs=uiLang()==='cs', one=a=>a.every(v=>v===a[0])?String(a[0]):a.join(', ');
+  const reps=sug.sets.map(x=>x.reps), secs=sug.sets.map(x=>uiFmtSec(x.seconds));
+  let main='', note='';
+  if(sug.measurement==='weight_reps'){
+    const ws=sug.sets.map(x=>x.weight);
+    main=(sug.kind==='increase'?'↑ ':'')+(ws.every(v=>v===ws[0])?(ws[0]!=null?`${uiFmtNum(ws[0])} kg × `:'× ')+one(reps):sug.sets.map(x=>`${uiFmtNum(x.weight)}×${x.reps}`).join(', '));
+    note={increase:cs?`Minule všechny série na horní hranici rozsahu. +${uiFmtNum(sug.step)} kg.`:`Last time every set reached the top of the range. +${uiFmtNum(sug.step)} kg.`,
+      reps:cs?'Stejná váha, +1 opakování směrem k horní hranici.':'Same weight, +1 rep towards the top of the range.',
+      baseline:cs?'Stejná váha, +1 opakování.':'Same weight, +1 rep.',
+      below:cs?`Zkus příště zopakovat ${uiFmtNum(sug.weight)} kg a postupně se vrátit k cílovému rozsahu.`:`Try repeating ${uiFmtNum(sug.weight)} kg and work back towards the target range.`,
+      hold:cs?'Minule to bylo náročné (RPE 9,5+). Zkus stejnou váhu i opakování.':'Last time was very hard (RPE 9.5+). Try the same weight and reps.',
+      plan:cs?'Podle plánu — zatím bez historie.':'From the plan — no history yet.'}[sug.kind]||'';
+  } else if(sug.measurement==='reps'){
+    main=`${sug.kind==='plan'?'':'↑ '}${one(reps)} ${cs?'opak.':'reps'}`; note=sug.kind==='plan'?(cs?'Podle plánu — zatím bez historie.':'From the plan — no history yet.'):(cs?'+1 opakování.':'+1 rep.');
+  } else {
+    main=`${sug.kind==='plan'?'':'↑ '}${one(secs)}`; note=sug.kind==='plan'?(cs?'Podle plánu — zatím bez historie.':'From the plan — no history yet.'):`+${uiFmtNum(sug.step)} s.`;
+  }
+  return {main,note};
+}
+function uiSuggestionApplied(en,sug){
+  const work=en.sets.filter(x=>!x.warmup);
+  return sug.sets.every((v,i)=>{ const st=work[i]; return st&&(st.done||Object.keys(v).every(f=>(st[f]==null?null:Number(st[f]))===(v[f]==null?null:Number(v[f])))); });
+}
 function uiWorkoutEntryCard(w,en){
   const last=exerciseLastPerformance(en.exerciseId,en.name,w.id);
   const fs=WS_FIELDS[en.measurement]||['reps'];
@@ -4480,6 +4581,15 @@ function uiWorkoutEntryCard(w,en){
     <div class="ws-list"></div>
     <div class="btn-row wk-entry-actions"><button type="button" class="btn ghost sm wkAddSet">${uiWkT('add_set')}</button><button type="button" class="btn ghost sm wkAddWu">${uiWkT('add_wu')}</button></div>
   </div>`);
+  // Suggestion: only while the workout is in progress; a proposal the user applies explicitly.
+  const sug=w.status==='active'?exerciseSuggestion(en,w):null;
+  if(sug){
+    const slot=card.querySelector('[data-slot="suggestion"]'), tx=uiSuggestionText(sug), done=uiSuggestionApplied(en,sug);
+    slot.hidden=false;
+    slot.innerHTML=`<div class="wk-sug-txt"><span class="kicker">${uiWkT('sug')}</span> <b class="wk-sug-main">${escapeHtml(tx.main)}</b><div class="sub">${escapeHtml(tx.note)}</div></div>
+      <button type="button" class="btn sm ${done?'ghost':''} wkApplySug" ${done?'disabled':''}>${done?'✓ '+uiWkT('sug_done'):uiWkT('sug_apply')}</button>`;
+    slot.querySelector('.wkApplySug').onclick=()=>{ workoutApplySuggestion(w.id,en.id,sug); scheduleSave(); uiRedrawEntry(w,en,'.wkApplySug',null); };
+  }
   const list=card.querySelector('.ws-list');
   let wi=0;
   en.sets.forEach(st=>{ const idx=st.warmup?0:++wi; list.appendChild(uiWorkoutSetRow(w,en,st,idx,st.warmup?null:phFor(idx-1))); });

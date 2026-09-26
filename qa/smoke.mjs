@@ -1862,8 +1862,8 @@ test('11A history: legacy "4 x 8 @ 80" = four working sets; legacy + new records
     const h = exerciseHistoryBefore('xb', 'Bench press', null);
     return { sets: h.sets, work: h.work, best: h.best, recordUntouched: JSON.stringify(S.workouts[0]) === JSON.stringify(legacy) };
   }, { legacy, lib: PRL });
-  assert.deepEqual(r.sets, [...Array(4).fill({ weight: 80, reps: 8, seconds: null, distance: null }), { weight: 0, reps: 1, seconds: null, distance: null }], 'exact-name rows (case/space-normalized) only');
-  assert.equal(r.work, 2560); assert.deepEqual(r.best, { weight: 80, reps: 8, seconds: null, distance: null });
+  assert.deepEqual(r.sets, [...Array(4).fill({ weight: 80, reps: 8, seconds: null, distance: null, rpe: null }), { weight: 0, reps: 1, seconds: null, distance: null, rpe: null }], 'exact-name rows (case/space-normalized) only');
+  assert.equal(r.work, 2560); assert.deepEqual(r.best, { weight: 80, reps: 8, seconds: null, distance: null, rpe: null });
   assert.equal(r.recordUntouched, true, 'legacy record is not rewritten');
   // new workout vs legacy history: 80 x 9 is a rep PR; the 200 kg "Incline bench press" never counts for Bench press
   let p = await prRun(page, [legacy, PW('n1', '2026-09-01', -50, [PE('xb', [ws(80, 9), ws(150, 1)])])]);
@@ -1968,6 +1968,125 @@ test('11A UI: PR strip, summary with PRs and history cards fit 320-1440 px', asy
   }
   assert.deepEqual(bad, []);
   assert.equal(await page.locator('#prList .pr-card').count(), 4, 'bench weight, pull-up reps, plank time, running distance');
+}, { state: fixtureState() });
+
+// ---------- Phase 11A step 6: progressive overload suggestions ----------
+// sugRun: history = earlier finished workouts (PW/PE builders), then an active workout whose entry
+// has the given target (template copy) and nWork working sets; returns exerciseSuggestion().
+const sugRun = (page, { history = [], exerciseId = 'xb', target = null, nWork = 3, inc } = {}) => page.evaluate(({ history, lib, exerciseId, target, nWork, inc }) => {
+  S.exerciseLibrary = JSON.parse(JSON.stringify(lib)); if (inc != null) S.exerciseLibrary.find(x => x.id === exerciseId).increment = inc;
+  S.workouts = history;
+  const w = workoutStart({}).workout; const en = workoutAddEntry(w.id, exerciseId);
+  en.target = target; en.sets = Array.from({ length: nWork }, () => workoutNewSet(target));
+  const s = exerciseSuggestion(en, w);
+  return s && { kind: s.kind, sets: s.sets, weight: s.weight, text: uiSuggestionText(s) };
+}, { history, lib: PRL, exerciseId, target, nWork, inc });
+const T810 = { sets: 3, repsMin: 8, repsMax: 10, weight: 70, seconds: null, distance: null, rest: null };
+const SH = (sets, eid = 'xb') => [PW('h1', '2026-09-10', -300, [PE(eid, sets)])];
+const S3 = (w, ...reps) => reps.map(r => ({ weight: w, reps: r }));
+
+test('11A overload: all sets at the top of the range -> +step kg at the bottom of the range', async ({ page }) => {
+  const r = await sugRun(page, { history: SH(S3(70, 10, 10, 10)), target: T810 });
+  assert.deepEqual([r.kind, r.weight, r.sets], ['increase', 72.5, Array(3).fill({ weight: 72.5, reps: 8 })]);
+  assert.equal(r.text.main, '↑ 72,5 kg × 8');
+  const r2 = await sugRun(page, { history: SH(S3(100, 10, 10, 10)), target: T810, inc: 5 });
+  assert.deepEqual([r2.kind, r2.weight], ['increase', 105], "uses the exercise's own progression step");
+}, { state: fixtureState() });
+
+test('11A overload: one set below the top -> same weight, +1 rep on the weakest set, never above the top', async ({ page }) => {
+  let r = await sugRun(page, { history: SH(S3(70, 10, 9, 8)), target: T810 });
+  assert.deepEqual([r.kind, r.sets.map(s => [s.weight, s.reps])], ['reps', [[70, 10], [70, 9], [70, 9]]]);
+  assert.equal(r.text.main, '70 kg × 10, 9, 9');
+  r = await sugRun(page, { history: SH(S3(70, 10, 10, 9)), target: T810 });
+  assert.deepEqual(r.sets.map(s => s.reps), [10, 10, 10], 'capped at repsMax');
+  r = await sugRun(page, { history: SH([...S3(70, 10, 10), { weight: 60, reps: 6 }]), target: T810 });
+  assert.deepEqual([r.kind, r.sets.map(s => [s.weight, s.reps])], ['increase', [[72.5, 8], [72.5, 8], [72.5, 8]]], 'judged on the sets at the top weight (a lighter back-off set does not block)');
+}, { state: fixtureState() });
+
+test('11A overload: every set below the range -> repeat the weight, neutral wording', async ({ page }) => {
+  const r = await sugRun(page, { history: SH(S3(70, 7, 6, 6)), target: T810 });
+  assert.deepEqual([r.kind, r.sets.map(s => [s.weight, s.reps])], ['below', [[70, 7], [70, 6], [70, 6]]]);
+  assert.equal(r.text.note, 'Zkus příště zopakovat 70 kg a postupně se vrátit k cílovému rozsahu.');
+  assert.ok(!/selhal|špatn|fail/i.test(r.text.main + r.text.note));
+}, { state: fixtureState() });
+
+test('11A overload: historical RPE >= 9.5 holds weight and reps; no RPE (or lower) gives the normal suggestion', async ({ page }) => {
+  let r = await sugRun(page, { history: SH([{ weight: 70, reps: 10 }, { weight: 70, reps: 10, rpe: 9.5 }, { weight: 70, reps: 10 }]), target: T810 });
+  assert.deepEqual([r.kind, r.sets.map(s => [s.weight, s.reps])], ['hold', [[70, 10], [70, 10], [70, 10]]], 'no weight increase');
+  r = await sugRun(page, { history: SH([{ weight: 70, reps: 10, rpe: 9 }, ...S3(70, 10, 10)]), target: T810 });
+  assert.equal(r.kind, 'increase');
+  r = await sugRun(page, { history: SH(S3(70, 10, 10, 10)), target: T810 });
+  assert.equal(r.kind, 'increase', 'RPE missing -> normal');
+  r = await sugRun(page, { history: SH([{ weight: 70, reps: 9, rpe: 10 }, ...S3(70, 9, 8)]) });
+  assert.equal(r.kind, 'hold', 'also without a template');
+  // a legacy row's RPE (fixture Bench press: 4 x 8 @ 80, RPE 8) is read but below the threshold
+  r = await page.evaluate(ws => { S.workouts = ws; const w = workoutStart({}).workout; const en = workoutAddEntry(w.id, exerciseFind('Bench press').id); const s = exerciseSuggestion(en, w); return [s.kind, s.basisWorkoutId]; }, fixtureState().workouts);
+  assert.deepEqual(r, ['baseline', 'w1']);
+}, { state: fixtureState() });
+
+test('11A overload: reps +1, time +step, distance_time none; without a template a baseline; without history the plan', async ({ page }) => {
+  let r = await sugRun(page, { exerciseId: 'xp', history: SH([{ reps: 12 }], 'xp'), nWork: 1, target: { sets: 1, repsMin: 8, repsMax: 12 } });
+  assert.deepEqual([r.kind, r.sets, r.text.main], ['reps', [{ reps: 13 }], '↑ 13 opak.'], 'reps: 12 -> 13, no kg, range does not cap a bodyweight exercise');
+  r = await sugRun(page, { exerciseId: 'xk', history: SH([{ seconds: 60 }], 'xk'), nWork: 1, inc: 5 });
+  assert.deepEqual([r.kind, r.sets, r.text.main], ['time', [{ seconds: 65 }], '↑ 1:05'], '60 s -> 65 s with a 5 s step');
+  r = await sugRun(page, { exerciseId: 'xk', history: SH([{ seconds: 60 }], 'xk'), nWork: 1, inc: 15 });
+  assert.deepEqual(r.sets, [{ seconds: 75 }]);
+  r = await sugRun(page, { exerciseId: 'xr', history: SH([{ distance: 5, seconds: 1500 }], 'xr'), nWork: 1, target: { sets: 1, distance: 5 } });
+  assert.equal(r, null, 'distance_time: no suggestion');
+  r = await sugRun(page, { history: SH(S3(70, 10, 10, 10)) });
+  assert.deepEqual([r.kind, r.sets.map(s => [s.weight, s.reps])], ['baseline', [[70, 11], [70, 10], [70, 10]]], 'no template: same weight +1 rep, never more weight');
+  r = await sugRun(page, { target: T810 });
+  assert.deepEqual([r.kind, r.sets, r.text.note], ['plan', Array(3).fill({ weight: 70, reps: 8 }), 'Podle plánu — zatím bez historie.']);
+  assert.equal(await sugRun(page, {}), null, 'no template, no history -> nothing');
+  r = await sugRun(page, { history: [PW('h1', '2026-09-10', -300, [PE('xb', [{ weight: 200, reps: 10, warmup: true }, ...S3(70, 8, 8)])])], target: T810 });
+  assert.equal(r.weight, 70, 'warm-ups never enter a suggestion');
+}, { state: fixtureState() });
+
+test('11A UI: "Použít doporučení" prefills only this workout; template, history and XP unchanged; survives reload', async ({ page }) => {
+  await page.evaluate(lib => { S.exerciseLibrary = lib; }, PRL);
+  const tid = await page.evaluate(() => templateSave({ name: 'Push A', exercises: [{ exerciseId: 'xb', sets: 3, repsMin: 8, repsMax: 10, weight: 70 }, { exerciseId: 'xr', sets: 1, distance: 5 }] }).template.id);
+  await page.evaluate(() => { const w = workoutStart({ templateId: S.workoutTemplates[0].id }).workout; w.date = '2026-09-22'; w.entries[0].sets.forEach(s => Object.assign(s, { reps: 10, done: true })); w.entries[1].sets[0].done = true; workoutFinish(w.id); });
+  const frozen = () => page.evaluate(() => JSON.stringify([S.workoutTemplates, completedWorkouts(S), S.totalXp, S.xpLog, S.attrs, S.rpg, S.achievementsUnlocked, S.quests, dailyScore(todayStr()), exercisePRs()]));
+  await openWorkouts(page);
+  await page.click('[data-start-tpl] .wkStartTpl');
+  const f0 = await frozen();
+  const card = entryCard(page, 'Bench press');
+  assert.match(await card.locator('[data-slot="suggestion"]').innerText(), /DOPORUČENÍ\s*↑ 72,5 kg × 8/i);
+  assert.match(await card.innerText(), /PLÁN\s*3 × 8–10 @ 70 kg[\s\S]*MINULE\s*70 kg × 10, 10, 10/i, 'plan and last stay separate from the suggestion');
+  assert.equal(await entryCard(page, 'Running').locator('[data-slot="suggestion"]').isHidden(), true, 'distance_time: nothing shown');
+  // one set already done by the user stays as it is
+  await setRow(page, 'Bench press', 0).locator('[data-f="reps"]').fill('9'); await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  await card.locator('.wkApplySug').click();
+  const w = await active(page);
+  assert.deepEqual(w.entries[0].sets.map(s => [s.weight, s.reps, s.done]), [[70, 9, true], [72.5, 8, false], [72.5, 8, false]]);
+  assert.equal(await entryCard(page, 'Bench press').locator('.wkApplySug').isDisabled(), true);
+  assert.match(await entryCard(page, 'Bench press').locator('.wkApplySug').innerText(), /Použito/);
+  assert.equal(await frozen(), f0, 'template, finished history, XP/RPG/quests/achievements/Daily Score and PRs unchanged');
+  assert.equal(await page.evaluate(id => templateFind(id).exercises[0].weight, tid), 70, 'template weight is still 70');
+  await persist(page); await reload(page);
+  assert.deepEqual((await active(page)).entries[0].sets.map(s => [s.weight, s.reps, s.done]), [[70, 9, true], [72.5, 8, false], [72.5, 8, false]]);
+  // the edit screen of a finished workout never shows a suggestion
+  await page.evaluate(() => { uiWorkoutView = { mode: 'edit', id: completedWorkouts(S).find(w => w.entries).id }; view = 'fitness'; render(); });
+  assert.equal(await page.locator('.wkApplySug').count(), 0);
+}, { state: fixtureState() });
+
+test('11A UI: suggestions fit 320-1440 px (all kinds) without overflow', async ({ page }) => {
+  await page.evaluate(lib => {
+    S.exerciseLibrary = lib;
+    const t = templateSave({ name: 'All', exercises: [{ exerciseId: 'xb', sets: 3, repsMin: 8, repsMax: 10, weight: 102.5 }, { exerciseId: 'xp', sets: 3, repsMin: 8 }, { exerciseId: 'xk', sets: 2, seconds: 90 }] }).template;
+    const w = workoutStart({ templateId: t.id }).workout; w.date = '2026-09-20';
+    w.entries.forEach(en => en.sets.forEach(s => Object.assign(s, { done: true, reps: s.reps != null ? s.reps + 2 : null })));
+    workoutFinish(w.id); workoutStart({ templateId: t.id });
+  }, PRL);
+  const bad = [];
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+    const r = await page.evaluate(() => ({ over: document.documentElement.scrollWidth - document.documentElement.clientWidth, n: document.querySelectorAll('.wkApplySug').length,
+      clipped: [...document.querySelectorAll('.wk-suggestion')].filter(s => s.scrollWidth > s.clientWidth + 1).length }));
+    if (r.over > 0 || r.n !== 3 || r.clipped) bad.push(`${width}: ${JSON.stringify(r)}`);
+  }
+  assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
