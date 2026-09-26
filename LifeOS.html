@@ -1109,6 +1109,9 @@ function defaultState(){return{
   // start at dailyScoresSince (the first day the feature ran) -- no estimated history. New keys
   // reach old states/backups through migrate()'s generic top-level fill-in: no schema bump. ----
   dailyScores:{}, dailyScoresSince:null,
+  // ---- Phase 10: Daily Planner time blocks (see plannerSaveBlock). Reaches old states/backups
+  // through migrate()'s generic top-level fill-in: no schema bump. ----
+  plannerBlocks:[],
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -4732,6 +4735,68 @@ function sleepDuration(s){
   if(w<=b) w=new Date('2000-01-02T'+s.wake);
   return Math.round((w-b)/3600000*100)/100;
 }
+/* ================= Phase 10: Daily Planner (time blocking) =================
+   A planner block says WHEN something is done; a Task says WHAT. Blocks live in S.plannerBlocks
+   ({id,date,startTime,endTime,title,description,category,taskId,goalId,workoutId,completed,notes,
+   createdAt,updatedAt}); one block = one concrete day (no recurrence, no crossing midnight).
+   Links are optional ids resolved on read (dangling-safe). Completing a block never touches the
+   linked Task/Workout/Goal, never grants XP and is not part of Daily Score. ---- */
+function plannerTimeToMin(t){ const m=/^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(t==null?'':t).trim()); return m?Number(m[1])*60+Number(m[2]):null; }
+function plannerMinToTime(n){ n=Math.max(0,Math.min(1439,Math.round(n))); return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0'); }
+function plannerValidDate(d){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||'')); if(!m) return false; const x=new Date(Number(m[1]),Number(m[2])-1,Number(m[3])); return x.getFullYear()===Number(m[1])&&x.getMonth()===Number(m[2])-1&&x.getDate()===Number(m[3]); }
+// Returns {} when valid, otherwise {field:'code'} with codes: required | invalid | end_before_start.
+function plannerValidate(f){
+  const e={};
+  if(!String(f.title||'').trim()) e.title='required';
+  if(!plannerValidDate(f.date)) e.date='invalid';
+  const s=plannerTimeToMin(f.startTime), en=plannerTimeToMin(f.endTime);
+  if(s==null) e.startTime='invalid';
+  if(en==null) e.endTime='invalid';
+  if(s!=null&&en!=null&&en<=s) e.endTime='end_before_start';
+  return e;
+}
+function plannerDuration(b){ const s=plannerTimeToMin(b.startTime), e=plannerTimeToMin(b.endTime); return s!=null&&e!=null&&e>s?e-s:0; }
+function plannerBlocksOn(D){
+  return (S.plannerBlocks||[]).filter(b=>b.date===D).sort((a,b)=>(plannerTimeToMin(a.startTime)-plannerTimeToMin(b.startTime))||(plannerTimeToMin(a.endTime)-plannerTimeToMin(b.endTime)));
+}
+// Overlap layout: items [{id,start,end}] (minutes) -> {id:{col,cols}}. Items that overlap (directly
+// or through a chain) share a cluster; each gets the first free column; cols = columns used.
+function plannerLayout(items){
+  const out={}, sorted=[...items].sort((a,b)=>a.start-b.start||a.end-b.end);
+  let cluster=[], colEnds=[], clusterEnd=-1;
+  const flush=()=>{ cluster.forEach(id=>{ out[id].cols=colEnds.length; }); cluster=[]; colEnds=[]; };
+  sorted.forEach(it=>{
+    if(it.start>=clusterEnd) flush();
+    let col=colEnds.findIndex(end=>end<=it.start);
+    if(col<0){ col=colEnds.length; colEnds.push(it.end); } else colEnds[col]=it.end;
+    out[it.id]={col,cols:1}; cluster.push(it.id); clusterEnd=Math.max(clusterEnd,it.end);
+  });
+  flush();
+  return out;
+}
+function plannerLinks(b){
+  return {task:b.taskId?S.tasks.find(t=>t.id===b.taskId)||null:null, goal:b.goalId?S.goals.find(g=>g.id===b.goalId)||null:null,
+    workout:b.workoutId?S.workouts.find(w=>w.id===b.workoutId)||null:null};
+}
+function plannerDaySummary(D){
+  const bl=plannerBlocksOn(D);
+  return {planned:bl.length,completed:bl.filter(b=>b.completed).length,plannedMin:bl.reduce((a,b)=>a+plannerDuration(b),0),completedMin:bl.filter(b=>b.completed).reduce((a,b)=>a+plannerDuration(b),0)};
+}
+// CRUD. Save validates first and never touches the linked records.
+function plannerSaveBlock(fields,existing){
+  const f={date:fields.date,startTime:String(fields.startTime||'').trim(),endTime:String(fields.endTime||'').trim(),title:String(fields.title||'').trim(),
+    description:fields.description||'',category:fields.category||'',taskId:fields.taskId||'',goalId:fields.goalId||'',workoutId:fields.workoutId||'',notes:fields.notes||''};
+  const errors=plannerValidate(f);
+  if(Object.keys(errors).length) return {ok:false,errors};
+  if(!Array.isArray(S.plannerBlocks)) S.plannerBlocks=[];
+  let block=existing?S.plannerBlocks.find(b=>b.id===existing.id):null;
+  if(block) Object.assign(block,f,{updatedAt:Date.now()});
+  else { block=Object.assign({id:uid(),completed:false,createdAt:Date.now(),updatedAt:Date.now()},f); S.plannerBlocks.push(block); }
+  scheduleSave();
+  return {ok:true,errors:{},block};
+}
+function plannerDeleteBlock(id){ const n=(S.plannerBlocks||[]).length; S.plannerBlocks=(S.plannerBlocks||[]).filter(b=>b.id!==id); if(S.plannerBlocks.length!==n) scheduleSave(); return S.plannerBlocks.length!==n; }
+function plannerToggleCompleted(id){ const b=(S.plannerBlocks||[]).find(x=>x.id===id); if(!b) return false; b.completed=!b.completed; b.updatedAt=Date.now(); scheduleSave(); return true; }
 /* ================= Phase 9: Daily Score (0–100) =================
    How well a single day went, measured only against what was actually relevant for that day.
    Strictly read-only: never grants XP, never touches level/attributes/points/achievements/quests.

@@ -834,6 +834,76 @@ test('8B fix: a late sheet auto-focus never steals focus from a field the user i
   assert.equal(await page.inputValue('#f_amt'), '');
 }, { state: fixtureState() });
 
+// ---------- Phase 10: Daily Planner ----------
+const PB = (o = {}) => ({ date: TODAY, startTime: '15:00', endTime: '16:00', title: 'Matematika', ...o });
+// Snapshot of everything the planner must never touch (XP/RPG + Daily Score).
+const untouchable = page => page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.rpg, S.achievementsUnlocked, S.achievementUnlockedAt, S.quests, levelFromXp(S.totalXp), dailyScore(todayStr()), S.dailyScores]));
+
+test('10 planner: time validation - invalid times, same start/end and end before start are rejected', async ({ page }) => {
+  const v = o => page.evaluate(f => plannerValidate(f), PB(o));
+  assert.deepEqual(await v({}), {});
+  assert.deepEqual(await v({ startTime: '16:00', endTime: '16:00' }), { endTime: 'end_before_start' }, 'same start/end');
+  assert.deepEqual(await v({ startTime: '16:00', endTime: '15:00' }), { endTime: 'end_before_start' });
+  assert.deepEqual(await v({ startTime: '25:00' }), { startTime: 'invalid' });
+  assert.deepEqual(await v({ endTime: '10:60' }), { endTime: 'invalid' });
+  assert.deepEqual(await v({ startTime: '' }), { startTime: 'invalid' });
+  assert.deepEqual(await v({ title: '   ' }), { title: 'required' });
+  assert.deepEqual(await v({ date: '2026-02-30' }), { date: 'invalid' });
+  assert.equal(await page.evaluate(() => [plannerTimeToMin('00:00'), plannerTimeToMin('23:59'), plannerMinToTime(615)].join()), '0,1439,10:15');
+});
+
+test('10 planner: create / edit / delete through the CRUD functions; invalid input saves nothing', async ({ page }) => {
+  const before = await untouchable(page);
+  const r = await page.evaluate(f => { const r = plannerSaveBlock(f); return { ok: r.ok, id: r.block && r.block.id }; }, PB({ category: 'Learning' }));
+  assert.ok(r.ok && r.id);
+  let s = await stateOf(page);
+  const b = s.plannerBlocks.find(x => x.id === r.id);
+  assert.deepEqual({ ...b, id: 0, createdAt: 0, updatedAt: 0 }, { id: 0, date: TODAY, startTime: '15:00', endTime: '16:00', title: 'Matematika', description: '', category: 'Learning', taskId: '', goalId: '', workoutId: '', notes: '', completed: false, createdAt: 0, updatedAt: 0 });
+  const bad = await page.evaluate(f => plannerSaveBlock(f), PB({ startTime: '17:00', endTime: '16:00' }));
+  assert.equal(bad.ok, false); assert.equal((await stateOf(page)).plannerBlocks.length, 1, 'invalid block not saved');
+  await page.evaluate(id => plannerSaveBlock({ ...S.plannerBlocks.find(b => b.id === id), title: 'Matika', endTime: '16:30' }, { id }), r.id);
+  s = await stateOf(page);
+  assert.equal(s.plannerBlocks.length, 1); assert.equal(s.plannerBlocks[0].id, r.id, 'edit keeps id'); assert.equal(s.plannerBlocks[0].title, 'Matika'); assert.equal(s.plannerBlocks[0].endTime, '16:30');
+  assert.ok(await page.evaluate(id => plannerDeleteBlock(id), r.id));
+  assert.equal((await stateOf(page)).plannerBlocks.length, 0);
+  assert.equal(await untouchable(page), before, 'no XP/RPG/Daily Score change');
+}, { state: fixtureState() });
+
+test('10 planner: overlapping blocks and several blocks at the same time are allowed and laid out side by side', async ({ page }) => {
+  for (const [a, b] of [['15:00', '16:00'], ['15:30', '17:00'], ['15:00', '16:00'], ['18:00', '19:00']]) assert.ok((await page.evaluate(f => plannerSaveBlock(f).ok, PB({ startTime: a, endTime: b }))));
+  const lay = await page.evaluate(() => { const bl = plannerBlocksOn(todayStr()); const l = plannerLayout(bl.map(b => ({ id: b.id, start: plannerTimeToMin(b.startTime), end: plannerTimeToMin(b.endTime) }))); return bl.map(b => [b.startTime, b.endTime, l[b.id].col, l[b.id].cols]); });
+  assert.equal(lay.length, 4);
+  const cluster = lay.filter(x => x[0] !== '18:00');
+  assert.deepEqual(cluster.map(x => x[3]), [3, 3, 3], 'three overlapping blocks share 3 columns');
+  assert.deepEqual(new Set(cluster.map(x => x[2])).size, 3, 'each in its own column');
+  assert.deepEqual(lay.find(x => x[0] === '18:00').slice(2), [0, 1], 'a separate block uses the full width');
+  assert.deepEqual(await page.evaluate(() => plannerLayout([{ id: 'a', start: 60, end: 120 }, { id: 'b', start: 120, end: 180 }])), { a: { col: 0, cols: 1 }, b: { col: 0, cols: 1 } }, 'touching blocks do not overlap');
+}, { state: fixtureState() });
+
+test('10 planner: block completion and task completion are independent (no side effects, no XP)', async ({ page }) => {
+  const id = await page.evaluate(() => plannerSaveBlock({ date: todayStr(), startTime: '15:00', endTime: '16:00', title: 'Write report', taskId: 't_open' }).block.id);
+  const before = await untouchable(page);
+  await page.evaluate(id => plannerToggleCompleted(id), id);
+  let s = await stateOf(page);
+  assert.equal(s.plannerBlocks[0].completed, true);
+  assert.equal(s.tasks.find(t => t.id === 't_open').done, false, 'completing the block does not complete the task');
+  assert.equal(await untouchable(page), before, 'no XP / Daily Score change from block completion');
+  await page.evaluate(id => plannerToggleCompleted(id), id);
+  // complete the task through the real UI: the block keeps its own completed flag
+  await page.click('nav.bottom button[data-v="tasks"]');
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click();
+  s = await stateOf(page);
+  assert.equal(s.tasks.find(t => t.id === 't_open').done, true);
+  assert.equal(s.plannerBlocks[0].completed, false, 'completing the task does not complete the block');
+}, { state: fixtureState() });
+
+test('10 planner: deleting a linked task (or goal/workout) leaves the block working, links resolve to null', async ({ page }) => {
+  await page.evaluate(() => plannerSaveBlock({ date: todayStr(), startTime: '15:00', endTime: '16:00', title: 'x', taskId: 't_open', goalId: 'g_fit', workoutId: 'w2' }));
+  await page.evaluate(() => { S.tasks = S.tasks.filter(t => t.id !== 't_open'); S.goals = S.goals.filter(g => g.id !== 'g_fit'); S.workouts = S.workouts.filter(w => w.id !== 'w2'); });
+  assert.deepEqual(await page.evaluate(() => plannerLinks(S.plannerBlocks[0])), { task: null, goal: null, workout: null });
+  assert.equal(await page.evaluate(() => plannerDaySummary(todayStr()).planned), 1);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

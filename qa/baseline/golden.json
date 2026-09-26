@@ -864,6 +864,7 @@
   "notificationLog": [],
   "dailyScores": {},
   "dailyScoresSince": null,
+  "plannerBlocks": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
@@ -1075,6 +1076,7 @@
   "notificationLog": [],
   "dailyScores": {},
   "dailyScoresSince": null,
+  "plannerBlocks": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
