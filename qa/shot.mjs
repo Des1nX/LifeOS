@@ -1,0 +1,24 @@
+// Dev helper: quick screenshots of selected views.  node shot.mjs <outDir> <width> <theme> view[,view...]
+import { chromium } from 'playwright';
+import { fixtureState, NOW } from './fixture.mjs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const [out, width = '390', theme = 'dark', views = 'home'] = process.argv.slice(2);
+const APP = 'file://' + path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'LifeOS.html');
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: +width, height: 900 }, timezoneId: 'Europe/Prague', locale: 'cs-CZ', reducedMotion: 'reduce' });
+const p = await ctx.newPage();
+p.on('pageerror', e => console.log('PAGEERROR', e.message));
+p.on('console', m => { if (m.type() === 'error') console.log('CONSOLE', m.text()); });
+await p.clock.setFixedTime(NOW);
+await p.goto(APP); await p.waitForFunction(() => typeof S !== 'undefined' && S);
+await p.evaluate(({ st, theme }) => { st.settings.theme = theme; S = migrate(st); closeSheets(); applyTheme(); currentHabitId = 'h_read'; currentGoalId = 'g_fit'; }, { st: fixtureState(), theme });
+for (const v of views.split(',')) {
+  const [name, action] = v.split(':');
+  await p.evaluate(n => { view = n; render(); window.scrollTo(0, 0); document.getElementById('toasts').replaceChildren(); }, name);
+  if (action === 'fab') await p.click('#fabBtn');
+  if (action === 'ob') await p.evaluate(() => showOnboarding(+new URLSearchParams(location.search).get('s') || 1));
+  await p.waitForTimeout(150);
+  await p.screenshot({ path: `${out}/${name}${action ? '-' + action : ''}-${width}-${theme}.png`, fullPage: !action });
+}
+await b.close();

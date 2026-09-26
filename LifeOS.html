@@ -1,6 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -14,283 +13,690 @@
 <link id="manifestLink" rel="manifest" href="">
 <style>
 /* ===================================================================
-   FÁZE 8A — DESIGN SYSTEM + UI ARCHITECTURE
-   Every existing selector below (used throughout the JS render functions)
-   keeps its name and behavior unchanged. New tokens/components are
-   additive. No business logic lives in this file's <style> block.
+   LifeOS DESIGN SYSTEM — Phase 8A tokens/components, redesigned in Phase 8B.
+   Every selector the JS render functions use keeps its name and behavior; legacy color
+   variables (--bg,--bg2,--card,--card2,--text,--sub,--line,--accent,--accent2,--warn,--danger,
+   --info and the attribute colors) keep their names because inline styles/JS reference them.
+   No business logic lives in this <style> block.
    =================================================================== */
 
-/* ---------- 1. DESIGN TOKENS ---------- */
+/* ---------- 1. DESIGN TOKENS (dark is the primary theme) ---------- */
 :root{
-  /* Color -- legacy names (--bg,--card,--card2,--text,--sub,--line,--warn) are the ones
-     referenced throughout the app's inline styles/JS and MUST keep exactly these names.
-     New semantic aliases point at the same values so new components can read intent-named
-     tokens while old markup keeps working untouched. */
-  --bg:#0b0d12; --bg2:#12151c; --card:#171b24; --card2:#1e2330;
-  --text:#eef1f6; --sub:#9aa3b2; --line:#262c3a;
-  --accent:#7c5cff; --accent2:#00d4a0; --warn:#ffb020; --danger:#ff5c7a; --info:#5c9bff;
-  --str:#ff5c5c;--int:#5c9bff;--dex:#5cffb0;--vit:#ffd15c;--wis:#c05cff;--foc:#5ce0ff;--soc:#ff8fd6;
-  --r:16px;
+  color-scheme:dark;
+  --bg:#0a0b10; --bg2:#0f1117; --card:#13161e; --card2:#1a1e28;
+  --text:#eef0f6; --sub:#949cb0; --line:#252a36;
+  --accent:#8b6cff; --accent2:#2fd3a0; --warn:#f4b64a; --danger:#ff6b81; --info:#5ea8ff;
+  --str:#ff6f6f;--int:#5e9dff;--dex:#3fd8a2;--vit:#f5c84c;--wis:#b37dff;--foc:#4cc8ef;--soc:#ff86c8;
+  --r:18px;
 
-  /* Semantic aliases (Design Direction §3) */
+  /* RPG / progress */
+  --gold:#f3c35a; --gold-muted:rgba(243,195,90,.14);
+  --xp-grad:linear-gradient(90deg,#7c5cff 0%,#a77bff 55%,#d59bff 100%);
+  --success-grad:linear-gradient(90deg,#1fbf8f,#4be3b4);
+  --accent-grad:linear-gradient(135deg,#9377ff 0%,#6d4cf5 100%);
+  --glow:0 0 0 1px rgba(139,108,255,.35),0 8px 28px rgba(124,92,255,.28);
+
+  /* Surfaces */
+  --surface-hi:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0) 60%);
+  --glass:rgba(12,13,19,.74);
+  --scrim:rgba(3,4,8,.62);
+
+  /* Semantic aliases (8A) */
   --color-bg:var(--bg);
   --color-surface:var(--card);
   --color-surface-elevated:var(--card2);
-  --color-surface-muted:#0e1017;
+  --color-surface-muted:#0d0f15;
   --color-border:var(--line);
   --color-text-primary:var(--text);
   --color-text-secondary:var(--sub);
-  --color-text-muted:#6b7385;
+  --color-text-muted:#7a8298;
   --color-accent:var(--accent);
-  --color-accent-muted:rgba(124,92,255,.16);
+  --color-accent-muted:rgba(139,108,255,.15);
   --color-success:var(--accent2);
+  --color-success-muted:rgba(47,211,160,.14);
   --color-warning:var(--warn);
+  --color-warning-muted:rgba(244,182,74,.14);
   --color-danger:var(--danger);
+  --color-danger-muted:rgba(255,107,129,.14);
   --color-info:var(--info);
 
-  /* Typography */
-  --font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  --fs-h1:28px; --fs-h2:22px; --fs-h3:17px;
-  --fs-body:15px; --fs-body-sm:13px; --fs-caption:12px;
-  --fw-regular:400; --fw-medium:600; --fw-bold:800;
-  --lh-tight:1.2; --lh-normal:1.45; --lh-loose:1.6;
+  /* Typography (system stack only -- no external fonts) */
+  --font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;
+  --fs-h1:30px; --fs-h2:24px; --fs-h3:17px;
+  --fs-body:15px; --fs-body-sm:13px; --fs-caption:12px; --fs-micro:11px;
+  --fw-regular:400; --fw-medium:600; --fw-bold:750;
+  --lh-tight:1.15; --lh-normal:1.45; --lh-loose:1.6;
 
-  /* Spacing scale */
+  /* Spacing */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
   --sp-6:24px; --sp-7:32px; --sp-8:40px; --sp-9:48px;
 
-  /* Radius scale */
-  --radius-sm:8px; --radius-md:12px; --radius-lg:var(--r); --radius-pill:100px;
+  /* Radius */
+  --radius-sm:10px; --radius-md:14px; --radius-lg:var(--r); --radius-xl:24px; --radius-pill:100px;
 
   /* Shadows */
-  --shadow-subtle:0 1px 2px rgba(0,0,0,.18);
-  --shadow-card:0 6px 20px rgba(0,0,0,.28);
-  --shadow-elevated:0 12px 32px rgba(0,0,0,.4);
+  --shadow-subtle:0 1px 2px rgba(0,0,0,.28);
+  --shadow-card:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.28);
+  --shadow-elevated:0 24px 60px rgba(0,0,0,.55);
 
   /* Motion */
-  --dur-fast:120ms; --dur-normal:220ms; --dur-slow:360ms;
+  --dur-fast:130ms; --dur-normal:240ms; --dur-slow:420ms;
   --ease-standard:cubic-bezier(.2,.7,.3,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
 
   /* Layout */
-  --sidebar-w:240px; --content-max:960px;
+  --sidebar-w:248px; --content-max:720px; --nav-h:64px; --touch:44px;
   --pad-t:env(safe-area-inset-top,0px); --pad-b:env(safe-area-inset-bottom,0px);
 }
+/* Light: its own palette (paper-like neutral with a violet tint), not an inversion. */
 :root[data-theme="light"]{
-  --bg:#f4f5f8; --bg2:#ffffff; --card:#ffffff; --card2:#f0f1f6;
-  --text:#161821; --sub:#666e80; --line:#e3e5ec;
-  --color-surface-muted:#eceef4;
-  --color-text-muted:#8991a1;
-  --color-accent-muted:rgba(124,92,255,.1);
-  --shadow-subtle:0 1px 2px rgba(20,20,30,.06);
-  --shadow-card:0 6px 20px rgba(20,20,30,.08);
-  --shadow-elevated:0 16px 32px rgba(20,20,30,.14);
+  color-scheme:light;
+  --bg:#f3f2f7; --bg2:#fbfbfd; --card:#ffffff; --card2:#f3f2f8;
+  --text:#17161f; --sub:#5f5d74; --line:#e2e0ea;
+  --accent:#6a4bef; --accent2:#0c9a6c; --warn:#b26f12; --danger:#d23450; --info:#2b6de0;
+  --str:#e5484d;--int:#3b78ee;--dex:#10a276;--vit:#d69a06;--wis:#8a4be6;--foc:#0b9fc2;--soc:#d4459a;
+  --gold:#b98309; --gold-muted:rgba(185,131,9,.12);
+  --xp-grad:linear-gradient(90deg,#6a4bef 0%,#8f63f5 55%,#b77cf7 100%);
+  --success-grad:linear-gradient(90deg,#0c9a6c,#20b886);
+  --accent-grad:linear-gradient(135deg,#7a5cf5 0%,#5a3be0 100%);
+  --glow:0 0 0 1px rgba(106,75,239,.22),0 8px 22px rgba(106,75,239,.2);
+  --surface-hi:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0) 60%);
+  --glass:rgba(250,250,253,.8);
+  --scrim:rgba(20,18,35,.38);
+  --color-surface-muted:#ecebf2;
+  --color-text-muted:#6f6d84;
+  --color-accent-muted:rgba(106,75,239,.1);
+  --color-success-muted:rgba(12,154,108,.1);
+  --color-warning-muted:rgba(178,111,18,.1);
+  --color-danger-muted:rgba(210,52,80,.08);
+  --shadow-subtle:0 1px 2px rgba(23,22,40,.06);
+  --shadow-card:0 1px 2px rgba(23,22,40,.04),0 8px 24px rgba(23,22,40,.06);
+  --shadow-elevated:0 24px 60px rgba(23,22,40,.18);
 }
-/* Respect the OS-level "system" preference for a first paint before applyTheme() runs, and
-   for anyone whose data-theme attribute hasn't been set yet -- applyTheme()/computedTheme()
-   remain the single source of truth once JS boots and are never overridden here. */
+/* First paint for "system" users before applyTheme() runs; JS stays the source of truth. */
 @media (prefers-color-scheme: light){
   :root:not([data-theme="dark"]):not([data-theme="light"]){
-    --bg:#f4f5f8; --bg2:#ffffff; --card:#ffffff; --card2:#f0f1f6;
-    --text:#161821; --sub:#666e80; --line:#e3e5ec;
-    --color-surface-muted:#eceef4; --color-text-muted:#8991a1;
+    color-scheme:light;
+    --bg:#f3f2f7; --bg2:#fbfbfd; --card:#ffffff; --card2:#f3f2f8;
+    --text:#17161f; --sub:#5f5d74; --line:#e2e0ea;
+    --color-surface-muted:#ecebf2; --color-text-muted:#6f6d84;
   }
 }
 
-*{box-sizing:border-box}
-html{scroll-padding-top:var(--pad-t)}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);
-  padding-top:var(--pad-t);padding-bottom:var(--pad-b);min-height:100%;-webkit-tap-highlight-color:transparent}
-h1,h2,h3{margin:0 0 var(--sp-2);font-weight:var(--fw-bold);line-height:var(--lh-tight)}
+/* ---------- 2. BASE ---------- */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:calc(var(--pad-t) + 72px);-webkit-text-size-adjust:100%;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-family);font-size:var(--fs-body);line-height:var(--lh-normal);
+  padding-top:var(--pad-t);padding-bottom:var(--pad-b);min-height:100vh;-webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+h1,h2,h3{margin:0 0 var(--sp-3);font-family:var(--font-display);font-weight:var(--fw-bold);line-height:var(--lh-tight);letter-spacing:-.02em}
+h2{font-size:var(--fs-h2)}
+h3{font-size:var(--fs-h3);letter-spacing:-.01em}
+#app>div>h2:first-child,.page-title{font-size:28px;letter-spacing:-.03em;margin:var(--sp-2) 0 var(--sp-4)}
 p{margin:0;line-height:var(--lh-normal)}
-button{font-family:inherit}
+b,strong{font-weight:700}
+button{font-family:inherit;font-size:inherit;color:inherit}
+button:disabled{opacity:.45;cursor:not-allowed}
 :focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;border-radius:var(--radius-sm)}
+::selection{background:var(--color-accent-muted)}
+.num,.big,.stat-value,.hud-level,.metric-value{font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
-#app{max-width:var(--content-max);margin:0 auto;padding:var(--sp-4) var(--sp-4) 100px}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px calc(14px + var(--pad-t));position:sticky;top:0;background:linear-gradient(var(--bg),var(--bg) 80%,transparent);z-index:10;max-width:var(--content-max);margin:0 auto}
-.brand{font-weight:800;font-size:20px;letter-spacing:-.5px}
-.brand span{color:var(--accent)}
-.iconbtn{background:var(--card);border:1px solid var(--line);border-radius:12px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--text);font-size:18px;cursor:pointer;transition:background var(--dur-fast) var(--ease-standard),transform var(--dur-fast) var(--ease-standard)}
+/* Settings → Animations off (animationsOn()) mirrors reduced motion for decorative motion. */
+html.no-anim *,html.no-anim *::before,html.no-anim *::after{animation:none!important;transition:none!important}
+
+/* ---------- 3. APP SHELL ---------- */
+#app{max-width:var(--content-max);margin:0 auto;padding:var(--sp-2) var(--sp-4) calc(var(--nav-h) + 56px + var(--pad-b))}
+#app.view-enter>*{animation:viewIn var(--dur-normal) var(--ease-standard)}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
+  padding:calc(10px + var(--pad-t)) var(--sp-4) 10px;margin:calc(-1 * var(--pad-t)) auto 0;max-width:var(--content-max);
+  position:sticky;top:0;z-index:10;background:var(--glass);
+  -webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px)}
+.topbar::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--line);opacity:.6}
+.brand{font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:-.04em;display:flex;align-items:center;gap:9px}
+.brand-mark{position:relative;width:28px;height:28px;border-radius:9px;background:var(--accent-grad);box-shadow:var(--glow);flex:none}
+.brand-mark::after{content:'';position:absolute;inset:8px;border-radius:3px;border:2.5px solid #fff;transform:rotate(45deg)}
+.brand em{font-style:normal;color:var(--accent)}
+.iconbtn{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-md);width:var(--touch);height:var(--touch);min-width:var(--touch);
+  display:inline-flex;align-items:center;justify-content:center;color:var(--text);font-size:18px;cursor:pointer;flex:none;
+  transition:background var(--dur-fast) var(--ease-standard),transform var(--dur-fast) var(--ease-standard),border-color var(--dur-fast)}
+.iconbtn:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
 .iconbtn:active{transform:scale(.94)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-subtle)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.grid3{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(min-width:700px){.grid3{grid-template-columns:1fr 1fr 1fr;gap:12px}}
-.row{display:flex;align-items:center;gap:10px}
-.between{display:flex;align-items:center;justify-content:space-between}
-.sub{color:var(--sub);font-size:13px}
-.big{font-size:28px;font-weight:800}
-.bar{height:10px;border-radius:6px;background:var(--card2);overflow:hidden;position:relative}
-.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;transition:width var(--dur-slow) var(--ease-standard)}
-.badge{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border-radius:100px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--sub)}
-.pill{padding:6px 12px;border-radius:100px;border:1px solid var(--line);background:var(--card2);color:var(--sub);font-size:13px;cursor:pointer;white-space:nowrap;min-height:36px;display:inline-flex;align-items:center;transition:background var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard)}
-.pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.list{display:flex;flex-direction:column;gap:8px}
-.item{background:var(--card2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;min-height:44px}
-.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:transparent;font-size:14px;transition:background var(--dur-fast) var(--ease-standard),border-color var(--dur-fast) var(--ease-standard)}
-.check.done{background:var(--accent2);border-color:var(--accent2);color:#06231a}
-.item-title{font-weight:600;font-size:15px}
-.item-title.done{text-decoration:line-through;color:var(--sub)}
-.item-meta{font-size:12px;color:var(--sub);margin-top:2px}
-.delbtn{background:none;border:none;color:var(--sub);font-size:18px;cursor:pointer;padding:4px 8px;min-width:44px;min-height:44px}
-.empty{text-align:center;padding:40px 16px;color:var(--sub)}
-.empty .e{font-size:38px;margin-bottom:8px}
-nav.bottom{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--line);
-  display:flex;justify-content:space-around;padding:8px 4px calc(8px + var(--pad-b));z-index:20}
-nav.bottom button{background:none;border:none;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;min-width:44px;min-height:44px;justify-content:center;cursor:pointer;border-radius:var(--radius-sm);transition:color var(--dur-fast) var(--ease-standard)}
-nav.bottom button .ic{font-size:20px}
+.iconbtn.is-selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--color-accent-muted);background:var(--color-accent-muted)}
+
+/* Bottom navigation (mobile) */
+nav.bottom{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;justify-content:space-around;align-items:stretch;
+  padding:6px 6px calc(6px + var(--pad-b));background:var(--glass);border-top:1px solid var(--line);
+  -webkit-backdrop-filter:saturate(160%) blur(20px);backdrop-filter:saturate(160%) blur(20px)}
+nav.bottom button{flex:1;background:none;border:none;color:var(--sub);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10.5px;font-weight:600;letter-spacing:.01em;min-width:var(--touch);min-height:52px;cursor:pointer;border-radius:var(--radius-md);
+  transition:color var(--dur-fast) var(--ease-standard)}
+nav.bottom button .ic{display:inline-flex;align-items:center;justify-content:center;width:52px;height:30px;border-radius:var(--radius-pill);
+  font-size:19px;line-height:1;transition:background var(--dur-normal) var(--ease-standard),transform var(--dur-fast) var(--ease-standard)}
+nav.bottom button .ic svg{width:22px;height:22px}
+nav.bottom button:active .ic{transform:scale(.9)}
 nav.bottom button.on{color:var(--accent)}
-.fab{position:fixed;bottom:calc(76px + var(--pad-b));right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);
-  color:#fff;font-size:28px;border:none;box-shadow:0 8px 20px rgba(124,92,255,.4);cursor:pointer;z-index:20;display:flex;align-items:center;justify-content:center;transition:transform var(--dur-fast) var(--ease-standard)}
+nav.bottom button.on .ic{background:var(--color-accent-muted)}
+
+/* Quick Add FAB */
+.fab{position:fixed;bottom:calc(var(--nav-h) + 18px + var(--pad-b));right:18px;width:58px;height:58px;border-radius:20px;
+  background:var(--accent-grad);color:#fff;font-size:30px;font-weight:300;line-height:1;border:none;box-shadow:var(--glow);cursor:pointer;z-index:21;
+  display:flex;align-items:center;justify-content:center;transition:transform var(--dur-fast) var(--ease-spring),box-shadow var(--dur-fast)}
+.fab svg{width:26px;height:26px}
+.fab:hover{transform:translateY(-1px)}
 .fab:active{transform:scale(.92)}
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;display:flex;align-items:flex-end;justify-content:center;animation:fadein var(--dur-normal) var(--ease-standard)}
-.sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;padding-bottom:calc(18px + var(--pad-b));animation:sheetup var(--dur-normal) var(--ease-standard)}
-@media(min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:20px;max-height:80vh}}
+
+/* ---------- 4. LEGACY BUILDING BLOCKS (restyled, same names) ---------- */
+.card{position:relative;background:var(--surface-hi),var(--card);border:1px solid var(--line);border-radius:var(--r);padding:var(--sp-4);margin-bottom:var(--sp-3);box-shadow:var(--shadow-card)}
+.card>h3:first-child{margin-bottom:var(--sp-3)}
+.card.is-link,.card[data-nav]{cursor:pointer;transition:transform var(--dur-fast) var(--ease-standard),border-color var(--dur-fast)}
+.card.is-link:hover,.card[data-nav]:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.card.is-link:active,.card[data-nav]:active{transform:scale(.995)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2)}
+.grid3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2)}
+@media(min-width:700px){.grid3{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3)}.grid2{gap:var(--sp-3)}}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.between{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);min-width:0}
+.sub{color:var(--sub);font-size:var(--fs-body-sm)}
+.big{font-family:var(--font-display);font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.bar{height:8px;border-radius:var(--radius-pill);background:var(--card2);overflow:hidden;position:relative}
+.card .bar{background:color-mix(in srgb,var(--card2) 80%,var(--line))}
+.bar>i{display:block;height:100%;background:var(--xp-grad);border-radius:var(--radius-pill);transition:width var(--dur-slow) var(--ease-standard)}
+.bar.is-success>i{background:var(--success-grad)}
+.bar.is-warn>i{background:var(--warn)}
+.bar.is-danger>i{background:var(--danger)}
+.badge{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:var(--radius-pill);padding:3px 10px;font-size:var(--fs-caption);font-weight:650;color:var(--sub);white-space:nowrap}
+.badge.is-accent{background:var(--color-accent-muted);border-color:transparent;color:var(--accent)}
+.badge.is-success{background:var(--color-success-muted);border-color:transparent;color:var(--accent2)}
+.badge.is-warn{background:var(--color-warning-muted);border-color:transparent;color:var(--warn)}
+.badge.is-danger{background:var(--color-danger-muted);border-color:transparent;color:var(--danger)}
+.badge.is-gold{background:var(--gold-muted);border-color:transparent;color:var(--gold)}
+.pill{padding:8px 14px;border-radius:var(--radius-pill);border:1px solid var(--line);background:var(--card2);color:var(--sub);font-size:var(--fs-body-sm);font-weight:600;
+  cursor:pointer;white-space:nowrap;min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  transition:background var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard),border-color var(--dur-fast)}
+.pill:hover{color:var(--text)}
+.pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.sm{padding:6px 12px;min-height:36px;font-size:var(--fs-caption)}
+.list{display:flex;flex-direction:column;gap:var(--sp-2)}
+.item{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;display:flex;align-items:center;gap:10px;min-height:52px;min-width:0;
+  transition:background var(--dur-fast) var(--ease-standard),opacity var(--dur-normal) var(--ease-standard),transform var(--dur-normal) var(--ease-standard)}
+.item>div[style*="flex:1"]{min-width:0}
+.card .item,.sheet .item{background:var(--card2);border-color:transparent}
+.item[data-prio]{box-shadow:inset 3px 0 0 var(--prio-c,transparent)}
+.item[data-prio="Urgent"]{--prio-c:var(--danger)}
+.item[data-prio="High"]{--prio-c:var(--warn)}
+.item[data-prio="Medium"]{--prio-c:var(--info)}
+.item[data-prio="Low"]{--prio-c:color-mix(in srgb,var(--sub) 55%,transparent)}
+.check{position:relative;width:28px;height:28px;border-radius:50%;border:2px solid color-mix(in srgb,var(--sub) 55%,var(--line));flex:none;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;background:transparent;color:transparent;font-size:14px;font-weight:800;padding:0;
+  transition:background var(--dur-fast) var(--ease-standard),border-color var(--dur-fast) var(--ease-standard),transform var(--dur-fast) var(--ease-spring)}
+.check::before{content:'';position:absolute;inset:-9px}  /* 46px hit area around the 28px ring */
+.check:hover{border-color:var(--accent2)}
+.check:active{transform:scale(.88)}
+.check.done{background:var(--accent2);border-color:var(--accent2);color:#04241a}
+.item-title{font-weight:650;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.item-title.done{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--sub) 70%,transparent);color:var(--sub)}
+.item-meta{font-size:var(--fs-caption);color:var(--sub);margin-top:3px;line-height:1.4;overflow-wrap:anywhere}
+.delbtn{background:none;border:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0;min-width:var(--touch);min-height:var(--touch);border-radius:var(--radius-sm);flex:none;
+  display:inline-flex;align-items:center;justify-content:center;opacity:.7;transition:color var(--dur-fast),background var(--dur-fast),opacity var(--dur-fast)}
+.delbtn:hover{color:var(--danger);background:var(--color-danger-muted);opacity:1}
+.empty{text-align:center;padding:28px 16px;color:var(--sub);font-size:var(--fs-body-sm);line-height:1.5}
+.empty .e{width:56px;height:56px;margin:0 auto 12px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:26px;
+  background:var(--color-accent-muted)}
+.empty .empty-title{color:var(--text);font-weight:700;font-size:15px;margin-bottom:4px}
+.empty .empty-text{max-width:300px;margin:0 auto}
+.empty .btn{margin-top:14px;width:auto;padding:10px 18px;min-height:var(--touch)}
+.card .empty{padding:18px 8px}
+
+/* Sheets (bottom sheet on phones, centered modal from 700px) */
+.sheet-bg{position:fixed;inset:0;background:var(--scrim);z-index:30;display:flex;align-items:flex-end;justify-content:center;
+  animation:fadein var(--dur-normal) var(--ease-standard);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.sheet{position:relative;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:26px 26px 0 0;padding:26px 18px 18px;width:100%;max-width:560px;
+  max-height:92vh;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(20px + var(--pad-b));box-shadow:var(--shadow-elevated);
+  animation:sheetup var(--dur-normal) var(--ease-standard)}
+.sheet::before{content:'';position:absolute;top:9px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:5px;background:var(--line)}
+.sheet h3:first-child,.sheet>div>h3:first-child,.sheet>div>h2:first-child{font-size:20px;margin-bottom:var(--sp-4)}
+@media(min-width:700px){
+  .sheet-bg{align-items:center;padding:24px}
+  .sheet{border-radius:var(--radius-xl);border-bottom:1px solid var(--line);max-height:86vh;padding:28px 24px 24px;animation:modalIn var(--dur-normal) var(--ease-standard)}
+  .sheet::before{display:none}
+}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
-@keyframes sheetup{from{transform:translateY(24px);opacity:.4}to{transform:translateY(0);opacity:1}}
-input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;font-size:15px;margin-bottom:10px;font-family:inherit;min-height:44px;transition:border-color var(--dur-fast) var(--ease-standard)}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-label{font-size:12px;color:var(--sub);display:block;margin-bottom:4px;font-weight:600}
-.btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;width:100%;cursor:pointer;min-height:44px;transition:transform var(--dur-fast) var(--ease-standard),opacity var(--dur-fast) var(--ease-standard)}
+@keyframes sheetup{from{transform:translateY(40px);opacity:.3}to{transform:translateY(0);opacity:1}}
+@keyframes modalIn{from{transform:translateY(10px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+
+/* Forms */
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px 14px;font-size:16px;
+  margin-bottom:12px;font-family:inherit;min-height:48px;line-height:1.3;
+  transition:border-color var(--dur-fast) var(--ease-standard),box-shadow var(--dur-fast) var(--ease-standard)}
+textarea{resize:vertical;min-height:88px}
+select{appearance:none;-webkit-appearance:none;padding-right:38px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23949cb0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center}
+input::placeholder,textarea::placeholder{color:var(--color-text-muted)}
+input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--sub) 35%,var(--line))}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--color-accent-muted)}
+input[type="checkbox"]{width:22px!important;height:22px;min-height:0;padding:0;margin:0 8px 0 0!important;accent-color:var(--accent);vertical-align:middle;cursor:pointer}
+input[type="number"]{font-variant-numeric:tabular-nums}
+label{font-size:var(--fs-caption);color:var(--sub);display:block;margin-bottom:6px;font-weight:650;letter-spacing:.01em}
+label:has(input[type="checkbox"]){display:flex;align-items:center;min-height:var(--touch);font-size:var(--fs-body-sm);color:var(--text);font-weight:600;cursor:pointer}
+.btn{background:var(--accent-grad);color:#fff;border:none;border-radius:14px;padding:13px 18px;font-size:15px;font-weight:700;width:100%;cursor:pointer;min-height:50px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.005em;box-shadow:0 6px 18px rgba(124,92,255,.25);
+  transition:transform var(--dur-fast) var(--ease-standard),filter var(--dur-fast) var(--ease-standard),box-shadow var(--dur-fast)}
+.btn:hover{filter:brightness(1.06)}
 .btn:active{transform:scale(.98)}
-.btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
-.btn.sm{width:auto;padding:8px 14px;font-size:13px}
-.qgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
-.qopt{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px 6px;text-align:center;cursor:pointer;color:var(--text);min-height:44px}
-.qopt .ic{font-size:22px;display:block;margin-bottom:6px}
-.attr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.attr .dot{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#0a0b0f;flex:none}
-.toastwrap{position:fixed;top:calc(10px + var(--pad-t));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:50;pointer-events:none}
-.toast{background:var(--card);border:1px solid var(--line);color:var(--text);padding:10px 18px;border-radius:100px;font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:tin var(--dur-normal) var(--ease-standard)}
-@keyframes tin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.btn.danger,.btn.ghost.danger{color:var(--danger);background:var(--color-danger-muted);border-color:transparent;box-shadow:none}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px;min-height:40px;border-radius:12px}
+.btn-row{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+.btn-row>.btn{flex:1 1 140px}
+
+/* Quick add grid / More grid */
+.qgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+.qopt{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 6px 14px;text-align:center;cursor:pointer;color:var(--text);min-height:var(--touch);
+  font-size:var(--fs-body-sm);font-weight:650;transition:transform var(--dur-fast) var(--ease-standard),border-color var(--dur-fast),background var(--dur-fast)}
+.qopt:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.qopt:active{transform:scale(.96)}
+.qopt .ic{font-size:24px;display:flex;align-items:center;justify-content:center;width:46px;height:46px;margin:0 auto 8px;border-radius:15px;background:var(--color-accent-muted)}
+.qopt:focus-visible{outline-offset:2px}
+
+/* Attributes */
+.attr{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.attr:last-child{margin-bottom:0}
+.attr .dot,.dot{width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:.03em;color:#0a0b0f;flex:none}
+
+/* Toasts: queued + grouped by uiToast (see toast()) */
+.toastwrap{position:fixed;top:calc(10px + var(--pad-t));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:50;pointer-events:none;padding:0 16px}
+.toast{max-width:min(420px,100%);background:var(--glass);border:1px solid var(--line);color:var(--text);padding:10px 16px;border-radius:16px;font-size:14px;font-weight:650;
+  box-shadow:var(--shadow-elevated);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);display:flex;align-items:center;gap:10px;
+  animation:tin var(--dur-normal) var(--ease-spring)}
+.toast.is-xp{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.toast.is-level{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-muted),0 12px 34px rgba(243,195,90,.22)}
+.toast.is-achievement{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
+.toast.is-error{border-color:color-mix(in srgb,var(--danger) 60%,var(--line))}
+.toast.is-leaving{animation:tout var(--dur-normal) var(--ease-standard) forwards}
+@keyframes tin{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes tout{to{opacity:0;transform:translateY(-8px) scale(.98)}}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 var(--sp-3);padding:2px 0 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{display:none}
 .hide{display:none!important}
 a{color:var(--accent)}
 
-/* ---------- 2. NEW REUSABLE COMPONENTS (additive; no existing screen requires these
-   to keep working, they are available for progressive adoption on top of the tokens above) ---------- */
-
-/* Stat Card: a labeled number, used by Statistics/Health/Character-style summaries */
-.stat-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--sp-4);box-shadow:var(--shadow-subtle)}
-.stat-card .stat-label{font-size:var(--fs-caption);color:var(--color-text-secondary);font-weight:var(--fw-medium);text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--sp-1)}
-.stat-card .stat-value{font-size:var(--fs-h1);font-weight:var(--fw-bold);line-height:var(--lh-tight)}
-.stat-card .stat-sub{font-size:var(--fs-body-sm);color:var(--color-text-muted);margin-top:var(--sp-1)}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
-@media(min-width:700px){.stat-grid{grid-template-columns:repeat(3,1fr)}}
-
-/* XP Bar: same track visual language as .bar, but a dedicated class so RPG XP progress can
-   carry its own gradient/height without touching the generic .bar used elsewhere */
-.xp-bar{height:12px;border-radius:var(--radius-pill);background:var(--color-surface-elevated);overflow:hidden;position:relative;border:1px solid var(--color-border)}
-.xp-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--color-accent),var(--color-success));border-radius:var(--radius-pill);transition:width var(--dur-slow) var(--ease-standard)}
-
-/* Chip: compact removable/selectable tag (distinct from .pill's toggle-button role) */
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--color-accent-muted);color:var(--color-accent);border-radius:var(--radius-pill);padding:4px 10px;font-size:var(--fs-caption);font-weight:var(--fw-medium)}
-
-/* Toggle switch */
-.toggle{position:relative;display:inline-block;width:44px;height:26px;flex:none}
-.toggle input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
-.toggle .track{position:absolute;inset:0;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-pill);transition:background var(--dur-fast) var(--ease-standard)}
-.toggle .track::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform var(--dur-fast) var(--ease-standard)}
-.toggle input:checked+.track{background:var(--color-accent)}
-.toggle input:checked+.track::after{transform:translateX(18px)}
-
-/* Checkbox (square variant of .check, for multi-select contexts) */
-.checkbox{width:22px;height:22px;border-radius:var(--radius-sm);border:2px solid var(--color-border);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:transparent;font-size:13px}
+/* ---------- 5. 8A REUSABLE COMPONENTS (restyled) ---------- */
+.stat-card{background:var(--surface-hi),var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow-card);min-width:0}
+.stat-card .stat-label{font-size:var(--fs-micro);color:var(--color-text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.stat-card .stat-value{font-family:var(--font-display);font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;overflow-wrap:anywhere}
+.stat-card .stat-value small{font-size:13px;font-weight:650;color:var(--sub);letter-spacing:0}
+.stat-card .stat-sub{font-size:var(--fs-caption);color:var(--color-text-secondary);margin-top:4px}
+.stat-card .bar{margin-top:10px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-3)}
+@media(min-width:700px){.stat-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3)}.stat-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.xp-bar{height:12px;border-radius:var(--radius-pill);background:var(--color-surface-muted);overflow:hidden;position:relative;border:1px solid var(--color-border)}
+.xp-bar>i{display:block;height:100%;background:var(--xp-grad);border-radius:var(--radius-pill);transition:width var(--dur-slow) var(--ease-standard);position:relative;
+  box-shadow:0 0 12px rgba(139,108,255,.55)}
+.xp-bar>i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-100%);animation:xpShine 2.8s ease-in-out 1s 1}
+@keyframes xpShine{to{transform:translateX(100%)}}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--color-accent-muted);color:var(--color-accent);border-radius:var(--radius-pill);padding:3px 10px;font-size:var(--fs-caption);font-weight:650;white-space:nowrap;border:none;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+button.chip{cursor:pointer;min-height:28px}
+.chip.is-muted{background:var(--card2);color:var(--sub)}
+.chip.is-success{background:var(--color-success-muted);color:var(--accent2)}
+.chip.is-warn{background:var(--color-warning-muted);color:var(--warn)}
+.chip.is-danger{background:var(--color-danger-muted);color:var(--danger)}
+.chip.is-gold{background:var(--gold-muted);color:var(--gold)}
+.toggle{position:relative;display:inline-block;width:50px;height:30px;flex:none}
+.toggle input{position:absolute;opacity:0;width:100%!important;height:100%;margin:0!important;cursor:pointer;min-height:0}
+.toggle .track{position:absolute;inset:0;background:var(--color-surface-elevated);border:1px solid var(--color-border);border-radius:var(--radius-pill);transition:background var(--dur-fast) var(--ease-standard);pointer-events:none}
+.toggle .track::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform var(--dur-fast) var(--ease-spring)}
+.toggle input:checked+.track{background:var(--accent2);border-color:var(--accent2)}
+.toggle input:checked+.track::after{transform:translateX(20px)}
+.toggle input:focus-visible+.track{outline:2px solid var(--accent);outline-offset:2px}
+/* Button-based switch used by Settings (the handlers stay on the button). */
+.switch{position:relative;width:50px;height:30px;min-width:50px;border-radius:var(--radius-pill);border:1px solid var(--line);background:var(--card2);cursor:pointer;padding:0;flex:none;
+  transition:background var(--dur-fast) var(--ease-standard),border-color var(--dur-fast)}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform var(--dur-fast) var(--ease-spring)}
+.switch::before{content:'';position:absolute;inset:-8px -2px}
+.switch.on{background:var(--accent2);border-color:var(--accent2)}
+.switch.on::after{transform:translateX(20px)}
+.checkbox{width:22px;height:22px;border-radius:7px;border:2px solid var(--color-border);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:transparent;font-size:13px}
 .checkbox.done{background:var(--color-accent);border-color:var(--color-accent);color:#fff}
-
-/* Section header: label + optional trailing action, used above a list/card group */
-.section-header{display:flex;align-items:baseline;justify-content:space-between;margin:var(--sp-5) 0 var(--sp-2)}
-.section-header h3{font-size:var(--fs-h3);margin:0}
-.section-header .action{font-size:var(--fs-body-sm);color:var(--color-accent);cursor:pointer;background:none;border:none;padding:var(--sp-1)}
-
-/* List Row: richer alternative to .item when a leading icon/avatar + trailing meta is needed */
-.list-row{display:flex;align-items:center;gap:var(--sp-3);background:var(--color-surface-elevated);border-radius:var(--radius-md);padding:var(--sp-3);min-height:44px}
+.section-header{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);margin:var(--sp-5) 2px var(--sp-2)}
+.section-header h3{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);font-weight:750}
+.section-header .action{font-size:var(--fs-body-sm);font-weight:650;color:var(--color-accent);cursor:pointer;background:none;border:none;padding:8px 4px;min-height:36px}
+.card .section-header:first-child{margin-top:0}
+.list-row{display:flex;align-items:center;gap:var(--sp-3);background:var(--color-surface-elevated);border-radius:var(--radius-md);padding:10px 12px;min-height:52px;min-width:0}
 .list-row .list-row-main{flex:1;min-width:0}
-.list-row .list-row-title{font-weight:var(--fw-medium);font-size:var(--fs-body)}
+.list-row .list-row-title{font-weight:650;font-size:var(--fs-body)}
 .list-row .list-row-meta{font-size:var(--fs-caption);color:var(--color-text-secondary)}
-
-/* Avatar */
-.avatar{width:40px;height:40px;border-radius:50%;background:var(--color-surface-elevated);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;border:1px solid var(--color-border)}
-.avatar.sm{width:28px;height:28px;font-size:14px}
-.avatar.lg{width:64px;height:64px;font-size:30px}
-
-/* Divider */
+.list-row .lead{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--card);flex:none}
+.avatar{width:44px;height:44px;border-radius:14px;background:var(--color-surface-elevated);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;border:1px solid var(--color-border)}
+.avatar.sm{width:30px;height:30px;font-size:15px;border-radius:10px}
+.avatar.lg{width:72px;height:72px;font-size:36px;border-radius:22px}
+.avatar.hero{background:var(--accent-grad);border:none;box-shadow:var(--glow)}
 .divider{height:1px;background:var(--color-border);border:none;margin:var(--sp-4) 0}
-
-/* Dropdown -- purely a styling wrapper around a native <select>, no custom JS required */
 .dropdown{position:relative}
-.dropdown select{appearance:none;padding-right:32px}
-.dropdown::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--color-text-secondary);pointer-events:none;font-size:12px}
-
-/* Date selector / Period selector: a segmented control, e.g. Today/Week/Month/Year */
-.period-selector{display:flex;gap:6px;background:var(--color-surface-elevated);border-radius:var(--radius-pill);padding:4px;overflow-x:auto}
-.period-selector button{flex:1;border:none;background:transparent;color:var(--color-text-secondary);border-radius:var(--radius-pill);padding:8px 10px;font-size:var(--fs-body-sm);font-weight:var(--fw-medium);cursor:pointer;min-height:36px;white-space:nowrap;transition:background var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard)}
-.period-selector button.on{background:var(--color-accent);color:#fff}
+.dropdown select{appearance:none;padding-right:38px}
+.period-selector{display:flex;gap:4px;background:var(--color-surface-elevated);border:1px solid var(--line);border-radius:var(--radius-pill);padding:4px;overflow-x:auto;margin-bottom:var(--sp-4);scrollbar-width:none}
+.period-selector::-webkit-scrollbar{display:none}
+.period-selector button{flex:1;border:none;background:transparent;color:var(--color-text-secondary);border-radius:var(--radius-pill);padding:8px 12px;font-size:var(--fs-body-sm);font-weight:650;cursor:pointer;min-height:38px;white-space:nowrap;
+  transition:background var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard)}
+.period-selector button.on{background:var(--card);color:var(--text);box-shadow:var(--shadow-subtle),0 0 0 1px var(--line)}
 .date-selector{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2)}
-
-/* Modal: full-screen variant of .sheet for large forms on small screens (opt-in class,
-   .sheet/.sheet-bg keep working exactly as before for every existing call site) */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;display:flex;align-items:center;justify-content:center}
-.modal{background:var(--bg2);border-radius:var(--radius-lg);padding:var(--sp-5);width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-elevated)}
+.modal-bg{position:fixed;inset:0;background:var(--scrim);z-index:30;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--bg2);border-radius:var(--radius-xl);padding:var(--sp-5);width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-elevated)}
 @media(max-width:699px){
   .modal-bg{align-items:flex-end}
-  .modal{border-radius:20px 20px 0 0;max-height:92vh;padding-bottom:calc(var(--sp-5) + var(--pad-b))}
+  .modal{border-radius:26px 26px 0 0;max-height:92vh;padding-bottom:calc(var(--sp-5) + var(--pad-b))}
 }
+.helper-text{font-size:var(--fs-caption);color:var(--color-text-muted);margin:-6px 0 12px}
+.field-error{font-size:var(--fs-caption);color:var(--color-danger);margin:-6px 0 12px;font-weight:600}
+input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);box-shadow:0 0 0 3px var(--color-danger-muted)}
 
-/* Helper text / validation error, for the unified form pattern (§11) */
-.helper-text{font-size:var(--fs-caption);color:var(--color-text-muted);margin:-6px 0 10px}
-.field-error{font-size:var(--fs-caption);color:var(--color-danger);margin:-6px 0 10px}
-input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger)}
+/* ---------- 6. PHASE 8B COMPONENTS ---------- */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-3);margin:var(--sp-2) 0 var(--sp-4)}
+.page-head h2{margin:0;font-size:28px;letter-spacing:-.03em}
+.page-head .sub{margin-top:2px}
+.page-head .btn.sm{flex:none}
+.back-row{display:flex;align-items:center;gap:10px;margin:var(--sp-1) 0 var(--sp-3)}
+.back-row .sub{font-weight:650}
+.kicker{font-size:var(--fs-micro);font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)}
+.muted{color:var(--sub)}
+.stack>*+*{margin-top:var(--sp-2)}
+.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.icon-circle{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;background:var(--card2);flex:none}
 
-/* ---------- 3. RESPONSIVE BREAKPOINTS (§6/§7) ----------
-   320/375/390/430 = phones (fluid by default, these just fine-tune density);
-   700+ = tablet (existing .grid3/.sheet rules already widen above); 900+ = desktop sidebar. */
+/* HUD hero (Home + Character) */
+.hud{overflow:hidden;padding:18px;border-color:color-mix(in srgb,var(--accent) 22%,var(--line));
+  background:radial-gradient(120% 90% at 100% 0%,rgba(139,108,255,.20),transparent 55%),radial-gradient(90% 80% at 0% 100%,rgba(47,211,160,.08),transparent 60%),var(--card)}
+:root[data-theme="light"] .hud{background:radial-gradient(120% 90% at 100% 0%,rgba(106,75,239,.12),transparent 55%),radial-gradient(90% 80% at 0% 100%,rgba(12,154,108,.06),transparent 60%),var(--card)}
+.hud-top{display:flex;align-items:center;gap:14px}
+.hud-id{flex:1;min-width:0}
+.hud-greet{font-size:var(--fs-body-sm);color:var(--sub);font-weight:600}
+.hud-name{font-family:var(--font-display);font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.hud-date{font-size:var(--fs-caption);color:var(--sub);margin-top:2px}
+.level-badge{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;height:64px;border-radius:20px;padding:0 8px;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--card2)),var(--card2));border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line))}
+.level-badge .lv-k{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--gold);text-transform:uppercase}
+.level-badge .lv-v{font-family:var(--font-display);font-size:26px;font-weight:850;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.xp-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:16px 0 8px;font-size:var(--fs-caption);color:var(--sub);font-weight:600}
+.xp-row b{color:var(--text);font-variant-numeric:tabular-nums}
+.xp-today{color:var(--accent);font-weight:750}
+.attr-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px}
+.attr-mini{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0 7px;border-radius:12px;background:color-mix(in srgb,var(--card2) 85%,transparent);min-width:0}
+.attr-mini .k{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--ac)}
+.attr-mini .v{font-size:13px;font-weight:750;font-variant-numeric:tabular-nums}
+.attr-mini .t{width:70%;height:3px;border-radius:3px;background:var(--line);overflow:hidden}
+.attr-mini .t>i{display:block;height:100%;background:var(--ac)}
+.today-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.ring{--p:0;--c:var(--accent2);width:84px;height:84px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--c) calc(var(--p)*1%),color-mix(in srgb,var(--card2) 70%,var(--line)) 0);transition:--p var(--dur-slow)}
+.ring::before{content:'';grid-area:1/1;width:68px;height:68px;border-radius:50%;background:var(--card)}
+.ring>span{grid-area:1/1;position:relative;font-family:var(--font-display);font-size:19px;font-weight:850;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ring.sm{width:56px;height:56px}
+.ring.sm::before{width:44px;height:44px}
+.ring.sm>span{font-size:13px}
+.today-rows{display:flex;flex-direction:column;gap:9px;min-width:0}
+.today-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:8px;font-size:var(--fs-body-sm);font-weight:600}
+.today-row .bar{grid-column:2/4;height:5px;margin-top:-3px}
+.today-row b{font-variant-numeric:tabular-nums}
+.snap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.snap{display:flex;flex-direction:column;gap:6px;padding:14px;margin:0;min-width:0;cursor:pointer}
+.snap .snap-k{display:flex;align-items:center;gap:6px;font-size:var(--fs-micro);font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
+.snap .snap-v{font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.snap .snap-v small{font-size:12px;color:var(--sub);font-weight:650;letter-spacing:0}
+.snap .snap-s{font-size:var(--fs-caption);color:var(--sub);line-height:1.35;overflow-wrap:anywhere}
+.snap .bar{height:5px;margin-top:2px}
+.snap.is-empty .snap-v{font-size:14px;color:var(--sub);font-weight:650}
+.reminder-strip{display:flex;gap:8px;overflow-x:auto;margin:0 -16px var(--sp-3);padding:2px 16px 4px;scrollbar-width:none}
+.reminder-strip::-webkit-scrollbar{display:none}
+.reminder{flex:none;max-width:78%;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:var(--color-warning-muted);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);
+  color:var(--text);font-size:var(--fs-body-sm);font-weight:600;cursor:pointer;min-height:var(--touch)}
+.reminder span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Task completion feedback: the row stays visible briefly before the list re-renders. */
+.item.is-completing{background:var(--color-success-muted);border-color:color-mix(in srgb,var(--accent2) 35%,transparent)}
+.item.is-completing .check{animation:checkPop var(--dur-normal) var(--ease-spring)}
+.item.is-completing .item-title{text-decoration:line-through;color:var(--sub)}
+.item .xp-tag{font-size:var(--fs-micro);font-weight:750;color:var(--accent);background:var(--color-accent-muted);padding:2px 7px;border-radius:var(--radius-pill);white-space:nowrap}
+.item.is-completing .xp-tag{color:var(--accent2);background:var(--color-success-muted)}
+@keyframes checkPop{0%{transform:scale(.7)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.item-actions{display:flex;align-items:center;gap:0;flex:none;margin-right:-6px}
+.meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.iconbtn.ghost-ic{background:transparent;border-color:transparent;color:var(--sub);width:40px;min-width:40px;height:var(--touch)}
+.iconbtn.ghost-ic:hover{color:var(--text);background:var(--card)}
+.item .delbtn{min-width:40px}
+.item .editBtn,.item .editMs{min-height:36px}
+
+/* Habits */
+.habit-card{padding:14px}
+.habit-card.is-bad{border-left:3px solid color-mix(in srgb,var(--warn) 70%,transparent)}
+.habit-card.is-done{border-color:color-mix(in srgb,var(--accent2) 30%,var(--line))}
+.habit-head{display:flex;align-items:center;gap:12px;min-width:0}
+.habit-head .hTap{flex:1;min-width:0;cursor:pointer;gap:12px}
+.habit-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--card2);flex:none}
+.habit-card.is-done .habit-icon{background:var(--color-success-muted)}
+.habit-stats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.habit-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.counter{display:flex;align-items:center;gap:6px;flex:none}
+.counter b{min-width:40px;text-align:center;font-variant-numeric:tabular-nums}
+.counter .iconbtn{width:40px;height:40px;min-width:40px;font-size:18px}
+.habit-card .check{width:40px;height:40px;font-size:18px}
+.habit-heatmap{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:3px;flex:1;min-width:0}
+.hm-cell{aspect-ratio:1;border-radius:3px;background:color-mix(in srgb,var(--card2) 70%,var(--line))}
+.hm-cell.is-done{background:var(--accent2)}
+.hm-cell.is-broken{background:var(--danger)}
+.hm-cell.is-today{outline:1.5px solid var(--text);outline-offset:1px}
+.heatmap90{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:5px;margin-bottom:8px}
+.heatmap90 .hm-cell{border-radius:5px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:var(--fs-caption);color:var(--sub);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.seg{display:inline-flex;gap:4px}
+
+/* Goals */
+.goal-card .goal-top{display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.goal-card .goal-title{font-size:16px;font-weight:750;line-height:1.3;overflow-wrap:anywhere}
+.goal-pct{font-family:var(--font-display);font-size:26px;font-weight:850;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.goal-pct small{font-size:13px;color:var(--sub);font-weight:700}
+.goal-card .bar{height:10px;margin:12px 0 10px}
+.goal-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.goal-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:10px}
+.tree{position:relative;padding-left:18px}
+.tree::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;border-radius:2px;background:var(--line)}
+.tree>.list>*{position:relative}
+.tree>.list>*::before{content:'';position:absolute;left:-13px;top:50%;width:10px;height:2px;background:var(--line)}
+
+/* Character / RPG */
+.char-hero{text-align:center;padding:22px 18px 18px}
+.char-hero .avatar{margin:0 auto 10px}
+.char-hero .hud-name{font-size:24px}
+.char-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px}
+.point-tile{border-radius:14px;padding:10px 12px;text-align:left;background:var(--card2);border:1px solid var(--line)}
+.point-tile .kicker{display:block;margin-bottom:2px}
+.point-tile b{font-family:var(--font-display);font-size:22px;letter-spacing:-.02em}
+.point-tile.is-available{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:linear-gradient(160deg,var(--gold-muted),var(--card2))}
+.attr-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 0}
+.attr-row+.attr-row{border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.attr-row .dot{background:var(--ac)}
+.attr-row .attr-name{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-body-sm);font-weight:650}
+.attr-row .attr-name span:last-child{color:var(--sub);font-variant-numeric:tabular-nums}
+.attr-row .bar{height:7px;margin-top:6px}
+.attr-row .bar>i{background:var(--ac)}
+.attr-row .spendAttrBtn{width:40px;height:40px;min-width:40px;color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line));font-weight:800}
+.skill-branch{margin-top:14px}
+.skill-branch-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.skill-branch-head .dot{width:30px;height:30px;font-size:10px;border-radius:9px;background:var(--ac)}
+.skill-branch-head b{font-size:15px}
+.skill-branch-head .sub{margin-left:auto}
+.skill-path{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:16px}
+.skill-path::before{content:'';position:absolute;left:5px;top:18px;bottom:18px;width:2px;border-radius:2px;background:linear-gradient(var(--ac),color-mix(in srgb,var(--ac) 10%,var(--line)))}
+.skill-node{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);min-height:56px}
+.skill-node::before{content:'';position:absolute;left:-16px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:var(--card);border:2px solid var(--line)}
+.skill-node .sk-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--card);flex:none}
+.skill-node .sk-main{flex:1;min-width:0}
+.skill-node .sk-name{font-weight:700;font-size:14px}
+.skill-node .sk-desc{font-size:var(--fs-caption);color:var(--sub);margin-top:2px;line-height:1.4}
+.skill-node .sk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.skill-node.is-unlocked{border-color:color-mix(in srgb,var(--ac) 50%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 14%,var(--card2)),var(--card2))}
+.skill-node.is-unlocked::before{background:var(--ac);border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
+.skill-node.is-unlocked .sk-ic{background:color-mix(in srgb,var(--ac) 22%,var(--card))}
+.skill-node.is-available{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
+.skill-node.is-available::before{border-color:var(--gold)}
+.skill-node.is-locked{opacity:.62}
+.skill-node .unlockSkillBtn{flex:none}
+.skill-node .unlockSkillBtn:not(:disabled){background:var(--gold);border-color:var(--gold);color:#241a02}
+.ach-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ach{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);min-width:0}
+.ach .ach-ic{font-size:22px;line-height:1}
+.ach .ach-t{font-weight:750;font-size:14px;line-height:1.25}
+.ach .ach-d{font-size:var(--fs-caption);color:var(--sub);line-height:1.35}
+.ach .bar{height:5px;margin-top:auto}
+.ach.is-unlocked{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:linear-gradient(160deg,var(--gold-muted),var(--card2))}
+.ach.is-locked .ach-ic{filter:grayscale(1);opacity:.6}
+.rarity{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.rarity.r-Common{color:var(--sub)}.rarity.r-Uncommon{color:var(--accent2)}.rarity.r-Rare{color:var(--info)}.rarity.r-Epic{color:var(--wis)}.rarity.r-Legendary{color:var(--gold)}
+.timeline{display:flex;flex-direction:column}
+.tl-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:8px 0;position:relative}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:16px;top:42px;bottom:-4px;width:2px;background:var(--line)}
+.tl-item .tl-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--card2);font-size:15px}
+
+/* Quests */
+.quest{padding:14px;display:flex;flex-direction:column;gap:10px}
+.quest-top{display:flex;align-items:flex-start;gap:12px}
+.quest-top .icon-circle{background:var(--color-accent-muted)}
+.quest.is-done{border-color:color-mix(in srgb,var(--accent2) 40%,var(--line))}
+.quest.is-done .icon-circle{background:var(--color-success-muted)}
+.quest-title{font-weight:700;font-size:15px;line-height:1.3}
+.quest-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--fs-caption);color:var(--sub);font-weight:600}
+.quest .bar{height:8px}
+.quest.is-done .bar>i{background:var(--success-grad)}
+
+/* Metric rows (nutrition macros, budgets, targets) */
+.metric{margin-bottom:12px}
+.metric:last-child{margin-bottom:0}
+.metric-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:var(--fs-body-sm);font-weight:650;margin-bottom:6px}
+.metric-head span:last-child{color:var(--sub);font-variant-numeric:tabular-nums}
+.metric-head b{color:var(--text)}
+.metric .bar{height:8px}
+
+/* Settings groups */
+.set-group{padding:6px 16px}
+.set-group>h3{margin:12px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--sub)}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.set-row:last-child{border-bottom:none}
+.set-row>span:first-child{font-size:var(--fs-body);font-weight:600;min-width:0}
+.set-row select{width:auto;min-width:0;max-width:58%;margin:0;min-height:42px;padding-top:9px;padding-bottom:9px}
+.set-row .row{flex:none}
+.set-field{padding:10px 0 4px}
+
+/* Onboarding */
+.ob{padding-top:4px}
+.ob-steps{display:flex;gap:6px;margin-bottom:18px}
+.ob-steps i{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.ob-steps i.on{background:var(--xp-grad)}
+.ob-emoji{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--color-accent-muted);margin-bottom:14px}
+.ob h2{font-size:26px;margin-bottom:6px}
+.ob .ob-lead{color:var(--sub);margin-bottom:20px;font-size:15px}
+.ob-actions{display:flex;gap:8px;margin-top:18px}
+.ob-actions .btn.ghost{flex:0 0 auto;width:auto;padding-left:18px;padding-right:18px}
+.ob-actions .btn:not(.ghost){flex:1}
+.ob-avatars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ob-avatars .iconbtn{width:100%;height:64px;font-size:30px;border-radius:18px}
+.ob-habit{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);margin-bottom:8px;min-height:56px}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-dow{text-align:center;font-size:var(--fs-micro);font-weight:750;color:var(--sub);letter-spacing:.05em;padding:4px 0;text-transform:uppercase}
+
+/* Charts */
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:110px;border-radius:12px;background:var(--card2);color:var(--sub);font-size:var(--fs-body-sm);text-align:center;padding:16px}
+
+/* Home layout */
+.home>section,.home-pair>section{margin-bottom:var(--sp-2)}
+.home .section-header{margin-top:var(--sp-4)}
+.hud-wrap>.card:last-child{margin-bottom:var(--sp-2)}
+.snap-grid.is-single{grid-template-columns:minmax(0,1fr)}
+.goal-mini+.goal-mini{margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+@media(min-width:700px){.hud-wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--sp-3);align-items:stretch}.hud-wrap>.card{margin-bottom:var(--sp-3)}.hud-wrap .today-grid{grid-template-columns:1fr;justify-items:center;text-align:left}.hud-wrap .today-rows{width:100%}}
+@media(min-width:1200px){.home-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-4);align-items:start}}
+
+/* More menu */
+.more-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.more-section{margin-top:18px}
+
+/* ---------- 7. RESPONSIVE ---------- */
 @media(max-width:374px){
   #app{padding-left:var(--sp-3);padding-right:var(--sp-3)}
-  .big{font-size:24px}
+  .reminder-strip{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px}
+  .big{font-size:26px}
+  .attr-strip{gap:4px}
+  .attr-mini .v{font-size:12px}
+  .qgrid,.more-grid{gap:8px}
+  .qopt{padding:14px 4px 12px;font-size:12px}
+  .item{padding:10px}
+  .snap{padding:12px}
+  .today-grid{gap:12px}
+  .ring{width:72px;height:72px}.ring::before{width:58px;height:58px}
 }
-@media(min-width:375px) and (max-width:389px){ /* iPhone SE/8-class width: no extra rule needed, fluid layout already fits */ }
-@media(min-width:390px) and (max-width:429px){ /* iPhone 12/13/14-class width: default spacing already tuned for this */ }
-@media(min-width:430px){ /* iPhone Pro Max-class width and up */
+@media(min-width:430px){
   #app{padding-left:var(--sp-5);padding-right:var(--sp-5)}
+  .reminder-strip{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}
+}
+@media(min-width:700px){
+  :root{--content-max:760px}
+  .snap-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-3)}
+  .ach-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .more-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 @media(min-width:900px){
-  body.has-sidebar-layout{--pad-b:0px} /* desktop: no home-indicator inset to reserve */
-  nav.bottom{
-    top:0;bottom:0;left:0;right:auto;width:var(--sidebar-w);height:100vh;
-    flex-direction:column;justify-content:flex-start;align-items:stretch;
-    padding:var(--sp-6) var(--sp-3);gap:var(--sp-1);
-    border-top:none;border-right:1px solid var(--color-border);
-  }
-  nav.bottom button{flex-direction:row;justify-content:flex-start;gap:var(--sp-3);font-size:var(--fs-body);padding:10px var(--sp-3);width:100%;text-align:left}
-  nav.bottom button .ic{font-size:18px}
-  nav.bottom button.on{background:var(--color-accent-muted)}
-  .topbar{margin-left:var(--sidebar-w);max-width:none;padding-left:var(--sp-6);padding-right:var(--sp-6)}
-  #app{margin-left:var(--sidebar-w);max-width:820px;padding-bottom:var(--sp-8)}
+  body.has-sidebar-layout{--pad-b:0px}
+  nav.bottom{top:0;bottom:0;left:0;right:auto;width:var(--sidebar-w);height:100vh;flex-direction:column;justify-content:flex-start;align-items:stretch;
+    padding:calc(76px + var(--pad-t)) 14px 24px;gap:4px;border-top:none;border-right:1px solid var(--line);background:var(--bg2)}
+  nav.bottom::before{content:'LifeOS';position:absolute;top:calc(22px + var(--pad-t));left:24px;font-family:var(--font-display);font-weight:800;font-size:21px;letter-spacing:-.04em;color:var(--text)}
+  nav.bottom button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;font-size:15px;font-weight:600;padding:6px 10px;width:100%;min-height:46px;text-align:left}
+  nav.bottom button .ic{width:34px;height:34px;border-radius:11px;font-size:18px}
+  nav.bottom button:hover{background:var(--card);color:var(--text)}
+  nav.bottom button.on{background:var(--color-accent-muted);color:var(--accent)}
+  nav.bottom button.on .ic{background:transparent}
+  .topbar{margin-left:var(--sidebar-w);max-width:none;padding-left:40px;padding-right:40px}
+  .topbar .brand{visibility:hidden}
+  #app{margin-left:calc(var(--sidebar-w) + max(0px,(100vw - var(--sidebar-w) - var(--content-max)) / 2));margin-right:auto;max-width:var(--content-max);padding:var(--sp-4) 40px var(--sp-9)}
+  .fab{bottom:32px;right:32px}
+  .reminder-strip{margin-left:0;margin-right:0;padding-left:0;padding-right:0;flex-wrap:wrap}
+  .reminder{max-width:100%}
 }
 @media(min-width:1200px){
-  #app{max-width:920px}
+  :root{--content-max:980px}
+  .home-cols{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--sp-4);align-items:start}
+  .char-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:var(--sp-4);align-items:start}
+}
+@media(min-width:1440px){
+  :root{--content-max:1080px;--sidebar-w:264px}
 }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div class="brand">Life<span>OS</span></div>
+<header class="topbar">
+  <div class="brand"><i class="brand-mark" aria-hidden="true"></i><span>Life<em>OS</em></span></div>
   <div class="row" style="gap:8px">
-    <button class="iconbtn" id="settingsBtn" aria-label="Settings">⚙️</button>
+    <button class="iconbtn" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
     <button class="iconbtn" id="themeBtn" aria-label="Toggle theme">🌙</button>
   </div>
-</div>
-<div id="app"></div>
-<div class="toastwrap" id="toasts"></div>
-<button class="fab" id="fabBtn" aria-label="Quick add">+</button>
-<nav class="bottom">
-  <button data-v="home" class="on"><span class="ic">🏠</span>Home</button>
-  <button data-v="tasks"><span class="ic">✅</span>Tasks</button>
-  <button data-v="habits"><span class="ic">🔥</span>Habits</button>
-  <button data-v="character"><span class="ic">🧙</span>Character</button>
-  <button data-v="more"><span class="ic">☰</span>More</button>
+</header>
+<main id="app"></main>
+<div class="toastwrap" id="toasts" aria-live="polite"></div>
+<button class="fab" id="fabBtn" aria-label="Quick add"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<nav class="bottom" aria-label="Main">
+  <button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg></span>Home</button>
+  <button data-v="tasks"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 3 3 5-6"/></svg></span>Tasks</button>
+  <button data-v="habits"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21c4 0 7-2.7 7-6.6 0-3.2-2.2-5.4-3.6-6.9-.3 1.9-1.3 3-2.4 3.4.4-3.3-1.4-6.2-4-7.9.2 3.1-1.7 5-3 6.6C4.8 11.1 5 12.4 5 14.4 5 18.3 8 21 12 21Z"/></svg></span>Habits</button>
+  <button data-v="character"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.4 3 8.3 7 10 4-1.7 7-5.6 7-10V6l-7-3Z"/><circle cx="12" cy="10" r="2.5"/><path d="M8.5 16c.8-1.6 2-2.4 3.5-2.4s2.7.8 3.5 2.4"/></svg></span>Character</button>
+  <button data-v="more"><span class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></svg></span>More</button>
 </nav>
 
 <script>
@@ -1094,14 +1500,96 @@ function checkAchievements(){
 function xpToday(){const d=todayStr();return S.xpLog.filter(x=>new Date(x.ts).toDateString()===new Date().toDateString()).reduce((a,b)=>a+b.amount,0);}
 
 /* ---------- TOASTS ---------- */
+/* ---------- TOASTS (Phase 8B: queued, grouped, localized presentation) ----------
+   Every caller still just does toast(msg) exactly as before -- no unlock/XP rule changed.
+   This layer only decides how the messages are painted: everything raised in the same tick
+   (e.g. boot unlocking many achievements + quests at once) is collected into one burst, a
+   large burst is folded into a few summary toasts, and at most UI_TOAST_MAX are on screen. */
+const UI_TOAST_MAX=3;
+let uiToastBurst=[], uiToastQueue=[], uiToastLive=0, uiToastTimer=null;
 function toast(msg){
-  const el=document.createElement('div');el.className='toast';el.textContent=msg;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(()=>el.remove(),3200);
+  uiToastBurst.push(String(msg));
+  if(!uiToastTimer) uiToastTimer=setTimeout(uiFlushToasts,0);
+}
+function uiToastKind(m){
+  if(/Level Up/i.test(m)) return 'level';
+  if(/^🏆/.test(m)) return 'achievement';
+  if(/^📜/.test(m)) return 'quest';
+  if(/^\+\d+ XP/.test(m)) return 'xp';
+  if(/^🌟/.test(m)) return 'achievement';
+  if(/required|failed|could not|first \(|empty|valid/i.test(m)) return 'error';
+  return 'info';
+}
+function uiFlushToasts(){
+  uiToastTimer=null;
+  const burst=uiToastBurst; uiToastBurst=[];
+  const push=(msg,kind)=>uiToastQueue.push({msg,kind});
+  if(burst.length<=UI_TOAST_MAX){
+    burst.forEach(m=>push(uiLocalizeToast(m),uiToastKind(m)));
+  } else {
+    const g={level:[],achievement:[],quest:[],xp:[],other:[]};
+    burst.forEach(m=>{ const k=uiToastKind(m); (g[k]||g.other).push(m); });
+    if(g.level.length) push(uiLocalizeToast(g.level[g.level.length-1]),'level');
+    if(g.achievement.length===1) push(uiLocalizeToast(g.achievement[0]),'achievement');
+    else if(g.achievement.length) push('🏆 '+uiT('toast_n_achievements',{n:g.achievement.length}),'achievement');
+    if(g.quest.length===1) push(uiLocalizeToast(g.quest[0]),'quest');
+    else if(g.quest.length) push('📜 '+uiT('toast_n_quests',{n:g.quest.length}),'quest');
+    const xp=g.xp.reduce((a,m)=>a+(parseInt(m.slice(1),10)||0),0);
+    if(g.xp.length) push(`+${xp} XP`+(g.xp.length>1?' · '+uiT('toast_n_rewards',{n:g.xp.length}):''),'xp');
+    g.other.forEach(m=>push(uiLocalizeToast(m),uiToastKind(m)));
+  }
+  uiPumpToasts();
+}
+function uiPumpToasts(){
+  const wrap=document.getElementById('toasts');
+  if(!wrap) return;
+  while(uiToastLive<UI_TOAST_MAX && uiToastQueue.length){
+    const t=uiToastQueue.shift(); uiToastLive++;
+    const n=document.createElement('div');
+    n.className='toast is-'+t.kind;
+    n.setAttribute('role',t.kind==='error'?'alert':'status');
+    n.textContent=t.msg;
+    wrap.appendChild(n);
+    setTimeout(()=>{ n.classList.add('is-leaving'); setTimeout(()=>{ n.remove(); uiToastLive--; uiPumpToasts(); },220); }, t.kind==='level'?4200:2900);
+  }
+}
+// Czech rendering of the app's (English) toast strings. Unknown strings pass through unchanged.
+const UI_TOAST_CS={
+  'Title required':'Vyplň název','Name required':'Vyplň jméno','Enter a valid amount':'Zadej platnou částku','+250ml water':'+250 ml vody',
+  'Workout updated':'Trénink upraven','Workout logged':'Trénink zapsán','Weight updated':'Váha upravena','Weight logged':'Váha zapsána',
+  'Vehicle updated':'Vozidlo upraveno','Vehicle added':'Vozidlo přidáno','Subscription updated':'Předplatné upraveno','Subscription added':'Předplatné přidáno',
+  'Steps updated':'Kroky upraveny','Steps logged':'Kroky zapsány','Sleep entry updated':'Spánek upraven','Sleep logged':'Spánek zapsán',
+  'Service updated':'Servis upraven','Service logged':'Servis zapsán','Note updated':'Poznámka upravena','Note saved':'Poznámka uložena',
+  'Milestone updated':'Milník upraven','Milestone added':'Milník přidán','Meal updated':'Jídlo upraveno','Meal added':'Jídlo přidáno',
+  'Entry updated':'Záznam upraven','Entry saved':'Záznam uložen','Heart rate updated':'Tep upraven','Heart rate logged':'Tep zapsán',
+  'Habit updated':'Návyk upraven','Habit added':'Návyk přidán','Goal updated':'Cíl upraven','Goal added':'Cíl přidán',
+  'Expense updated':'Výdaj upraven','Expense added':'Výdaj přidán','Income updated':'Příjem upraven','Income added':'Příjem přidán',
+  'Expense deleted':'Výdaj smazán','Income deleted':'Příjem smazán','Fuel entry updated':'Tankování upraveno','Fuel logged':'Tankování zapsáno',
+  'Event updated':'Událost upravena','Event added':'Událost přidána','Budget updated':'Rozpočet upraven','Budget set':'Rozpočet nastaven',
+  'Active calories logged':'Aktivní kalorie zapsány','Workout deleted':'Trénink smazán','Welcome to LifeOS!':'Vítej v LifeOS!',
+  'Weight required':'Zadej váhu','Vehicle deleted':'Vozidlo smazáno','Value required':'Zadej hodnotu','Task updated':'Úkol upraven','Task added':'Úkol přidán',
+  'Subscription deleted':'Předplatné smazáno','Steps required':'Zadej kroky','Service deleted':'Servis smazán','Note is empty':'Poznámka je prázdná',
+  'Note deleted':'Poznámka smazána','Meal repeated':'Jídlo zopakováno','Meal deleted':'Jídlo smazáno','Import failed: invalid file':'Import selhal: neplatný soubor',
+  'Fuel entry deleted':'Tankování smazáno','Event deleted':'Událost smazána','Entry deleted':'Záznam smazán','Calories required':'Zadej kalorie',
+  'Budget deleted':'Rozpočet smazán','Backup restored':'Záloha obnovena','Backup exported':'Záloha exportována','Add a vehicle first (Car module)':'Nejdřív přidej vozidlo (modul Auto)',
+  '⚠️ Could not save — check device storage':'⚠️ Nelze uložit — zkontroluj úložiště zařízení',
+};
+function uiLocalizeToast(m){
+  if(uiLang()!=='cs') return m;
+  if(UI_TOAST_CS[m]) return UI_TOAST_CS[m];
+  let r;
+  if((r=/^🎉 Level Up! You're now Level (\d+)$/.exec(m))) return `🎉 Level up! Jsi na úrovni ${r[1]}`;
+  if((r=/^🏆 Achievement: (.*)$/.exec(m))) return `🏆 Nový úspěch: ${r[1]}`;
+  if((r=/^📜 Daily Quest complete: (.*)$/.exec(m))) return `📜 Denní výprava splněna: ${r[1]}`;
+  if((r=/^📜 Weekly Quest complete: (.*)$/.exec(m))) return `📜 Týdenní výprava splněna: ${r[1]}`;
+  if((r=/^🌟 Skill unlocked: (.*)$/.exec(m))) return `🌟 Odemčena dovednost: ${r[1]}`;
+  if((r=/^\+(\d+) XP · (.*)$/.exec(m))) return `+${r[1]} XP · ${r[2].replace(/^Task: /,'Úkol: ').replace(/^Habit: /,'Návyk: ').replace(/^Goal: /,'Cíl: ').replace(/^Milestone: /,'Milník: ').replace(/^Quest: /,'Výprava: ').replace(/^Achievement$/,'Úspěch').replace(/^Workout/,'Trénink')}`;
+  return m;
 }
 
 /* ---------- RENDER ---------- */
 let view='home';
+let uiLastView=null;
 function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild;}
 function render(){
   document.querySelectorAll('nav.bottom button').forEach(b=>{
@@ -1117,50 +1605,231 @@ function render(){
     car:renderCar,subscriptions:renderSubs,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
   app.appendChild(map[view]());
-  document.getElementById('themeBtn').textContent = (computedTheme()==='dark')?'🌙':'☀️';
+  // Phase 8B presentation: entrance animation only when the screen actually changes (not on the
+  // 60 s refresh or after a tap on the same screen), motion follows Settings → Animations.
+  const viewChanged=uiLastView!==view; uiLastView=view;
+  app.classList.toggle('view-enter',viewChanged);
+  document.documentElement.classList.toggle('no-anim',!animationsOn());
+  document.documentElement.lang=uiLang();
+  document.querySelectorAll('nav.bottom button').forEach(b=>{ if(b.dataset.v===view) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  const isDark=computedTheme()==='dark';
+  const themeBtn=document.getElementById('themeBtn');
+  themeBtn.innerHTML=uiIcon(isDark?'moon':'sun',20);
+  themeBtn.setAttribute('aria-label',uiT(isDark?'theme_to_light':'theme_to_dark'));
+  document.getElementById('settingsBtn').setAttribute('aria-label',tr('settings_title'));
   checkBrowserNotifications();
 }
 
 function progressCard(){
+  // Phase 8B HUD. Same numbers as before: level/XP from levelFromXp(), tasks = due today or
+  // undated-and-open, habits = active habits complete today (isDayComplete), XP today = xpToday().
   const {level,into,need}=levelFromXp(S.totalXp);
   const pct=Math.min(100,Math.round(into/need*100));
-  const doneT=S.tasks.filter(t=>!t.recurring||t.dueDate===todayStr());
   const todayTasks=S.tasks.filter(t=>t.dueDate===todayStr()||(!t.dueDate&&!t.done));
   const doneToday=todayTasks.filter(t=>t.done).length;
   const activeHabits=S.habits.filter(h=>h.active!==false);
   const doneHabits=activeHabits.filter(h=>isDayComplete(h,todayStr())).length;
-  return el(`<div class="card">
-    <div class="between"><div>
-      <div class="sub">Good ${greet()}, ${escapeHtml(S.profile.name)}</div>
-      <div class="big">Level ${level}</div>
-    </div><div class="badge">✨ ${xpToday()} XP today</div></div>
-    <div class="xp-bar" style="margin-top:10px"><i style="width:${pct}%"></i></div>
-    <div class="sub" style="margin-top:6px">${into} / ${need} XP to Level ${level+1}</div>
-    <div class="grid2" style="margin-top:14px">
-      <div class="item" style="justify-content:space-between"><span>✅ Tasks</span><b>${doneToday}/${todayTasks.length||0}</b></div>
-      <div class="item" style="justify-content:space-between"><span>🔥 Habits</span><b>${doneHabits}/${activeHabits.length}</b></div>
+  const totalToday=todayTasks.length+activeHabits.length;
+  const dayPct=uiPct(doneToday+doneHabits,totalToday);
+  const attrs=Object.keys(ATTRS).map(k=>{ const val=S.attrs[k]||0; return `<div class="attr-mini" style="--ac:${ATTRS[k].c}" title="${ATTRS[k].label}"><span class="k">${k}</span><span class="v">${Math.floor(val/50)+1}</span><span class="t"><i style="width:${(val%50)/50*100}%"></i></span></div>`; }).join('');
+  return el(`<section class="card hud" aria-label="${uiT('level')} ${level}">
+    <div class="hud-top">
+      <div class="avatar hero lg" aria-hidden="true">${S.profile.avatar||'🧙'}</div>
+      <div class="hud-id">
+        <div class="hud-greet">${uiGreeting()},</div>
+        <div class="hud-name truncate">${escapeHtml(S.profile.name)}</div>
+        <div class="hud-date">${uiTodayLong()}</div>
+      </div>
+      <div class="level-badge"><span class="lv-k">${uiT('level')}</span><span class="lv-v">${level}</span></div>
     </div>
-  </div>`);
+    <div class="xp-row"><span><b>${uiNum(into)}</b> / ${uiNum(need)} · ${uiT('xp_to_next',{n:level+1})}</span><span class="xp-today">+${uiNum(xpToday())} XP ${uiT('xp_today')}</span></div>
+    <div class="xp-bar" role="progressbar" aria-label="XP" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+    <div class="attr-strip">${attrs}</div>
+  </section>`);
+}
+// "Today" block of the HUD: daily progress ring + tasks/habits/XP rows (same counts as above).
+function uiTodayCard(){
+  const todayTasks=S.tasks.filter(t=>t.dueDate===todayStr()||(!t.dueDate&&!t.done));
+  const doneToday=todayTasks.filter(t=>t.done).length;
+  const activeHabits=S.habits.filter(h=>h.active!==false);
+  const doneHabits=activeHabits.filter(h=>isDayComplete(h,todayStr())).length;
+  const dayPct=uiPct(doneToday+doneHabits,todayTasks.length+activeHabits.length);
+  const row=(ic,label,v,max,cls)=>`<div class="today-row"><span aria-hidden="true">${ic}</span><span>${label}</span><b>${v}/${max}</b><div class="bar ${cls||''}"><i style="width:${uiPct(v,max)}%"></i></div></div>`;
+  return el(`<section class="card" aria-label="${uiT('today_progress')}">
+    <div class="today-grid">
+      <div class="ring" style="--p:${dayPct}" role="img" aria-label="${uiT('today_progress')} ${dayPct}%"><span>${dayPct}%</span></div>
+      <div class="today-rows">
+        <div class="kicker">${uiT('today_progress')}</div>
+        ${row('✅',uiT('tasks'),doneToday,todayTasks.length,'is-success')}
+        ${row('🔥',uiT('habits'),doneHabits,activeHabits.length,'is-success')}
+      </div>
+    </div>
+  </section>`);
+}
+function uiGreeting(){
+  const h=new Date().getHours();
+  if(uiLang()==='cs') return h<12?'Dobré ráno':h<18?'Dobré odpoledne':'Dobrý večer';
+  return 'Good '+greet();
 }
 function greet(){const h=new Date().getHours();return h<12?tr('greet_morning'):h<18?tr('greet_afternoon'):tr('greet_evening');}
 function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-function renderHome(){
-  const wrap=el(`<div></div>`);
-  const W=Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true})),S.settings.widgets||{});
+/* ---------- Phase 8B: UI presentation helpers (no state, no business rules) ----------
+   Everything below is named ui... / UI_... and only builds markup/strings. Data always comes from the
+   existing model and the existing calculators (levelFromXp, goalProgress, nutriTotals...). */
+const UI_I18N={
+  cs:{
+    greet_prefix:'Dobré', hello:'Ahoj', today:'Dnes', level:'Level', xp_to_next:'XP do levelu {n}', xp_today:'dnes',
+    today_progress:'Dnešní postup', tasks:'Úkoly', habits:'Návyky', goals:'Cíle', xp:'XP', see_all:'Vše', add:'Přidat',
+    todays_tasks:'Dnešní úkoly', todays_habits:'Dnešní návyky', active_goals:'Aktivní cíle', snapshot:'Přehled',
+    nutrition:'Výživa', finance:'Finance', fitness:'Fitness', health:'Zdraví', sleep:'Spánek', steps:'Kroky', weight:'Váha',
+    reminders:'Připomínky', balance:'Zůstatek', income:'Příjmy', expenses:'Výdaje', this_month:'tento měsíc', kcal:'kcal',
+    no_workout_today:'Dnes bez tréninku', last:'Naposledy', workouts:'tréninky', logged:'zapsáno', nothing_logged:'Zatím nic',
+    empty_tasks_t:'Na dnešek nic', empty_tasks_d:'Přidej úkol a získej XP za jeho splnění.', add_task:'Přidat úkol',
+    empty_habits_t:'Zatím žádné návyky', empty_habits_d:'Návyky budují streaky a atributy postavy.', add_habit:'Přidat návyk',
+    empty_goals_t:'Žádné cíle v této kategorii', empty_goals_d:'Cíl dá úkolům a návykům směr.', add_goal:'Přidat cíl',
+    all_done:'Všechno hotovo 🎉', done_today:'Hotovo dnes',
+    // tasks
+    f_Today:'Dnes', f_Upcoming:'Nadcházející', f_Overdue:'Po termínu', f_All:'Otevřené', f_Completed:'Hotové',
+    prio_Low:'Nízká', prio_Medium:'Střední', prio_High:'Vysoká', prio_Urgent:'Urgentní', edit:'Upravit', delete:'Smazat',
+    complete_task:'Označit úkol jako hotový', reopen_task:'Vrátit úkol mezi otevřené', open_count:'{n} otevřených',
+    // habits
+    new_habit:'Nový návyk', streak:'streak', best:'nejlepší', avoid:'vyhýbat se', build:'budovat', clean:'Čistý den', broke:'Porušeno',
+    freq_daily:'denně', freq_weekly:'týdně', freq_weekdays:'vybrané dny', freq_custom:'vlastní', inactive:'neaktivní',
+    last_30:'Posledních 30 dní', last_90:'Posledních 90 dní', mark_habit:'Označit návyk jako splněný', unmark_habit:'Zrušit dnešní splnění',
+    increment:'Přidat jedno splnění', decrement:'Odebrat jedno splnění', habit_detail:'Detail návyku',
+    current_streak:'Aktuální streak', best_streak:'Nejlepší streak', this_week:'Tento týden', this_month_c:'Tento měsíc',
+    completion:'Úspěšnost', days_kept:'Dní udrženo', days_broken:'Dní porušeno', done:'Splněno', missed:'Nesplněno', broken:'Porušeno',
+    // goals
+    g_Active:'Aktivní', g_Completed:'Splněné', g_Paused:'Pozastavené', g_Archived:'Archiv', g_All:'Vše',
+    new_goal:'Nový cíl', complete:'Dokončit', mark_complete:'Označit jako splněný', by:'do', next:'další', progress_auto:'automaticky z: {s}', progress_manual:'ruční postup',
+    src_tasks:'propojených úkolů', src_ms:'milníků', src_habits:'propojených návyků', src_manual:'ruční hodnoty',
+    milestones:'Milníky', linked_tasks:'Propojené úkoly', linked_habits:'Propojené návyky', add_milestone:'Přidat milník',
+    no_linked_tasks:'Žádné propojené úkoly. Úkol k cíli přiřadíš v jeho úpravě.', no_milestones:'Zatím žádné milníky', back:'Zpět',
+    // character
+    character:'Postava', total_xp:'celkem XP', attributes:'Atributy', attr_points_avail:'{n} bodů atributů k rozdělení',
+    skill_points:'Skill body', attr_points:'Body atributů', earned:'získáno', spent:'utraceno', achievements:'Úspěchy', skills_unlocked:'Dovednosti',
+    skill_tree:'Strom dovedností', sp_available:'{n} skill bodů k dispozici', unlock:'Odemknout', unlocked:'Odemčeno', available:'Dostupné', locked:'Zamčeno',
+    cost:'cena {n}', requires:'vyžaduje: {s}', badges:'Odznaky', recent_activity:'Nedávná aktivita', no_activity:'Zatím žádná RPG aktivita.',
+    streaks:'Streaky', unlocked_on:'odemčeno {d}', spend_point:'Přidat 1 bod do {k}',
+    // quests
+    quests:'Výpravy', daily:'Denní', weekly:'Týdenní', goal_quests:'Cílové', challenges:'Výzvy', resets_today:'končí dnes o půlnoci', resets_week:'končí {d}',
+    completed_q:'Splněno', quest_goal_note:'Cílové výpravy tvoří tvé aktivní cíle — postup počítá sám cíl.', no_challenges:'Výzvy zatím nejsou k dispozici.',
+    reward:'odměna',
+    // more
+    more:'Více', productivity:'Produktivita', body:'Tělo', money:'Peníze', life:'Život', system:'Systém',
+    m_goals:'Cíle', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Výživa', m_notes:'Poznámky', m_journal:'Deník', m_car:'Auto',
+    m_subscriptions:'Předplatné', m_calendar:'Kalendář', m_quests:'Výpravy', m_statistics:'Statistiky', m_search:'Hledat', m_health:'Zdraví',
+    m_character:'Postava', m_settings:'Nastavení',
+    // quick add
+    quick_add:'Rychlé přidání', qa_task:'Úkol', qa_habit:'Návyk', qa_goal:'Cíl', qa_expense:'Výdaj', qa_income:'Příjem', qa_workout:'Trénink',
+    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování',
+    // onboarding
+    ob_step:'Krok {n} ze 6', skip:'Přeskočit', next_btn:'Pokračovat', back_btn:'Zpět', start_sample:'Začít s ukázkovými daty', finish:'Začít s prázdným profilem',
+    // toasts
+    toast_n_achievements:'{n} nových úspěchů', toast_n_quests:'{n} výprav splněno', toast_n_rewards:'{n} odměn',
+    // theme
+    theme_to_light:'Přepnout na světlý vzhled', theme_to_dark:'Přepnout na tmavý vzhled',
+  },
+  en:{
+    greet_prefix:'Good', hello:'Hi', today:'Today', level:'Level', xp_to_next:'XP to level {n}', xp_today:'today',
+    today_progress:"Today's progress", tasks:'Tasks', habits:'Habits', goals:'Goals', xp:'XP', see_all:'All', add:'Add',
+    todays_tasks:"Today's tasks", todays_habits:"Today's habits", active_goals:'Active goals', snapshot:'Snapshot',
+    nutrition:'Nutrition', finance:'Finance', fitness:'Fitness', health:'Health', sleep:'Sleep', steps:'Steps', weight:'Weight',
+    reminders:'Reminders', balance:'Balance', income:'Income', expenses:'Expenses', this_month:'this month', kcal:'kcal',
+    no_workout_today:'No workout today', last:'Last', workouts:'workouts', logged:'logged', nothing_logged:'Nothing yet',
+    empty_tasks_t:'Nothing due today', empty_tasks_d:'Add a task and earn XP for finishing it.', add_task:'Add task',
+    empty_habits_t:'No habits yet', empty_habits_d:'Habits build streaks and grow your attributes.', add_habit:'Add habit',
+    empty_goals_t:'No goals here', empty_goals_d:'A goal gives your tasks and habits a direction.', add_goal:'Add goal',
+    all_done:'All done 🎉', done_today:'Done today',
+    f_Today:'Today', f_Upcoming:'Upcoming', f_Overdue:'Overdue', f_All:'Open', f_Completed:'Completed',
+    prio_Low:'Low', prio_Medium:'Medium', prio_High:'High', prio_Urgent:'Urgent', edit:'Edit', delete:'Delete',
+    complete_task:'Mark task as done', reopen_task:'Mark task as not done', open_count:'{n} open',
+    new_habit:'New habit', streak:'streak', best:'best', avoid:'avoid', build:'build', clean:'Clean day', broke:'Broke it',
+    freq_daily:'daily', freq_weekly:'weekly', freq_weekdays:'selected days', freq_custom:'custom', inactive:'inactive',
+    last_30:'Last 30 days', last_90:'Last 90 days', mark_habit:'Mark habit as done', unmark_habit:'Undo today',
+    increment:'Add one completion', decrement:'Remove one completion', habit_detail:'Habit detail',
+    current_streak:'Current streak', best_streak:'Best streak', this_week:'This week', this_month_c:'This month',
+    completion:'Completion', days_kept:'Days maintained', days_broken:'Days broken', done:'Done', missed:'Missed', broken:'Broken',
+    g_Active:'Active', g_Completed:'Completed', g_Paused:'Paused', g_Archived:'Archived', g_All:'All',
+    new_goal:'New goal', complete:'Complete', mark_complete:'Mark complete', by:'by', next:'next', progress_auto:'automatic from {s}', progress_manual:'manual progress',
+    src_tasks:'linked tasks', src_ms:'milestones', src_habits:'linked habits', src_manual:'manual fallback',
+    milestones:'Milestones', linked_tasks:'Linked tasks', linked_habits:'Linked habits', add_milestone:'Add milestone',
+    no_linked_tasks:"No tasks linked yet. Link a task to this goal from the task's edit screen.", no_milestones:'No milestones yet', back:'Back',
+    character:'Character', total_xp:'total XP', attributes:'Attributes', attr_points_avail:'{n} attribute points to spend',
+    skill_points:'Skill Points', attr_points:'Attribute Points', earned:'earned', spent:'spent', achievements:'Achievements', skills_unlocked:'Skills',
+    skill_tree:'Skill Tree', sp_available:'{n} skill points available', unlock:'Unlock', unlocked:'Unlocked', available:'Available', locked:'Locked',
+    cost:'cost {n}', requires:'requires: {s}', badges:'Badges', recent_activity:'Recent activity', no_activity:'No RPG activity yet.',
+    streaks:'Streaks', unlocked_on:'unlocked {d}', spend_point:'Spend 1 point on {k}',
+    quests:'Quests', daily:'Daily', weekly:'Weekly', goal_quests:'Goal', challenges:'Challenges', resets_today:'ends tonight at midnight', resets_week:'ends {d}',
+    completed_q:'Completed', quest_goal_note:'Goal quests are your active goals — the goal itself tracks progress.', no_challenges:'Challenges are not available yet.',
+    reward:'reward',
+    more:'More', productivity:'Productivity', body:'Body', money:'Money', life:'Life', system:'System',
+    m_goals:'Goals', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Nutrition', m_notes:'Notes', m_journal:'Journal', m_car:'Car',
+    m_subscriptions:'Subscriptions', m_calendar:'Calendar', m_quests:'Quests', m_statistics:'Statistics', m_search:'Search', m_health:'Health',
+    m_character:'Character', m_settings:'Settings',
+    quick_add:'Quick Add', qa_task:'Task', qa_habit:'Habit', qa_goal:'Goal', qa_expense:'Expense', qa_income:'Income', qa_workout:'Workout',
+    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel',
+    ob_step:'Step {n} of 6', skip:'Skip', next_btn:'Continue', back_btn:'Back', start_sample:'Start with sample data', finish:'Start with an empty profile',
+    toast_n_achievements:'{n} achievements unlocked', toast_n_quests:'{n} quests completed', toast_n_rewards:'{n} rewards',
+    theme_to_light:'Switch to light theme', theme_to_dark:'Switch to dark theme',
+  }
+};
+function uiLang(){ return (S&&S.settings&&S.settings.language)==='en'?'en':'cs'; }
+function uiT(key,vars){
+  const s=(UI_I18N[uiLang()]&&UI_I18N[uiLang()][key]) ?? UI_I18N.cs[key] ?? tr(key);
+  return vars ? String(s).replace(/\{(\w+)\}/g,(_,k)=>vars[k]!=null?vars[k]:'') : s;
+}
+function uiLocale(){ return uiLang()==='cs'?'cs-CZ':'en-US'; }
+function uiNum(n){ return Number(n||0).toLocaleString(uiLocale()); }
+function uiPct(v,max){ return max>0?Math.max(0,Math.min(100,Math.round(v/max*100))):0; }
+function uiTodayLong(){ try{ const s=new Date().toLocaleDateString(uiLocale(),{weekday:'long',day:'numeric',month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return fmtDate(todayStr()); } }
+// Line icons (24px grid, currentColor) for the app chrome; content keeps its emoji icons.
+const UI_ICONS={
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
+  tasks:'<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 3 3 5-6"/>',
+  habits:'<path d="M12 21c4 0 7-2.7 7-6.6 0-3.2-2.2-5.4-3.6-6.9-.3 1.9-1.3 3-2.4 3.4.4-3.3-1.4-6.2-4-7.9.2 3.1-1.7 5-3 6.6C4.8 11.1 5 12.4 5 14.4 5 18.3 8 21 12 21Z"/>',
+  character:'<path d="M12 3 5 6v5c0 4.4 3 8.3 7 10 4-1.7 7-5.6 7-10V6l-7-3Z"/><circle cx="12" cy="10" r="2.5"/><path d="M8.5 16c.8-1.6 2-2.4 3.5-2.4s2.7.8 3.5 2.4"/>',
+  more:'<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  back:'<path d="M15 18l-6-6 6-6"/>',
+  chevron:'<path d="m9 18 6-6-6-6"/>',
+  edit:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+};
+function uiIcon(name,size){ return `<svg viewBox="0 0 24 24" width="${size||22}" height="${size||22}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${UI_ICONS[name]||''}</svg>`; }
+// Empty state: headline + explanation + optional CTA (wired by the caller via .emptyCta).
+function uiEmpty(ic,title,text,cta){
+  return `<div class="empty"><div class="e" aria-hidden="true">${ic}</div><div class="empty-title">${title}</div>${text?`<div class="empty-text">${text}</div>`:''}${cta?`<button class="btn sm emptyCta">${cta}</button>`:''}</div>`;
+}
+function uiBack(label){ return `<div class="back-row"><button class="iconbtn" id="backBtn" aria-label="${uiT('back')}">${uiIcon('back',20)}</button><span class="sub">${label||''}</span></div>`; }
+function uiPageHead(title,subtitle,actionHtml){ return `<div class="page-head"><div><h2>${title}</h2>${subtitle?`<div class="sub">${subtitle}</div>`:''}</div>${actionHtml||''}</div>`; }
+function uiMetric(label,val,target,unit){
+  const pct=uiPct(val,target), over=target>0&&val>target;
+  return `<div class="metric"><div class="metric-head"><span>${label}</span><span><b>${uiNum(Math.round(val))}</b> / ${uiNum(target)}${unit?' '+unit:''}</span></div><div class="bar${over?' is-warn':pct>=100?' is-success':''}" role="progressbar" aria-label="${escapeHtml(String(label))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>`;
+}
 
-  // Phase 6: each widget is now a small builder returning a node or null (so a widget that has
-  // nothing to show, or is hidden, simply contributes nothing) -- appended in the order given
-  // by S.settings.widgetOrder, so the Settings screen's ↑/↓ reorder UI has real effect here.
+function renderHome(){
+  const wrap=el(`<div class="home"></div>`);
+  const W=Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true})),S.settings.widgets||{});
+  const sectionHead=(title,meta,navTo)=>`<div class="section-header"><h3>${title}</h3>${navTo?`<button class="action" data-nav="${navTo}">${meta} ›</button>`:`<span class="sub">${meta}</span>`}</div>`;
+
+  // Phase 6: each widget is a small builder returning a node or null (hidden / nothing to show),
+  // appended in S.settings.widgetOrder so the Settings ↑/↓ reorder keeps its real effect.
+  // Phase 8B: consecutive list widgets share a responsive pair grid and consecutive snapshot
+  // widgets share one snapshot grid -- order and visibility rules are unchanged.
   const builders={
     reminders: ()=>{
       if(W.reminders===false) return null;
       const items=getActiveReminders().slice(0,8);
       if(!items.length) return null;
-      const rc=el(`<div class="card" style="border-color:var(--warn)"><h3 style="margin-bottom:8px">🔔 Reminders</h3><div class="list" id="hRem"></div></div>`);
-      const rl=rc.querySelector('#hRem');
+      const rc=el(`<div class="reminder-strip" id="hRem" role="list" aria-label="${uiT('reminders')}"></div>`);
+      const rl=rc;
       items.forEach(r=>{
-        const row=el(`<div class="item" style="cursor:pointer"><div class="sub" style="flex:1">${escapeHtml(r.text)}</div></div>`);
+        const row=el(`<button class="reminder" role="listitem"><span>${escapeHtml(r.text)}</span></button>`);
         row.onclick=()=>{
           if(r.navType==='quest'){ searchNavigate('quest',null); return; }
           const obj=resolveReminderEntity(r.navType,r.id);
@@ -1170,22 +1839,27 @@ function renderHome(){
       });
       return rc;
     },
-    progress: ()=> W.progress!==false ? progressCard() : null,
+    progress: ()=>{
+      if(W.progress===false) return null;
+      const f=document.createDocumentFragment();
+      f.appendChild(progressCard()); f.appendChild(uiTodayCard());
+      const box=el(`<div class="hud-wrap"></div>`); box.appendChild(f); return box;
+    },
     tasks: ()=>{
       if(W.tasks===false) return null;
       const todayTasks=S.tasks.filter(t=>!t.done && (t.dueDate===todayStr()||!t.dueDate)).slice(0,5);
-      const tc=el(`<div class="card"><div class="between"><h3>Today's Tasks</h3><span class="sub">${todayTasks.length}</span></div><div class="list" id="hTasks"></div></div>`);
+      const tc=el(`<section>${sectionHead(uiT('todays_tasks'),uiT('see_all'),'tasks')}<div class="list" id="hTasks"></div></section>`);
       const tl=tc.querySelector('#hTasks');
-      if(!todayTasks.length) tl.appendChild(el(`<div class="empty"><div class="e">🌤️</div>No tasks due today. Add one!</div>`));
+      if(!todayTasks.length){ const e=el(`<div class="card">${uiEmpty('🌤️',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openForm('task'); tl.appendChild(e); }
       todayTasks.forEach(t=>tl.appendChild(taskItem(t)));
       return tc;
     },
     habits: ()=>{
       if(W.habits===false) return null;
       const habitsToday=S.habits.filter(h=>h.active!==false).slice(0,5);
-      const hc=el(`<div class="card"><div class="between"><h3>Habits</h3><span class="sub">${habitsToday.filter(h=>isDayComplete(h,todayStr())).length}/${habitsToday.length}</span></div><div class="list" id="hHabits"></div></div>`);
+      const hc=el(`<section>${sectionHead(uiT('todays_habits'),`${habitsToday.filter(h=>isDayComplete(h,todayStr())).length}/${habitsToday.length} ›`.replace(' ›',''),'habits')}<div class="list" id="hHabits"></div></section>`);
       const hl=hc.querySelector('#hHabits');
-      if(!habitsToday.length) hl.appendChild(el(`<div class="empty"><div class="e">🔥</div>No habits yet.</div>`));
+      if(!habitsToday.length){ const e=el(`<div class="card">${uiEmpty('🔥',uiT('empty_habits_t'),uiT('empty_habits_d'),uiT('add_habit'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openHabitForm(); hl.appendChild(e); }
       habitsToday.forEach(h=>hl.appendChild(habitItem(h)));
       return hc;
     },
@@ -1193,29 +1867,29 @@ function renderHome(){
       if(W.goals===false) return null;
       const activeGoals=S.goals.filter(g=>g.status==='Active').slice(0,3);
       if(!activeGoals.length) return null;
-      const gc=el(`<div class="card"><h3>Goals</h3><div class="list" id="hGoals"></div></div>`);
+      const gc=el(`<section>${sectionHead(uiT('active_goals'),uiT('see_all'),'goals')}<div class="card" id="hGoals"></div></section>`);
       const gl=gc.querySelector('#hGoals');
       activeGoals.forEach(g=>gl.appendChild(goalMini(g)));
       return gc;
     },
-    // --- Nutrition widget: real today's totals vs real targets. Empty state if nothing logged
+    // --- Nutrition snapshot: real today's totals vs real targets; empty state if nothing logged
     // today; never a fabricated number. ---
     nutrition: ()=>{
       if(W.nutrition===false) return null;
       const today=todayStr();
       const hasData=S.meals.some(m=>m.date===today)||S.waterLog.some(w=>w.date===today);
-      const nc=el(`<div class="card"><div class="between"><h3>Nutrition Today</h3></div></div>`);
+      const nc=el(`<div class="card snap${hasData?'':' is-empty'}" data-nav="nutrition" role="button" tabindex="0"><div class="snap-k">🍎 ${uiT('nutrition')}</div></div>`);
       if(!hasData){
-        nc.appendChild(el(`<div class="empty"><div class="e">🍎</div>No meals or water logged today.</div>`));
+        nc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
         const tot=nutriTotals(today), tg=S.nutritionTargets, water=waterToday(S);
-        nc.appendChild(el(macroRow('Calories',tot.calories,tg.calories,'')));
-        nc.appendChild(el(macroRow('Protein',tot.protein,tg.protein,'g')));
-        nc.appendChild(el(macroRow('Water',water,tg.water,'ml')));
+        nc.appendChild(el(`<div class="snap-v">${uiNum(Math.round(tot.calories))} <small>/ ${uiNum(tg.calories)} ${uiT('kcal')}</small></div>`));
+        nc.appendChild(el(`<div class="bar${tot.calories>tg.calories?' is-warn':''}"><i style="width:${uiPct(tot.calories,tg.calories)}%"></i></div>`));
+        nc.appendChild(el(`<div class="snap-s">P ${Math.round(tot.protein)}/${tg.protein} g · 💧 ${uiNum(water)}/${uiNum(tg.water)} ml</div>`));
       }
       return nc;
     },
-    // --- Finance widget: real month-to-date balance from S.expenses/S.income only.
+    // --- Finance snapshot: real month-to-date balance from S.expenses/S.income only.
     // Subscriptions are a separate collection and are never summed into this to avoid
     // double-counting (same rule as the Finance module itself). ---
     finance: ()=>{
@@ -1223,61 +1897,71 @@ function renderHome(){
       const ym=todayStr().slice(0,7);
       const monthExp=S.expenses.filter(e=>e.date&&e.date.startsWith(ym));
       const monthInc=S.income.filter(i=>i.date&&i.date.startsWith(ym));
-      const fc=el(`<div class="card"><div class="between"><h3>Finance</h3></div></div>`);
+      const fc=el(`<div class="card snap${S.expenses.length||S.income.length?'':' is-empty'}" data-nav="finance" role="button" tabindex="0"><div class="snap-k">💰 ${uiT('finance')}</div></div>`);
       if(!S.expenses.length && !S.income.length){
-        fc.appendChild(el(`<div class="empty"><div class="e">💰</div>No finance entries yet.</div>`));
+        fc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
         const totExp=monthExp.reduce((a,b)=>a+Number(b.amount||0),0);
         const totInc=monthInc.reduce((a,b)=>a+Number(b.amount||0),0);
         const bal=totInc-totExp;
-        fc.appendChild(el(`<div class="grid2"><div class="item" style="justify-content:space-between"><span>Income (mo)</span><b style="color:var(--accent2)">${totInc.toFixed(0)}</b></div><div class="item" style="justify-content:space-between"><span>Expenses (mo)</span><b style="color:var(--danger)">${totExp.toFixed(0)}</b></div></div>`));
-        fc.appendChild(el(`<div class="between" style="margin-top:8px"><span class="sub">Balance</span><b style="color:${bal>=0?'var(--accent2)':'var(--danger)'}">${bal.toFixed(0)}</b></div>`));
+        fc.appendChild(el(`<div class="snap-v" style="color:${bal>=0?'var(--accent2)':'var(--danger)'}">${bal>=0?'':'−'}${uiNum(Math.abs(Math.round(bal)))}</div>`));
+        fc.appendChild(el(`<div class="snap-s">${uiT('balance')} · ${uiT('this_month')}<br>↑ ${uiNum(Math.round(totInc))} · ↓ ${uiNum(Math.round(totExp))}</div>`));
       }
       fc.onclick=()=>{view='finance';render();};
       fc.style.cursor='pointer';
       return fc;
     },
-    // --- Fitness widget: real workout history only; nothing shown/fabricated without data. ---
+    // --- Fitness snapshot: real workout history only; nothing shown/fabricated without data. ---
     fitness: ()=>{
       if(W.fitness===false) return null;
       const todayWorkout=S.workouts.find(w=>w.date===todayStr());
       const sorted=[...S.workouts].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
       const last=sorted[0];
-      const fitc=el(`<div class="card"><div class="between"><h3>Fitness</h3><span class="sub">${S.workouts.length} logged</span></div></div>`);
+      const fitc=el(`<div class="card snap${S.workouts.length?'':' is-empty'}" data-nav="fitness" role="button" tabindex="0"><div class="snap-k">🏋️ ${uiT('fitness')}</div></div>`);
       if(!S.workouts.length){
-        fitc.appendChild(el(`<div class="empty"><div class="e">🏋️</div>No workouts logged yet.</div>`));
+        fitc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
-        if(todayWorkout) fitc.appendChild(el(`<div class="item-meta" style="margin-bottom:4px">Today: ${escapeHtml(todayWorkout.name)} · volume ${workoutVolume(todayWorkout)}</div>`));
-        else fitc.appendChild(el(`<div class="item-meta" style="margin-bottom:4px">No workout logged today.</div>`));
-        if(last) fitc.appendChild(el(`<div class="item-meta">Last: ${escapeHtml(last.name)} (${fmtDate(last.date)})</div>`));
+        if(todayWorkout) fitc.appendChild(el(`<div class="snap-v">${uiNum(workoutVolume(todayWorkout))} <small>kg</small></div><div class="snap-s">${escapeHtml(todayWorkout.name)}</div>`));
+        else fitc.appendChild(el(`<div class="snap-v" style="font-size:15px">${uiT('no_workout_today')}</div>`));
+        if(last) fitc.appendChild(el(`<div class="snap-s">${uiT('last')}: ${escapeHtml(last.name)} · ${fmtDate(last.date)}</div>`));
       }
       fitc.onclick=()=>{view='fitness';render();};
       fitc.style.cursor='pointer';
       return fitc;
     },
-    // --- Health widget (Phase 7): real sleep/steps/weight/active-calories data only. ---
+    // --- Health snapshot (Phase 7): real sleep/steps/weight/active-calories data only. ---
     health: ()=>{
       if(W.health===false) return null;
       const hasAny=S.sleepLog.length||S.weightLog.length||S.stepsLog.length||S.activeCaloriesLog.length;
-      const hc=el(`<div class="card"><div class="between"><h3>Health</h3></div></div>`);
+      const hc=el(`<div class="card snap${hasAny?'':' is-empty'}" data-nav="health" role="button" tabindex="0"><div class="snap-k">❤️ ${uiT('health')}</div></div>`);
       if(!hasAny){
-        hc.appendChild(el(`<div class="empty"><div class="e">❤️</div>No health data logged yet.</div>`));
+        hc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
         const today=todayStr();
         const sleepToday=S.sleepLog.find(s=>s.date===today);
         const stepsToday=S.stepsLog.find(s=>s.date===today);
         const latestWeight=[...S.weightLog].sort((a,b)=>b.date.localeCompare(a.date))[0];
         const activeCalToday=S.activeCaloriesLog.find(a=>a.date===today);
-        if(sleepToday) hc.appendChild(el(`<div class="item-meta" style="margin-bottom:4px">😴 Sleep: ${sleepDuration(sleepToday)}h</div>`));
-        if(stepsToday) hc.appendChild(el(`<div class="item-meta" style="margin-bottom:4px">👟 Steps: ${Number(stepsToday.steps).toLocaleString()}</div>`));
-        if(latestWeight) hc.appendChild(el(`<div class="item-meta" style="margin-bottom:4px">⚖️ Weight: ${latestWeight.weight}${latestWeight.unit||'kg'} (${fmtDate(latestWeight.date)})</div>`));
-        if(activeCalToday) hc.appendChild(el(`<div class="item-meta">🔥 Active cal: ${Number(activeCalToday.calories).toLocaleString()}</div>`));
-        if(!sleepToday&&!stepsToday&&!activeCalToday&&!latestWeight) hc.appendChild(el(`<div class="item-meta">No health data logged today.</div>`));
+        if(sleepToday) hc.appendChild(el(`<div class="snap-v">${sleepDuration(sleepToday)} <small>h 😴</small></div>`));
+        const bits=[];
+        if(stepsToday) bits.push(`👟 ${uiNum(stepsToday.steps)}`);
+        if(latestWeight) bits.push(`⚖️ ${latestWeight.weight} ${latestWeight.unit||'kg'}`);
+        if(activeCalToday) bits.push(`🔥 ${uiNum(activeCalToday.calories)} ${uiT('kcal')}`);
+        if(bits.length) hc.appendChild(el(`<div class="snap-s">${bits.join(' · ')}</div>`));
+        if(!sleepToday&&!stepsToday&&!activeCalToday&&!latestWeight) hc.appendChild(el(`<div class="snap-s">${uiT('nothing_logged')}</div>`));
       }
       hc.onclick=()=>{view='health';render();};
       hc.style.cursor='pointer';
       return hc;
     },
+  };
+  const SNAP={nutrition:1,finance:1,fitness:1,health:1}, PAIR={tasks:1,habits:1};
+  let group=null, groupKind=null;
+  const place=(k,node)=>{
+    const kind=SNAP[k]?'snap':PAIR[k]?'pair':null;
+    if(!kind){ group=null; groupKind=null; wrap.appendChild(node); return; }
+    if(groupKind!==kind){ group=el(`<div class="${kind==='snap'?'snap-grid':'home-pair'}"></div>`); groupKind=kind; wrap.appendChild(group); }
+    group.appendChild(node);
   };
 
   const order=(S.settings.widgetOrder&&S.settings.widgetOrder.length)?S.settings.widgetOrder:WIDGET_DEFS.map(w=>w.key);
@@ -1287,29 +1971,57 @@ function renderHome(){
     const build=builders[k];
     if(!build) return; // unknown/future widget key -- never breaks the dashboard
     const node=build();
-    if(node) wrap.appendChild(node);
+    if(node) place(k,node);
   });
   // Any widget not present in a legacy/partial order still renders (never silently dropped).
   Object.keys(builders).forEach(k=>{
     if(seen.has(k)) return;
     const node=builders[k]();
-    if(node) wrap.appendChild(node);
+    if(node) place(k,node);
+  });
+  if(wrap.querySelector('.snap-grid')) wrap.querySelectorAll('.snap-grid').forEach(g=>{ if(g.children.length===1) g.classList.add('is-single'); });
+  wrap.querySelectorAll('[data-nav]').forEach(n=>{
+    if(!n.onclick) n.onclick=()=>{view=n.dataset.nav;render();window.scrollTo(0,0);};
+    if(n.getAttribute('role')==='button') n.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); n.onclick(); } };
   });
   return wrap;
 }
-
+// Localized rendering of habitProgressLabel()'s (English) output -- the numbers come from it unchanged.
+function uiHabitLabel(h){
+  const s=habitProgressLabel(h);
+  if(uiLang()!=='cs') return s;
+  return s.replace(/(\d+)d clean streak$/,'$1 dní bez porušení').replace(/ this week$/,' tento týden').replace(/ today$/,' dnes').replace(/(\d+) day streak$/,'$1 dní v řadě');
+}
+function uiPrioLabel(p){ return p?uiT('prio_'+p):''; }
+function uiDueLabel(d){
+  if(!d) return '';
+  const t=todayStr();
+  if(d===t) return uiT('today');
+  return fmtDate(d);
+}
 function taskItem(t){
   const catInfo=CATS[t.category]||{ic:'📌'};
   // Resolved by ID — a deleted goal simply yields null and the chip is omitted (no crash).
   const linkedGoal=t.goalId?S.goals.find(g=>g.id===t.goalId):null;
-  const it=el(`<div class="item">
-    <button class="check ${t.done?'done':''}">${t.done?'✓':''}</button>
+  const shownXp=t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10); // display of the same rule the check handler uses
+  const overdue=!t.done&&t.dueDate&&t.dueDate<todayStr();
+  const meta=[
+    t.priority?`<span class="chip ${t.priority==='Urgent'?'is-danger':t.priority==='High'?'is-warn':'is-muted'}">${uiPrioLabel(t.priority)}</span>`:'',
+    t.dueDate?`<span class="${overdue?'chip is-danger':''}">📅 ${uiDueLabel(t.dueDate)}</span>`:'',
+    t.category?`<span>${escapeHtml(t.category)}</span>`:'',
+    linkedGoal?`<button class="chip linkGoal">🎯 ${escapeHtml(linkedGoal.title)}</button>`:'',
+    t.done?'':`<span class="xp-tag">+${shownXp} XP</span>`,
+  ].filter(Boolean).join(' ');
+  const it=el(`<div class="item task-item" data-prio="${t.done?'':escapeHtml(t.priority||'')}">
+    <button class="check ${t.done?'done':''}" aria-label="${uiT(t.done?'reopen_task':'complete_task')}: ${escapeHtml(t.title)}" aria-pressed="${t.done?'true':'false'}">${t.done?'✓':''}</button>
     <div style="flex:1;min-width:0">
       <div class="item-title ${t.done?'done':''}">${catInfo.ic} ${escapeHtml(t.title)}</div>
-      <div class="item-meta">${t.priority||''}${t.dueDate?' · '+fmtDate(t.dueDate):''}${t.category?' · '+t.category:''}${linkedGoal?' · <span class="linkGoal" style="cursor:pointer;text-decoration:underline">🎯 '+escapeHtml(linkedGoal.title)+'</span>':''}</div>
+      ${meta?`<div class="item-meta meta-row">${meta}</div>`:''}
     </div>
-    <button class="pill sm editBtn">Edit</button>
-    <button class="delbtn" aria-label="Delete">✕</button>
+    <div class="item-actions">
+      <button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(t.title)}">${uiIcon('edit',18)}</button>
+      <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(t.title)}">✕</button>
+    </div>
   </div>`);
   it.querySelector('.check').onclick=()=>{
     t.done=!t.done;
@@ -1320,12 +2032,21 @@ function taskItem(t){
       const granted=grantXp(xp,'Task: '+t.title,attrKey,taskKey);
       if(granted) applyCategoryAttrSkillBonus(attrKey,taskKey); // Phase 5 skill effect, same idempotent key
     }
-    scheduleSave();render();
+    scheduleSave();
+    // Phase 8B: a just-completed task stays on screen in its completed state for a moment
+    // (lists like "Today" filter done tasks out) instead of vanishing under the finger.
+    if(t.done && animationsOn()){ uiShowTaskDone(it); setTimeout(render,650); }
+    else render();
   };
   it.querySelector('.editBtn').onclick=()=>openTaskEditForm(t);
   const lg=it.querySelector('.linkGoal'); if(lg) lg.onclick=(ev)=>{ev.stopPropagation();searchNavigate('goal',linkedGoal);};
   it.querySelector('.delbtn').onclick=()=>{S.tasks=S.tasks.filter(x=>x.id!==t.id);scheduleSave();render();};
   return it;
+}
+function uiShowTaskDone(it){
+  it.classList.add('is-completing');
+  const c=it.querySelector('.check'); c.classList.add('done'); c.textContent='✓';
+  const x=it.querySelector('.xp-tag'); if(x) x.textContent='✓ '+x.textContent;
 }
 function goalOptions(selectedId){
   return '<option value="">No goal</option>'+S.goals.map(g=>`<option value="${g.id}" ${g.id===selectedId?'selected':''}>${escapeHtml(g.title)}</option>`).join('');
@@ -1423,13 +2144,14 @@ function habitItem(h){
   const done=isDayComplete(h,todayStr());
   // Resolved by ID — a deleted goal simply yields null and the chip is omitted (no crash).
   const linkedGoal=h.goalId?S.goals.find(g=>g.id===h.goalId):null;
-  const it=el(`<div class="item">
-    <button class="check ${done?'done':''}">${done?'✓':''}</button>
+  const counter=h.type!=='bad'&&habitUsesDayCounter(h);
+  const it=el(`<div class="item habit-item${h.type==='bad'?' is-bad':''}">
+    <button class="check ${done?'done':''}" aria-label="${uiT(counter?'increment':(done?'unmark_habit':'mark_habit'))}: ${escapeHtml(h.name)}" aria-pressed="${done?'true':'false'}">${done?'✓':(counter?'+':'')}</button>
     <div style="flex:1;min-width:0">
       <div class="item-title ${done?'done':''} habitTitle" style="cursor:pointer">${h.icon||'🔥'} ${escapeHtml(h.name)}</div>
-      <div class="item-meta">${habitProgressLabel(h)}${linkedGoal?' · <span class="linkGoal" style="cursor:pointer;text-decoration:underline">🎯 '+escapeHtml(linkedGoal.title)+'</span>':''}</div>
+      <div class="item-meta">${uiHabitLabel(h)}${linkedGoal?' · <span class="linkGoal" style="cursor:pointer;text-decoration:underline">🎯 '+escapeHtml(linkedGoal.title)+'</span>':''}</div>
     </div>
-    <button class="delbtn" aria-label="Delete">✕</button>
+    <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(h.name)}">✕</button>
   </div>`);
   const checkBtn=it.querySelector('.check');
   if(h.type==='bad'){
@@ -1448,13 +2170,14 @@ function goalMini(g){
   // Uses the one real goalProgress() function — no second/parallel progress calculation.
   const pct=goalProgress(g);
   const nextMs=S.milestones.filter(m=>m.goalId===g.id && !m.completed).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))[0];
-  const metaBits=[g.targetDate?'by '+fmtDate(g.targetDate):'',nextMs?'next: '+escapeHtml(nextMs.title):''].filter(Boolean).join(' · ');
-  const it=el(`<div style="margin-bottom:10px;cursor:pointer" class="goalMiniTap">
-    <div class="between"><span class="item-title">🎯 ${escapeHtml(g.title)}</span><span class="sub">${pct}%</span></div>
-    <div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div>
-    ${metaBits?`<div class="item-meta" style="margin-top:4px">${metaBits}</div>`:''}
+  const metaBits=[g.targetDate?uiT('by')+' '+fmtDate(g.targetDate):'',nextMs?uiT('next')+': '+escapeHtml(nextMs.title):''].filter(Boolean).join(' · ');
+  const it=el(`<div class="goalMiniTap goal-mini" role="button" tabindex="0" style="cursor:pointer">
+    <div class="between"><span class="item-title truncate">🎯 ${escapeHtml(g.title)}</span><span class="goal-pct" style="font-size:18px">${pct}<small>%</small></span></div>
+    <div class="bar" style="margin-top:8px;height:8px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
+    ${metaBits?`<div class="item-meta" style="margin-top:6px">${metaBits}</div>`:''}
   </div>`);
   it.onclick=()=>{currentGoalId=g.id;view='goalDetail';render();};
+  it.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); it.onclick(); } };
   return it;
 }
 function habitProgressPct(h){
@@ -4059,5 +4782,3 @@ setInterval(()=>{ render(); checkBrowserNotifications(); }, 60000);
 </script>
 </body>
 </html>
-
-</body></html>

@@ -44,7 +44,7 @@ const NAV_CALLS = new Set(['render', 'searchNavigate']);
 // still walked, so what it does to the data is captured.
 const DOM_SINKS = new Set(['onclick', 'onchange', 'oninput', 'onkeydown', 'onkeyup', 'onsubmit', 'onblur',
   'onfocus', 'textContent', 'innerHTML', 'innerText', 'className', 'hidden', 'disabled', 'src', 'href',
-  'download', 'title', 'placeholder', 'scrollTop', 'scrollLeft', 'open', 'selected', 'cssText']);
+  'download', 'title', 'placeholder', 'scrollTop', 'scrollLeft', 'open', 'selected', 'cssText', 'lang', 'tabIndex']);
 const MUTATING_METHODS = new Set(['push', 'splice', 'unshift', 'pop', 'shift', 'sort', 'reverse', 'fill', 'copyWithin']);
 
 export function extractScript(html) {
@@ -141,7 +141,10 @@ function collectEffects(fnNode, src, effectful) {
     scan(n);
     return parts.join('\n');
   };
-  const add = (n, why) => effects.push({ why, hash: h(withDeps(n)), src: src.slice(n.start, n.end).replace(/\s+/g, ' ').slice(0, 140) });
+  // Presentation-layer state (globals named ui.../UI_...) is UI, like navigation state.
+  const uiRoot = n => { const t = n.type === 'CallExpression' ? n.callee.object : n.type === 'AssignmentExpression' ? n.left : n.type === 'UpdateExpression' ? n.argument : null;
+    const r = t && (t.type === 'Identifier' ? t : memberRoot(t)); return !!(r && r.type === 'Identifier' && /^(ui|UI_)/.test(r.name)); };
+  const add = (n, why) => effects.push({ why: why !== 'call' && uiRoot(n) ? 'nav' : why, hash: h(withDeps(n)), src: src.slice(n.start, n.end).replace(/\s+/g, ' ').slice(0, 140) });
   const touchesState = target => {
     if (target.type === 'Identifier') return !all.has(target.name);
     const root = memberRoot(target);
