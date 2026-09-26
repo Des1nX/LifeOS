@@ -293,8 +293,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const base = JSON.parse(readFileSync(BASELINE, 'utf8'));
     const { fails, reviews } = compare(base, fp);
     console.log(summary);
-    console.log(`logicHash   ${base.logicHash} -> ${fp.logicHash} ${base.logicHash === fp.logicHash ? 'OK' : 'CHANGED'}`);
-    console.log(`effectsHash ${base.effectsHash} -> ${fp.effectsHash} ${base.effectsHash === fp.effectsHash ? 'OK' : 'CHANGED'}`);
+    console.log(`logicHash   ${base.logicHash} -> ${fp.logicHash} ${base.logicHash === fp.logicHash ? 'OK' : 'CHANGED'}${Object.keys(loadApproved().logic).length ? ` (${Object.keys(loadApproved().logic).length} approved declarations, pinned in approved.json)` : ''}`);
+    // Compare the effects summary after taking out approved new UI data effects.
+    const ap = loadApproved(), mine = Object.values(fp.ui).flatMap(v => v.data);
+    for (const d of ap.uiEffects) { const i = mine.indexOf(d); if (i >= 0) mine.splice(i, 1); }
+    const effNet = h(mine.sort().join('|'));
+    console.log(`effectsHash ${base.effectsHash} -> ${effNet} ${base.effectsHash === effNet ? 'OK' : 'CHANGED'}${ap.uiEffects.length ? ` (excluding ${ap.uiEffects.length} approved new effects)` : ''}`);
     if (reviews.length) console.log('\nREVIEW (allowed for a redesign, check intent):\n  ' + reviews.join('\n  '));
     if (fails.length) { console.log('\nFAIL:\n  ' + fails.join('\n  ')); process.exit(1); }
     console.log('\nFINGERPRINT OK');

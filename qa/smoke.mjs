@@ -740,6 +740,21 @@ test('9 UI: Daily Score card and detail fit 320/375/390/430 px without overflow'
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
+test('9 Statistics: averages/best come from stored snapshots only, missing days stay empty, bars open the stored day', async ({ page }) => {
+  const snap = (score, label) => ({ score, label, algo: 1, areas: { tasks: { score }, habits: { score: null }, nutrition: { score: null }, sleep: { score: null }, fitness: { score: null } }, finalizedAt: NOW });
+  await page.evaluate(({ a, b, c, d1, d2, d3 }) => { S.dailyScoresSince = todayStr(); /* nothing else to finalize */ S.dailyScores = { [d1]: a, [d2]: b, [d3]: c }; view = 'statistics'; render(); },
+    { a: snap(60, 'solid'), b: snap(90, 'excellent'), c: snap(30, 'weaker'), d1: dayOff(-5), d2: dayOff(-3), d3: dayOff(-1) });
+  const card = page.locator('[data-ds="stats"]');
+  const vals = await card.locator('.stat-value').allInnerTexts();
+  assert.deepEqual(vals.map(v => v.trim().split('\n')[0]), ['60', '60', '90'], '7d avg, 30d avg, best (from snapshots only)');
+  assert.equal(await card.locator('.ds-bar').count(), 7);
+  assert.equal(await card.locator(`.ds-bar[data-day="${dayOff(-4)}"]`).getAttribute('disabled'), '', 'a day without a snapshot is empty, not 0');
+  await card.locator(`.ds-bar[data-day="${dayOff(-3)}"]`).click();
+  const d = page.locator('[data-ds="detail"]');
+  assert.match(await d.innerText(), /uložený snímek dne/);
+  assert.equal((await d.locator('.ring > span').innerText()).trim(), '90', 'past day shows its stored snapshot, not a recomputation');
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
