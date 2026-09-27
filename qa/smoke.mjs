@@ -489,7 +489,7 @@ test('8B CRUD: every create form saves exactly one record through the redesigned
       if (type === 'number') await h.fill('5'); else if (type === 'time') await h.fill('07:00'); else if (type === 'date') { trace.push(`${id}:date`); continue; } else await h.fill('QA ' + coll);
       trace.push(`${id}:filled->${await h.evaluate(n => n.value + '|' + (document.activeElement && document.activeElement.id) + '|' + n.isConnected)}`);
     }
-    if (coll === 'budgets') await page.selectOption('#b_cat', 'Transport'); // one budget per category is an app rule; Food already has one
+    if (coll === 'budgets') await page.selectOption('#b_cat', 'fcat_transport'); // one budget per category is an app rule; Food already has one (11B: categories are records)
     const save = page.locator('.sheet [id$="_save"]').first();
     if (!(await save.count())) { failures.push(`${open}: no save button`); continue; }
     await save.click();
@@ -2806,6 +2806,450 @@ test('11A final: Fitness screens at 320/375/390/430/768/1024/1440 - no overflow,
     }
   }
   assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+// ---------- Phase 11B: Finance 2.0 model ----------
+// finSetup: fixture (e1 Food 420 on 09-23, e2 Transport 1200 on 09-20, i1 Salary 42000 on 09-15, budget Food 6000,
+// subscriptions Spotify 169 monthly next 09-27 + iCloud 790 yearly next 2027-01-21) plus 2 accounts and 4 transactions:
+//   A1 bank opening 10000 (from 09-01): Housing -3000 (09-05), Food -850 (09-10), Other income +5000 (09-15)
+//   A2 cash opening 2000 (from 09-01): Entertainment -300 (09-12)
+// Hand totals for 2026-09: income 42000+5000 = 47000; expenses 420+1200+850+3000+300 = 5770; net 41230.
+const finSetup = page => page.evaluate(() => {
+  const acc = (name, type, ob) => financeAccountSave({ name, type, currency: 'CZK', openingBalance: ob, openingDate: '2026-09-01' }).account.id;
+  const a1 = acc('Hlavní účet', 'bank', 10000), a2 = acc('Peněženka', 'cash', 2000);
+  const cat = n => financeCategoryOf({ category: n }, null).id;
+  const tx = (kind, amount, c, date, accountId, description) => financeSaveTransaction(kind, { amount, categoryId: cat(c), date, accountId, description }).tx.id;
+  tx('expense', 3000, 'Housing', '2026-09-05', a1, 'Nájem'); tx('expense', 850, 'Food', '2026-09-10', a1, 'Restaurace');
+  tx('income', 5000, 'Other income', '2026-09-15', a1, 'Bonus'); tx('expense', 300, 'Entertainment', '2026-09-12', a2, 'Kino');
+  return { a1, a2 };
+});
+const fin = (page, fn, arg) => page.evaluate(new Function('arg', `return JSON.parse(JSON.stringify((${fn})(arg)))`), arg);
+
+test('11B migration: old finance data is kept byte-identical; categories are seeded from defaults + history; idempotent; new collections empty', async ({ page }) => {
+  const s = await stateOf(page); const fx = fixtureState();
+  for (const k of ['expenses', 'income', 'budgets', 'subscriptions']) assert.deepEqual(s[k], fx[k], `${k} untouched`);
+  assert.deepEqual([s.accounts, s.recurringFinance, s.savingsGoals, s.investments], [[], [], [], []]);
+  const cats = s.financeCategories.map(c => [c.id, c.name, c.type, c.active]);
+  for (const c of [['fcat_food', 'Food', 'expense', true], ['fcat_transport', 'Transport', 'expense', true], ['fcat_salary', 'Salary', 'income', true]]) assert.ok(cats.some(x => JSON.stringify(x) === JSON.stringify(c)), c[0]);
+  assert.equal(s.schemaVersion, 8);
+  const r = await page.evaluate(() => {
+    const again = migrate(JSON.parse(JSON.stringify(S)));
+    const legacy = o => { const st = Object.assign(defaultState(), o); delete st.financeCategories; return st; };
+    const custom = migrate(legacy({ tasks: [], expenses: [{ id: 'x', amount: 5, category: 'Dárky', date: '2026-01-01' }], income: [{ id: 'y', amount: 9, category: 'Dárky', date: '2026-01-02' }] }));
+    return { same: JSON.stringify(again.financeCategories) === JSON.stringify(S.financeCategories), gift: custom.financeCategories.find(c => c.name === 'Dárky'),
+      label: financeCategoryLabel(S.expenses[0], 'expense'), fresh: defaultState().financeCategories };
+  });
+  assert.equal(r.same, true, 're-running migrate keeps the same categories');
+  assert.deepEqual([r.gift.id, r.gift.type], ['fcat_darky', 'both'], 'a history-only name becomes a category (expense + income -> both)');
+  assert.equal(r.label, 'Food', 'old transactions resolve their category by name');
+  assert.deepEqual(r.fresh, [], 'defaultState itself is empty; seeding happens in migrate');
+}, { state: fixtureState() });
+
+test('11B transactions: create / edit / delete expense and income; validation; totals from real data only', async ({ page }) => {
+  const { a1 } = await finSetup(page);
+  const t = await fin(page, () => financeMonthTotals('2026-09'));
+  assert.deepEqual([t.income, t.expenses, t.net, t.expenseCount, t.incomeCount], [47000, 5770, 41230, 5, 2]);
+  assert.deepEqual(t.byCategory.map(c => [c.name, c.amount, c.pct]), [['Housing', 3000, 52], ['Food', 1270, 22], ['Transport', 1200, 20.8], ['Entertainment', 300, 5.2]],
+    'old text "Food" (420) and new categoryId Food (850) are one category');
+  assert.deepEqual(await fin(page, () => financeSaveTransaction('expense', { amount: 0, date: '2026-09-01' }).errors), { amount: 'invalid' });
+  assert.deepEqual(await fin(page, () => financeSaveTransaction('expense', { amount: 5, date: '2026-02-30' }).errors), { date: 'invalid' });
+  assert.deepEqual(await fin(page, () => financeSaveTransaction('income', { amount: 5, date: '2026-09-01', accountId: 'nope' }).errors), { accountId: 'invalid' });
+  const r = await page.evaluate(a1 => {
+    const e = financeSaveTransaction('expense', { amount: 99.999, categoryId: 'fcat_shopping', date: '2026-09-18', accountId: a1, description: 'Tričko', tags: 'móda, léto' }).tx;
+    const edit = financeSaveTransaction('expense', { amount: 120, categoryId: 'fcat_shopping', date: '2026-09-18', accountId: a1, description: 'Tričko 2', tags: ['móda'] }, e.id);
+    const i = financeSaveTransaction('income', { amount: 700, categoryId: 'fcat_salary', date: '2026-10-02' }).tx;
+    const out = { e: JSON.parse(JSON.stringify(e)), sameId: edit.tx.id === e.id, created: edit.created, t1: financeMonthTotals('2026-09'), oct: financeMonthTotals('2026-10').income };
+    out.delE = financeDeleteTransaction('expense', e.id); out.delI = financeDeleteTransaction('income', i.id); out.t2 = financeMonthTotals('2026-09');
+    return out;
+  }, a1);
+  assert.deepEqual([r.e.amount, r.e.category, r.e.tags, r.sameId, r.created], [120, 'Shopping', ['móda'], true, false], 'edit keeps the id; amounts rounded to 0.01');
+  assert.deepEqual([r.t1.expenses, r.oct, r.delE, r.delI, r.t2.expenses], [5890, 700, true, true, 5770], 'month filter + delete recompute');
+}, { state: fixtureState() });
+
+test('11B categories: create, edit (rename keeps history linked), deactivate/reactivate, used categories are never deleted', async ({ page }) => {
+  await finSetup(page);
+  assert.deepEqual(await fin(page, () => financeCategorySave({ name: ' food ', type: 'expense' }).errors), { name: 'duplicate' });
+  assert.deepEqual(await fin(page, () => financeCategorySave({ name: '', type: 'expense' }).errors), { name: 'required' });
+  const r = await page.evaluate(() => {
+    const c = financeCategorySave({ name: 'Dárky', type: 'expense', icon: '🎁', color: '#ff0000' }).category;
+    const e = financeSaveTransaction('expense', { amount: 500, categoryId: c.id, date: '2026-09-20' }).tx;
+    financeCategorySave({ name: 'Jídlo a pití', type: 'expense', icon: '🍎' }, 'fcat_food');
+    const old = S.expenses.find(x => x.id === 'e1');
+    const out = { oldLabel: financeCategoryLabel(old, 'expense'), oldText: old.category, oldId: old.categoryId, food: financeMonthTotals('2026-09').byCategory.find(x => x.categoryId === 'fcat_food').amount };
+    financeCategorySetActive(c.id, false);
+    out.picker = financeCategoriesFor('expense').some(x => x.id === c.id); out.pickerKeep = financeCategoriesFor('expense', c.id).some(x => x.id === c.id);
+    out.histLabel = financeCategoryLabel(S.expenses.find(x => x.id === e.id), 'expense');
+    out.delUsed = financeCategoryDelete(c.id); out.stillThere = !!financeCategoryById(c.id);
+    financeCategorySetActive(c.id, true); out.back = financeCategoriesFor('expense').some(x => x.id === c.id);
+    const u = financeCategorySave({ name: 'Nepoužitá', type: 'income' }).category; out.delUnused = financeCategoryDelete(u.id);
+    return out;
+  });
+  assert.deepEqual(r, { oldLabel: 'Jídlo a pití', oldText: 'Food', oldId: 'fcat_food', food: 1270, picker: false, pickerKeep: true, histLabel: 'Dárky', delUsed: 'deactivated', stillThere: true, back: true, delUnused: 'deleted' });
+}, { state: fixtureState() });
+
+test('11B accounts: balance = opening + income - expenses (from the opening date); checkpoint + difference never rewrite history', async ({ page }) => {
+  const { a1, a2 } = await finSetup(page);
+  assert.deepEqual(await fin(page, () => financeAccountSave({ name: '', type: 'bank' }).errors), { name: 'required' });
+  assert.deepEqual(await fin(page, () => financeAccountSave({ name: 'X', type: 'crypto' }).errors), { type: 'invalid' });
+  const r = await page.evaluate(({ a1, a2 }) => {
+    const A1 = financeAccountById(a1), A2 = financeAccountById(a2);
+    financeSaveTransaction('expense', { amount: 111, date: '2026-08-20', accountId: a1 }); // before the opening date: already inside the opening balance
+    const before = JSON.stringify([S.expenses, S.income]);
+    const bad = financeAccountAddCheckpoint(a1, { date: '2026-09-12', balance: '' }).errors;
+    financeAccountAddCheckpoint(a1, { date: '2026-09-12', balance: 6000, note: 'výpis' });
+    return { b1: financeAccountBalance(A1), b2: financeAccountBalance(A2), st: financeAccountStatus(A1), bad, untouched: JSON.stringify([S.expenses, S.income]) === before,
+      at: financeBalanceAt('2026-09-30'), deact: (financeAccountSetActive(a2, false), financeAccountById(a2).active) };
+  }, { a1, a2 });
+  assert.deepEqual([r.b1, r.b2], [11150, 1700], 'A1 10000+5000-3000-850; A2 2000-300');
+  assert.deepEqual([r.st.calculated, r.st.checkpoint.balance, r.st.calculatedAtCheckpoint, r.st.difference, r.st.fromCheckpoint], [11150, 6000, 6150, -150, 11000],
+    'on 09-12 the calculation says 6150, the real balance was 6000 -> difference -150; after it +5000 income');
+  assert.deepEqual([r.bad, r.untouched], [{ balance: 'invalid' }, true]);
+  assert.equal(r.at, 11150 + 1700 + 42000 - 420 - 1200, 'all money at 09-30 = accounts + transactions without an account (the 111 before the opening date is already inside the opening balance)');
+  assert.equal(r.deact, false);
+}, { state: fixtureState() });
+
+test('11B budgets: default + per-month override, spent / remaining / % / status, only expenses count', async ({ page }) => {
+  await finSetup(page);
+  assert.deepEqual(await fin(page, () => financeBudgetSave({ categoryId: 'nope', amount: 5 }).errors), { categoryId: 'required' });
+  assert.deepEqual(await fin(page, () => financeBudgetSave({ categoryId: 'fcat_food', amount: -1 }).errors), { amount: 'invalid' });
+  const r = await page.evaluate(() => {
+    financeBudgetSave({ categoryId: 'fcat_food', amount: 9000, month: '2026-10', note: 'návštěva' });
+    financeBudgetSave({ categoryId: 'fcat_housing', amount: 3200 });
+    financeBudgetSave({ categoryId: 'fcat_entertainment', amount: 250 });
+    financeBudgetSave({ categoryId: 'fcat_food', amount: 9500, month: '2026-10' }); // same slot -> replaced, not duplicated
+    // income, savings and investments never touch a budget
+    financeSaveTransaction('income', { amount: 999, categoryId: 'fcat_food', date: '2026-09-02' });
+    const g = financeSavingsSave({ name: 'X', targetAmount: 100 }).goal; financeSavingsContribute(g.id, { amount: 50, date: '2026-09-02' });
+    const u = m => financeBudgetUsage(m).map(b => [b.name, b.limit, b.spent, b.remaining, b.pct, b.status, b.override]);
+    return { sep: u('2026-09'), oct: u('2026-10'), n: S.budgets.length };
+  });
+  assert.deepEqual(r.sep, [['Entertainment', 250, 300, -50, 120, 'over', false], ['Housing', 3200, 3000, 200, 93.8, 'near', false], ['Food', 6000, 1270, 4730, 21.2, 'under', false]]);
+  assert.deepEqual(r.oct.find(b => b[0] === 'Food'), ['Food', 9500, 0, 9500, 0, 'under', true], 'October uses its own override; September keeps the default');
+  assert.equal(r.n, 4, 'legacy Food default + Food October + Housing + Entertainment');
+}, { state: fixtureState() });
+
+test('11B recurring + subscriptions: a plan is never money; confirming creates ONE transaction; nothing is counted twice', async ({ page }) => {
+  const { a1 } = await finSetup(page);
+  assert.deepEqual(await fin(page, () => financeRecurringSave({ name: 'x', type: 'expense', amount: 0, frequency: 'monthly', startDate: '2026-09-01' }).errors), { amount: 'invalid' });
+  const r = await page.evaluate(a1 => {
+    const net = financeRecurringSave({ type: 'expense', name: 'Nájem garáže', amount: 1500, categoryId: 'fcat_housing', accountId: a1, frequency: 'monthly', startDate: '2026-01-31' }).recurring;
+    const out = { totals0: financeMonthTotals('2026-09').expenses, exp0: financeExpectedMonth('2026-09') };
+    out.feb = financeOccurrences('monthly', '2026-01-31', '2026-02-01', '2026-02-28'); out.weekly = financeOccurrences('weekly', '2026-09-02', '2026-09-01', '2026-09-30');
+    const c1 = financeConfirmExpected('recurring', net.id, '2026-09-30'); const c2 = financeConfirmExpected('recurring', net.id, '2026-09-30');
+    out.c = [c1.created, c2.created, c1.tx.id === c2.tx.id, c1.tx.recurringId === net.id, c1.tx.recurringFor, c1.tx.accountId === a1, c1.tx.categoryId];
+    out.totals1 = financeMonthTotals('2026-09').expenses; out.exp1 = financeExpectedMonth('2026-09');
+    // Spotify subscription (09-27): expected until paid, then one expense
+    const s1 = financeConfirmExpected('subscription', 's1', '2026-09-27'); out.sub = [s1.tx.subscriptionId, s1.tx.recurringFor, s1.tx.amount, s1.tx.category];
+    out.totals2 = financeMonthTotals('2026-09').expenses; out.exp2 = financeExpectedMonth('2026-09');
+    // a plan that covers an existing subscription replaces it in the list (Netflix: subscription + plan + payment = 299 once)
+    S.subscriptions.push({ id: 's3', name: 'Netflix', price: 299, period: 'Monthly', nextPayment: '2026-10-05', category: '', notes: '', active: true, createdAt: Date.parse('2026-09-01') });
+    const nf = financeRecurringSave({ type: 'expense', name: 'Netflix', amount: 299, frequency: 'monthly', startDate: '2026-09-05', subscriptionId: 's3' }).recurring;
+    out.nfList = financeExpectedMonth('2026-09').items.filter(i => i.name === 'Netflix').map(i => i.source);
+    financeConfirmExpected('recurring', nf.id, '2026-09-05');
+    out.totals3 = financeMonthTotals('2026-09').expenses; out.nfList2 = financeExpectedMonth('2026-09').items.filter(i => i.name === 'Netflix').map(i => [i.source, !!i.realized]);
+    out.monthly = [financeMonthlyEquivalent(100, 'weekly'), financeMonthlyEquivalent(1200, 'yearly')];
+    return JSON.parse(JSON.stringify(out));
+  }, a1);
+  assert.equal(r.totals0, 5770, 'creating a plan adds no money');
+  assert.deepEqual(r.exp0.items.map(i => [i.source, i.name, i.date, !!i.realized]), [['subscription', 'Spotify', '2026-09-27', false], ['recurring', 'Nájem garáže', '2026-09-30', false]]);
+  assert.deepEqual([r.exp0.pendingExpense, r.feb, r.weekly], [1669, ['2026-02-28'], ['2026-09-02', '2026-09-09', '2026-09-16', '2026-09-23', '2026-09-30']], '31st -> last day of February');
+  assert.deepEqual(r.c, [true, false, true, true, '2026-09-30', true, 'fcat_housing'], 'confirm twice -> the same single transaction');
+  assert.deepEqual([r.totals1, r.exp1.pendingExpense, r.exp1.realized], [7270, 169, 1]);
+  assert.deepEqual([...r.sub, r.totals2, r.exp2.pendingExpense], ['s1', '2026-09-27', 169, 'Subscriptions', 7439, 0]);
+  assert.deepEqual([r.nfList, r.totals3, r.nfList2], [['recurring'], 7738, [['recurring', true]]], 'subscription + plan + payment = 299 counted once');
+  assert.deepEqual(r.monthly, [433.33, 100]);
+}, { state: fixtureState() });
+
+test('11B savings: contributions, progress, remaining, deadline maths (monthly / weekly / overdue)', async ({ page }) => {
+  assert.deepEqual(await fin(page, () => financeSavingsSave({ name: 'X', targetAmount: 0 }).errors), { targetAmount: 'invalid' });
+  const r = await page.evaluate(() => {
+    const g = financeSavingsSave({ name: 'Dovolená', targetAmount: 30000, deadline: '2027-03-23' }).goal;
+    const bad = financeSavingsContribute(g.id, { amount: 0, date: '2026-09-01' }).errors;
+    financeSavingsContribute(g.id, { amount: 5000, date: '2026-09-01', note: 'start' }); financeSavingsContribute(g.id, { amount: 2500, date: '2026-09-15' });
+    const late = financeSavingsSave({ name: 'Late', targetAmount: 1000, deadline: '2026-09-01' }).goal; financeSavingsContribute(late.id, { amount: 400, date: '2026-08-01' });
+    const done = financeSavingsSave({ name: 'Done', targetAmount: 100 }).goal; financeSavingsContribute(done.id, { amount: 150, date: '2026-09-01' }); financeSavingsContribute(done.id, { amount: -20, date: '2026-09-02' });
+    return { p: financeSavingsProgress(g), late: financeSavingsProgress(late), done: financeSavingsProgress(done), bad, month: financeMonthTotals('2026-09').savingsContributions, total: financeSavingsTotal() };
+  });
+  assert.deepEqual(r.bad, { amount: 'invalid' });
+  const p = r.p;
+  assert.deepEqual([p.current, p.target, p.remaining, p.pct, p.daysLeft, p.monthsLeft], [7500, 30000, 22500, 25, 181, 5.9]);
+  assert.deepEqual([p.requiredMonthly, p.requiredWeekly], [3783.67, 870.17], '22500 / (181 / 30.4375) and 22500 / (181 / 7)');
+  assert.deepEqual([r.late.overdue, r.late.requiredMonthly, r.late.remaining], [true, 600, 600], 'deadline passed: the whole remainder is due now');
+  assert.deepEqual([r.done.current, r.done.remaining, r.done.pct, r.done.done, r.done.requiredMonthly], [130, 0, 100, true, null], 'withdrawal as a negative contribution');
+  assert.deepEqual([r.month, r.total], [7500 + 150 - 20, 7500 + 400 + 130]);
+}, { state: fixtureState() });
+
+test('11B investments: contributions + manual valuations -> invested, value, gain, %; month change split into new money and market change', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const etf = financeInvestmentSave({ name: 'World ETF', ticker: 'vwce', type: 'etf' }).investment;
+    financeInvestmentAdd(etf.id, 'contribution', { amount: 10000, date: '2026-08-01' }); financeInvestmentAdd(etf.id, 'valuation', { value: 10400, date: '2026-08-31' });
+    financeInvestmentAdd(etf.id, 'contribution', { amount: 5000, date: '2026-09-10' }); financeInvestmentAdd(etf.id, 'valuation', { value: 16500, date: '2026-09-20' });
+    const bad = [financeInvestmentAdd(etf.id, 'valuation', { value: -1, date: '2026-09-21' }).errors, financeInvestmentAdd(etf.id, 'contribution', { amount: 0, date: '2026-09-21' }).errors];
+    const nov = financeInvestmentSave({ name: 'Spořicí dluhopis', type: 'bond' }).investment; financeInvestmentAdd(nov.id, 'contribution', { amount: 2000, date: '2026-09-01' });
+    return { etf: financeInvestmentPerformance(etf), aug: financeInvestmentPerformance(etf, '2026-08-31'), nov: financeInvestmentPerformance(nov), sum: financeInvestmentsSummary(), ch: financeInvestmentMonthChange('2026-09'), bad, ticker: etf.ticker };
+  });
+  assert.deepEqual([r.etf.invested, r.etf.value, r.etf.gain, r.etf.pct, r.etf.hasValuation], [15000, 16500, 1500, 10, true]);
+  assert.deepEqual([r.aug.invested, r.aug.value, r.aug.gain, r.aug.pct], [10000, 10400, 400, 4]);
+  assert.deepEqual([r.nov.value, r.nov.gain, r.nov.hasValuation], [2000, 0, false], 'no valuation yet: value = invested, flagged');
+  assert.deepEqual([r.sum.invested, r.sum.value, r.sum.gain, r.sum.pct], [17000, 18500, 1500, 8.8]);
+  assert.deepEqual([r.ch.valueStart, r.ch.valueEnd, r.ch.change, r.ch.contributions, r.ch.marketChange], [10400, 18500, 8100, 7000, 1100]);
+  assert.deepEqual(r.bad, [{ value: 'invalid' }, { amount: 'invalid' }]); assert.equal(r.ticker, 'VWCE');
+}, { state: fixtureState() });
+
+test('11B review + series: facts for a month from the same helpers; empty months are zero, never invented', async ({ page }) => {
+  const { a1 } = await finSetup(page);
+  const r = await fin(page, a1 => { const rv = financeMonthReview('2026-09'); const empty = financeMonthReview('2025-01');
+    return { t: [rv.totals.income, rv.totals.expenses, rv.totals.net], top: rv.topCategories.map(c => c.name), acc: rv.accounts.map(a => [a.account.name, a.balance]), end: rv.balanceEnd,
+      empty: [empty.totals.income, empty.totals.expenses, empty.topCategories.length, empty.budgets.map(b => b.spent)], series: financeMonthSeries('2026-09', 3).map(x => [x.ym, x.income, x.expenses, x.net]) }; }, a1);
+  assert.deepEqual(r.t, [47000, 5770, 41230]);
+  assert.deepEqual(r.top, ['Housing', 'Food', 'Transport', 'Entertainment']);
+  assert.deepEqual(r.acc, [['Hlavní účet', 11150], ['Peněženka', 1700]]);
+  assert.equal(r.end, 11150 + 1700 + 42000 - 1620);
+  assert.deepEqual(r.empty, [0, 0, 0, [0]]);
+  assert.deepEqual(r.series, [['2026-07', 0, 0, 0], ['2026-08', 0, 0, 0], ['2026-09', 47000, 5770, 41230]]);
+}, { state: fixtureState() });
+
+test('11B XP: only a NEW transaction runs the existing once-a-day Finance XP; categories, budgets, accounts, plans, savings, investments and edits grant nothing', async ({ page }) => {
+  const x = () => page.evaluate(() => ({ xp: S.totalXp, wis: S.attrs.WIS, log: S.xpLog.length }));
+  await page.evaluate(() => { S.financeXpDate = null; });
+  const x0 = await x();
+  const { a1 } = await page.evaluate(() => {
+    const a1 = financeAccountSave({ name: 'A', type: 'bank' }).account.id; financeCategorySave({ name: 'Nové', type: 'expense' }); financeBudgetSave({ categoryId: 'fcat_food', amount: 1 });
+    financeRecurringSave({ type: 'expense', name: 'R', amount: 1, frequency: 'monthly', startDate: '2026-10-01' }); const g = financeSavingsSave({ name: 'G', targetAmount: 1 }).goal; financeSavingsContribute(g.id, { amount: 1, date: '2026-09-01' });
+    const i = financeInvestmentSave({ name: 'I' }).investment; financeInvestmentAdd(i.id, 'valuation', { value: 1, date: '2026-09-01' }); financeAccountAddCheckpoint(a1, { date: '2026-09-01', balance: 1 });
+    return { a1 };
+  });
+  assert.deepEqual(await x(), x0, 'no XP for setting things up');
+  const id = await page.evaluate(() => financeSaveTransaction('expense', { amount: 10, date: todayStr() }).tx.id);
+  const x1 = await x();
+  assert.equal(x1.xp - x0.xp, 5, '+5 WIS XP (existing rule), once per day');
+  await page.evaluate(id => { financeSaveTransaction('income', { amount: 10, date: todayStr() }); financeSaveTransaction('expense', { amount: 11, date: todayStr() }, id); }, id);
+  assert.equal((await x()).xp, x1.xp, 'second transaction the same day and an edit: nothing');
+  void a1;
+}, { state: fixtureState() });
+
+// ---------- Phase 11B: Finance 2.0 UI ----------
+const T_ = async loc => (await loc.innerText()).replace(/[\u00a0\u202f]/g, ' ');
+const finGo = (page, v = 'dashboard', ym = null) => page.evaluate(({ v, ym }) => { closeSheets(); view = 'home'; render(); finKeepView = true; finView = v; finMonth = ym; view = 'finance'; render(); window.scrollTo(0, 0); }, { v, ym });
+const kpi = async (page, id) => (await T_(page.locator('#' + id + ' .stat-value'))).replace(/\s/g, '');
+
+test('11B UI: dashboard KPIs, month selector, expected payments, budgets and charts show the real month numbers', async ({ page }) => {
+  await finSetup(page);
+  await finGo(page);
+  assert.match(await T_(page.locator('#finMonthLabel')), /Září 2026/);
+  assert.deepEqual([await kpi(page, 'kpiNet'), await kpi(page, 'kpiInc'), await kpi(page, 'kpiExp')], ['+41230', '47000', '5770']);
+  assert.match(await kpi(page, 'kpiBud'), /21%/, 'Food 1270 of 6000 (the only budget)');
+  const ex = await T_(page.locator('#finExpected'));
+  assert.match(ex, /Spotify[\s\S]*27\.09\.2026[\s\S]*−169[\s\S]*Zaplaceno/);
+  assert.match(await T_(page.locator('.fin-hbars').first()), /Bydlení[\s\S]*3 000 · 52 %[\s\S]*Jídlo[\s\S]*1 270 · 22 %/);
+  assert.equal(await page.locator('.fin-cols .fin-col').count(), 6);
+  assert.match((await page.locator('.fin-cols').getAttribute('aria-label')).replace(/[\u00a0\u202f]/g, ' '), /Září 2026: Příjmy 47 000, Výdaje 5 770/);
+  assert.equal(await page.locator('.fin-line circle title').count(), 6, 'balance trend: 6 points with tooltips');
+  // previous month: nothing there -> zeros and empty states, never invented
+  await page.click('#finPrev');
+  assert.deepEqual([await kpi(page, 'kpiNet'), await kpi(page, 'kpiInc'), await kpi(page, 'kpiExp')], ['+0', '0', '0']);
+  assert.match(await T_(page.locator('.fin-charts')), /Za toto období nejsou data/);
+  assert.equal(await page.locator('#finThisMonth').count(), 1);
+  await page.click('#finThisMonth');
+  assert.match(await T_(page.locator('#finMonthLabel')), /Září 2026/);
+  await page.fill('#finMonthInput', '2026-10'); await page.dispatchEvent('#finMonthInput', 'change');
+  assert.match(await T_(page.locator('#finMonthLabel')), /Říjen 2026/);
+}, { state: fixtureState() });
+
+test('11B UI: expense and income create / edit / delete through the form and the detail sheet', async ({ page }) => {
+  const { a1 } = await finSetup(page);
+  await finGo(page);
+  await page.click('#addExp');
+  await page.click('#f_save');
+  assert.match(await T_(page.locator('[data-err="f_amt"]')), /větší než 0/);
+  await page.fill('#f_amt', '249.5'); await page.selectOption('#f_cat', 'fcat_shopping'); await page.selectOption('#f_acc', a1);
+  await page.fill('#f_date', '2026-09-21'); await page.fill('#f_desc', 'Batoh'); await page.fill('#f_tags', 'výlet, léto'); await page.click('#f_save');
+  let x = (await stateOf(page)).expenses.find(e => e.description === 'Batoh');
+  assert.deepEqual([x.amount, x.categoryId, x.category, x.accountId, x.tags], [249.5, 'fcat_shopping', 'Shopping', a1, ['výlet', 'léto']]);
+  assert.equal(await kpi(page, 'kpiExp'), '6019,5');
+  await page.click(`.fin-tx[data-tx="${x.id}"]`);
+  assert.match(await T_(page.locator('.fin-detail')), /Batoh[\s\S]*−249,5[\s\S]*Nákupy[\s\S]*Hlavní účet[\s\S]*výlet, léto/);
+  await page.click('#fd_edit'); await page.fill('#f_amt', '300'); await page.click('#f_save');
+  x = (await stateOf(page)).expenses.find(e => e.id === x.id);
+  assert.equal(x.amount, 300);
+  await page.click(`.fin-tx[data-tx="${x.id}"]`); await page.click('#fd_del'); await page.click('#cf_ok');
+  assert.equal((await stateOf(page)).expenses.some(e => e.id === x.id), false);
+  await page.click('#addInc'); await page.fill('#f_amt', '1500'); await page.selectOption('#f_cat', 'fcat_salary'); await page.fill('#f_desc', 'Brigáda'); await page.fill('#f_date', '2026-09-22'); await page.click('#f_save');
+  const inc = (await stateOf(page)).income.find(i => i.description === 'Brigáda');
+  assert.equal(await kpi(page, 'kpiInc'), '48500');
+  await page.click(`.fin-tx[data-tx="${inc.id}"]`); await page.click('#fd_edit'); await page.fill('#f_amt', '1600'); await page.click('#f_save');
+  assert.equal(await kpi(page, 'kpiInc'), '48600');
+  await page.click(`.fin-tx[data-tx="${inc.id}"]`); await page.click('#fd_del'); await page.click('#cf_ok');
+  assert.equal(await kpi(page, 'kpiInc'), '47000');
+  // "repeat as a plan": the transaction is the first realized occurrence -> counted once
+  await page.click('#addExp'); await page.fill('#f_amt', '450'); await page.fill('#f_desc', 'Posilovna'); await page.fill('#f_date', '2026-09-03'); await page.selectOption('#f_repeat', 'monthly'); await page.click('#f_save');
+  const s = await stateOf(page); const tx = s.expenses.find(e => e.description === 'Posilovna'); const plan = s.recurringFinance.find(r => r.name === 'Posilovna');
+  assert.deepEqual([tx.recurringId, tx.recurringFor, plan.startDate, plan.amount], [plan.id, '2026-09-03', '2026-09-03', 450]);
+  assert.equal(await kpi(page, 'kpiExp'), '6220');
+  assert.match(await T_(page.locator('#finExpected')), /Posilovna[\s\S]*zaplaceno/);
+}, { state: fixtureState() });
+
+test('11B UI: categories, budgets (default + override), accounts with checkpoint, savings contribution, investment valuation, recurring confirm', async ({ page }) => {
+  const { a1 } = await finSetup(page);
+  // categories
+  await finGo(page, 'cats');
+  await page.click('#addCat'); await page.fill('#fc_name', 'Dárky'); await page.fill('#fc_icon', '🎁'); await page.click('#fc_save');
+  const gift = (await stateOf(page)).financeCategories.find(c => c.name === 'Dárky');
+  await page.click(`[data-fcat="${gift.id}"] .catAct`);
+  assert.equal((await stateOf(page)).financeCategories.find(c => c.id === gift.id).active, false);
+  await page.click(`[data-fcat="fcat_food"] .catEdit`); await page.fill('#fc_name', 'Jídlo a pití'); await page.click('#fc_save');
+  assert.match(await T_(page.locator('[data-fcat="fcat_food"]')), /Jídlo a pití/);
+  // budgets
+  await finGo(page, 'budgets', '2026-09');
+  await page.click('#addBud'); await page.selectOption('#b_cat', 'fcat_housing'); await page.fill('#b_amt', '3200'); await page.click('#b_save');
+  await page.click('#addBud'); await page.selectOption('#b_cat', 'fcat_housing'); await page.fill('#b_amt', '2500'); await page.selectOption('#b_scope', '2026-09'); await page.click('#b_save');
+  assert.match(await T_(page.locator('#finBudList')), /Bydlení[\s\S]*3 000 \/ 2 500[\s\S]*nad limitem · 120 %[\s\S]*přes o 500/);
+  await page.click('#finNext');
+  assert.match(await T_(page.locator('#finBudList')), /Bydlení[\s\S]*0 \/ 3 200/, 'October falls back to the default');
+  // accounts
+  await finGo(page, 'accounts');
+  assert.match(await T_(page.locator(`[data-account="${a1}"]`)), /Hlavní účet[\s\S]*11 150/);
+  await page.click(`[data-account="${a1}"]`); await page.fill('#cp_bal', '6000'); await page.fill('#cp_date', '2026-09-12'); await page.click('#cp_save');
+  assert.match(await T_(page.locator('#accDetail')), /Vypočtený zůstatek[\s\S]*11 150[\s\S]*Poslední kontrola[\s\S]*6 000[\s\S]*Rozdíl ke dni kontroly[\s\S]*−150/);
+  await page.evaluate(() => closeSheets());
+  await page.click('#addAcc'); await page.fill('#a_name', 'Spořák'); await page.selectOption('#a_type', 'bank'); await page.fill('#a_open', '50000'); await page.click('#a_save');
+  assert.match(await T_(page.locator('#finAccList')), /Spořák[\s\S]*50 000/);
+  // savings
+  await finGo(page, 'savings');
+  await page.click('#addGoal'); await page.fill('#g_name', 'Dovolená'); await page.fill('#g_target', '30000'); await page.fill('#g_dead', '2027-03-23'); await page.click('#g_save');
+  const gid = (await stateOf(page)).savingsGoals[0].id;
+  await page.click(`[data-goal="${gid}"]`); await page.fill('#c_amt', '7500'); await page.click('#c_save');
+  assert.match(await T_(page.locator('#goalDetail')), /7 500 \/ 30 000 \(25 %\)[\s\S]*22 500[\s\S]*3 783,67 měsíčně · 870,17 týdně/);
+  await page.evaluate(() => closeSheets());
+  // investments
+  await finGo(page, 'invest');
+  await page.click('#addInv'); await page.fill('#i_name', 'World ETF'); await page.fill('#i_ticker', 'vwce'); await page.fill('#i_first', '15000'); await page.fill('#i_fdate', '2026-08-01'); await page.click('#i_save');
+  const iid = (await stateOf(page)).investments[0].id;
+  await page.click(`[data-investment="${iid}"]`); await page.fill('#iv_val', '16500'); await page.fill('#iv_date', '2026-09-20'); await page.click('#iv_save');
+  assert.match(await T_(page.locator('#invDetail')), /16 500[\s\S]*Vloženo[\s\S]*15 000[\s\S]*\+1 500 · \+10 %/);
+  await page.evaluate(() => closeSheets());
+  // recurring: create a plan, confirm it once
+  await finGo(page, 'recurring', '2026-09');
+  await page.click('#addRec'); await page.fill('#r_name', 'Internet'); await page.fill('#r_amt', '600'); await page.fill('#r_start', '2026-09-10'); await page.click('#r_save');
+  const e0 = (await stateOf(page)).expenses.length;
+  await page.locator('[data-exp^="recurring:"]', { hasText: 'Internet' }).locator('.finConfirm').click();
+  const e1 = await stateOf(page);
+  assert.equal(e1.expenses.length, e0 + 1);
+  assert.match(await T_(page.locator('[data-exp^="recurring:"]', { hasText: 'Internet' })), /zaplaceno/);
+  assert.equal(await page.locator('[data-exp^="recurring:"]', { hasText: 'Internet' }).locator('.finConfirm').count(), 0, 'no second confirm');
+  void gift;
+}, { state: fixtureState() });
+
+test('11B integration: Home = Finance, Statistics, Search, Quick Add, subscriptions never double counted', async ({ page }) => {
+  await finSetup(page);
+  await page.evaluate(() => { view = 'home'; render(); });
+  const homeNet = await page.getAttribute('[data-nav="finance"] [data-fin-net]', 'data-fin-net');
+  const finNet = await page.evaluate(() => financeMonthTotals(finYm()).net);
+  assert.equal(Number(homeNet), finNet);
+  assert.equal(finNet, 41230);
+  const st = await page.evaluate(() => { const g = financeSavingsSave({ name: 'G', targetAmount: 100 }).goal; financeSavingsContribute(g.id, { amount: 40, date: '2026-09-01' });
+    const i = financeInvestmentSave({ name: 'I' }).investment; financeInvestmentAdd(i.id, 'contribution', { amount: 100, date: '2026-09-01' }); financeInvestmentAdd(i.id, 'valuation', { value: 130, date: '2026-09-02' });
+    const s = computeStats('year').finance; return [s.income, s.expenses, s.balance, s.savings, s.investments, s.byCategory.Housing]; });
+  assert.deepEqual(st, [47000, 5770, 41230, 40, 130, 3000]);
+  await page.evaluate(() => { statsPeriod = 'year'; view = 'statistics'; render(); });
+  assert.match((await appText(page)).replace(/[\u00a0\u202f]/g, ' '), /Úspory\s*40[\s\S]*Investice\s*130/);
+  // Search
+  const g = await page.evaluate(() => searchGroups('hlavní').map(x => [x[2], x[3].map(i => i.title)]).filter(x => x[1].length));
+  assert.deepEqual(g, [['account', ['Hlavní účet']]]);
+  await page.evaluate(() => searchNavigate('account', S.accounts[0]));
+  assert.equal(await page.locator('#accDetail').count(), 1);
+  await page.evaluate(() => { closeSheets(); searchNavigate('expense', S.expenses.find(e => e.description === 'Nájem')); });
+  assert.match(await T_(page.locator('.fin-detail')), /Nájem[\s\S]*3 000/);
+  assert.ok(await page.evaluate(() => searchGroups('bydlení').some(x => x[2] === 'expense' && x[3].length)), 'expenses found by category name');
+  // Quick Add -> the Finance 2.0 form
+  await page.evaluate(() => { closeSheets(); view = 'home'; render(); });
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="expense"]');
+  assert.equal(await page.locator('#f_acc').count(), 1);
+  await page.fill('#f_amt', '99'); await page.selectOption('#f_cat', 'fcat_food'); await page.click('#f_save');
+  assert.equal(await page.evaluate(() => financeMonthTotals(finYm()).expenses), 5869);
+  // subscription + plan covering it + payment = counted once (Netflix 299)
+  const r = await page.evaluate(() => {
+    S.subscriptions.push({ id: 'nf', name: 'Netflix', price: 299, period: 'Monthly', nextPayment: '2026-09-25', category: '', notes: '', active: true, createdAt: Date.parse('2026-09-01') });
+    const before = financeMonthTotals('2026-09').expenses;
+    const p = financeRecurringSave({ type: 'expense', name: 'Netflix', amount: 299, frequency: 'monthly', startDate: '2026-09-25', subscriptionId: 'nf' }).recurring;
+    const listed = financeExpectedMonth('2026-09').items.filter(i => i.name === 'Netflix').length;
+    financeConfirmExpected('recurring', p.id, '2026-09-25'); financeConfirmExpected('subscription', 'nf', '2026-09-25');
+    return { before, after: financeMonthTotals('2026-09').expenses, listed, n: S.expenses.filter(e => e.description === 'Netflix').length };
+  });
+  assert.deepEqual(r, { before: 5869, after: 6168, listed: 1, n: 1 }, 'one Netflix payment of 299, not 598 or 897');
+}, { state: fixtureState() });
+
+test('11B data: reload, export/import of every Finance collection, old backup, reset (no orphans, UI works)', async ({ page }) => {
+  await finSetup(page);
+  await page.evaluate(() => {
+    financeBudgetSave({ categoryId: 'fcat_food', amount: 9000, month: '2026-10' });
+    financeRecurringSave({ type: 'income', name: 'Nájem od podnájemníka', amount: 4000, frequency: 'monthly', startDate: '2026-09-01' });
+    const g = financeSavingsSave({ name: 'G', targetAmount: 100 }).goal; financeSavingsContribute(g.id, { amount: 40, date: '2026-09-01' });
+    const i = financeInvestmentSave({ name: 'I' }).investment; financeInvestmentAdd(i.id, 'contribution', { amount: 100, date: '2026-09-01' }); financeInvestmentAdd(i.id, 'valuation', { value: 130, date: '2026-09-02' });
+    financeAccountAddCheckpoint(S.accounts[0].id, { date: '2026-09-12', balance: 6000 }); financeCategorySave({ name: 'Dárky', type: 'both' });
+  });
+  const K = ['expenses', 'income', 'budgets', 'financeCategories', 'recurringFinance', 'accounts', 'savingsGoals', 'investments', 'subscriptions'];
+  const snap = () => page.evaluate(K => JSON.stringify(K.map(k => S[k])), K);
+  const s0 = await snap();
+  await persist(page); await reload(page);
+  assert.deepEqual(JSON.parse(await snap()), JSON.parse(s0), 'reload (same data; key order may differ after migrate)');
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  const backup = JSON.parse(readFileSync(file, 'utf8'));
+  assert.deepEqual(K.filter(k => !(k in backup)), [], 'every collection is in the backup');
+  assert.ok(backup.savingsGoals[0].contributions.length && backup.investments[0].valuations.length && backup.accounts[0].checkpoints.length);
+  await page.evaluate(K => K.forEach(k => { S[k] = []; }), K);
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(() => S.investments.length === 1);
+  assert.deepEqual(JSON.parse(await snap()), JSON.parse(s0), 'import restores all of it');
+  const old = fixtureState();
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => S.investments.length === 0 && S.accounts.length === 0);
+  const o = await stateOf(page);
+  assert.deepEqual([o.expenses, o.income, o.budgets, o.subscriptions], [old.expenses, old.income, old.budgets, old.subscriptions], 'old backup: untouched');
+  assert.ok(o.financeCategories.length >= 11);
+  await finGo(page); assert.match((await appText(page)).replace(/[\u00a0\u202f]/g, ' '), /Září 2026/);
+  page.on('dialog', d => d.accept());
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  assert.deepEqual(await page.evaluate(K => K.map(k => S[k]), K), K.map(() => []), 'reset empties every Finance collection');
+  await page.evaluate(() => { S.settings.onboarded = true; closeSheets(); view = 'finance'; render(); });
+  assert.match((await appText(page)).replace(/[\u00a0\u202f]/g, ' '), /V tomto měsíci žádné transakce/);
+}, { state: fixtureState() });
+
+test('11B UI: every Finance screen and sheet fits 320-1440 px (long names, big amounts) without overflow, clipping or duplicate ids', async ({ page }) => {
+  await page.evaluate(() => {
+    const a = financeAccountSave({ name: 'Velmi dlouhý název bankovního účtu u Komerční banky – rodinný', type: 'bank', openingBalance: 123456789.55, openingDate: '2026-01-01' }).account.id;
+    const c = financeCategorySave({ name: 'Kategorie s opravdu extrémně dlouhým názvem pro test', type: 'expense' }).category.id;
+    financeSaveTransaction('expense', { amount: 98765432.1, categoryId: c, accountId: a, date: '2026-09-10', description: 'Popis transakce, který je hodně dlouhý a nevejde se na jeden řádek' });
+    financeSaveTransaction('income', { amount: 123456789, categoryId: 'fcat_salary', date: '2026-09-11' });
+    financeBudgetSave({ categoryId: c, amount: 50000000 });
+    financeRecurringSave({ type: 'expense', name: 'Opakovaná platba s dlouhým názvem za pojištění domácnosti', amount: 1234567, frequency: 'monthly', startDate: '2026-09-28', accountId: a });
+    const g = financeSavingsSave({ name: 'Spořicí cíl na nové auto pro celou rodinu a výlety', targetAmount: 1500000, deadline: '2027-12-31' }).goal; financeSavingsContribute(g.id, { amount: 250000, date: '2026-09-01' });
+    const i = financeInvestmentSave({ name: 'iShares Core MSCI World UCITS ETF USD (Acc)', ticker: 'SWDA.L', type: 'etf' }).investment; financeInvestmentAdd(i.id, 'contribution', { amount: 9999999, date: '2026-08-01' }); financeInvestmentAdd(i.id, 'valuation', { value: 12345678, date: '2026-09-01' });
+    financeAccountAddCheckpoint(a, { date: '2026-09-12', balance: 30000000 });
+  });
+  const pages = ['dashboard', 'tx', 'budgets', 'accounts', 'savings', 'invest', 'recurring', 'cats', 'review'];
+  const sheets = { exp: () => openFinanceForm('expense'), bud: () => openBudgetForm(), acc: () => openAccountDetail(S.accounts[0]), goal: () => openSavingsDetail(S.savingsGoals[0]),
+    inv: () => openInvestmentDetail(S.investments[0]), rec: () => openRecurringForm(S.recurringFinance[0]), cat: () => openFinanceCategoryForm(S.financeCategories[0]), txd: () => openFinanceTxDetail('expense', S.expenses[S.expenses.length - 1]) };
+  const bad = [];
+  for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const k of [...pages, ...Object.keys(sheets)]) {
+      await page.evaluate(({ k, pages }) => { closeSheets(); finKeepView = true; finView = pages.includes(k) ? k : 'dashboard'; finMonth = '2026-09'; view = 'finance'; render(); }, { k, pages });
+      if (sheets[k]) await page.evaluate(k => ({ exp: () => openFinanceForm('expense'), bud: () => openBudgetForm(), acc: () => openAccountDetail(S.accounts[0]), goal: () => openSavingsDetail(S.savingsGoals[0]),
+        inv: () => openInvestmentDetail(S.investments[0]), rec: () => openRecurringForm(S.recurringFinance[0]), cat: () => openFinanceCategoryForm(S.financeCategories[0]), txd: () => openFinanceTxDetail('expense', S.expenses[S.expenses.length - 1]) })[k](), k);
+      const r = await page.evaluate(() => {
+        const s = document.querySelector('.sheet'), scope = s || document.getElementById('app'); const ids = [...document.querySelectorAll('[id]')].map(n => n.id);
+        const clipped = [...scope.querySelectorAll('.stat-value,.fin-amt,.fin-big,.big,.num')].filter(n => n.offsetParent && n.getBoundingClientRect().right > (s ? s.getBoundingClientRect().right : document.documentElement.clientWidth) + 1).map(n => n.textContent.trim().slice(0, 20));
+        const small = [...scope.querySelectorAll('button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36 && !b.matches('button.chip')).map(b => b.id || b.className);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: s ? s.scrollWidth - s.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i), clipped, small };
+      });
+      if (r.over > 0 || r.sheetOver > 0 || r.dup.length || r.clipped.length || r.small.length) bad.push(`${k}@${width}: ${JSON.stringify(r)}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+  void sheets;
 }, { state: fixtureState() });
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {

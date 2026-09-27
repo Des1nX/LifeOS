@@ -592,6 +592,65 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 
 /* Finance */
 .fin-hero{padding:18px}
+/* Phase 11B: Finance 2.0 */
+.fin .page-head{flex-wrap:wrap;row-gap:8px}
+.fin-detail .kv>b{white-space:normal;overflow-wrap:anywhere;text-align:right}
+.fin-detail .big,.fin-detail h3{overflow-wrap:anywhere}
+.fin-monthbar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px;padding:8px;margin-bottom:10px}
+.fin-month-pick{position:relative;display:flex;justify-content:center;align-items:center;min-height:44px;margin:0;color:var(--text);font-size:var(--fs-body);cursor:pointer}
+.fin-month-pick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;margin:0}
+.fin-todaybtn{margin:-2px 0 10px}
+.fin-back{margin-bottom:6px;width:auto}
+.fin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:700px){.fin-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.fin-kpi{text-align:left;font:inherit;color:inherit;cursor:pointer}
+.fin-kpi .stat-value{font-size:20px}
+.is-inc{color:var(--accent2)}
+.is-exp{color:var(--danger)}
+.fin-exp-row{gap:10px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.fin-exp-row:last-child{border-bottom:0}
+.fin-exp-row.is-done{opacity:.75}
+.fin-exp-right{display:flex;align-items:center;gap:8px;flex:none}
+.fin-charts{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-2);margin-top:var(--sp-4)}
+@media(min-width:1000px){.fin-charts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.fin-legend{display:flex;gap:14px;font-size:var(--fs-caption);color:var(--sub);margin-bottom:8px}
+.fin-legend .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+/* chart pair validated with the dataviz palette checker (dark: all pass, CVD dE 9.8; light: the app's own pair, CVD dE 7.6 + position/gap/legend) */
+.fin{--fin-inc:#1fae83;--fin-exp:#c2415a}
+:root[data-theme="light"] .fin{--fin-inc:var(--accent2);--fin-exp:var(--danger)}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]):not([data-theme="light"]) .fin{--fin-inc:var(--accent2);--fin-exp:var(--danger)}}
+.dot.is-inc,.fin-col-bars i.is-inc{background:var(--fin-inc)}
+.dot.is-exp,.fin-col-bars i.is-exp{background:var(--fin-exp)}
+.fin-cols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-items:end;height:128px}
+.fin-col{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;min-width:0}
+.fin-col span{font-size:var(--fs-micro);color:var(--sub);white-space:nowrap}
+.fin-col.is-sel span{color:var(--text);font-weight:750}
+.fin-col-bars{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px}
+.fin-col-bars i{display:block;width:min(14px,45%);border-radius:4px 4px 0 0;min-height:0}
+.fin-hbars{display:flex;flex-direction:column;gap:10px}
+.fin-hbar .between{font-size:var(--fs-body-sm);gap:8px;margin-bottom:4px}
+.fin-hbar .between span:last-child{color:var(--sub);white-space:nowrap}
+.fin-hbar .bar>i{background:var(--accent)}
+.fin-line{display:block;overflow:visible}
+.fin-zero{stroke:var(--line);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.fin-line-x{margin-top:6px;font-size:var(--fs-caption)}
+.fin-bud{position:relative}
+.fin-bud-foot{margin-top:4px;font-size:var(--fs-caption);gap:8px}
+.fin-bud .fin-row-actions{position:absolute;right:0;top:-6px}
+.fin-bud:has(.fin-row-actions) .metric-head{padding-right:40px}
+.fin-tx{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.fin-amt{white-space:nowrap;flex:none}
+.fin-sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-2);margin-top:var(--sp-5)}
+@media(min-width:700px){.fin-sections{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.fin-sec{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;font:inherit;color:inherit;cursor:pointer;text-align:center;min-height:72px}
+.fin-sec span{font-size:22px}
+.fin-sec b{font-size:var(--fs-caption);overflow-wrap:anywhere}
+.fin-card{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;display:block}
+.fin-card .between{gap:10px}
+.fin-card .sub{margin-top:4px}
+.fin-big{white-space:nowrap;font-size:17px}
+.fin-cat.is-inactive{opacity:.6}
+.fin-rv-sum p{margin:6px 0;font-size:var(--fs-body)}
 .fin-pill{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card2);min-width:0}
 .fin-pill b{font-size:18px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .budget-row .metric-head{align-items:center}
@@ -1267,6 +1326,8 @@ function defaultState(){return{
   exerciseLibrary:[],
   workoutTemplates:[], // Phase 11A: plans for Start Workout (see templateSave)
   muscleProgress:{log:[]}, // Phase 11A: Muscle XP ledger (see muscleAwardWorkout); totals/levels are derived
+  // ---- Phase 11B: Finance 2.0 (see the Finance 2.0 block); old states get these in migrate() ----
+  financeCategories:[], accounts:[], recurringFinance:[], savingsGoals:[], investments:[],
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -1427,6 +1488,14 @@ function migrate(state){
   // finished new-model workouts that have no log record yet (idempotent by key).
   if(!merged.muscleProgress||typeof merged.muscleProgress!=='object') merged.muscleProgress={log:[]};
   if(!Array.isArray(merged.muscleProgress.log)) merged.muscleProgress.log=[];
+  // Phase 11B: Finance 2.0. A state without categories gets the default set + every category name its
+  // own history uses. Old transactions/budgets are NOT rewritten: they resolve their category by exact
+  // name on read (financeCategoryOf); the id is only written when the user renames that category.
+  merged.financeCategories=Array.isArray(state&&state.financeCategories)?merged.financeCategories.map(migrateFinanceCategory):financeSeedCategories(merged);
+  merged.accounts=(merged.accounts||[]).map(migrateAccount);
+  merged.recurringFinance=(merged.recurringFinance||[]).map(migrateRecurring);
+  merged.savingsGoals=(merged.savingsGoals||[]).map(migrateSavingsGoal);
+  merged.investments=(merged.investments||[]).map(migrateInvestment);
   muscleRecover(merged);
   merged.schemaVersion=d.schemaVersion;
   return merged;
@@ -2444,7 +2513,7 @@ const UI_PHRASES_CS={
   'Attributes':'Atributy','Workouts':'Tréninky','Sets':'Série','Reps':'Opakování','Total volume':'Celkový objem','Total duration (min)':'Celková doba (min)','Personal records (all-time)':'Osobní rekordy (celkem)',
   'Workout volume':'Objem tréninků','Nutrition':'Výživa','Avg calories/day (logged)':'Prům. kalorie/den (zapsané)','Avg protein (g)':'Prům. bílkoviny (g)','Avg carbs (g)':'Prům. sacharidy (g)',
   'Avg fat (g)':'Prům. tuky (g)','Avg water (ml)':'Prům. voda (ml)','Days logged':'Zapsané dny','Calorie target adherence':'Plnění kalorického cíle','Calories (per day logged)':'Kalorie (za zapsaný den)',
-  'Income':'Příjmy','Expenses':'Výdaje','Balance':'Zůstatek','Savings (positive balance)':'Úspory (kladný zůstatek)','Transactions':'Transakce','Expenses by category':'Výdaje podle kategorií',
+  'Income':'Příjmy','Expenses':'Výdaje','Balance':'Zůstatek','Savings (positive balance)':'Úspory (kladný zůstatek)','Savings':'Úspory','Investments':'Investice','Housing':'Bydlení','Uncategorized':'Bez kategorie','Education':'Vzdělání','Other income':'Ostatní příjmy','Finance categories':'Finanční kategorie','Recurring plans':'Opakované platby','Accounts':'Účty','Savings goals':'Spořicí cíle','Transactions':'Transakce','Expenses by category':'Výdaje podle kategorií',
   'Income vs Expenses (net balance)':'Příjmy vs. výdaje (čistý zůstatek)','Sleep / Health':'Spánek / zdraví','Avg sleep (period)':'Prům. spánek (období)','Sleep days logged':'Zapsané noci',
   'Avg steps/day (period)':'Prům. kroky/den (období)','Steps days logged':'Dny s kroky','Weight trend (period)':'Vývoj váhy (období)','Sleep duration':'Délka spánku','Journal':'Deník','Entries':'Zápisy',
   'Average rating':'Průměrné hodnocení','Days with an entry':'Dny se zápisem','Mood distribution':'Rozložení nálad','Streaks':'Streaky','Best habit streak (any habit, all-time)':'Nejlepší streak (celkem)',
@@ -2623,20 +2692,16 @@ function renderHome(){
     // double-counting (same rule as the Finance module itself). ---
     finance: ()=>{
       if(W.finance===false) return null;
-      const ym=todayStr().slice(0,7);
-      const monthExp=S.expenses.filter(e=>e.date&&e.date.startsWith(ym));
-      const monthInc=S.income.filter(i=>i.date&&i.date.startsWith(ym));
+      const ft=financeMonthTotals(finYm()); // Phase 11B: the same helper as the Finance dashboard
       const fc=el(`<div class="card snap${S.expenses.length||S.income.length?'':' is-empty'}" data-nav="finance" role="button" tabindex="0"><div class="snap-k">💰 ${uiT('finance')}</div></div>`);
       if(!S.expenses.length && !S.income.length){
         fc.appendChild(el(`<div class="snap-v">${uiT('nothing_logged')}</div>`));
       } else {
-        const totExp=monthExp.reduce((a,b)=>a+Number(b.amount||0),0);
-        const totInc=monthInc.reduce((a,b)=>a+Number(b.amount||0),0);
-        const bal=totInc-totExp;
-        fc.appendChild(el(`<div class="snap-v" style="color:${bal>=0?'var(--accent2)':'var(--danger)'}">${bal>=0?'':'−'}${uiNum(Math.abs(Math.round(bal)))}</div>`));
+        const totExp=ft.expenses, totInc=ft.income, bal=ft.net;
+        fc.appendChild(el(`<div class="snap-v" data-fin-net="${bal}" style="color:${bal>=0?'var(--accent2)':'var(--danger)'}">${bal>=0?'':'−'}${uiNum(Math.abs(Math.round(bal)))}</div>`));
         fc.appendChild(el(`<div class="snap-s">${uiT('balance')} · ${uiT('this_month')}<br>↑ ${uiNum(Math.round(totInc))} · ↓ ${uiNum(Math.round(totExp))}</div>`));
       }
-      fc.onclick=()=>{view='finance';render();};
+      fc.onclick=()=>{ finView='dashboard'; finMonth=null; view='finance'; render(); };
       fc.style.cursor='pointer';
       return fc;
     },
@@ -3650,155 +3715,1001 @@ function financeGrantXp(){
     applyFinanceAttrSkillBonus('finance:'+today);
   }
 }
-function renderFinance(){
-  const ym=todayStr().slice(0,7);
-  const monthExp=S.expenses.filter(e=>e.date&&e.date.startsWith(ym));
-  const monthInc=S.income.filter(i=>i.date&&i.date.startsWith(ym));
-  const totExp=monthExp.reduce((a,b)=>a+Number(b.amount||0),0);
-  const totInc=monthInc.reduce((a,b)=>a+Number(b.amount||0),0);
-  const bal=totInc-totExp;
+/* ================= Phase 11B: Finance 2.0 -- model + the ONE set of calculations =================
+   Collections (all reach old states/backups through migrate(); schemaVersion stays 8):
+   financeCategories[] {id,name,type:'expense'|'income'|'both',icon,color,active,createdAt,updatedAt}
+   expenses[]/income[]  existing records + optional categoryId, accountId, recurringId, recurringFor,
+                        subscriptionId, updatedAt (the old free-text `category` is kept untouched)
+   budgets[]            {id,categoryId,category,amount,month:null|'YYYY-MM',note,...}: month null = the
+                        default monthly limit, month 'YYYY-MM' = an override for that one month
+   recurringFinance[]   {id,type,name,amount,categoryId,accountId,frequency:'weekly'|'monthly'|'yearly',
+                        startDate,active,notes,createdAt,updatedAt} -- a PLAN, never counted as money
+   accounts[]           {id,name,type:'bank'|'cash'|'card',currency,openingBalance,openingDate,active,notes,
+                        checkpoints:[{id,date,balance,note}],createdAt,updatedAt}
+   savingsGoals[]       {id,name,targetAmount,deadline,accountId,icon,color,active,contributions:[{id,amount,date,note,accountId}],...}
+   investments[]        {id,name,ticker,type,currency,accountId,active,notes,contributions:[{id,amount,date,note}],
+                        valuations:[{id,date,value}],createdAt,updatedAt} -- manual values only, no market data
+   Money is counted ONLY from expenses[]/income[]. Recurring plans and subscriptions are "expected";
+   paying one creates a normal transaction linked by recurringId/subscriptionId + recurringFor
+   (the occurrence date), after which that occurrence counts as realized and is never counted twice. */
+const FIN_DEFAULT_CATS=[['Food','expense','🍎','#f59e0b'],['Housing','expense','🏠','#6366f1'],['Transport','expense','🚗','#0ea5e9'],
+  ['Shopping','expense','🛍️','#ec4899'],['Entertainment','expense','🎬','#8b5cf6'],['Health','expense','❤️','#ef4444'],
+  ['Subscriptions','expense','💳','#14b8a6'],['Education','expense','📚','#22c55e'],['Other','expense','📦','#94a3b8'],
+  ['Salary','income','💼','#10b981'],['Other income','income','💵','#84cc16']];
+const FIN_ACCOUNT_TYPES=['bank','cash','card'];
+const FIN_FREQUENCIES=['weekly','monthly','yearly'];
+const FIN_BUDGET_NEAR=80; // % of the limit from which a budget is "near"
+function finDefaults(x,d){ const r=Object.assign({},x); Object.keys(d).forEach(k=>{ if(r[k]===undefined) r[k]=d[k]; }); return r; } // keeps the record's key order
+function finSlug(name){ return String(name||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'x'; }
+function finNum(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
+function finRound(n){ return Math.round(n*100)/100; }
+function finYm(d){ return String(d||todayStr()).slice(0,7); }
+function finMonthRange(ym){ const [y,m]=ym.split('-').map(Number); const last=new Date(y,m,0).getDate(); return {from:`${ym}-01`,to:`${ym}-${String(last).padStart(2,'0')}`}; }
+function finShiftMonth(ym,k){ const [y,m]=ym.split('-').map(Number); const d=new Date(y,m-1+k,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function finDaysBetween(a,b){ return Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000); }
+// ---- categories ----
+function financeSeedCategories(st){
+  // default set + every distinct category name already used by old transactions/budgets (never lost)
+  const cats=[], byKey=new Map();
+  const add=(name,type,icon,color)=>{
+    name=String(name||'').trim().replace(/\s+/g,' '); const k=exerciseKey(name); if(!k) return;
+    const ex=byKey.get(k); if(ex){ if(ex.type!==type) ex.type='both'; return; }
+    let id='fcat_'+finSlug(name); while(cats.some(c=>c.id===id)) id+='_';
+    const c={id,name,type,icon:icon||'🏷️',color:color||'#94a3b8',active:true,createdAt:Date.now(),updatedAt:Date.now()};
+    cats.push(c); byKey.set(k,c);
+  };
+  FIN_DEFAULT_CATS.forEach(([n,t,i,c])=>add(n,t,i,c));
+  (st.expenses||[]).forEach(e=>add(e.category,'expense'));
+  (st.income||[]).forEach(e=>add(e.category,'income'));
+  (st.budgets||[]).forEach(b=>add(b.category,'expense'));
+  return cats;
+}
+function migrateFinanceCategory(c){
+  const r=finDefaults(c,{name:'',type:'expense',icon:'🏷️',color:'#94a3b8',active:true,createdAt:Date.now()});
+  if(!['expense','income','both'].includes(r.type)) r.type='expense';
+  if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function financeCategoryById(id,st){ return id?((st||S).financeCategories||[]).find(c=>c.id===id)||null:null; }
+function financeCategoryOf(x,kind,st){
+  // a record's category: its categoryId, else the exact (normalized) name of its old text category
+  const c=financeCategoryById(x&&x.categoryId,st); if(c) return c;
+  const k=exerciseKey(x&&x.category); if(!k) return null;
+  const all=(st||S).financeCategories||[];
+  return all.find(c=>exerciseKey(c.name)===k&&(!kind||c.type===kind||c.type==='both'))||all.find(c=>exerciseKey(c.name)===k)||null;
+}
+function financeCategoryKey(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.id:'name:'+(exerciseKey(x&&x.category)||'other'); }
+function financeCategoryLabel(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.name:(String((x&&x.category)||'').trim()||'Uncategorized'); }
+function financeCategoriesFor(kind,includeId,st){
+  return ((st||S).financeCategories||[]).filter(c=>(c.active||c.id===includeId)&&(c.type===kind||c.type==='both')).sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+}
+function financeCategoryValidate(f,id){
+  const e={}; const name=String(f.name||'').trim();
+  if(!name) e.name='required';
+  else if((S.financeCategories||[]).some(c=>c.id!==id&&exerciseKey(c.name)===exerciseKey(name)&&(c.type===f.type||c.type==='both'||f.type==='both'))) e.name='duplicate';
+  if(!['expense','income','both'].includes(f.type)) e.type='invalid';
+  return e;
+}
+function financeCategorySave(f,id){
+  const errors=financeCategoryValidate(f,id); if(Object.keys(errors).length) return {ok:false,errors};
+  S.financeCategories=S.financeCategories||[];
+  const fields={name:String(f.name).trim().replace(/\s+/g,' '),type:f.type,icon:String(f.icon||'🏷️').trim()||'🏷️',color:f.color||'#94a3b8',updatedAt:Date.now()};
+  let c=id?S.financeCategories.find(x=>x.id===id):null;
+  if(c){
+    // renaming: records that still point at this category only by its old text name get its id first,
+    // so the rename never disconnects history (the old text itself stays on the record)
+    if(exerciseKey(c.name)!==exerciseKey(fields.name)) [[S.expenses,'expense'],[S.income,'income'],[S.budgets,'expense'],[S.recurringFinance||[],null]].forEach(([list,kind])=>list.forEach(x=>{ if(!x.categoryId&&financeCategoryOf(x,kind)===c) x.categoryId=c.id; }));
+    Object.assign(c,fields);
+  }
+  else { c=Object.assign({id:uid(),active:true,createdAt:Date.now()},fields); S.financeCategories.push(c); }
+  return {ok:true,category:c};
+}
+function financeCategoryInUse(id){
+  const c=financeCategoryById(id); const used=x=>x.categoryId===id||(!x.categoryId&&c&&financeCategoryOf(x,null)===c);
+  return S.expenses.some(used)||S.income.some(used)||S.budgets.some(used)||(S.recurringFinance||[]).some(used);
+}
+function financeCategorySetActive(id,active){ const c=financeCategoryById(id); if(!c) return false; c.active=!!active; c.updatedAt=Date.now(); return true; }
+function financeCategoryDelete(id){
+  // a category that any record uses is only deactivated -- history keeps showing it
+  if(financeCategoryInUse(id)){ financeCategorySetActive(id,false); return 'deactivated'; }
+  const n=S.financeCategories.length; S.financeCategories=S.financeCategories.filter(c=>c.id!==id); return S.financeCategories.length<n?'deleted':null;
+}
+// ---- transactions ----
+function financeTxList(kind,st){ return kind==='income'?((st||S).income||[]):((st||S).expenses||[]); }
+function financeTxValidate(f){
+  const e={};
+  if(!(finNum(f.amount)>0)) e.amount='invalid';
+  if(!plannerValidDate(f.date)) e.date='invalid';
+  if(f.accountId&&!financeAccountById(f.accountId)) e.accountId='invalid';
+  return e;
+}
+function financeSaveTransaction(kind,f,id){
+  // the one create/edit path (Finance, Quick Add, recurring/subscription confirm). A NEW transaction
+  // runs the existing once-a-day Finance XP (financeGrantXp) exactly like before; edits never do.
+  const errors=financeTxValidate(f); if(Object.keys(errors).length) return {ok:false,errors};
+  const list=financeTxList(kind);
+  const cat=financeCategoryById(f.categoryId);
+  const fields={amount:finRound(finNum(f.amount)),date:f.date,categoryId:cat?cat.id:(f.categoryId||''),category:cat?cat.name:String(f.category||''),
+    description:String(f.description||''),accountId:f.accountId||'',paymentMethod:String(f.paymentMethod||''),
+    tags:Array.isArray(f.tags)?f.tags:String(f.tags||'').split(',').map(t=>t.trim()).filter(Boolean),updatedAt:Date.now()};
+  ['recurringId','recurringFor','subscriptionId'].forEach(k=>{ if(k in f) fields[k]=f[k]||''; });
+  let tx=id?list.find(x=>x.id===id):null;
+  if(tx){ Object.assign(tx,fields); return {ok:true,tx,created:false}; }
+  tx=Object.assign({id:uid(),recurring:false,recurringId:'',recurringFor:'',subscriptionId:'',createdAt:Date.now()},fields);
+  list.push(tx);
+  financeGrantXp(); checkAchievements();
+  return {ok:true,tx,created:true};
+}
+function financeDeleteTransaction(kind,id){
+  const n=financeTxList(kind).length;
+  if(kind==='income') S.income=S.income.filter(x=>x.id!==id); else S.expenses=S.expenses.filter(x=>x.id!==id);
+  return financeTxList(kind).length<n;
+}
+function financeTxInRange(kind,from,to,st){ return financeTxList(kind,st).filter(x=>x.date&&x.date>=from&&x.date<=to); }
+function financeMonthTotals(ym,st){
+  // everything a month view shows is computed here (Finance dashboard, Home, Review)
+  st=st||S; const {from,to}=finMonthRange(ym);
+  const exp=financeTxInRange('expense',from,to,st), inc=financeTxInRange('income',from,to,st);
+  const income=finRound(inc.reduce((a,x)=>a+finNum(x.amount),0)), expenses=finRound(exp.reduce((a,x)=>a+finNum(x.amount),0));
+  const cats=new Map();
+  exp.forEach(x=>{ const k=financeCategoryKey(x,'expense',st); const c=cats.get(k)||{key:k,categoryId:k.startsWith('name:')?'':k,name:financeCategoryLabel(x,'expense',st),amount:0,count:0}; c.amount=finRound(c.amount+finNum(x.amount)); c.count++; cats.set(k,c); });
+  const byCategory=[...cats.values()].sort((a,b)=>b.amount-a.amount||a.name.localeCompare(b.name)).map(c=>Object.assign(c,{pct:expenses>0?Math.round(c.amount/expenses*1000)/10:0}));
+  const savings=finRound((st.savingsGoals||[]).reduce((a,g)=>a+(g.contributions||[]).filter(c=>c.date>=from&&c.date<=to).reduce((b,c)=>b+finNum(c.amount),0),0));
+  return {ym,from,to,income,expenses,net:finRound(income-expenses),incomeCount:inc.length,expenseCount:exp.length,byCategory,savingsContributions:savings};
+}
+function financeTotalsBetween(from,to,st){
+  const exp=financeTxInRange('expense',from,to,st), inc=financeTxInRange('income',from,to,st);
+  const income=finRound(inc.reduce((a,x)=>a+finNum(x.amount),0)), expenses=finRound(exp.reduce((a,x)=>a+finNum(x.amount),0));
+  const byCategory={}; exp.forEach(x=>{ const l=financeCategoryLabel(x,'expense',st); byCategory[l]=finRound((byCategory[l]||0)+finNum(x.amount)); });
+  return {income,expenses,net:finRound(income-expenses),count:exp.length+inc.length,byCategory};
+}
+function financeMonthSeries(ym,n,st){
+  // n months ending at ym (oldest first): income, expenses, net and the balance at each month end
+  return Array.from({length:n},(_,i)=>finShiftMonth(ym,i-n+1)).map(m=>{ const t=financeMonthTotals(m,st); return {ym:m,income:t.income,expenses:t.expenses,net:t.net,balance:financeBalanceAt(finMonthRange(m).to,st)}; });
+}
+// ---- accounts ----
+function migrateAccount(a){
+  const r=finDefaults(a,{name:'',type:'bank',currency:'CZK',openingBalance:0,openingDate:'',active:true,notes:'',checkpoints:[],createdAt:Date.now()});
+  if(!FIN_ACCOUNT_TYPES.includes(r.type)) r.type='bank';
+  r.openingBalance=finNum(r.openingBalance); if(!r.updatedAt) r.updatedAt=r.createdAt;
+  if(!Array.isArray(r.checkpoints)) r.checkpoints=[];
+  return r;
+}
+function financeAccountById(id,st){ return id?((st||S).accounts||[]).find(a=>a.id===id)||null:null; }
+function financeAccountValidate(f){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  if(!FIN_ACCOUNT_TYPES.includes(f.type)) e.type='invalid';
+  if(f.openingBalance!==''&&f.openingBalance!=null&&!Number.isFinite(Number(f.openingBalance))) e.openingBalance='invalid';
+  if(f.openingDate&&!plannerValidDate(f.openingDate)) e.openingDate='invalid';
+  return e;
+}
+function financeAccountSave(f,id){
+  const errors=financeAccountValidate(f); if(Object.keys(errors).length) return {ok:false,errors};
+  S.accounts=S.accounts||[];
+  const fields={name:String(f.name).trim(),type:f.type,currency:String(f.currency||'CZK').trim().toUpperCase()||'CZK',openingBalance:finRound(finNum(f.openingBalance)),
+    openingDate:f.openingDate||todayStr(),notes:String(f.notes||''),updatedAt:Date.now()};
+  let a=id?S.accounts.find(x=>x.id===id):null;
+  if(a) Object.assign(a,fields);
+  else { a=migrateAccount(Object.assign({id:uid(),active:true,checkpoints:[],createdAt:Date.now()},fields)); S.accounts.push(a); }
+  return {ok:true,account:a};
+}
+function financeAccountSetActive(id,active){ const a=financeAccountById(id); if(!a) return false; a.active=!!active; a.updatedAt=Date.now(); return true; }
+function financeAccountBalance(acc,date,st){
+  // openingBalance (at the start of openingDate) + income - expenses booked to the account from
+  // openingDate up to and including `date` (default: all). Nothing else moves an account.
+  st=st||S; if(!acc) return 0;
+  const from=acc.openingDate||'0000-00-00', to=date||'9999-12-31';
+  const sum=kind=>financeTxList(kind,st).filter(x=>x.accountId===acc.id&&x.date>=from&&x.date<=to).reduce((a,x)=>a+finNum(x.amount),0);
+  return finRound(finNum(acc.openingBalance)+sum('income')-sum('expense'));
+}
+function financeAccountStatus(acc,st){
+  // calculated balance + the latest checkpoint (a real balance the user entered) and the difference
+  // between it and the calculated balance on that date; a checkpoint never rewrites any transaction
+  const calculated=financeAccountBalance(acc,null,st);
+  const cps=[...(acc.checkpoints||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.createdAt||0)-(b.createdAt||0));
+  const cp=cps[cps.length-1]||null;
+  if(!cp) return {calculated,checkpoint:null,calculatedAtCheckpoint:null,difference:null,fromCheckpoint:null};
+  const atCp=financeAccountBalance(acc,cp.date,st);
+  const after=kind=>financeTxList(kind,st).filter(x=>x.accountId===acc.id&&x.date>cp.date).reduce((a,x)=>a+finNum(x.amount),0);
+  return {calculated,checkpoint:cp,calculatedAtCheckpoint:atCp,difference:finRound(finNum(cp.balance)-atCp),fromCheckpoint:finRound(finNum(cp.balance)+after('income')-after('expense'))};
+}
+function financeAccountAddCheckpoint(id,f){
+  const a=financeAccountById(id); if(!a) return {ok:false,errors:{account:'invalid'}};
+  const e={}; if(!plannerValidDate(f.date)) e.date='invalid'; if(f.balance===''||f.balance==null||!Number.isFinite(Number(f.balance))) e.balance='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const cp={id:uid(),date:f.date,balance:finRound(finNum(f.balance)),note:String(f.note||''),createdAt:Date.now()};
+  a.checkpoints.push(cp); a.updatedAt=Date.now(); return {ok:true,checkpoint:cp};
+}
+function financeBalanceAt(date,st){
+  // all money at the end of `date`: every account's balance + transactions without a (known) account
+  st=st||S;
+  const accs=(st.accounts||[]).filter(a=>!a.openingDate||a.openingDate<=date);
+  const known=new Set((st.accounts||[]).map(a=>a.id));
+  const free=kind=>financeTxList(kind,st).filter(x=>(!x.accountId||!known.has(x.accountId))&&x.date<=date).reduce((a,x)=>a+finNum(x.amount),0);
+  return finRound(accs.reduce((a,acc)=>a+financeAccountBalance(acc,date,st),0)+free('income')-free('expense'));
+}
+// ---- budgets ----
+function financeBudgetCategoryId(b,st){ const c=financeCategoryOf(b,'expense',st); return c?c.id:'name:'+exerciseKey(b.category); }
+function financeBudgetLimit(b){ return b.period==='Yearly'&&!b.month?finRound(finNum(b.amount)/12):finNum(b.amount); } // legacy yearly = 1/12 per month
+function financeBudgetFor(catKey,ym,st){
+  const bs=((st||S).budgets||[]).filter(b=>financeBudgetCategoryId(b,st)===catKey);
+  return bs.find(b=>b.month===ym)||bs.find(b=>!b.month)||null;
+}
+function financeBudgetUsage(ym,st){
+  // per category with a limit for ym (its month override, else its default): spent = that month's
+  // expense transactions of the category only (never income, savings or investments)
+  st=st||S; const t=financeMonthTotals(ym,st);
+  const keys=[...new Set((st.budgets||[]).map(b=>financeBudgetCategoryId(b,st)))];
+  return keys.map(k=>{
+    const b=financeBudgetFor(k,ym,st); if(!b) return null;
+    const limit=financeBudgetLimit(b), spent=(t.byCategory.find(c=>c.key===k)||{amount:0}).amount;
+    const pct=limit>0?Math.round(spent/limit*1000)/10:0;
+    const c=financeCategoryById(k,st);
+    return {categoryId:k,name:c?c.name:b.category,limit,spent,remaining:finRound(limit-spent),pct,status:spent>limit?'over':pct>=FIN_BUDGET_NEAR?'near':'under',budget:b,override:b.month===ym};
+  }).filter(Boolean).sort((a,b)=>b.pct-a.pct||a.name.localeCompare(b.name));
+}
+function financeBudgetSave(f,id){
+  const e={}; const cat=financeCategoryById(f.categoryId);
+  if(!cat) e.categoryId='required';
+  if(!(finNum(f.amount)>0)) e.amount='invalid';
+  if(f.month&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(f.month)) e.month='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const month=f.month||null;
+  let b=id?S.budgets.find(x=>x.id===id):null;
+  // one budget per category and month (default or override): saving replaces the same slot
+  const clash=S.budgets.find(x=>x.id!==id&&financeBudgetCategoryId(x)===cat.id&&(x.month||null)===month);
+  if(clash) S.budgets=S.budgets.filter(x=>x.id!==clash.id);
+  const fields={categoryId:cat.id,category:cat.name,amount:finRound(finNum(f.amount)),month,period:'Monthly',note:String(f.note||''),updatedAt:Date.now()};
+  if(b) Object.assign(b,fields); else { b=Object.assign({id:uid(),createdAt:Date.now()},fields); S.budgets.push(b); }
+  return {ok:true,budget:b};
+}
+// ---- recurring plans + subscriptions (expected, not money) ----
+function migrateRecurring(r){
+  const x=finDefaults(r,{type:'expense',name:'',amount:0,categoryId:'',accountId:'',frequency:'monthly',startDate:todayStr(),active:true,notes:'',subscriptionId:'',createdAt:Date.now()});
+  if(!FIN_FREQUENCIES.includes(x.frequency)) x.frequency='monthly';
+  if(!x.updatedAt) x.updatedAt=x.createdAt;
+  return x;
+}
+function finAddMonthsClamped(anchor,k){
+  // same day of month k months later; a missing day (31st, 29 Feb) becomes the month's last day
+  const [y,m,d]=anchor.split('-').map(Number); const t=new Date(y,m-1+k,1); const last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(Math.min(d,last)).padStart(2,'0');
+}
+function financeOccurrences(frequency,anchor,from,to,allowBefore){
+  // occurrence dates in [from,to]; plans start at their anchor, subscriptions (rolling anchor) may look back
+  if(!plannerValidDate(anchor)) return [];
+  const out=[]; const step=k=>frequency==='weekly'?addDays(anchor,7*k):finAddMonthsClamped(anchor,frequency==='yearly'?12*k:k);
+  const per=frequency==='weekly'?7:frequency==='yearly'?365:30;
+  let k=allowBefore?Math.floor(finDaysBetween(anchor,from)/per)-1:0; if(!allowBefore&&k<0) k=0;
+  for(let guard=0;guard<600;guard++,k++){ const d=step(k); if(d>to) break; if(d>=from&&(allowBefore||d>=anchor)) out.push(d); }
+  return out;
+}
+function financeRecurringValidate(f){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  if(!['expense','income'].includes(f.type)) e.type='invalid';
+  if(!(finNum(f.amount)>0)) e.amount='invalid';
+  if(!FIN_FREQUENCIES.includes(f.frequency)) e.frequency='invalid';
+  if(!plannerValidDate(f.startDate)) e.startDate='invalid';
+  return e;
+}
+function financeRecurringSave(f,id){
+  const errors=financeRecurringValidate(f); if(Object.keys(errors).length) return {ok:false,errors};
+  S.recurringFinance=S.recurringFinance||[];
+  const fields={type:f.type,name:String(f.name).trim(),amount:finRound(finNum(f.amount)),categoryId:f.categoryId||'',accountId:f.accountId||'',frequency:f.frequency,
+    startDate:f.startDate,notes:String(f.notes||''),subscriptionId:f.subscriptionId||'',updatedAt:Date.now()};
+  let r=id?S.recurringFinance.find(x=>x.id===id):null;
+  if(r) Object.assign(r,fields); else { r=migrateRecurring(Object.assign({id:uid(),active:true,createdAt:Date.now()},fields)); S.recurringFinance.push(r); }
+  return {ok:true,recurring:r};
+}
+function financeSubStartDate(s){ return s.createdAt?new Date(s.createdAt).toISOString().slice(0,10):null; }
+function financeExpectedInRange(from,to,st){
+  // every expected occurrence in [from,to]: active recurring plans + active subscriptions (a
+  // subscription that a plan already covers via subscriptionId is listed once, as that plan);
+  // each is realized when a transaction carries its link + recurringFor = that date
+  st=st||S; const out=[];
+  const covered=new Set((st.recurringFinance||[]).filter(r=>r.active&&r.subscriptionId).map(r=>r.subscriptionId));
+  (st.recurringFinance||[]).filter(r=>r.active).forEach(r=>financeOccurrences(r.frequency,r.startDate,from,to,false).forEach(date=>{
+    const tx=financeTxList(r.type,st).find(x=>x.recurringId===r.id&&x.recurringFor===date)||null;
+    out.push({source:'recurring',id:r.id,type:r.type,name:r.name,amount:finNum(r.amount),date,realized:tx,item:r});
+  }));
+  (st.subscriptions||[]).filter(s=>s.active!==false&&!covered.has(s.id)&&s.nextPayment).forEach(s=>{
+    const start=financeSubStartDate(s);
+    financeOccurrences(s.period==='Yearly'?'yearly':'monthly',s.nextPayment,from,to,true).filter(d=>!start||d>=start.slice(0,7)+'-01').forEach(date=>{
+      const tx=(st.expenses||[]).find(x=>x.subscriptionId===s.id&&x.recurringFor===date)||null;
+      out.push({source:'subscription',id:s.id,type:'expense',name:s.name,amount:finNum(s.price),date,realized:tx,item:s});
+    });
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date)||a.name.localeCompare(b.name));
+}
+function financeExpectedMonth(ym,st){
+  const {from,to}=finMonthRange(ym), items=financeExpectedInRange(from,to,st);
+  const pend=t=>finRound(items.filter(i=>i.type===t&&!i.realized).reduce((a,i)=>a+i.amount,0));
+  return {items,pendingExpense:pend('expense'),pendingIncome:pend('income'),realized:items.filter(i=>i.realized).length,pending:items.filter(i=>!i.realized).length};
+}
+function financeConfirmExpected(source,id,date,over){
+  // "Zaplaceno / Přijato": creates the ONE real transaction for that occurrence (idempotent)
+  over=over||{};
+  const it=financeExpectedInRange(date,date).find(i=>i.source===source&&i.id===id&&i.date===date);
+  if(!it) return {ok:false,reason:'no_occurrence'};
+  if(it.realized) return {ok:true,tx:it.realized,created:false};
+  const base=source==='recurring'?{categoryId:it.item.categoryId,accountId:it.item.accountId,recurringId:id,recurringFor:date,subscriptionId:it.item.subscriptionId||''}
+    :{categoryId:(financeCategoryOf({category:'Subscriptions'},'expense')||{}).id||'',accountId:'',subscriptionId:id,recurringFor:date,recurringId:''};
+  return financeSaveTransaction(it.type,Object.assign({amount:it.amount,date:over.date||date,description:it.name},base,over));
+}
+function financeRecurringNextDue(r,st){
+  // next occurrence from today on that is not realized yet
+  const to=r.frequency==='yearly'?finAddMonthsClamped(todayStr(),26):finAddMonthsClamped(todayStr(),3);
+  const it=financeExpectedInRange(todayStr(),to,st).find(i=>i.source==='recurring'&&i.id===r.id&&!i.realized);
+  return it?it.date:null;
+}
+function financeMonthlyEquivalent(amount,frequency){ return frequency==='weekly'?finRound(amount*52/12):frequency==='yearly'?finRound(amount/12):finNum(amount); }
+// ---- savings ----
+function migrateSavingsGoal(g){
+  const r=finDefaults(g,{name:'',targetAmount:0,deadline:'',accountId:'',icon:'🎯',color:'#10b981',active:true,contributions:[],createdAt:Date.now()});
+  r.targetAmount=finNum(r.targetAmount); if(!Array.isArray(r.contributions)) r.contributions=[]; if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function financeSavingsSave(f,id){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  if(!(finNum(f.targetAmount)>0)) e.targetAmount='invalid';
+  if(f.deadline&&!plannerValidDate(f.deadline)) e.deadline='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  S.savingsGoals=S.savingsGoals||[];
+  const fields={name:String(f.name).trim(),targetAmount:finRound(finNum(f.targetAmount)),deadline:f.deadline||'',accountId:f.accountId||'',icon:String(f.icon||'🎯').trim()||'🎯',color:f.color||'#10b981',updatedAt:Date.now()};
+  let g=id?S.savingsGoals.find(x=>x.id===id):null;
+  if(g) Object.assign(g,fields); else { g=migrateSavingsGoal(Object.assign({id:uid(),active:true,contributions:[],createdAt:Date.now()},fields)); S.savingsGoals.push(g); }
+  return {ok:true,goal:g};
+}
+function financeSavingsContribute(id,f){
+  // a withdrawal is a negative amount; zero is refused
+  const g=(S.savingsGoals||[]).find(x=>x.id===id); if(!g) return {ok:false,errors:{goal:'invalid'}};
+  const e={}; if(!finNum(f.amount)) e.amount='invalid'; if(!plannerValidDate(f.date)) e.date='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const c={id:uid(),amount:finRound(finNum(f.amount)),date:f.date,note:String(f.note||''),accountId:f.accountId||'',createdAt:Date.now()};
+  g.contributions.push(c); g.updatedAt=Date.now(); return {ok:true,contribution:c};
+}
+function financeSavingsProgress(g,today){
+  // current = sum of contributions; remaining = max(0, target - current); with a deadline:
+  // monthsLeft = daysLeft / 30.4375, required monthly = remaining / max(1, monthsLeft) (all of it when
+  // less than a month is left or the deadline has passed), required weekly = remaining / max(1, daysLeft / 7)
+  today=today||todayStr();
+  const current=finRound((g.contributions||[]).reduce((a,c)=>a+finNum(c.amount),0)), target=finNum(g.targetAmount);
+  const remaining=finRound(Math.max(0,target-current)), pct=target>0?Math.min(100,Math.round(current/target*1000)/10):0;
+  const out={current,target,remaining,pct,done:target>0&&current>=target,daysLeft:null,monthsLeft:null,requiredMonthly:null,requiredWeekly:null,overdue:false};
+  if(g.deadline&&plannerValidDate(g.deadline)){
+    const days=finDaysBetween(today,g.deadline); out.daysLeft=days; out.monthsLeft=Math.round(Math.max(0,days)/30.4375*10)/10;
+    if(remaining>0){ out.overdue=days<0; out.requiredMonthly=finRound(remaining/Math.max(1,Math.max(0,days)/30.4375)); out.requiredWeekly=finRound(remaining/Math.max(1,Math.max(0,days)/7)); }
+  }
+  return out;
+}
+function financeSavingsTotal(st){ return finRound(((st||S).savingsGoals||[]).reduce((a,g)=>a+financeSavingsProgress(g).current,0)); }
+// ---- investments ----
+function migrateInvestment(i){
+  const r=finDefaults(i,{name:'',ticker:'',type:'stock',currency:'CZK',accountId:'',active:true,notes:'',contributions:[],valuations:[],createdAt:Date.now()});
+  if(!Array.isArray(r.contributions)) r.contributions=[]; if(!Array.isArray(r.valuations)) r.valuations=[]; if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function financeInvestmentSave(f,id){
+  const e={}; if(!String(f.name||'').trim()) e.name='required';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  S.investments=S.investments||[];
+  const fields={name:String(f.name).trim(),ticker:String(f.ticker||'').trim().toUpperCase(),type:String(f.type||'stock'),currency:String(f.currency||'CZK').trim().toUpperCase()||'CZK',
+    accountId:f.accountId||'',notes:String(f.notes||''),updatedAt:Date.now()};
+  let inv=id?S.investments.find(x=>x.id===id):null;
+  if(inv) Object.assign(inv,fields); else { inv=migrateInvestment(Object.assign({id:uid(),active:true,createdAt:Date.now()},fields)); S.investments.push(inv); }
+  return {ok:true,investment:inv};
+}
+function financeInvestmentAdd(id,what,f){
+  // what: 'contribution' {amount (negative = withdrawal), date, note} | 'valuation' {value >= 0, date}
+  const inv=(S.investments||[]).find(x=>x.id===id); if(!inv) return {ok:false,errors:{investment:'invalid'}};
+  const e={}; if(!plannerValidDate(f.date)) e.date='invalid';
+  if(what==='valuation'){ if(f.value===''||f.value==null||!(finNum(f.value)>=0)||!Number.isFinite(Number(f.value))) e.value='invalid'; }
+  else if(!finNum(f.amount)) e.amount='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const rec=what==='valuation'?{id:uid(),date:f.date,value:finRound(finNum(f.value)),createdAt:Date.now()}:{id:uid(),amount:finRound(finNum(f.amount)),date:f.date,note:String(f.note||''),createdAt:Date.now()};
+  (what==='valuation'?inv.valuations:inv.contributions).push(rec); inv.updatedAt=Date.now();
+  return {ok:true,record:rec};
+}
+function financeInvestmentPerformance(inv,date){
+  // invested = contributions up to `date`; value = the latest manual valuation up to `date` (none ->
+  // the invested amount, flagged hasValuation:false); gain = value - invested; pct = gain / invested
+  const D=date||todayStr();
+  const invested=finRound((inv.contributions||[]).filter(c=>c.date<=D).reduce((a,c)=>a+finNum(c.amount),0));
+  const vals=(inv.valuations||[]).filter(v=>v.date<=D).sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt||0)-(b.createdAt||0));
+  const last=vals[vals.length-1]||null;
+  const value=last?finNum(last.value):invested, gain=finRound(value-invested);
+  return {invested,value:finRound(value),gain,pct:invested>0?Math.round(gain/invested*1000)/10:null,hasValuation:!!last,valuationDate:last?last.date:null};
+}
+function financeInvestmentsSummary(date,st){
+  const list=((st||S).investments||[]).filter(i=>i.active!==false).map(i=>Object.assign({investment:i},financeInvestmentPerformance(i,date)));
+  const invested=finRound(list.reduce((a,x)=>a+x.invested,0)), value=finRound(list.reduce((a,x)=>a+x.value,0));
+  return {list,invested,value,gain:finRound(value-invested),pct:invested>0?Math.round((value-invested)/invested*1000)/10:null};
+}
+function financeInvestmentMonthChange(ym,st){
+  // value at the end of ym vs. the end of the previous month, and how much of it was new money
+  const end=finMonthRange(ym).to, prevEnd=finMonthRange(finShiftMonth(ym,-1)).to, {from}=finMonthRange(ym);
+  const a=financeInvestmentsSummary(end,st), b=financeInvestmentsSummary(prevEnd,st);
+  const contributions=finRound(((st||S).investments||[]).filter(i=>i.active!==false).reduce((s,i)=>s+(i.contributions||[]).filter(c=>c.date>=from&&c.date<=end).reduce((x,c)=>x+finNum(c.amount),0),0));
+  const change=finRound(a.value-b.value);
+  return {valueStart:b.value,valueEnd:a.value,change,contributions,marketChange:finRound(change-contributions)};
+}
+function financeMonthReview(ym,st){
+  // facts only, for the Monthly Review screen
+  st=st||S; const t=financeMonthTotals(ym,st), ex=financeExpectedMonth(ym,st);
+  return {totals:t,topCategories:t.byCategory.slice(0,5),budgets:financeBudgetUsage(ym,st),savings:t.savingsContributions,
+    investments:financeInvestmentMonthChange(ym,st),expected:ex,
+    accounts:(st.accounts||[]).filter(a=>a.active!==false).map(a=>({account:a,balance:financeAccountBalance(a,finMonthRange(ym).to,st)})),
+    balanceEnd:financeBalanceAt(finMonthRange(ym).to,st)};
+}
+/* ---- Phase 11B: Finance 2.0 presentation. Every number comes from the finance* helpers above. ---- */
+let finMonth=null, finView='dashboard', finTxFilter='all';
+function uiFinT(k){
   const cs=uiLang()==='cs';
-  const L=cs?{t:'Finance',bal:'Zůstatek tento měsíc',inc:'Příjmy',exp:'Výdaje',spent:'utraceno z příjmů',exp_b:'Výdaj',inc_b:'Příjem',bud_b:'Rozpočet',budgets:'Rozpočty',bycat:'Výdaje podle kategorií',recent:'Poslední transakce',subs:'Předplatné',per_month:'měsíčně',nobud:'Zatím žádné rozpočty',nobud_d:'Rozpočet hlídá, kolik v kategorii utratíš za měsíc.',nocat:'Tento měsíc žádné výdaje',noent:'Zatím žádné transakce',noent_d:'Zapiš první příjem nebo výdaj.'}
-    :{t:'Finance',bal:'Balance this month',inc:'Income',exp:'Expenses',spent:'of income spent',exp_b:'Expense',inc_b:'Income',bud_b:'Budget',budgets:'Budgets',bycat:'Spending by category',recent:'Recent transactions',subs:'Subscriptions',per_month:'per month',nobud:'No budgets yet',nobud_d:'A budget tracks how much you spend in a category each month.',nocat:'No expenses this month',noent:'No transactions yet',noent_d:'Log your first income or expense.'};
-  const subsMonthly=S.subscriptions.filter(s=>s.active!==false).reduce((a,s)=>a+(s.period==='Yearly'?Number(s.price||0)/12:Number(s.price||0)),0); // same formula as Subscriptions
-  const wrap=el(`<div>${uiPageHead(L.t)}
-    <section class="card fin-hero">
-      <div class="kicker">${L.bal}</div>
-      <div class="big num" style="color:${bal>=0?'var(--accent2)':'var(--danger)'};margin:6px 0 14px">${bal<0?'−':''}${uiNum(Math.abs(Math.round(bal)))}</div>
-      <div class="grid2">
-        <div class="fin-pill"><span class="sub">↑ ${L.inc}</span><b style="color:var(--accent2)">${uiNum(Math.round(totInc))}</b></div>
-        <div class="fin-pill"><span class="sub">↓ ${L.exp}</span><b style="color:var(--danger)">${uiNum(Math.round(totExp))}</b></div>
-      </div>
-      ${totInc>0?`<div class="metric" style="margin-top:14px"><div class="metric-head"><span>${uiPct(totExp,totInc)}% ${L.spent}</span></div><div class="bar${totExp>totInc?' is-danger':''}"><i style="width:${uiPct(totExp,totInc)}%"></i></div></div>`:''}
-    </section>
-    <div class="btn-row" style="margin-bottom:6px">
-      <button class="btn sm" id="addExp">＋ ${L.exp_b}</button>
-      <button class="btn sm ghost" id="addInc">＋ ${L.inc_b}</button>
-      <button class="btn sm ghost" id="addBud">＋ ${L.bud_b}</button>
+  const CS={
+    t:'Finance',exp:'Výdaj',inc:'Příjem',exps:'Výdaje',incs:'Příjmy',net:'Bilance',month_net:'příjmy − výdaje',savings:'Úspory',invest:'Investice',budget:'Rozpočet',used:'využito',
+    this_month:'Tento měsíc',prev_m:'Předchozí měsíc',next_m:'Další měsíc',pick_m:'Vybrat měsíc',back:'Finance',all:'Vše',
+    s_tx:'Transakce',s_budgets:'Rozpočty',s_accounts:'Účty',s_savings:'Spoření',s_invest:'Investice',s_recurring:'Opakované platby',s_cats:'Kategorie',s_review:'Měsíční přehled',s_subs:'Předplatné',
+    expected:'Očekávané platby',expected_d:'Plány a předplatné — nejsou započtené, dokud je nepotvrdíš.',paid:'Zaplaceno',received:'Přijato',realized:'zaplaceno',realized_i:'přijato',pending_exp:'čeká k zaplacení',pending_inc:'čeká k přijetí',
+    no_expected:'Na tento měsíc nic neočekáváš.',recent:'Transakce v měsíci',no_tx:'V tomto měsíci žádné transakce',no_tx_d:'Zapiš příjem nebo výdaj.',
+    ch_iv:'Příjmy vs. výdaje (6 měsíců)',ch_cat:'Výdaje podle kategorií',ch_bal:'Vývoj zůstatku (6 měsíců)',ch_bud:'Využití rozpočtů',no_data:'Za toto období nejsou data.',legend_i:'Příjmy',legend_e:'Výdaje',
+    f_amount:'Částka',f_cat:'Kategorie',f_acc:'Účet',f_date:'Datum',f_desc:'Popis',f_pm:'Způsob platby',f_tags:'Štítky (oddělené čárkou)',f_repeat:'Opakovat jako plán',none:'Žádný',no_repeat:'Neopakovat',
+    weekly:'Týdně',monthly:'Měsíčně',yearly:'Ročně',new_exp:'Nový výdaj',new_inc:'Nový příjem',edit_exp:'Upravit výdaj',edit_inc:'Upravit příjem',save:'Uložit',del:'Smazat',edit:'Upravit',
+    e_amount:'Zadej částku větší než 0.',e_date:'Neplatné datum.',e_invalid:'Neplatná hodnota.',e_required:'Povinné.',e_duplicate:'Už existuje.',
+    saved:'Uloženo',deleted:'Smazáno',del_q:'Opravdu smazat?',cancel:'Zrušit',detail:'Detail',from_plan:'Z opakovaného plánu',from_sub:'Z předplatného',tags:'Štítky',
+    no_acc:'bez účtu',cat_missing:'bez kategorie',budget_none:'Žádné rozpočty na tento měsíc',budget_none_d:'Nastav limit pro kategorii — výchozí nebo jen pro jeden měsíc.',
+    under:'pod rozpočtem',near:'blízko limitu',over:'nad limitem',left:'zbývá',overby:'přes o',of:'z'};
+  const E={
+    t:'Finance',exp:'Expense',inc:'Income',exps:'Expenses',incs:'Income',net:'Net',month_net:'income − expenses',savings:'Savings',invest:'Investments',budget:'Budget',used:'used',
+    this_month:'This month',prev_m:'Previous month',next_m:'Next month',pick_m:'Pick a month',back:'Finance',all:'All',
+    s_tx:'Transactions',s_budgets:'Budgets',s_accounts:'Accounts',s_savings:'Savings',s_invest:'Investments',s_recurring:'Recurring',s_cats:'Categories',s_review:'Monthly review',s_subs:'Subscriptions',
+    expected:'Expected payments',expected_d:'Plans and subscriptions — not counted until you confirm them.',paid:'Paid',received:'Received',realized:'paid',realized_i:'received',pending_exp:'to pay',pending_inc:'to receive',
+    no_expected:'Nothing expected this month.',recent:'Transactions this month',no_tx:'No transactions this month',no_tx_d:'Log an income or expense.',
+    ch_iv:'Income vs. expenses (6 months)',ch_cat:'Expenses by category',ch_bal:'Balance trend (6 months)',ch_bud:'Budget usage',no_data:'No data for this period.',legend_i:'Income',legend_e:'Expenses',
+    f_amount:'Amount',f_cat:'Category',f_acc:'Account',f_date:'Date',f_desc:'Description',f_pm:'Payment method',f_tags:'Tags (comma separated)',f_repeat:'Repeat as a plan',none:'None',no_repeat:'Do not repeat',
+    weekly:'Weekly',monthly:'Monthly',yearly:'Yearly',new_exp:'New expense',new_inc:'New income',edit_exp:'Edit expense',edit_inc:'Edit income',save:'Save',del:'Delete',edit:'Edit',
+    e_amount:'Enter an amount above 0.',e_date:'Invalid date.',e_invalid:'Invalid value.',e_required:'Required.',e_duplicate:'Already exists.',
+    saved:'Saved',deleted:'Deleted',del_q:'Delete this?',cancel:'Cancel',detail:'Detail',from_plan:'From a recurring plan',from_sub:'From a subscription',tags:'Tags',
+    no_acc:'no account',cat_missing:'no category',budget_none:'No budgets for this month',budget_none_d:'Set a limit for a category — as a default or for one month only.',
+    under:'under budget',near:'near the limit',over:'over the limit',left:'left',overby:'over by',of:'of'};
+  return (cs?CS:E)[k]!=null?(cs?CS:E)[k]:k;
+}
+function uiFinPct(v,signed){ const n=Number(v)||0; return (signed&&n>=0?'+':'')+n.toLocaleString(uiLocale(),{maximumFractionDigits:1})+'\u00a0%'; }
+function uiMoney(n){ const v=finRound(finNum(n)); return (v<0?'−':'')+Number(Math.abs(v)).toLocaleString(uiLocale(),{maximumFractionDigits:2}); }
+function uiFinMonthLabel(ym){ try{ const s=new Date(ym+'-01T00:00').toLocaleDateString(uiLocale(),{month:'long',year:'numeric'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return ym; } }
+function uiFinMonthShort(ym){ try{ return new Date(ym+'-01T00:00').toLocaleDateString(uiLocale(),{month:'short'}).replace('.',''); }catch(e){ return ym.slice(5); } }
+function uiFinCatName(name){ return uiL(name); }
+function uiFinMonthBar(){
+  const ym=finMonth||finYm(), cur=finYm();
+  return `<section class="card fin-monthbar" aria-label="${uiFinT('pick_m')}"><button class="iconbtn" id="finPrev" aria-label="${uiFinT('prev_m')}">‹</button>
+    <label class="fin-month-pick"><b id="finMonthLabel">${uiFinMonthLabel(ym)}</b><input type="month" id="finMonthInput" value="${ym}" aria-label="${uiFinT('pick_m')}"></label>
+    <button class="iconbtn" id="finNext" aria-label="${uiFinT('next_m')}">›</button></section>${ym!==cur?`<button class="btn ghost sm fin-todaybtn" id="finThisMonth">${uiFinT('this_month')}</button>`:''}`;
+}
+function uiBindFinMonthBar(wrap){
+  const ym=finMonth||finYm();
+  const go=m=>{ finMonth=m; render(); };
+  const q=s=>wrap.querySelector(s);
+  if(q('#finPrev')) q('#finPrev').onclick=()=>go(finShiftMonth(ym,-1));
+  if(q('#finNext')) q('#finNext').onclick=()=>go(finShiftMonth(ym,1));
+  if(q('#finThisMonth')) q('#finThisMonth').onclick=()=>go(finYm());
+  if(q('#finMonthInput')) q('#finMonthInput').onchange=e=>{ if(/^\d{4}-\d{2}$/.test(e.target.value)) go(e.target.value); };
+}
+function uiFinSubHead(title,action){
+  return `<div class="page-head"><div><button class="btn ghost sm fin-back" id="finBack">← ${uiFinT('back')}</button><h2>${escapeHtml(title)}</h2></div>${action||''}</div>`;
+}
+function uiFinOpen(v){ finView=v; view='finance'; render(); window.scrollTo(0,0); }
+// ---- charts (HTML/SVG, real data only; empty -> empty state; every mark has a tooltip) ----
+function uiFinChartIncomeExpense(series){
+  const max=Math.max(0,...series.map(s=>Math.max(s.income,s.expenses)));
+  if(!max) return `<div class="chart-empty">${uiFinT('no_data')}</div>`;
+  const h=v=>Math.max(2,Math.round(v/max*100));
+  return `<div class="fin-legend"><span><i class="dot is-inc"></i>${uiFinT('legend_i')}</span><span><i class="dot is-exp"></i>${uiFinT('legend_e')}</span></div>
+    <div class="fin-cols" role="img" aria-label="${escapeHtml(series.map(s=>`${uiFinMonthLabel(s.ym)}: ${uiFinT('legend_i')} ${uiMoney(s.income)}, ${uiFinT('legend_e')} ${uiMoney(s.expenses)}`).join('; '))}">
+    ${series.map(s=>`<div class="fin-col${s.ym===(finMonth||finYm())?' is-sel':''}"><div class="fin-col-bars">
+      <i class="is-inc" style="height:${s.income?h(s.income):0}%" title="${uiFinMonthLabel(s.ym)} · ${uiFinT('legend_i')} ${uiMoney(s.income)}"></i>
+      <i class="is-exp" style="height:${s.expenses?h(s.expenses):0}%" title="${uiFinMonthLabel(s.ym)} · ${uiFinT('legend_e')} ${uiMoney(s.expenses)}"></i></div><span>${escapeHtml(uiFinMonthShort(s.ym))}</span></div>`).join('')}</div>`;
+}
+function uiFinChartCategories(byCategory){
+  if(!byCategory.length) return `<div class="chart-empty">${uiFinT('no_data')}</div>`;
+  const max=byCategory[0].amount||1;
+  return `<div class="fin-hbars">${byCategory.map(c=>`<div class="fin-hbar" title="${escapeHtml(uiFinCatName(c.name))}: ${uiMoney(c.amount)} (${uiFinPct(c.pct)})"><div class="between"><span class="truncate">${escapeHtml(uiFinCatName(c.name))}</span><span class="num"><b>${uiMoney(c.amount)}</b> · ${uiFinPct(c.pct)}</span></div>
+    <div class="bar"><i style="width:${Math.max(2,Math.round(c.amount/max*100))}%"></i></div></div>`).join('')}</div>`;
+}
+function uiFinChartBalance(series){
+  const vals=series.map(s=>s.balance);
+  if(vals.every(v=>!v)) return `<div class="chart-empty">${uiFinT('no_data')}</div>`;
+  const W=300,H=90,P=6, mn=Math.min(0,...vals), mx=Math.max(...vals), span=(mx-mn)||1;
+  const pts=vals.map((v,i)=>[P+i*(W-2*P)/Math.max(1,vals.length-1),H-P-(v-mn)/span*(H-2*P)]);
+  const zeroY=H-P-(0-mn)/span*(H-2*P);
+  return `<svg class="fin-line" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" role="img" aria-label="${escapeHtml(series.map(s=>`${uiFinMonthLabel(s.ym)}: ${uiMoney(s.balance)}`).join('; '))}">
+    ${mn<0?`<line x1="0" x2="${W}" y1="${zeroY.toFixed(1)}" y2="${zeroY.toFixed(1)}" class="fin-zero"/>`:''}
+    <polyline points="${pts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="var(--accent)" stroke="var(--card)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${uiFinMonthLabel(series[i].ym)}: ${uiMoney(series[i].balance)}</title></circle>`).join('')}</svg>
+    <div class="between sub fin-line-x"><span>${escapeHtml(uiFinMonthShort(series[0].ym))}</span><span class="num">${uiMoney(vals[vals.length-1])}</span><span>${escapeHtml(uiFinMonthShort(series[series.length-1].ym))}</span></div>`;
+}
+function uiFinBudgetRows(usage,withActions){
+  if(!usage.length) return '';
+  return usage.map(u=>`<div class="metric fin-bud" data-budget="${u.budget.id}">
+    <div class="metric-head"><span class="truncate">${escapeHtml(uiFinCatName(u.name))}${u.override?` <span class="chip is-muted">${uiFinMonthShort(u.budget.month)}</span>`:''}</span><span class="num"><b>${uiMoney(u.spent)}</b> / ${uiMoney(u.limit)}</span></div>
+    <div class="bar ${u.status==='over'?'is-danger':u.status==='near'?'is-warn':'is-success'}" role="progressbar" aria-valuenow="${Math.min(100,Math.round(u.pct))}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(uiFinCatName(u.name))}"><i style="width:${Math.min(100,u.pct)}%"></i></div>
+    <div class="between sub fin-bud-foot"><span>${u.status==='over'?'▲':u.status==='near'?'●':'✓'} ${uiFinT(u.status)} · ${uiFinPct(u.pct)}</span><span class="num">${u.remaining>=0?`${uiMoney(u.remaining)} ${uiFinT('left')}`:`${uiFinT('overby')} ${uiMoney(-u.remaining)}`}</span></div>
+    ${withActions?`<div class="fin-row-actions"><button class="iconbtn ghost-ic finBudEdit" aria-label="${uiFinT('edit')}: ${escapeHtml(u.name)}">${uiIcon('edit',16)}</button></div>`:''}</div>`).join('');
+}
+function uiFinTxRow(x,kind){
+  const acc=financeAccountById(x.accountId), cat=financeCategoryLabel(x,kind);
+  const ttl=escapeHtml(x.description||uiFinCatName(cat)||uiFinT(kind==='income'?'inc':'exp'));
+  return `<button class="item fin-tx" data-tx="${x.id}" data-kind="${kind}" aria-label="${uiFinT('detail')}: ${ttl}">
+    <span class="icon-circle" style="background:${kind==='income'?'var(--color-success-muted)':'var(--color-danger-muted)'}" aria-hidden="true">${(financeCategoryOf(x,kind)||{}).icon||(kind==='income'?'💵':'💸')}</span>
+    <span style="flex:1;min-width:0;text-align:left"><span class="item-title truncate" style="display:block">${ttl}</span>
+    <span class="item-meta" style="display:block">${fmtDate(x.date)} · ${escapeHtml(uiFinCatName(cat))}${acc?' · '+escapeHtml(acc.name):''}${x.recurringId?' · 🔁':''}${x.subscriptionId?' · 💳':''}</span></span>
+    <b class="num fin-amt ${kind==='income'?'is-inc':'is-exp'}">${kind==='income'?'+':'−'}${uiMoney(x.amount)}</b></button>`;
+}
+function uiBindTxRows(root){ root.querySelectorAll('.fin-tx').forEach(b=>b.onclick=()=>{ const kind=b.dataset.kind; const x=financeTxList(kind).find(t=>t.id===b.dataset.tx); if(x) openFinanceTxDetail(kind,x); }); }
+function uiFinExpectedList(ex){
+  if(!ex.items.length) return `<div class="sub">${uiFinT('no_expected')}</div>`;
+  return ex.items.map(i=>`<div class="between fin-exp-row${i.realized?' is-done':''}" data-exp="${i.source}:${i.id}:${i.date}">
+    <span style="min-width:0"><span class="truncate" style="display:block"><b>${escapeHtml(i.name)}</b> <span class="sub">${i.source==='subscription'?'💳':'🔁'}</span></span><span class="sub">${fmtDate(i.date)} · ${i.realized?(i.type==='income'?uiFinT('realized_i'):uiFinT('realized')):(i.type==='income'?uiFinT('pending_inc'):uiFinT('pending_exp'))}</span></span>
+    <span class="fin-exp-right"><b class="num ${i.type==='income'?'is-inc':'is-exp'}">${i.type==='income'?'+':'−'}${uiMoney(i.amount)}</b>${i.realized?`<span class="chip is-success">✓</span>`:`<button class="btn sm finConfirm">${uiFinT(i.type==='income'?'received':'paid')}</button>`}</span></div>`).join('');
+}
+function uiBindExpected(root){
+  root.querySelectorAll('.finConfirm').forEach(b=>b.onclick=()=>{
+    const [source,id,date]=b.closest('[data-exp]').dataset.exp.split(':');
+    const r=financeConfirmExpected(source,id,date);
+    if(r.ok){ scheduleSave(); render(); toast(uiFinT('saved')); }
+  });
+}
+function renderFinanceDashboard(){
+  const ym=finMonth||finYm(), t=financeMonthTotals(ym), bud=financeBudgetUsage(ym), ex=financeExpectedMonth(ym);
+  const inv=financeInvestmentsSummary(finMonthRange(ym).to), sav=(S.savingsGoals||[]).filter(g=>g.active!==false).map(g=>financeSavingsProgress(g));
+  const savCur=finRound(sav.reduce((a,p)=>a+p.current,0)), savTgt=finRound(sav.reduce((a,p)=>a+p.target,0));
+  const budLim=finRound(bud.reduce((a,b)=>a+b.limit,0)), budSp=finRound(bud.reduce((a,b)=>a+b.spent,0));
+  const series=financeMonthSeries(ym,6);
+  const txs=[...financeTxInRange('expense',t.from,t.to).map(x=>[x,'expense']),...financeTxInRange('income',t.from,t.to).map(x=>[x,'income'])].sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'')||(b[0].createdAt||0)-(a[0].createdAt||0));
+  const tile=(id,k,v,sub,cls)=>`<button class="stat-card fin-kpi" id="${id}"><div class="stat-label">${k}</div><div class="stat-value num ${cls||''}">${v}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</button>`;
+  const wrap=el(`<div class="fin">${uiPageHead(uiFinT('t'),'',`<div class="row" style="gap:6px"><button class="btn sm" id="addExp">＋ ${uiFinT('exp')}</button><button class="btn sm ghost" id="addInc">＋ ${uiFinT('inc')}</button></div>`)}
+    ${uiFinMonthBar()}
+    <div class="stat-grid fin-kpis">
+      ${tile('kpiNet',uiFinT('net'),`${t.net>=0?'+':''}${uiMoney(t.net)}`,uiFinT('month_net'),t.net>=0?'is-inc':'is-exp')}
+      ${tile('kpiInc',uiFinT('incs'),uiMoney(t.income),`${t.incomeCount}×`,'')}
+      ${tile('kpiExp',uiFinT('exps'),uiMoney(t.expenses),`${t.expenseCount}×`,'')}
+      ${tile('kpiBud',uiFinT('budget'),budLim?`${Math.round(budSp/budLim*100)} %`:'—',budLim?`${uiMoney(budSp)} ${uiFinT('of')} ${uiMoney(budLim)}`:'',budLim&&budSp>budLim?'is-exp':'')}
+      ${tile('kpiSav',uiFinT('savings'),uiMoney(savCur),savTgt?`${uiFinT('of')} ${uiMoney(savTgt)}`:'','')}
+      ${tile('kpiInv',uiFinT('invest'),uiMoney(inv.value),inv.invested?`${inv.gain>=0?'+':''}${uiMoney(inv.gain)}${inv.pct!=null?` · ${uiFinPct(inv.pct,true)}`:''}`:'','')}
     </div>
-    <div class="section-header"><h3>${L.budgets}</h3></div><div class="card" id="budList"></div>
-    <div class="section-header"><h3>${L.bycat}</h3></div><div class="card" id="byCat"></div>
-    <div class="section-header"><h3>${L.subs}</h3></div>
-    <button class="card is-link between" id="uiSubsLink" style="width:100%;text-align:left;font:inherit;color:inherit"><span class="row"><span class="icon-circle" aria-hidden="true">💳</span><span><b>${uiNum(Math.round(subsMonthly))}</b> <span class="sub">${L.per_month}</span></span></span><span class="sub" aria-hidden="true">›</span></button>
-    <div class="section-header"><h3>${L.recent}</h3></div><div class="list" id="finList"></div>
+    <div class="section-header"><h3>${uiFinT('expected')}</h3><button class="action" id="finGoRec">${uiFinT('all')} ›</button></div>
+    <div class="card fin-expected" id="finExpected"><p class="helper-text" style="margin:0 0 8px">${uiFinT('expected_d')}</p>${uiFinExpectedList(ex)}</div>
+    <div class="section-header"><h3>${uiFinT('ch_bud')}</h3><button class="action" id="finGoBud">${uiFinT('all')} ›</button></div>
+    <div class="card" id="finBudgets">${bud.length?uiFinBudgetRows(bud.slice(0,5),false):`<div class="sub">${uiFinT('budget_none')}</div>`}</div>
+    <div class="fin-charts">
+      <div class="card chart" role="figure" aria-label="${uiFinT('ch_iv')}"><div class="kicker" style="margin-bottom:10px">${uiFinT('ch_iv')}</div>${uiFinChartIncomeExpense(series)}</div>
+      <div class="card chart" role="figure" aria-label="${uiFinT('ch_cat')}"><div class="kicker" style="margin-bottom:10px">${uiFinT('ch_cat')} · ${escapeHtml(uiFinMonthLabel(ym))}</div>${uiFinChartCategories(t.byCategory)}</div>
+      <div class="card chart" role="figure" aria-label="${uiFinT('ch_bal')}"><div class="kicker" style="margin-bottom:10px">${uiFinT('ch_bal')}</div>${uiFinChartBalance(series)}</div>
+    </div>
+    <div class="section-header"><h3>${uiFinT('recent')}</h3><button class="action" id="finGoTx">${uiFinT('all')} ›</button></div>
+    <div class="list" id="finList">${txs.length?txs.slice(0,8).map(([x,k])=>uiFinTxRow(x,k)).join(''):`<div class="card">${uiEmpty('💰',uiFinT('no_tx'),uiFinT('no_tx_d'),'＋ '+uiFinT('exp'))}</div>`}</div>
+    <div class="fin-sections">${[['tx','🧾'],['budgets','🎯'],['accounts','🏦'],['savings','🐖'],['invest','📈'],['recurring','🔁'],['cats','🏷️'],['review','🗓️'],['subs','💳']].map(([k,ic])=>
+      `<button class="card fin-sec" data-fin-sec="${k}"><span aria-hidden="true">${ic}</span><b>${uiFinT('s_'+k)}</b></button>`).join('')}</div>
   </div>`);
-  wrap.querySelector('#uiSubsLink').onclick=()=>{view='subscriptions';render();window.scrollTo(0,0);};
-  const budList=wrap.querySelector('#budList');
-  if(!S.budgets.length){ const e=el(uiEmpty('🎯',L.nobud,L.nobud_d,'＋ '+L.bud_b)); e.querySelector('.emptyCta').onclick=()=>openBudgetForm(); budList.appendChild(e); }
-  S.budgets.forEach(b=>{
-    const spent=monthExp.filter(e=>e.category===b.category).reduce((a,e)=>a+Number(e.amount||0),0);
-    const pct=Math.min(100,Math.round(spent/b.amount*100))||0;
-    const it=el(`<div class="metric budget-row">
-      <div class="metric-head"><span>${escapeHtml(b.category)} <span class="sub">· ${b.period||'Monthly'}</span></span><span class="row" style="gap:0"><span><b>${uiNum(Math.round(spent))}</b> / ${uiNum(b.amount)}</span><button class="iconbtn ghost-ic editBudBtn" aria-label="${uiT('edit')}: ${escapeHtml(b.category)}">${uiIcon('edit',16)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(b.category)}">✕</button></span></div>
-      <div class="bar${pct>=100?' is-danger':pct>=80?' is-warn':' is-success'}" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(b.category)}"><i style="width:${pct}%"></i></div>
-    </div>`);
-    it.querySelector('.editBudBtn').onclick=()=>openBudgetForm(b);
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete budget for "${b.category}"?`)) return;
-      S.budgets=S.budgets.filter(x=>x.id!==b.id);scheduleSave();render();toast('Budget deleted');
-    };
-    budList.appendChild(it);
-  });
-  const byCat=wrap.querySelector('#byCat');
-  const cats={};
-  monthExp.forEach(e=>{cats[e.category||'Other']=(cats[e.category||'Other']||0)+Number(e.amount||0);});
-  const catKeys=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]);
-  if(!catKeys.length) byCat.appendChild(el(`<div class="sub" style="text-align:center;padding:6px 0">${L.nocat}</div>`));
-  catKeys.forEach(c=>{
-    const pct=Math.round(cats[c]/totExp*100)||0;
-    byCat.appendChild(el(`<div class="metric"><div class="metric-head"><span>${escapeHtml(c)}</span><span><b>${uiNum(Math.round(cats[c]))}</b> · ${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`));
-  });
-  const finList=wrap.querySelector('#finList');
-  const all=[...S.expenses.map(e=>({...e,kind:'expense'})),...S.income.map(i=>({...i,kind:'income'}))].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(!all.length){ const e=el(`<div class="card">${uiEmpty('💰',L.noent,L.noent_d,'＋ '+L.exp_b)}</div>`); e.querySelector('.emptyCta').onclick=()=>openFinanceForm('expense'); finList.appendChild(e); }
-  all.slice(0,25).forEach(f=>{
-    const ttl=escapeHtml(f.description||f.category||(f.kind==='income'?L.inc_b:L.exp_b));
-    const it=el(`<div class="item">
-      <span class="icon-circle" style="background:${f.kind==='income'?'var(--color-success-muted)':'var(--color-danger-muted)'}" aria-hidden="true">${f.kind==='income'?'💵':'💸'}</span>
-      <div style="flex:1;min-width:0"><div class="item-title truncate">${ttl}</div>
-      <div class="item-meta">${fmtDate(f.date)}${f.category?' · '+escapeHtml(f.category):''}${f.paymentMethod?' · '+escapeHtml(f.paymentMethod):''}${f.recurring?' · 🔁':''}</div></div>
-      <b class="num" style="white-space:nowrap;color:${f.kind==='income'?'var(--accent2)':'var(--danger)'}">${f.kind==='income'?'+':'−'}${uiNum(Math.round(Number(f.amount)))}</b>
-      <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${ttl}">${uiIcon('edit',18)}</button>
-      <button class="delbtn" aria-label="${uiT('delete')}: ${ttl}">✕</button></div>
-    </div>`);
-    it.querySelector('.editBtn').onclick=()=>{
-      // f is a {...entry,kind} SPREAD COPY built for this merged display list — look up the
-      // real stored object by id so edits land on S.expenses/S.income, not a throwaway copy.
-      const real=(f.kind==='income'?S.income:S.expenses).find(x=>x.id===f.id);
-      openFinanceForm(f.kind,real);
-    };
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete this ${f.kind}?`)) return;
-      if(f.kind==='income') S.income=S.income.filter(x=>x.id!==f.id); else S.expenses=S.expenses.filter(x=>x.id!==f.id);
-      scheduleSave();render();toast((f.kind==='income'?'Income':'Expense')+' deleted');
-    };
-    finList.appendChild(it);
-  });
+  uiBindFinMonthBar(wrap); uiBindTxRows(wrap); uiBindExpected(wrap);
+  const e=wrap.querySelector('#finList .emptyCta'); if(e) e.onclick=()=>openFinanceForm('expense');
   wrap.querySelector('#addExp').onclick=()=>openFinanceForm('expense');
   wrap.querySelector('#addInc').onclick=()=>openFinanceForm('income');
-  wrap.querySelector('#addBud').onclick=()=>openBudgetForm();
+  wrap.querySelector('#finGoRec').onclick=()=>uiFinOpen('recurring');
+  wrap.querySelector('#finGoBud').onclick=()=>uiFinOpen('budgets');
+  wrap.querySelector('#finGoTx').onclick=()=>uiFinOpen('tx');
+  const kpi={kpiNet:'review',kpiInc:'tx',kpiExp:'tx',kpiBud:'budgets',kpiSav:'savings',kpiInv:'invest'};
+  Object.entries(kpi).forEach(([id,v])=>wrap.querySelector('#'+id).onclick=()=>{ if(id==='kpiInc') finTxFilter='income'; if(id==='kpiExp') finTxFilter='expense'; uiFinOpen(v); });
+  wrap.querySelectorAll('[data-fin-sec]').forEach(b=>b.onclick=()=>{ const k=b.dataset.finSec; if(k==='subs'){ view='subscriptions'; render(); window.scrollTo(0,0); } else { if(k==='tx') finTxFilter='all'; uiFinOpen(k); } });
   return wrap;
 }
-function openBudgetForm(existing){
-  const b=existing;
-  const inner=el(`<div><h3>${b?'Edit Budget':'New Monthly Budget'}</h3>
-    <label>Category</label><select id="b_cat"><option>Food</option><option>Housing</option><option>Transport</option><option>Shopping</option><option>Entertainment</option><option>Health</option><option>Subscriptions</option><option>Education</option><option>Other</option></select>
-    <label>Monthly limit</label><input type="number" id="b_amt" min="1" value="${b?b.amount:''}">
-    <label>Period</label><select id="b_period"><option>Monthly</option><option>Yearly</option></select>
-    <button class="btn" id="b_save">${b?'Save Changes':'Save Budget'}</button>
-  </div>`);
-  if(b){ inner.querySelector('#b_cat').value=b.category; inner.querySelector('#b_period').value=b.period||'Monthly'; }
-  inner.querySelector('#b_save').onclick=()=>{
-    const amt=parseFloat(inner.querySelector('#b_amt').value);
-    if(!amt||amt<=0){toast('Enter a valid amount');return;}
-    const cat=inner.querySelector('#b_cat').value;
-    const period=inner.querySelector('#b_period').value;
-    if(b){
-      b.category=cat; b.amount=amt; b.period=period; // same id, same object — no duplicate
-    } else {
-      S.budgets=S.budgets.filter(x=>x.category!==cat); // one budget per category, same as before
-      S.budgets.push({id:uid(),category:cat,amount:amt,period,createdAt:Date.now()});
+function uiFinSelect(id,label,opts,cur,withNone){
+  return `<label for="${id}">${label}</label><select id="${id}">${withNone?`<option value="">${uiFinT('none')}</option>`:''}${opts.map(o=>`<option value="${escapeHtml(o[0])}" ${o[0]===cur?'selected':''}>${escapeHtml(o[1])}</option>`).join('')}</select><div class="field-error" hidden data-err="${id}"></div>`;
+}
+function uiFinShowErrors(inner,errors,map){
+  inner.querySelectorAll('.field-error').forEach(n=>{ n.hidden=true; n.textContent=''; });
+  inner.querySelectorAll('[aria-invalid="true"]').forEach(n=>n.setAttribute('aria-invalid','false'));
+  Object.entries(errors||{}).forEach(([k,code])=>{ const id=map[k]; if(!id) return; const inp=inner.querySelector('#'+id), msg=inner.querySelector(`[data-err="${id}"]`);
+    if(inp) inp.setAttribute('aria-invalid','true'); if(msg){ msg.hidden=false; msg.textContent=uiFinT(k==='amount'||k==='targetAmount'?'e_amount':k==='date'?'e_date':code==='required'?'e_required':code==='duplicate'?'e_duplicate':'e_invalid'); } });
+  const first=inner.querySelector('[aria-invalid="true"]'); if(first) first.focus();
+}
+function openFinanceForm(kind,existing){
+  // the one expense/income form (Finance, Quick Add, Search) -> financeSaveTransaction
+  const f=existing, cur=f?(financeCategoryOf(f,kind)||{}).id:'';
+  const cats=financeCategoriesFor(kind,cur).map(c=>[c.id,`${c.icon} ${uiFinCatName(c.name)}`]);
+  const accs=(S.accounts||[]).filter(a=>a.active!==false||(f&&a.id===f.accountId)).map(a=>[a.id,a.name]);
+  const inner=el(`<div class="fin-form"><h3>${uiFinT(f?(kind==='expense'?'edit_exp':'edit_inc'):(kind==='expense'?'new_exp':'new_inc'))}</h3>
+    <label for="f_amt">${uiFinT('f_amount')}</label><input type="number" id="f_amt" inputmode="decimal" min="0.01" step="0.01" placeholder="0" value="${f?f.amount:''}"><div class="field-error" hidden data-err="f_amt"></div>
+    ${uiFinSelect('f_cat',uiFinT('f_cat'),cats,cur||(!f&&cats[0]?cats[0][0]:''),true)}
+    ${uiFinSelect('f_acc',uiFinT('f_acc'),accs,f?f.accountId||'':'',true)}
+    <label for="f_date">${uiFinT('f_date')}</label><input type="date" id="f_date" value="${f?f.date:(finMonth&&finMonth!==finYm()?finMonth+'-01':todayStr())}"><div class="field-error" hidden data-err="f_date"></div>
+    <label for="f_desc">${uiFinT('f_desc')}</label><input id="f_desc" value="${f?escapeHtml(f.description||''):''}" autocomplete="off">
+    <label for="f_pm">${uiFinT('f_pm')}</label><input id="f_pm" value="${f?escapeHtml(f.paymentMethod||''):''}" autocomplete="off">
+    <label for="f_tags">${uiFinT('f_tags')}</label><input id="f_tags" value="${f?escapeHtml((f.tags||[]).join(', ')):''}" autocomplete="off">
+    ${f?'':`<label for="f_repeat">${uiFinT('f_repeat')}</label><select id="f_repeat"><option value="">${uiFinT('no_repeat')}</option>${FIN_FREQUENCIES.map(q=>`<option value="${q}">${uiFinT(q)}</option>`).join('')}</select>`}
+    <button class="btn" id="f_save">${uiFinT('save')}</button></div>`);
+  inner.querySelector('#f_save').onclick=()=>{
+    const v=id=>inner.querySelector('#'+id).value;
+    const fields={amount:v('f_amt'),categoryId:v('f_cat'),accountId:v('f_acc'),date:v('f_date'),description:v('f_desc'),paymentMethod:v('f_pm'),tags:v('f_tags')};
+    const rep=!f&&v('f_repeat');
+    if(!f&&!fields.categoryId&&!cats.length) fields.category='';
+    const r=financeSaveTransaction(kind,fields,f?f.id:undefined);
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{amount:'f_amt',date:'f_date',accountId:'f_acc'}); return; }
+    if(rep){
+      // the new transaction is the first realized occurrence of the new plan -- counted once
+      const plan=financeRecurringSave({type:kind,name:fields.description||financeCategoryLabel(r.tx,kind),amount:r.tx.amount,categoryId:r.tx.categoryId,accountId:r.tx.accountId,frequency:rep,startDate:r.tx.date});
+      if(plan.ok){ r.tx.recurringId=plan.recurring.id; r.tx.recurringFor=r.tx.date; }
     }
-    scheduleSave();closeSheets();render();toast(b?'Budget updated':'Budget set');
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
   };
   openSheet(inner);
 }
-function openFinanceForm(kind,existing){
-  const f=existing;
-  const inner=el(`<div><h3>${f?'Edit '+(kind==='expense'?'Expense':'Income'):(kind==='expense'?'New Expense':'New Income')}</h3>
-    <label>Amount</label><input type="number" id="f_amt" min="0.01" step="0.01" placeholder="0.00" value="${f?f.amount:''}">
-    <label>${kind==='expense'?'Category':'Source'}</label>
-    ${kind==='expense'?`<select id="f_cat"><option>Food</option><option>Housing</option><option>Transport</option><option>Shopping</option><option>Entertainment</option><option>Health</option><option>Subscriptions</option><option>Education</option><option>Other</option></select>`
-      :`<input id="f_cat" placeholder="e.g. Salary" value="${f?escapeHtml(f.category||''):''}">`}
-    <label>Description</label><input id="f_desc" placeholder="optional" value="${f?escapeHtml(f.description||''):''}">
-    <label>Date</label><input type="date" id="f_date" value="${f?f.date:todayStr()}">
-    <label>Payment method</label><input id="f_pm" placeholder="e.g. Card, Cash" value="${f?escapeHtml(f.paymentMethod||''):''}">
-    <label>Tags (comma separated)</label><input id="f_tags" placeholder="e.g. work, trip" value="${f?(f.tags||[]).join(', '):''}">
-    <label>Recurring</label><select id="f_rec"><option value="0">No</option><option value="1">Yes</option></select>
-    <button class="btn" id="f_save">${f?'Save Changes':'Save'}</button>
-  </div>`);
-  if(kind==='expense'&&f) inner.querySelector('#f_cat').value=f.category||'';
-  if(f) inner.querySelector('#f_rec').value=f.recurring?'1':'0';
-  inner.querySelector('#f_save').onclick=()=>{
-    const amt=parseFloat(inner.querySelector('#f_amt').value);
-    if(!amt||amt<=0){toast('Enter a valid amount');return;}
-    const tags=inner.querySelector('#f_tags').value.split(',').map(t=>t.trim()).filter(Boolean);
-    const fields={amount:amt,category:inner.querySelector('#f_cat').value,description:inner.querySelector('#f_desc').value,
-      date:inner.querySelector('#f_date').value||todayStr(),paymentMethod:inner.querySelector('#f_pm').value,
-      tags,recurring:inner.querySelector('#f_rec').value==='1'};
-    if(f){
-      // Edit in place: same id/kind/createdAt. Balance/monthly totals recompute live from
-      // S.expenses/S.income at render time, so they are always correct after this edit —
-      // nothing needs to be manually "recalculated".
-      Object.assign(f,fields);
-    } else {
-      const entry=Object.assign({id:uid(),createdAt:Date.now()},fields);
-      if(kind==='expense') S.expenses.push(entry); else S.income.push(entry);
-      financeGrantXp(); checkAchievements();
-    }
-    scheduleSave();closeSheets();render();toast(f?(kind==='expense'?'Expense':'Income')+' updated':(kind==='expense'?'Expense':'Income')+' added');
+function openFinanceTxDetail(kind,x){
+  const acc=financeAccountById(x.accountId), plan=x.recurringId?(S.recurringFinance||[]).find(r=>r.id===x.recurringId):null, sub=x.subscriptionId?S.subscriptions.find(s=>s.id===x.subscriptionId):null;
+  const row=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+  const inner=el(`<div class="fin-detail"><h3>${escapeHtml(x.description||uiFinCatName(financeCategoryLabel(x,kind)))}</h3>
+    <div class="big num ${kind==='income'?'is-inc':'is-exp'}" style="margin:4px 0 12px">${kind==='income'?'+':'−'}${uiMoney(x.amount)}</div>
+    <div class="card">${row(uiFinT('f_date'),fmtDate(x.date))}${row(uiFinT('f_cat'),escapeHtml(uiFinCatName(financeCategoryLabel(x,kind))))}${row(uiFinT('f_acc'),acc?escapeHtml(acc.name):uiFinT('no_acc'))}
+      ${x.paymentMethod?row(uiFinT('f_pm'),escapeHtml(x.paymentMethod)):''}${(x.tags||[]).length?row(uiFinT('tags'),escapeHtml(x.tags.join(', '))):''}
+      ${plan?row(uiFinT('from_plan'),`🔁 ${escapeHtml(plan.name)} · ${fmtDate(x.recurringFor)}`):''}${sub?row(uiFinT('from_sub'),`💳 ${escapeHtml(sub.name)} · ${fmtDate(x.recurringFor)}`):''}</div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn" id="fd_edit">${uiFinT('edit')}</button><button class="btn danger" id="fd_del">${uiFinT('del')}</button></div></div>`);
+  inner.querySelector('#fd_edit').onclick=()=>{ closeSheets(); openFinanceForm(kind,x); };
+  inner.querySelector('#fd_del').onclick=()=>{ closeSheets(); uiConfirmSheet({title:uiFinT('del'),text:uiFinT('del_q'),ok:uiFinT('del'),danger:true},()=>{ financeDeleteTransaction(kind,x.id); scheduleSave(); render(); toast(uiFinT('deleted')); }); };
+  openSheet(inner);
+}
+function uiFin2T(k){
+  const cs=uiLang()==='cs';
+  const CS={add_budget:'Rozpočet',f_limit:'Měsíční limit',f_month:'Platí pro',every_month:'Každý měsíc (výchozí)',only_month:'Jen pro měsíc',f_note:'Poznámka',
+    add_acc:'Účet',acc_name:'Název účtu',acc_type:'Typ',bank:'Bankovní účet',cash:'Hotovost',card:'Karta',currency:'Měna',opening:'Počáteční zůstatek',opening_date:'Počáteční zůstatek ke dni',
+    calc:'Vypočtený zůstatek',cp:'Poslední kontrola',cp_add:'Zadat skutečný zůstatek',cp_bal:'Skutečný zůstatek',diff:'Rozdíl ke dni kontroly',by_cp:'Podle kontroly + pozdější transakce',deact:'Deaktivovat',act:'Aktivovat',inactive:'neaktivní',
+    no_accs:'Zatím žádné účty',no_accs_d:'Účet ukáže zůstatek: počáteční stav + příjmy − výdaje.',acc_tx:'Transakce účtu',
+    add_goal:'Cíl',goal_name:'Název cíle',target:'Cílová částka',deadline:'Termín (nepovinné)',contribute:'Vložit / vybrat',contrib_amt:'Částka (výběr jako záporná)',remaining:'Zbývá',
+    per_month:'měsíčně',per_week:'týdně',need:'Potřeba',overdue:'Termín uplynul',reached:'Cíl splněn',no_goals:'Zatím žádné spořicí cíle',no_goals_d:'Nastav cíl a zapisuj vklady — uvidíš postup a kolik odkládat.',history:'Historie',
+    add_inv:'Investice',inv_name:'Název',ticker:'Ticker (nepovinné)',inv_type:'Typ',stock:'Akcie',etf:'ETF',fund:'Fond',bond:'Dluhopis',crypto:'Krypto',other:'Jiné',
+    invested:'Vloženo',value:'Hodnota',gain:'Zisk / ztráta',add_contrib:'Vklad',add_val:'Aktualizovat hodnotu',val:'Hodnota k datu',no_val:'bez ocenění',manual:'Hodnoty zadáváš ručně — žádné živé ceny.',no_inv:'Zatím žádné investice',no_inv_d:'Zapiš vklady a ručně aktualizuj hodnotu.',
+    add_rec:'Plán',rec_name:'Název',type:'Typ',frequency:'Frekvence',start:'První platba',next:'Další',no_rec:'Zatím žádné opakované plány',no_rec_d:'Plán jen říká, co očekáváš. Peníze se započtou až po potvrzení.',
+    monthly_eq:'měsíčně (přepočet)',subs_link:'Předplatné',covers_sub:'Kryje předplatné',
+    add_cat:'Kategorie',cat_name:'Název',icon:'Ikona',color:'Barva',exp_t:'Výdaj',inc_t:'Příjem',both:'Obojí',
+    rv_title:'Měsíční přehled',rv_inc:'Příjmy',rv_exp:'Výdaje',rv_net:'Čistý rozdíl',rv_top:'Největší výdaje',rv_bud:'Rozpočty',rv_sav:'Vklady do spoření',rv_inv:'Investice',rv_inv_ch:'Změna hodnoty',rv_inv_new:'z toho vklady',rv_inv_mkt:'z toho změna trhu',
+    rv_exp_plan:'Očekávané platby',rv_realized:'potvrzeno',rv_pending:'čeká',rv_acc:'Účty ke konci měsíce',rv_bal:'Celkový zůstatek ke konci měsíce',rv_summary:'Shrnutí',none:'—'};
+  const EN={add_budget:'Budget',f_limit:'Monthly limit',f_month:'Applies to',every_month:'Every month (default)',only_month:'Only this month',f_note:'Note',
+    add_acc:'Account',acc_name:'Account name',acc_type:'Type',bank:'Bank account',cash:'Cash',card:'Card',currency:'Currency',opening:'Opening balance',opening_date:'Opening balance as of',
+    calc:'Calculated balance',cp:'Last check',cp_add:'Enter the real balance',cp_bal:'Real balance',diff:'Difference on that day',by_cp:'From the check + later transactions',deact:'Deactivate',act:'Activate',inactive:'inactive',
+    no_accs:'No accounts yet',no_accs_d:'An account shows its balance: opening balance + income − expenses.',acc_tx:'Account transactions',
+    add_goal:'Goal',goal_name:'Goal name',target:'Target amount',deadline:'Deadline (optional)',contribute:'Add / withdraw',contrib_amt:'Amount (withdrawal as negative)',remaining:'Remaining',
+    per_month:'per month',per_week:'per week',need:'Needed',overdue:'Deadline passed',reached:'Goal reached',no_goals:'No savings goals yet',no_goals_d:'Set a goal and log deposits — see progress and how much to put aside.',history:'History',
+    add_inv:'Investment',inv_name:'Name',ticker:'Ticker (optional)',inv_type:'Type',stock:'Stock',etf:'ETF',fund:'Fund',bond:'Bond',crypto:'Crypto',other:'Other',
+    invested:'Invested',value:'Value',gain:'Gain / loss',add_contrib:'Deposit',add_val:'Update value',val:'Value as of',no_val:'not valued',manual:'You enter values by hand — no live prices.',no_inv:'No investments yet',no_inv_d:'Log deposits and update the value manually.',
+    add_rec:'Plan',rec_name:'Name',type:'Type',frequency:'Frequency',start:'First payment',next:'Next',no_rec:'No recurring plans yet',no_rec_d:'A plan only says what you expect. Money counts once you confirm it.',
+    monthly_eq:'per month (converted)',subs_link:'Subscriptions',covers_sub:'Covers subscription',
+    add_cat:'Category',cat_name:'Name',icon:'Icon',color:'Colour',exp_t:'Expense',inc_t:'Income',both:'Both',
+    rv_title:'Monthly review',rv_inc:'Income',rv_exp:'Expenses',rv_net:'Net',rv_top:'Top expenses',rv_bud:'Budgets',rv_sav:'Savings deposits',rv_inv:'Investments',rv_inv_ch:'Value change',rv_inv_new:'of which deposits',rv_inv_mkt:'of which market',
+    rv_exp_plan:'Expected payments',rv_realized:'confirmed',rv_pending:'pending',rv_acc:'Accounts at month end',rv_bal:'Total balance at month end',rv_summary:'Summary',none:'—'};
+  return (cs?CS:EN)[k]!=null?(cs?CS:EN)[k]:k;
+}
+function renderFinanceTx(){
+  const ym=finMonth||finYm(), {from,to}=finMonthRange(ym);
+  const rows=[...(finTxFilter!=='income'?financeTxInRange('expense',from,to).map(x=>[x,'expense']):[]),...(finTxFilter!=='expense'?financeTxInRange('income',from,to).map(x=>[x,'income']):[])]
+    .sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'')||(b[0].createdAt||0)-(a[0].createdAt||0));
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_tx'),`<div class="row" style="gap:6px"><button class="btn sm" id="addExp">＋ ${uiFinT('exp')}</button><button class="btn sm ghost" id="addInc">＋ ${uiFinT('inc')}</button></div>`)}${uiFinMonthBar()}
+    <div class="period-selector" role="tablist">${[['all',uiFinT('all')],['expense',uiFinT('exps')],['income',uiFinT('incs')]].map(([k,l])=>`<button class="pill ${finTxFilter===k?'on':''}" data-txf="${k}" role="tab" aria-selected="${finTxFilter===k}">${l}</button>`).join('')}</div>
+    <div class="list" id="finTxList">${rows.length?rows.map(([x,k])=>uiFinTxRow(x,k)).join(''):`<div class="card">${uiEmpty('🧾',uiFinT('no_tx'),uiFinT('no_tx_d'))}</div>`}</div></div>`);
+  uiBindFinMonthBar(wrap); uiBindTxRows(wrap);
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addExp').onclick=()=>openFinanceForm('expense'); wrap.querySelector('#addInc').onclick=()=>openFinanceForm('income');
+  wrap.querySelectorAll('[data-txf]').forEach(b=>b.onclick=()=>{ finTxFilter=b.dataset.txf; render(); });
+  return wrap;
+}
+function renderFinanceBudgets(){
+  const ym=finMonth||finYm(), usage=financeBudgetUsage(ym);
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_budgets'),`<button class="btn sm" id="addBud">＋ ${uiFin2T('add_budget')}</button>`)}${uiFinMonthBar()}
+    <div class="card" id="finBudList">${usage.length?uiFinBudgetRows(usage,true):uiEmpty('🎯',uiFinT('budget_none'),uiFinT('budget_none_d'),'＋ '+uiFin2T('add_budget'))}</div></div>`);
+  uiBindFinMonthBar(wrap);
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addBud').onclick=()=>openBudgetForm(null,ym);
+  const e=wrap.querySelector('.emptyCta'); if(e) e.onclick=()=>openBudgetForm(null,ym);
+  wrap.querySelectorAll('.finBudEdit').forEach(b=>b.onclick=()=>{ const bud=S.budgets.find(x=>x.id===b.closest('[data-budget]').dataset.budget); if(bud) openBudgetForm(bud,ym); });
+  return wrap;
+}
+function openBudgetForm(existing,ym){
+  const b=existing; ym=ym||finMonth||finYm();
+  const cur=b?financeBudgetCategoryId(b):'';
+  const cats=financeCategoriesFor('expense',cur).map(c=>[c.id,`${c.icon} ${uiFinCatName(c.name)}`]);
+  const inner=el(`<div class="fin-form"><h3>${uiFin2T('add_budget')}</h3>
+    ${uiFinSelect('b_cat',uiFinT('f_cat'),cats,cur||(cats[0]||[''])[0],false)}
+    <label for="b_amt">${uiFin2T('f_limit')}</label><input type="number" id="b_amt" inputmode="decimal" min="1" step="0.01" value="${b?financeBudgetLimit(b):''}"><div class="field-error" hidden data-err="b_amt"></div>
+    <label for="b_scope">${uiFin2T('f_month')}</label><select id="b_scope"><option value="">${uiFin2T('every_month')}</option><option value="${ym}" ${b&&b.month?'selected':''}>${uiFin2T('only_month')}: ${escapeHtml(uiFinMonthLabel(b&&b.month||ym))}</option></select>
+    <label for="b_note">${uiFin2T('f_note')}</label><input id="b_note" value="${b?escapeHtml(b.note||''):''}">
+    <button class="btn" id="b_save">${uiFinT('save')}</button>${b?`<button class="btn danger" id="b_del" style="margin-top:8px">${uiFinT('del')}</button>`:''}</div>`);
+  if(b&&b.month) inner.querySelector('#b_scope option[value]:not([value=""])').value=b.month;
+  inner.querySelector('#b_save').onclick=()=>{
+    const r=financeBudgetSave({categoryId:inner.querySelector('#b_cat').value,amount:inner.querySelector('#b_amt').value,month:inner.querySelector('#b_scope').value,note:inner.querySelector('#b_note').value},b?b.id:undefined);
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{amount:'b_amt',categoryId:'b_cat'}); return; }
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
+  };
+  const d=inner.querySelector('#b_del'); if(d) d.onclick=()=>{ closeSheets(); uiConfirmSheet({title:uiFinT('del'),text:uiFinT('del_q'),ok:uiFinT('del'),danger:true},()=>{ S.budgets=S.budgets.filter(x=>x.id!==b.id); scheduleSave(); render(); toast(uiFinT('deleted')); }); };
+  openSheet(inner);
+}
+function renderFinanceAccounts(){
+  const accs=[...(S.accounts||[])].sort((a,b)=>(b.active!==false)-(a.active!==false)||a.name.localeCompare(b.name,uiLocale()));
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_accounts'),`<button class="btn sm" id="addAcc">＋ ${uiFin2T('add_acc')}</button>`)}<div class="list" id="finAccList"></div></div>`);
+  const list=wrap.querySelector('#finAccList');
+  if(!accs.length){ const e=el(`<div class="card">${uiEmpty('🏦',uiFin2T('no_accs'),uiFin2T('no_accs_d'),'＋ '+uiFin2T('add_acc'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openAccountForm(); list.appendChild(e); }
+  accs.forEach(a=>{
+    const st=financeAccountStatus(a);
+    const it=el(`<button class="card fin-card" data-account="${a.id}"><div class="between"><span class="item-title truncate">${{bank:'🏦',cash:'💵',card:'💳'}[a.type]||'🏦'} ${escapeHtml(a.name)}${a.active===false?` <span class="chip is-muted">${uiFin2T('inactive')}</span>`:''}</span><b class="num fin-big">${uiMoney(st.calculated)} <small>${escapeHtml(a.currency)}</small></b></div>
+      <div class="sub">${uiFin2T(a.type)}${st.checkpoint?` · ${uiFin2T('cp')}: ${uiMoney(st.checkpoint.balance)} (${fmtDate(st.checkpoint.date)}) · ${uiFin2T('diff')}: <b class="${st.difference===0?'':'is-exp'}">${st.difference>0?'+':''}${uiMoney(st.difference)}</b>`:''}</div></button>`);
+    it.onclick=()=>openAccountDetail(a);
+    list.appendChild(it);
+  });
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addAcc').onclick=()=>openAccountForm();
+  return wrap;
+}
+function openAccountForm(existing){
+  const a=existing;
+  const inner=el(`<div class="fin-form"><h3>${uiFin2T('add_acc')}</h3>
+    <label for="a_name">${uiFin2T('acc_name')}</label><input id="a_name" value="${a?escapeHtml(a.name):''}"><div class="field-error" hidden data-err="a_name"></div>
+    ${uiFinSelect('a_type',uiFin2T('acc_type'),FIN_ACCOUNT_TYPES.map(t=>[t,uiFin2T(t)]),a?a.type:'bank',false)}
+    <div class="grid2"><div><label for="a_open">${uiFin2T('opening')}</label><input type="number" id="a_open" inputmode="decimal" step="0.01" value="${a?a.openingBalance:0}"><div class="field-error" hidden data-err="a_open"></div></div>
+      <div><label for="a_cur">${uiFin2T('currency')}</label><input id="a_cur" value="${a?escapeHtml(a.currency):'CZK'}" maxlength="5"></div></div>
+    <label for="a_odate">${uiFin2T('opening_date')}</label><input type="date" id="a_odate" value="${a?a.openingDate:todayStr()}">
+    <label for="a_notes">${uiFin2T('f_note')}</label><textarea id="a_notes" rows="2">${a?escapeHtml(a.notes||''):''}</textarea>
+    <button class="btn" id="a_save">${uiFinT('save')}</button></div>`);
+  inner.querySelector('#a_save').onclick=()=>{
+    const v=id=>inner.querySelector('#'+id).value;
+    const r=financeAccountSave({name:v('a_name'),type:v('a_type'),openingBalance:v('a_open'),currency:v('a_cur'),openingDate:v('a_odate'),notes:v('a_notes')},a?a.id:undefined);
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{name:'a_name',openingBalance:'a_open'}); return; }
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
   };
   openSheet(inner);
+}
+function openAccountDetail(a){
+  const st=financeAccountStatus(a);
+  const txs=[...S.expenses.filter(x=>x.accountId===a.id).map(x=>[x,'expense']),...S.income.filter(x=>x.accountId===a.id).map(x=>[x,'income'])].sort((p,q)=>(q[0].date||'').localeCompare(p[0].date||'')).slice(0,20);
+  const row=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+  const inner=el(`<div class="fin-detail" id="accDetail"><h3>${escapeHtml(a.name)}</h3>
+    <div class="card">${row(uiFin2T('calc'),`${uiMoney(st.calculated)} ${escapeHtml(a.currency)}`)}${row(uiFin2T('opening'),`${uiMoney(a.openingBalance)} · ${fmtDate(a.openingDate)}`)}
+      ${st.checkpoint?row(uiFin2T('cp'),`${uiMoney(st.checkpoint.balance)} · ${fmtDate(st.checkpoint.date)}`)+row(uiFin2T('diff'),`${st.difference>0?'+':''}${uiMoney(st.difference)}`)+row(uiFin2T('by_cp'),uiMoney(st.fromCheckpoint)):''}</div>
+    <div class="section-header"><h3>${uiFin2T('cp_add')}</h3></div>
+    <div class="grid2"><div><label for="cp_bal">${uiFin2T('cp_bal')}</label><input type="number" id="cp_bal" inputmode="decimal" step="0.01"><div class="field-error" hidden data-err="cp_bal"></div></div><div><label for="cp_date">${uiFinT('f_date')}</label><input type="date" id="cp_date" value="${todayStr()}"></div></div>
+    <button class="btn ghost" id="cp_save">${uiFin2T('cp_add')}</button>
+    <div class="section-header"><h3>${uiFin2T('acc_tx')}</h3></div><div class="list">${txs.map(([x,k])=>uiFinTxRow(x,k)).join('')||`<div class="sub">—</div>`}</div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn ghost" id="acc_edit">${uiFinT('edit')}</button><button class="btn ghost" id="acc_act">${a.active===false?uiFin2T('act'):uiFin2T('deact')}</button></div></div>`);
+  uiBindTxRows(inner);
+  inner.querySelector('#cp_save').onclick=()=>{
+    const r=financeAccountAddCheckpoint(a.id,{balance:inner.querySelector('#cp_bal').value,date:inner.querySelector('#cp_date').value});
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{balance:'cp_bal'}); return; }
+    scheduleSave(); closeSheets(); render(); openAccountDetail(a);
+  };
+  inner.querySelector('#acc_edit').onclick=()=>{ closeSheets(); openAccountForm(a); };
+  inner.querySelector('#acc_act').onclick=()=>{ financeAccountSetActive(a.id,a.active===false); scheduleSave(); closeSheets(); render(); };
+  openSheet(inner);
+}
+function renderFinanceSavings(){
+  const goals=[...(S.savingsGoals||[])].sort((a,b)=>(b.active!==false)-(a.active!==false)||a.name.localeCompare(b.name,uiLocale()));
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_savings'),`<button class="btn sm" id="addGoal">＋ ${uiFin2T('add_goal')}</button>`)}<div class="list" id="finGoalList"></div></div>`);
+  const list=wrap.querySelector('#finGoalList');
+  if(!goals.length){ const e=el(`<div class="card">${uiEmpty('🐖',uiFin2T('no_goals'),uiFin2T('no_goals_d'),'＋ '+uiFin2T('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openSavingsForm(); list.appendChild(e); }
+  goals.forEach(g=>{
+    const p=financeSavingsProgress(g);
+    const it=el(`<button class="card fin-card" data-goal="${g.id}"><div class="between"><span class="item-title truncate">${escapeHtml(g.icon)} ${escapeHtml(g.name)}${g.active===false?` <span class="chip is-muted">${uiFin2T('inactive')}</span>`:''}</span><span class="num"><b>${uiMoney(p.current)}</b> / ${uiMoney(p.target)}</span></div>
+      <div class="bar ${p.done?'is-success':''}" style="margin:8px 0 6px"><i style="width:${p.pct}%"></i></div>
+      <div class="between sub"><span>${uiFinPct(p.pct)} · ${uiFin2T('remaining')} ${uiMoney(p.remaining)}</span><span>${p.done?`✓ ${uiFin2T('reached')}`:p.overdue?`${uiFin2T('overdue')}`:p.requiredMonthly!=null?`${uiFin2T('need')} ${uiMoney(p.requiredMonthly)} ${uiFin2T('per_month')}`:''}</span></div></button>`);
+    it.onclick=()=>openSavingsDetail(g);
+    list.appendChild(it);
+  });
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addGoal').onclick=()=>openSavingsForm();
+  return wrap;
+}
+function openSavingsForm(existing){
+  const g=existing, accs=(S.accounts||[]).filter(a=>a.active!==false||(g&&a.id===g.accountId)).map(a=>[a.id,a.name]);
+  const inner=el(`<div class="fin-form"><h3>${uiFin2T('add_goal')}</h3>
+    <label for="g_name">${uiFin2T('goal_name')}</label><input id="g_name" value="${g?escapeHtml(g.name):''}"><div class="field-error" hidden data-err="g_name"></div>
+    <div class="grid2"><div><label for="g_target">${uiFin2T('target')}</label><input type="number" id="g_target" inputmode="decimal" min="1" step="0.01" value="${g?g.targetAmount:''}"><div class="field-error" hidden data-err="g_target"></div></div>
+      <div><label for="g_icon">${uiFin2T('icon')}</label><input id="g_icon" value="${g?escapeHtml(g.icon):'🎯'}" maxlength="4"></div></div>
+    <label for="g_dead">${uiFin2T('deadline')}</label><input type="date" id="g_dead" value="${g?g.deadline||'':''}"><div class="field-error" hidden data-err="g_dead"></div>
+    ${uiFinSelect('g_acc',uiFinT('f_acc'),accs,g?g.accountId:'',true)}
+    <button class="btn" id="g_save">${uiFinT('save')}</button></div>`);
+  inner.querySelector('#g_save').onclick=()=>{
+    const v=id=>inner.querySelector('#'+id).value;
+    const r=financeSavingsSave({name:v('g_name'),targetAmount:v('g_target'),icon:v('g_icon'),deadline:v('g_dead'),accountId:v('g_acc')},g?g.id:undefined);
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{name:'g_name',targetAmount:'g_target',deadline:'g_dead'}); return; }
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
+  };
+  openSheet(inner);
+}
+function openSavingsDetail(g){
+  const p=financeSavingsProgress(g);
+  const row=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+  const inner=el(`<div class="fin-detail" id="goalDetail"><h3>${escapeHtml(g.icon)} ${escapeHtml(g.name)}</h3>
+    <div class="bar ${p.done?'is-success':''}" style="margin:6px 0 10px"><i style="width:${p.pct}%"></i></div>
+    <div class="card">${row(uiFinT('savings'),`${uiMoney(p.current)} / ${uiMoney(p.target)} (${uiFinPct(p.pct)})`)}${row(uiFin2T('remaining'),uiMoney(p.remaining))}
+      ${g.deadline?row(uiFin2T('deadline'),`${fmtDate(g.deadline)} · ${p.daysLeft} d`):''}
+      ${p.requiredMonthly!=null?row(uiFin2T('need'),`${uiMoney(p.requiredMonthly)} ${uiFin2T('per_month')} · ${uiMoney(p.requiredWeekly)} ${uiFin2T('per_week')}`):''}
+      ${p.overdue?row('⚠︎',uiFin2T('overdue')):''}</div>
+    <div class="section-header"><h3>${uiFin2T('contribute')}</h3></div>
+    <div class="grid2"><div><label for="c_amt">${uiFin2T('contrib_amt')}</label><input type="number" id="c_amt" inputmode="decimal" step="0.01"><div class="field-error" hidden data-err="c_amt"></div></div><div><label for="c_date">${uiFinT('f_date')}</label><input type="date" id="c_date" value="${todayStr()}"></div></div>
+    <label for="c_note">${uiFin2T('f_note')}</label><input id="c_note">
+    <button class="btn" id="c_save">${uiFin2T('contribute')}</button>
+    <div class="section-header"><h3>${uiFin2T('history')}</h3></div>
+    <div class="card">${[...g.contributions].sort((a,b)=>b.date.localeCompare(a.date)).map(c=>row(`${fmtDate(c.date)}${c.note?' · '+escapeHtml(c.note):''}`,`${c.amount>0?'+':''}${uiMoney(c.amount)}`)).join('')||'<div class="sub">—</div>'}</div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn ghost" id="g_edit">${uiFinT('edit')}</button><button class="btn ghost" id="g_act">${g.active===false?uiFin2T('act'):uiFin2T('deact')}</button></div></div>`);
+  inner.querySelector('#c_save').onclick=()=>{
+    const r=financeSavingsContribute(g.id,{amount:inner.querySelector('#c_amt').value,date:inner.querySelector('#c_date').value,note:inner.querySelector('#c_note').value});
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{amount:'c_amt'}); return; }
+    scheduleSave(); closeSheets(); render(); openSavingsDetail(g);
+  };
+  inner.querySelector('#g_edit').onclick=()=>{ closeSheets(); openSavingsForm(g); };
+  inner.querySelector('#g_act').onclick=()=>{ g.active=g.active===false; g.updatedAt=Date.now(); scheduleSave(); closeSheets(); render(); };
+  openSheet(inner);
+}
+const FIN_INV_TYPES=['stock','etf','fund','bond','crypto','other'];
+function renderFinanceInvestments(){
+  const sum=financeInvestmentsSummary(), all=[...(S.investments||[])].sort((a,b)=>(b.active!==false)-(a.active!==false)||a.name.localeCompare(b.name,uiLocale()));
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_invest'),`<button class="btn sm" id="addInv">＋ ${uiFin2T('add_inv')}</button>`)}
+    <p class="helper-text" style="margin:0 2px 10px">${uiFin2T('manual')}</p>
+    <div class="stat-grid cols-3"><div class="stat-card"><div class="stat-label">${uiFin2T('value')}</div><div class="stat-value num">${uiMoney(sum.value)}</div></div>
+      <div class="stat-card"><div class="stat-label">${uiFin2T('invested')}</div><div class="stat-value num">${uiMoney(sum.invested)}</div></div>
+      <div class="stat-card"><div class="stat-label">${uiFin2T('gain')}</div><div class="stat-value num ${sum.gain>=0?'is-inc':'is-exp'}">${sum.gain>=0?'+':''}${uiMoney(sum.gain)}</div><div class="stat-sub">${sum.pct!=null?`${uiFinPct(sum.pct,true)}`:''}</div></div></div>
+    <div class="list" id="finInvList"></div></div>`);
+  const list=wrap.querySelector('#finInvList');
+  if(!all.length){ const e=el(`<div class="card">${uiEmpty('📈',uiFin2T('no_inv'),uiFin2T('no_inv_d'),'＋ '+uiFin2T('add_inv'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openInvestmentForm(); list.appendChild(e); }
+  all.forEach(i=>{
+    const p=financeInvestmentPerformance(i);
+    const it=el(`<button class="card fin-card" data-investment="${i.id}"><div class="between"><span class="item-title truncate">${escapeHtml(i.name)}${i.ticker?` <span class="sub">${escapeHtml(i.ticker)}</span>`:''}${i.active===false?` <span class="chip is-muted">${uiFin2T('inactive')}</span>`:''}</span><b class="num fin-big">${uiMoney(p.value)} <small>${escapeHtml(i.currency)}</small></b></div>
+      <div class="between sub"><span>${uiFin2T(i.type)||escapeHtml(i.type)} · ${uiFin2T('invested')} ${uiMoney(p.invested)}${p.hasValuation?` · ${fmtDate(p.valuationDate)}`:` · ${uiFin2T('no_val')}`}</span><b class="num ${p.gain>=0?'is-inc':'is-exp'}">${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` (${uiFinPct(p.pct,true)})`:''}</b></div></button>`);
+    it.onclick=()=>openInvestmentDetail(i);
+    list.appendChild(it);
+  });
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addInv').onclick=()=>openInvestmentForm();
+  return wrap;
+}
+function openInvestmentForm(existing){
+  const i=existing, accs=(S.accounts||[]).filter(a=>a.active!==false||(i&&a.id===i.accountId)).map(a=>[a.id,a.name]);
+  const inner=el(`<div class="fin-form"><h3>${uiFin2T('add_inv')}</h3>
+    <label for="i_name">${uiFin2T('inv_name')}</label><input id="i_name" value="${i?escapeHtml(i.name):''}"><div class="field-error" hidden data-err="i_name"></div>
+    <div class="grid2"><div><label for="i_ticker">${uiFin2T('ticker')}</label><input id="i_ticker" value="${i?escapeHtml(i.ticker||''):''}" maxlength="12"></div><div><label for="i_cur">${uiFin2T('currency')}</label><input id="i_cur" value="${i?escapeHtml(i.currency):'CZK'}" maxlength="5"></div></div>
+    ${uiFinSelect('i_type',uiFin2T('inv_type'),FIN_INV_TYPES.map(t=>[t,uiFin2T(t)]),i?i.type:'etf',false)}
+    ${uiFinSelect('i_acc',uiFinT('f_acc'),accs,i?i.accountId:'',true)}
+    ${i?'':`<div class="grid2"><div><label for="i_first">${uiFin2T('add_contrib')}</label><input type="number" id="i_first" inputmode="decimal" step="0.01"></div><div><label for="i_fdate">${uiFinT('f_date')}</label><input type="date" id="i_fdate" value="${todayStr()}"></div></div>`}
+    <label for="i_notes">${uiFin2T('f_note')}</label><textarea id="i_notes" rows="2">${i?escapeHtml(i.notes||''):''}</textarea>
+    <button class="btn" id="i_save">${uiFinT('save')}</button></div>`);
+  inner.querySelector('#i_save').onclick=()=>{
+    const v=id=>(inner.querySelector('#'+id)||{}).value;
+    const r=financeInvestmentSave({name:v('i_name'),ticker:v('i_ticker'),currency:v('i_cur'),type:v('i_type'),accountId:v('i_acc'),notes:v('i_notes')},i?i.id:undefined);
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{name:'i_name'}); return; }
+    if(!i&&finNum(v('i_first'))) financeInvestmentAdd(r.investment.id,'contribution',{amount:v('i_first'),date:v('i_fdate')||todayStr()});
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
+  };
+  openSheet(inner);
+}
+function openInvestmentDetail(i){
+  const p=financeInvestmentPerformance(i);
+  const row=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+  const hist=[...i.contributions.map(c=>[c.date,`${uiFin2T('add_contrib')}${c.note?' · '+escapeHtml(c.note):''}`,`${c.amount>0?'+':''}${uiMoney(c.amount)}`]),...i.valuations.map(v=>[v.date,uiFin2T('value'),`= ${uiMoney(v.value)}`])].sort((a,b)=>b[0].localeCompare(a[0]));
+  const inner=el(`<div class="fin-detail" id="invDetail"><h3>${escapeHtml(i.name)}${i.ticker?` <span class="sub">${escapeHtml(i.ticker)}</span>`:''}</h3>
+    <div class="card">${row(uiFin2T('value'),`${uiMoney(p.value)} ${escapeHtml(i.currency)}${p.hasValuation?'':` (${uiFin2T('no_val')})`}`)}${row(uiFin2T('invested'),uiMoney(p.invested))}
+      ${row(uiFin2T('gain'),`${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` · ${uiFinPct(p.pct,true)}`:''}`)}</div>
+    <p class="helper-text">${uiFin2T('manual')}</p>
+    <div class="grid2"><div><label for="iv_val">${uiFin2T('val')}</label><input type="number" id="iv_val" inputmode="decimal" min="0" step="0.01"><div class="field-error" hidden data-err="iv_val"></div></div><div><label for="iv_date">${uiFinT('f_date')}</label><input type="date" id="iv_date" value="${todayStr()}"></div></div>
+    <button class="btn ghost" id="iv_save">${uiFin2T('add_val')}</button>
+    <div class="grid2" style="margin-top:10px"><div><label for="ic_amt">${uiFin2T('add_contrib')}</label><input type="number" id="ic_amt" inputmode="decimal" step="0.01"><div class="field-error" hidden data-err="ic_amt"></div></div><div><label for="ic_date">${uiFinT('f_date')}</label><input type="date" id="ic_date" value="${todayStr()}"></div></div>
+    <button class="btn ghost" id="ic_save">${uiFin2T('add_contrib')}</button>
+    <div class="section-header"><h3>${uiFin2T('history')}</h3></div><div class="card">${hist.map(h=>row(`${fmtDate(h[0])} · ${h[1]}`,h[2])).join('')||'<div class="sub">—</div>'}</div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn ghost" id="i_edit">${uiFinT('edit')}</button><button class="btn ghost" id="i_act">${i.active===false?uiFin2T('act'):uiFin2T('deact')}</button></div></div>`);
+  inner.querySelector('#iv_save').onclick=()=>{ const r=financeInvestmentAdd(i.id,'valuation',{value:inner.querySelector('#iv_val').value,date:inner.querySelector('#iv_date').value}); if(!r.ok){ uiFinShowErrors(inner,r.errors,{value:'iv_val'}); return; } scheduleSave(); closeSheets(); render(); openInvestmentDetail(i); };
+  inner.querySelector('#ic_save').onclick=()=>{ const r=financeInvestmentAdd(i.id,'contribution',{amount:inner.querySelector('#ic_amt').value,date:inner.querySelector('#ic_date').value}); if(!r.ok){ uiFinShowErrors(inner,r.errors,{amount:'ic_amt'}); return; } scheduleSave(); closeSheets(); render(); openInvestmentDetail(i); };
+  inner.querySelector('#i_edit').onclick=()=>{ closeSheets(); openInvestmentForm(i); };
+  inner.querySelector('#i_act').onclick=()=>{ i.active=i.active===false; i.updatedAt=Date.now(); scheduleSave(); closeSheets(); render(); };
+  openSheet(inner);
+}
+function renderFinanceRecurring(){
+  const ym=finMonth||finYm(), ex=financeExpectedMonth(ym), plans=[...(S.recurringFinance||[])].sort((a,b)=>(b.active!==false)-(a.active!==false)||a.name.localeCompare(b.name,uiLocale()));
+  const subsMonthly=S.subscriptions.filter(s=>s.active!==false).reduce((a,s)=>a+(s.period==='Yearly'?Number(s.price||0)/12:Number(s.price||0)),0);
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_recurring'),`<button class="btn sm" id="addRec">＋ ${uiFin2T('add_rec')}</button>`)}${uiFinMonthBar()}
+    <div class="card fin-expected"><div class="kicker" style="margin-bottom:6px">${uiFinT('expected')} · ${escapeHtml(uiFinMonthLabel(ym))}</div><p class="helper-text" style="margin:0 0 8px">${uiFinT('expected_d')}</p>${uiFinExpectedList(ex)}</div>
+    <div class="section-header"><h3>${uiFinT('s_recurring')}</h3></div><div class="list" id="finRecList"></div>
+    <div class="section-header"><h3>${uiFin2T('subs_link')}</h3></div>
+    <button class="card is-link between" id="finSubsLink" style="width:100%;text-align:left;font:inherit;color:inherit"><span>💳 <b class="num">${uiMoney(Math.round(subsMonthly))}</b> <span class="sub">${uiFin2T('monthly_eq')}</span></span><span class="sub" aria-hidden="true">›</span></button></div>`);
+  uiBindFinMonthBar(wrap); uiBindExpected(wrap);
+  const list=wrap.querySelector('#finRecList');
+  if(!plans.length){ const e=el(`<div class="card">${uiEmpty('🔁',uiFin2T('no_rec'),uiFin2T('no_rec_d'),'＋ '+uiFin2T('add_rec'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openRecurringForm(); list.appendChild(e); }
+  plans.forEach(r=>{
+    const nx=r.active!==false?financeRecurringNextDue(r):null, sub=r.subscriptionId?S.subscriptions.find(s=>s.id===r.subscriptionId):null;
+    const it=el(`<button class="card fin-card" data-recurring="${r.id}"><div class="between"><span class="item-title truncate">${r.type==='income'?'💵':'💸'} ${escapeHtml(r.name)}${r.active===false?` <span class="chip is-muted">${uiFin2T('inactive')}</span>`:''}</span><b class="num ${r.type==='income'?'is-inc':'is-exp'}">${r.type==='income'?'+':'−'}${uiMoney(r.amount)}</b></div>
+      <div class="sub">${uiFinT(r.frequency)} · ${uiMoney(financeMonthlyEquivalent(r.amount,r.frequency))} ${uiFin2T('monthly_eq')}${nx?` · ${uiFin2T('next')}: ${fmtDate(nx)}`:''}${sub?` · 💳 ${escapeHtml(sub.name)}`:''}</div></button>`);
+    it.onclick=()=>openRecurringForm(r);
+    list.appendChild(it);
+  });
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addRec').onclick=()=>openRecurringForm();
+  wrap.querySelector('#finSubsLink').onclick=()=>{ view='subscriptions'; render(); window.scrollTo(0,0); };
+  return wrap;
+}
+function openRecurringForm(existing){
+  const r=existing, type=r?r.type:'expense';
+  const accs=(S.accounts||[]).filter(a=>a.active!==false||(r&&a.id===r.accountId)).map(a=>[a.id,a.name]);
+  const subs=S.subscriptions.map(s=>[s.id,`${s.name} · ${uiMoney(s.price)}`]);
+  const inner=el(`<div class="fin-form"><h3>${uiFin2T('add_rec')}</h3><p class="helper-text">${uiFin2T('no_rec_d')}</p>
+    ${uiFinSelect('r_type',uiFin2T('type'),[['expense',uiFinT('exp')],['income',uiFinT('inc')]],type,false)}
+    <label for="r_name">${uiFin2T('rec_name')}</label><input id="r_name" value="${r?escapeHtml(r.name):''}"><div class="field-error" hidden data-err="r_name"></div>
+    <div class="grid2"><div><label for="r_amt">${uiFinT('f_amount')}</label><input type="number" id="r_amt" inputmode="decimal" min="0.01" step="0.01" value="${r?r.amount:''}"><div class="field-error" hidden data-err="r_amt"></div></div>
+      <div>${uiFinSelect('r_freq',uiFin2T('frequency'),FIN_FREQUENCIES.map(q=>[q,uiFinT(q)]),r?r.frequency:'monthly',false)}</div></div>
+    <label for="r_start">${uiFin2T('start')}</label><input type="date" id="r_start" value="${r?r.startDate:todayStr()}"><div class="field-error" hidden data-err="r_start"></div>
+    <div id="r_catWrap"></div>
+    ${uiFinSelect('r_acc',uiFinT('f_acc'),accs,r?r.accountId:'',true)}
+    ${uiFinSelect('r_sub',uiFin2T('covers_sub'),subs,r?r.subscriptionId:'',true)}
+    <label for="r_notes">${uiFin2T('f_note')}</label><textarea id="r_notes" rows="2">${r?escapeHtml(r.notes||''):''}</textarea>
+    <button class="btn" id="r_save">${uiFinT('save')}</button>${r?`<button class="btn ghost" id="r_act" style="margin-top:8px">${r.active===false?uiFin2T('act'):uiFin2T('deact')}</button>`:''}</div>`);
+  const drawCats=()=>{ const t=inner.querySelector('#r_type').value, cur=r&&r.type===t?r.categoryId:''; inner.querySelector('#r_catWrap').innerHTML=uiFinSelect('r_cat',uiFinT('f_cat'),financeCategoriesFor(t,cur).map(c=>[c.id,`${c.icon} ${uiFinCatName(c.name)}`]),cur,true); };
+  drawCats(); inner.querySelector('#r_type').onchange=drawCats;
+  inner.querySelector('#r_save').onclick=()=>{
+    const v=id=>inner.querySelector('#'+id).value;
+    const res=financeRecurringSave({type:v('r_type'),name:v('r_name'),amount:v('r_amt'),frequency:v('r_freq'),startDate:v('r_start'),categoryId:v('r_cat'),accountId:v('r_acc'),subscriptionId:v('r_type')==='expense'?v('r_sub'):'',notes:v('r_notes')},r?r.id:undefined);
+    if(!res.ok){ uiFinShowErrors(inner,res.errors,{name:'r_name',amount:'r_amt',startDate:'r_start'}); return; }
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
+  };
+  const act=inner.querySelector('#r_act'); if(act) act.onclick=()=>{ r.active=r.active===false; r.updatedAt=Date.now(); scheduleSave(); closeSheets(); render(); };
+  openSheet(inner);
+}
+function renderFinanceCategories(){
+  const cats=[...(S.financeCategories||[])].sort((a,b)=>(b.active?1:0)-(a.active?1:0)||a.name.localeCompare(b.name,uiLocale()));
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_cats'),`<button class="btn sm" id="addCat">＋ ${uiFin2T('add_cat')}</button>`)}<div class="list" id="finCatList">
+    ${cats.map(c=>`<div class="item fin-cat${c.active?'':' is-inactive'}" data-fcat="${c.id}"><span class="icon-circle" style="background:color-mix(in srgb,${escapeHtml(c.color)} 18%,var(--card2))" aria-hidden="true">${escapeHtml(c.icon)}</span>
+      <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(uiFinCatName(c.name))}</div><div class="item-meta">${uiFin2T(c.type==='expense'?'exp_t':c.type==='income'?'inc_t':'both')}${c.active?'':` · ${uiFin2T('inactive')}`}</div></div>
+      <div class="item-actions"><button class="iconbtn ghost-ic catEdit" aria-label="${uiFinT('edit')}: ${escapeHtml(c.name)}">${uiIcon('edit',18)}</button><button class="pill sm catAct">${c.active?uiFin2T('deact'):uiFin2T('act')}</button></div></div>`).join('')}</div></div>`);
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  wrap.querySelector('#addCat').onclick=()=>openFinanceCategoryForm();
+  wrap.querySelectorAll('[data-fcat]').forEach(n=>{ const c=financeCategoryById(n.dataset.fcat);
+    n.querySelector('.catEdit').onclick=()=>openFinanceCategoryForm(c);
+    n.querySelector('.catAct').onclick=()=>{ financeCategorySetActive(c.id,!c.active); scheduleSave(); render(); }; });
+  return wrap;
+}
+function openFinanceCategoryForm(existing){
+  const c=existing;
+  const inner=el(`<div class="fin-form"><h3>${uiFin2T('add_cat')}</h3>
+    <label for="fc_name">${uiFin2T('cat_name')}</label><input id="fc_name" value="${c?escapeHtml(c.name):''}"><div class="field-error" hidden data-err="fc_name"></div>
+    ${uiFinSelect('fc_type',uiFin2T('type'),[['expense',uiFin2T('exp_t')],['income',uiFin2T('inc_t')],['both',uiFin2T('both')]],c?c.type:'expense',false)}
+    <div class="grid2"><div><label for="fc_icon">${uiFin2T('icon')}</label><input id="fc_icon" value="${c?escapeHtml(c.icon):'🏷️'}" maxlength="4"></div><div><label for="fc_color">${uiFin2T('color')}</label><input type="color" id="fc_color" value="${c?escapeHtml(c.color):'#94a3b8'}"></div></div>
+    <button class="btn" id="fc_save">${uiFinT('save')}</button></div>`);
+  inner.querySelector('#fc_save').onclick=()=>{
+    const v=id=>inner.querySelector('#'+id).value;
+    const r=financeCategorySave({name:v('fc_name'),type:v('fc_type'),icon:v('fc_icon'),color:v('fc_color')},c?c.id:undefined);
+    if(!r.ok){ uiFinShowErrors(inner,r.errors,{name:'fc_name'}); return; }
+    scheduleSave(); closeSheets(); render(); toast(uiFinT('saved'));
+  };
+  openSheet(inner);
+}
+function renderFinanceReview(){
+  const ym=finMonth||finYm(), rv=financeMonthReview(ym), t=rv.totals;
+  const row=(k,v,cls)=>`<div class="kv"><span>${k}</span><b class="${cls||''}">${v}</b></div>`;
+  const inv=rv.investments;
+  const wrap=el(`<div class="fin">${uiFinSubHead(uiFin2T('rv_title'))}${uiFinMonthBar()}
+    <div class="card fin-rv-sum"><div class="kicker">${uiFin2T('rv_summary')}</div>
+      <p><b>${uiFin2T('rv_inc')} ${uiMoney(t.income)}</b></p><p><b>${uiFin2T('rv_exp')} ${uiMoney(t.expenses)}</b></p><p><b>${uiFin2T('rv_net')} ${t.net>=0?'+':''}${uiMoney(t.net)}</b></p></div>
+    <div class="section-header"><h3>${uiFin2T('rv_top')}</h3></div><div class="card">${rv.topCategories.length?uiFinChartCategories(rv.topCategories):`<div class="sub">${uiFinT('no_data')}</div>`}</div>
+    <div class="section-header"><h3>${uiFin2T('rv_bud')}</h3></div><div class="card">${rv.budgets.length?uiFinBudgetRows(rv.budgets,false):`<div class="sub">${uiFinT('budget_none')}</div>`}</div>
+    <div class="section-header"><h3>${uiFin2T('rv_sav')} · ${uiFin2T('rv_inv')}</h3></div>
+    <div class="card">${row(uiFin2T('rv_sav'),`${rv.savings>0?'+':''}${uiMoney(rv.savings)}`)}${row(uiFin2T('rv_inv_ch'),`${inv.change>=0?'+':''}${uiMoney(inv.change)}`)}${row(uiFin2T('rv_inv_new'),uiMoney(inv.contributions))}${row(uiFin2T('rv_inv_mkt'),`${inv.marketChange>=0?'+':''}${uiMoney(inv.marketChange)}`)}</div>
+    <div class="section-header"><h3>${uiFin2T('rv_exp_plan')}</h3></div>
+    <div class="card">${row(uiFin2T('rv_realized'),rv.expected.realized)}${row(uiFin2T('rv_pending'),`${rv.expected.pending} · −${uiMoney(rv.expected.pendingExpense)}${rv.expected.pendingIncome?` / +${uiMoney(rv.expected.pendingIncome)}`:''}`)}</div>
+    <div class="section-header"><h3>${uiFin2T('rv_acc')}</h3></div>
+    <div class="card">${rv.accounts.map(a=>row(escapeHtml(a.account.name),`${uiMoney(a.balance)} ${escapeHtml(a.account.currency)}`)).join('')}${row(uiFin2T('rv_bal'),uiMoney(rv.balanceEnd))}</div></div>`);
+  uiBindFinMonthBar(wrap);
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
+  return wrap;
+}
+let finKeepView=false;
+function renderFinance(){
+  // arriving from another screen opens the dashboard of the current month (Search keeps its target)
+  if(uiLastView!=='finance'&&!finKeepView){ finView='dashboard'; finMonth=null; }
+  finKeepView=false;
+  const map={tx:renderFinanceTx,budgets:renderFinanceBudgets,accounts:renderFinanceAccounts,savings:renderFinanceSavings,invest:renderFinanceInvestments,recurring:renderFinanceRecurring,cats:renderFinanceCategories,review:renderFinanceReview};
+  return (map[finView]||renderFinanceDashboard)();
 }
 
 /* ---- Fitness module ---- */
@@ -6089,13 +7000,10 @@ function computeStats(period){
 
   // Finance -- subscriptions are a separate collection and are never summed in here, so they
   // are never double-counted alongside S.expenses (same rule as Home/Finance module).
-  const expInPeriod=S.expenses.filter(e=>e.date>=since);
-  const incInPeriod=S.income.filter(i=>i.date>=since);
-  const totalExp=expInPeriod.reduce((a,b)=>a+Number(b.amount||0),0);
-  const totalInc=incInPeriod.reduce((a,b)=>a+Number(b.amount||0),0);
-  const balance=totalInc-totalExp;
-  const byCategory={}; expInPeriod.forEach(e=>{const c=e.category||'Other'; byCategory[c]=(byCategory[c]||0)+Number(e.amount||0);});
-  const finance={income:totalInc,expenses:totalExp,balance,savings:Math.max(0,balance),transactions:expInPeriod.length+incInPeriod.length,byCategory};
+  // Phase 11B: the Finance 2.0 helpers (same numbers as the Finance module); savings = money saved in
+  // savings goals, investments = current (manual) value -- both all-time, like PRs
+  const ft=financeTotalsBetween(since,'9999-12-31');
+  const finance={income:ft.income,expenses:ft.expenses,balance:ft.net,savings:financeSavingsTotal(),investments:financeInvestmentsSummary().value,transactions:ft.count,byCategory:ft.byCategory};
 
   // Sleep / Health (Phase 7)
   const sleepInPeriod=S.sleepLog.filter(s=>s.date>=since);
@@ -6204,7 +7112,7 @@ function renderStats(){
 
   body.appendChild(el(statCard('Finance',[
     ['Income',st.finance.income.toFixed(0)],['Expenses',st.finance.expenses.toFixed(0)],['Balance',st.finance.balance.toFixed(0)],
-    ['Savings (positive balance)',st.finance.savings.toFixed(0)],['Transactions',st.finance.transactions],
+    ['Savings',st.finance.savings.toFixed(0)],['Investments',st.finance.investments.toFixed(0)],['Transactions',st.finance.transactions],
   ])));
   const finCatRows=Object.keys(st.finance.byCategory).length?Object.entries(st.finance.byCategory).map(([c,a])=>`<div class="kv"><span>${escapeHtml(uiL(c))}</span><b>${uiNum(Math.round(a))}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No expenses yet.')}</div>`;
   body.appendChild(el(`<div class="card"><h3>${uiL('Expenses by category')}</h3>${finCatRows}</div>`));
@@ -6261,8 +7169,12 @@ function searchNavigate(type,obj){
   else if(type==='goal'){ currentGoalId=obj.id; view='goalDetail'; render(); }
   else if(type==='milestone'){ currentGoalId=obj.goalId; view='goalDetail'; render(); openMilestoneForm(obj.goalId,obj); }
   else if(type==='note'){ view='notes'; render(); openNoteForm(obj); }
-  else if(type==='expense'){ view='finance'; render(); openFinanceForm('expense',obj); }
-  else if(type==='income'){ view='finance'; render(); openFinanceForm('income',obj); }
+  else if(type==='expense'||type==='income'){ finKeepView=true; finView='tx'; finMonth=finYm(obj.date); view='finance'; render(); openFinanceTxDetail(type,obj); }
+  else if(['financeCategory','recurringFinance','account','savingsGoal','investment'].includes(type)){
+    const page={financeCategory:'cats',recurringFinance:'recurring',account:'accounts',savingsGoal:'savings',investment:'invest'}[type];
+    finKeepView=true; finView=page; view='finance'; render();
+    ({financeCategory:openFinanceCategoryForm,recurringFinance:openRecurringForm,account:openAccountDetail,savingsGoal:openSavingsDetail,investment:openInvestmentDetail})[type](obj);
+  }
   else if(type==='subscription'){ view='subscriptions'; render(); openSubForm(obj); }
   else if(type==='workout'){ view='fitness'; if(Array.isArray(obj.entries)){ fitnessTab='workouts'; uiWorkoutView={mode:'edit',id:obj.id}; render(); window.scrollTo(0,0); } else { render(); openWorkoutForm(obj); } }
   else if(type==='meal'){ view='nutrition'; render(); openMealForm(obj); }
@@ -6292,10 +7204,15 @@ function searchGroups(q){
       .map(m=>({title:m.title,meta:m.completed?'Completed':'Open',obj:m}))],
     ['Notes','📝','note', S.notes.filter(n=>searchMatch([n.title,n.body,n.category,...(n.tags||[])],q))
       .map(n=>({title:n.title||'Untitled',meta:n.category||'',obj:n}))],
-    ['Expenses','💸','expense', S.expenses.filter(e=>searchMatch([e.description,e.category,...(e.tags||[])],q))
-      .map(e=>({title:e.description||e.category||'Expense',meta:fmtDate(e.date),obj:e}))],
-    ['Income','💵','income', S.income.filter(i=>searchMatch([i.description,i.category],q))
-      .map(i=>({title:i.description||i.category||'Income',meta:fmtDate(i.date),obj:i}))],
+    ['Expenses','💸','expense', S.expenses.filter(e=>searchMatch([e.description,e.category,financeCategoryLabel(e,'expense'),uiL(financeCategoryLabel(e,'expense')),...(e.tags||[])],q))
+      .map(e=>({title:e.description||financeCategoryLabel(e,'expense')||'Expense',meta:fmtDate(e.date)+' · '+uiMoney(e.amount),obj:e}))],
+    ['Income','💵','income', S.income.filter(i=>searchMatch([i.description,i.category,financeCategoryLabel(i,'income'),uiL(financeCategoryLabel(i,'income')),...(i.tags||[])],q))
+      .map(i=>({title:i.description||financeCategoryLabel(i,'income')||'Income',meta:fmtDate(i.date)+' · '+uiMoney(i.amount),obj:i}))],
+    ['Finance categories','🏷️','financeCategory', (S.financeCategories||[]).filter(c=>searchMatch([c.name,uiL(c.name)],q)).map(c=>({title:uiL(c.name),meta:c.active?c.type:c.type+' · inactive',obj:c}))],
+    ['Recurring plans','🔁','recurringFinance', (S.recurringFinance||[]).filter(r=>searchMatch([r.name,r.notes],q)).map(r=>({title:r.name,meta:uiMoney(r.amount)+' · '+r.frequency,obj:r}))],
+    ['Accounts','🏦','account', (S.accounts||[]).filter(a=>searchMatch([a.name,a.notes,a.type],q)).map(a=>({title:a.name,meta:uiMoney(financeAccountBalance(a))+' '+a.currency,obj:a}))],
+    ['Savings goals','🐖','savingsGoal', (S.savingsGoals||[]).filter(g=>searchMatch([g.name],q)).map(g=>({title:g.name,meta:financeSavingsProgress(g).pct+' %',obj:g}))],
+    ['Investments','📈','investment', (S.investments||[]).filter(i=>searchMatch([i.name,i.ticker,i.notes],q)).map(i=>({title:i.name,meta:uiMoney(financeInvestmentPerformance(i).value)+' '+i.currency,obj:i}))],
     ['Subscriptions','💳','subscription', S.subscriptions.filter(s=>searchMatch([s.name,s.category,s.notes],q))
       .map(s=>({title:s.name,meta:s.category||'',obj:s}))],
     ['Workouts','🏋️','workout', completedWorkouts(S).filter(w=>searchMatch([w.name,w.notes,...(w.exercises||[]).map(ex=>ex.name),...(w.entries||[]).map(en=>en.name)],q))
