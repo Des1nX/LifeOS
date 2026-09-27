@@ -108,7 +108,7 @@ test('onboarding: full 6-step wizard via UI persists answers', async ({ page }) 
   const s = await stateOf(page);
   assert.equal(s.settings.onboarded, true);
   assert.equal(s.profile.name, 'QA Hero');
-  assert.equal(s.profile.avatar, '🧝');
+  assert.equal(s.profile.avatar, 'svg:rogue', 'polish pass: the 4th portrait (SVG avatars replace the emoji)');
   assert.ok(s.goals.some(g => g.title === 'QA goal' && g.targetDate === '2026-12-31'));
   assert.deepEqual(s.habits.map(h => h.name).slice(0, 3), ['Drink water', 'Exercise', 'Read']);
   assert.equal(s.habits.length, 5, '3 picked + 2 sample habits');
@@ -182,11 +182,13 @@ test('quick add: all 13 entries open their form (water logs directly; Phase 10 a
 test('tasks: add, edit (same id), complete, delete through the UI', async ({ page }) => {
   await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="task"]');
   await page.fill('#f_title', 'QA task'); await page.selectOption('#f_pri', 'High');
-  assert.equal(await page.inputValue('#f_xp'), '30', 'High priority pre-fills 30 XP');
+  // Polish pass: no manual XP field -- the reward follows the priority and is shown as a hint.
+  assert.equal(await page.locator('#f_xp').count(), 0, 'no manual XP field');
+  assert.match(await page.innerText('#f_xpHint'), /\+30 XP/, 'High priority = 30 XP');
   await page.click('#f_save');
   let s = await stateOf(page);
   const t = s.tasks.find(x => x.title === 'QA task');
-  assert.ok(t && t.priority === 'High' && t.xpReward === 30 && t.dueDate === TODAY);
+  assert.ok(t && t.priority === 'High' && t.xpReward === undefined && t.dueDate === TODAY);
   assert.equal(await page.evaluate(() => view), 'tasks');
   const row = page.locator('.item', { hasText: 'QA task' });
   await row.locator('.editBtn').click(); await page.fill('#f_title', 'QA task edited'); await page.click('#f_save');
@@ -211,7 +213,7 @@ test('XP: task/habit completion is exact and idempotent; xpLog sums match totalX
   let s = await stateOf(page);
   const key = `task:t_med:${TODAY}`;
   assert.equal(s.xpLog.filter(x => x.key === key).length, 1);
-  assert.equal(s.xpLog.find(x => x.key === key).amount, 10, 'Medium task = 10 XP');
+  assert.equal(s.xpLog.find(x => x.key === key).amount, 20, 'Medium task = 20 XP (polish pass: XP by priority)');
   const newXp = s.xpLog.slice(before.xpLog.length).reduce((a, x) => a + x.amount, 0);
   assert.equal(s.totalXp - before.totalXp, newXp, 'totalXp delta equals new xpLog entries');
   const afterFirst = s.totalXp;
@@ -233,7 +235,7 @@ test('XP: task/habit completion is exact and idempotent; xpLog sums match totalX
   assert.equal(s.xpLog.filter(x => x.key === `habit:h_water:${TODAY}`).length, 1);
 }, { state: fixtureState() });
 
-test('level system: crossing a level pays Skill/Attribute points once and survives reload', async ({ page }) => {
+test('level system: crossing a level is logged once and survives reload (polish pass: no Skill/Attribute points any more)', async ({ page }) => {
   const b = await stateOf(page);
   const { level, into, need } = await page.evaluate(() => levelFromXp(S.totalXp));
   await page.evaluate(n => grantXp(n, 'QA level test'), need - into); // exactly reach the next level
@@ -241,9 +243,12 @@ test('level system: crossing a level pays Skill/Attribute points once and surviv
   assert.equal(await page.evaluate(() => levelFromXp(S.totalXp).level), level + 1);
   assert.equal(s.rpg.highestLevelRewarded, level + 1);
   const d = (x, y) => Object.fromEntries(Object.keys(x).map(k => [k, x[k] - y[k]]));
-  assert.deepEqual(d(s.rpg.skillPoints, b.rpg.skillPoints), { available: 1, earned: 1, spent: 0 }, '+1 Skill Point');
-  assert.deepEqual(d(s.rpg.attributePoints, b.rpg.attributePoints), { available: 3, earned: 3, spent: 0 }, '+3 Attribute Points');
+  // Polish pass: the Skill Tree and manual Attribute Points were removed -- a level-up pays no points,
+  // the counters already stored stay exactly as they were (never deleted).
+  assert.deepEqual(d(s.rpg.skillPoints, b.rpg.skillPoints), { available: 0, earned: 0, spent: 0 }, 'no Skill Points');
+  assert.deepEqual(d(s.rpg.attributePoints, b.rpg.attributePoints), { available: 0, earned: 0, spent: 0 }, 'no Attribute Points');
   assert.equal(s.rpg.activityLog.find(a => a.type === 'levelup').title, 'Level ' + (level + 1));
+  assert.equal(s.rpg.activityLog.filter(a => a.type === 'levelup' && a.title === 'Level ' + (level + 1)).length, 1, 'logged once');
   await persist(page); await reload(page);
   const r = await stateOf(page);
   assert.deepEqual(r.rpg, s.rpg, 'reload does not re-pay rewards');
@@ -513,7 +518,7 @@ const dayOff = n => { const x = new Date(`${TODAY}T00:00`); x.setDate(x.getDate(
 
 test('9 Daily Score: empty day has no score (never 0/100) and every area is N/A', async ({ page }) => {
   const r = await dsRun(page, {});
-  assert.equal(r.score, null); assert.equal(r.label, null); assert.equal(r.relevant, 0); assert.equal(r.algo, 1);
+  assert.equal(r.score, null); assert.equal(r.label, null); assert.equal(r.relevant, 0); assert.equal(r.algo, 2); // polish pass: algo 2 adds training days
   for (const k of ['tasks', 'habits', 'nutrition', 'sleep', 'fitness', 'goals']) assert.equal(r.areas[k].score, null, k);
 });
 
@@ -621,7 +626,7 @@ test('9 Stravování: a snapshot of a finished day uses the closed-day band', as
   assert.equal(live, 48);
   await page.clock.setFixedTime(NOW + 86400000); await page.evaluate(() => render());
   const snap = (await stateOf(page)).dailyScores[TODAY];
-  assert.equal(snap.areas.nutrition.mode, 'closed'); assert.equal(snap.areas.nutrition.parts.calories, 0); assert.equal(snap.algo, 1);
+  assert.equal(snap.areas.nutrition.mode, 'closed'); assert.equal(snap.areas.nutrition.parts.calories, 0); assert.equal(snap.algo, 2);
 }, { state: fixtureState() });
 
 test('9 UI: Stravování detail lists calories/protein/water and "nesledováno" for untracked water', async ({ page }) => {
@@ -702,7 +707,7 @@ test('9 history: a finished day is snapshotted once, immutable, and XP/RPG data 
   // The snapshot is the closed-day result (live and finished day may differ by design: calories
   // are live progress during the day, the 90-110 % band once the day is over).
   const closed = await page.evaluate(d => dailyScore(d), TODAY);
-  assert.equal(snap.score, closed.score); assert.equal(snap.algo, 1); assert.equal(snap.label, closed.label);
+  assert.equal(snap.score, closed.score); assert.equal(snap.algo, 2); assert.equal(snap.label, closed.label);
   for (const k of ['tasks', 'habits', 'sleep', 'fitness']) assert.deepEqual(snap.areas[k], live.areas[k], `${k} unchanged between live and closed`);
   assert.deepEqual(Object.keys(snap.areas).sort(), ['fitness', 'habits', 'nutrition', 'sleep', 'tasks']);
   // Only the new day's quest/achievement checks may run on boot of a new day - render() alone must not
@@ -748,16 +753,20 @@ test('9 history: a pre-Phase-9 backup (no dailyScores keys) imports cleanly; res
   assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, null);
 }, { state: fixtureState() });
 
-test('9 UI: Home shows the live Daily Score with all five areas (N/A labelled, never scored as 0)', async ({ page }) => {
+test('9 UI: Home shows the live Daily Score with all five areas (polish pass: daily state, no "N/A", areas without data never scored as 0)', async ({ page }) => {
   const r = await page.evaluate(() => dailyScore(todayStr()));
   const card = page.locator('[data-ds="card"]');
   assert.equal(await card.count(), 1);
   assert.equal((await card.locator('.ring > span').innerText()).trim(), String(r.score));
+  const want = { tasks: `${r.areas.tasks.score} %`, habits: `${r.areas.habits.done}/${r.areas.habits.total}`,
+    nutrition: `${r.areas.nutrition.calories.toLocaleString('cs-CZ')} kcal`, sleep: `${String(r.areas.sleep.hours).replace('.', ',')} h`, fitness: '1/1' };
   for (const k of ['tasks', 'habits', 'nutrition', 'sleep', 'fitness']) {
-    const txt = (await card.locator(`.ds-row[data-area="${k}"] b`).innerText()).trim();
-    assert.equal(txt, r.areas[k].score == null ? 'N/A' : `${r.areas[k].score} %`, k);
+    const txt = (await card.locator(`.ds-row[data-area="${k}"] b`).innerText()).trim().replace(/\u00a0/g, ' ');
+    assert.equal(txt, want[k].replace(/\u00a0/g, ' '), k);
   }
-  assert.equal(r.areas.fitness.score, null, 'fixture has an unplanned workout today -> N/A');
+  assert.doesNotMatch(await card.innerText(), /N\/A/);
+  assert.equal(r.areas.fitness.score, null, 'fixture has an unplanned workout today -> not scored (bonus 1/1 shown)');
+  assert.equal(await card.locator('.ds-row[data-area="fitness"].is-na').count(), 1, 'unscored area stays neutral');
 }, { state: fixtureState() });
 
 test('9 UI: an empty day shows "nothing to score yet", not 0/100', async ({ page }) => {
@@ -838,6 +847,12 @@ test('8B fix: a late sheet auto-focus never steals focus from a field the user i
 // ---------- Phase 10: Daily Planner ----------
 const PB = (o = {}) => ({ date: TODAY, startTime: '15:00', endTime: '16:00', title: 'Matematika', ...o });
 // Snapshot of everything the planner must never touch (XP/RPG + Daily Score).
+// Polish pass: quests now complete automatically after any action (render -> checkQuests). Tests that
+// measure the exact reward of ONE action first close today's/this week's quest board, so the quest XP
+// (tested on its own in the polish tests) does not blur the number under test.
+const quietQuests = page => page.evaluate(() => ['daily', 'weekly'].forEach(p => questBoardFor(p).forEach(({ q }) => {
+  const k = questKey(q.id, p); if (!S.quests.some(x => x.key === k)) S.quests.push({ key: k, questId: q.id, date: todayStr(), period: p });
+})) || checkAchievements()); // settle achievements that count quests (Adventurer) before measuring
 const untouchable = page => page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.rpg, S.achievementsUnlocked, S.achievementUnlockedAt, S.quests, levelFromXp(S.totalXp), dailyScore(todayStr()), S.dailyScores]));
 
 test('10 planner: time validation - invalid times, same start/end and end before start are rejected', async ({ page }) => {
@@ -962,7 +977,7 @@ test('10 UI: Task -> Naplánovat creates a linked block, the task itself stays u
   await page.locator('.item', { hasText: 'Buy groceries' }).locator('.editBtn').click();
   await page.click('#f_plan');
   assert.equal(await page.inputValue('#pb_title'), 'Buy groceries');
-  assert.equal(await page.inputValue('#pb_task'), 't_med');
+  assert.match(await page.innerText('#pb_link'), /Buy groceries/, 'polish pass: the task is the one Linked item');
   await page.fill('#pb_start', '12:00'); await page.fill('#pb_end', '12:30'); await page.click('#pb_save');
   const s = await stateOf(page);
   const b = s.plannerBlocks.find(x => x.taskId === 't_med');
@@ -979,7 +994,7 @@ test('10 UI: Task -> Naplánovat creates a linked block, the task itself stays u
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
   const blk = page.locator(`[data-block="${b.id}"]`);
   assert.match(await blk.locator('.pl-open').getAttribute('aria-label'), /úkol hotový/);
-  assert.match(await blk.innerText(), /✅/, 'compact block still shows the linked task is done');
+  assert.equal(await blk.locator('[title="úkol hotový"] svg').count(), 1, 'compact block still shows the linked task is done (line icon)');
   assert.equal((await stateOf(page)).plannerBlocks.find(x => x.id === b.id).completed, false, 'block keeps its own completed flag');
 }, { state: fixtureState() });
 
@@ -991,15 +1006,23 @@ test('10 UI: deleting the linked task does not crash the planner', async ({ page
   assert.match(await page.locator('[data-block="pb_math"]').innerText(), /smazáno/);
 }, { state: fixtureState() });
 
-test('10 UI: Home shows Today\'s plan inside the existing tasks widget and opens the planner', async ({ page }) => {
+test('10 UI: Home shows Today\'s plan (polish pass: its own widget right after the Daily Score) and opens the day overview / planner', async ({ page }) => {
   const card = page.locator('[data-plan="home"]');
   assert.equal(await card.count(), 1);
-  assert.deepEqual((await card.locator('.plan-row b').allInnerTexts()).map(x => x.trim()), ['08:00', '15:00', '15:30', '17:00'], "today's blocks only, by time");
-  await card.locator('.plan-row').nth(1).click();
+  assert.deepEqual((await card.locator('.plan-row .plan-time b').allInnerTexts()).map(x => x.trim()), ['08:00', '15:00', '15:30', '17:00'], "today's blocks only, by time");
+  assert.deepEqual((await card.locator('.plan-row .plan-time small').allInnerTexts()).map(x => x.trim()), ['09:00', '16:00', '16:30', '18:15'], 'with end times');
+  const order = await page.evaluate(() => [...document.querySelectorAll('#app .hud-wrap, #app [data-plan="home"], #hTasks, #hHabits')].map(n => n.id || n.dataset.plan || 'score'));
+  assert.deepEqual(order, ['score', 'home', 'hTasks', 'hHabits'], 'Daily Score -> plan -> tasks -> habits');
+  await card.click();
+  const ov = page.locator('#dayOverview');
+  assert.equal(await ov.count(), 1, 'day overview sheet');
+  assert.equal(await ov.locator('.plan-row').count(), 4);
+  await page.click('#dovPlanner');
   assert.equal(await page.evaluate(() => [view, uiPlannerDay].join()), `planner,${TODAY}`);
   await page.evaluate(() => { S.settings.widgets.tasks = false; view = 'home'; render(); });
-  assert.equal(await page.locator('[data-plan="home"]').count(), 0, 'follows the tasks widget visibility; no new widget key');
-  assert.ok(!(await page.evaluate(() => WIDGET_DEFS.some(w => /plan/i.test(w.key)))));
+  assert.equal(await page.locator('[data-plan="home"]').count(), 1, 'independent of the tasks widget');
+  await page.evaluate(() => { S.settings.widgets.planner = false; view = 'home'; render(); });
+  assert.equal(await page.locator('[data-plan="home"]').count(), 0, 'its own widget key can hide it');
 }, { state: fixtureState() });
 
 test('10 UI: day navigation (prev/next/Today) and read-only calendar events (never copied)', async ({ page }) => {
@@ -1055,7 +1078,7 @@ test('10 invariants: a full planner session changes no XP/log/level/attributes/p
   const [u0, o0] = [await untouchable(page), await other()];
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
   await page.click('#uiAddBlock'); await page.fill('#pb_title', 'Test'); await page.fill('#pb_start', '11:00'); await page.fill('#pb_end', '11:45');
-  await page.selectOption('#pb_task', 't_open'); await page.selectOption('#pb_goal', 'g_fit'); await page.selectOption('#pb_workout', 'w1'); await page.click('#pb_save');
+  await page.click('#pb_link'); await page.click('[data-lk-type="task"][data-lk-id="t_open"]'); await page.click('#pb_save');
   const id = (await stateOf(page)).plannerBlocks.find(b => b.title === 'Test').id;
   await page.click(`[data-block="${id}"] .plCheck`); await page.click(`[data-block="pb_math"] .plCheck`); await page.click(`[data-block="pb_math"] .plCheck`);
   await page.click(`[data-block="${id}"] .pl-open`); await page.fill('#pb_title', 'Test 2'); await page.click('#pb_save');
@@ -1397,7 +1420,7 @@ const setupTpl = page => page.evaluate(() => {
 const consumers = page => page.evaluate(() => {
   const ds = dailyScoreFitness(todayStr());
   return { completed: completedWorkouts(S).length, ds: ds.score, dsWorkouts: ds.workouts, dq_workout: DAILY_QUESTS.find(q => q.id === 'dq_workout').check(S),
-    dq_log_val: DAILY_QUESTS.find(q => q.id === 'dq_log').val(S), wq: WEEKLY_QUESTS.find(q => q.id === 'wq_workouts').val(S),
+    dq_log_val: DAILY_QUESTS.find(q => q.id === 'dq_nutrition').val(S), /* polish pass: dq_log was replaced by the meal quest */ wq: WEEKLY_QUESTS.find(q => q.id === 'wq_workouts').val(S),
     ach: ACHV.find(a => a.id === 'first_workout').cond(S), achProg: ACHV.find(a => a.id === 'fitness_beast').progress(S),
     stats: computeStats('week').fitness.count,
     searchN: (searchGroups('Push A').find(g => g[2] === 'workout') || [])[3]?.length || 0, prs: exercisePRs().length };
@@ -1444,29 +1467,33 @@ test('11A active: Start grants nothing and counts nowhere; Finish counts everywh
     ach: S.achievementsUnlocked.includes('first_workout') }), wid);
   assert.equal(x1.wk.length, 1); assert.equal(x1.wk[0].amount, 80); assert.equal(x1.wk[0].reason, 'Workout: Push A');
   assert.equal(x1.ach, true, 'Finish runs the normal achievement check: Beast Mode (first workout) unlocks now');
-  assert.equal(x1.xp - x0.xp, 80 + 20, '80 workout XP + 20 from the Beast Mode achievement'); assert.equal(x1.vit - x0.vit, 20);
+  assert.equal(x1.xp - x0.xp, 80 + 20, '80 workout XP + 20 from the Beast Mode achievement');
+  // balancing: the workout's 48 attribute points follow the fitness profile (STR 24, VIT 14, DEX 10); no flat +20 VIT any more
+  assert.equal(x1.vit - x0.vit, 14); assert.equal(x1.str - x0.str, 24);
   const w = (await stateOf(page)).workouts.find(z => z.id === wid);
   assert.equal(w.status, 'done'); assert.ok(w.finishedAt >= w.startedAt); assert.equal(w.duration, '1');
   await page.evaluate(() => { checkQuests(); checkAchievements(); });
   const c1 = await consumers(page);
   assert.deepEqual([c1.completed, c1.ds, c1.dsWorkouts, c1.dq_workout, c1.wq, c1.ach, c1.achProg, c1.stats, c1.searchN], [1, 100, 1, true, 1, true, 10, 1, 1], 'after Finish it counts everywhere');
   // exactly once: a second Finish (or a replay of the ledger key) pays nothing
+  const x1b = await page.evaluate(() => ({ xp: S.totalXp, vit: S.attrs.VIT })); // after the quest check (quest rewards have their own attributes)
   const x2 = await page.evaluate(wid => { const r = workoutFinish(wid); const g = grantXp(80, 'Workout: Push A', 'STR', `workout:${wid}:${todayStr()}`); return { r, g, xp: S.totalXp, vit: S.attrs.VIT }; }, wid);
   assert.deepEqual(x2.r, { ok: false }); assert.ok(!x2.g);
-  assert.equal(x2.vit, x1.vit);
+  assert.deepEqual([x2.xp, x2.vit], [x1b.xp, x1b.vit], 'a second Finish pays nothing');
   // quest XP comes from the (unchanged) quest rules, not from Finish itself
   assert.ok(await page.evaluate(() => S.quests.some(q => q.questId === 'dq_workout')));
 }, { state: noWorkoutState() });
 
-test('11A active: Finish pays exactly what the Log Workout form pays (same XP, attributes and skill bonus)', async ({ page }) => {
+test('11A active: Finish pays exactly what the Log Workout form pays (same XP and attributes; polish pass: no skill bonus)', async ({ page }) => {
   const tid = await setupTpl(page);
+  await quietQuests(page);
   const delta = async fn => page.evaluate(async fn => {
     const b = { xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT };
     await (new Function('tid', fn))(window.__tid);
     return { xp: S.totalXp - b.xp, STR: S.attrs.STR - b.STR, VIT: S.attrs.VIT - b.VIT };
   }, fn);
   // first_workout is pre-unlocked so neither path also pays the one-off achievement XP
-  await page.evaluate(tid => { window.__tid = tid; S.rpg.skillTree.unlocked.push('fitness_training_1'); S.achievementsUnlocked.push('first_workout'); }, tid);
+  await page.evaluate(tid => { window.__tid = tid; S.achievementsUnlocked.push('first_workout'); }, tid);
   const viaFinish = await delta('const w = workoutStart({ templateId: tid }).workout; workoutFinish(w.id);');
   await page.evaluate(() => { closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; render(); });
   const b = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
@@ -1474,7 +1501,7 @@ test('11A active: Finish pays exactly what the Log Workout form pays (same XP, a
   const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
   const viaForm = { xp: a.xp - b.xp, STR: a.STR - b.STR, VIT: a.VIT - b.VIT };
   assert.deepEqual(viaFinish, viaForm);
-  assert.deepEqual([viaFinish.xp, viaFinish.VIT], [80, 20], '80 Character XP and +20 VIT (STR also includes the Training I skill bonus)');
+  assert.deepEqual([viaFinish.xp, viaFinish.STR, viaFinish.VIT], [80, 24, 14], '80 Character XP; STR 24 + VIT 14 from the fitness profile (balancing: no flat +20 VIT)');
 }, { state: noWorkoutState() });
 
 test('11A active: an active workout survives reload and is resumed (same id, same values); discard removes it without any reward', async ({ page }) => {
@@ -1650,6 +1677,7 @@ test('11A UI: Finish -> done + summary; XP only once; history shows it and opens
   await setRow(page, 'Bench press', 0).locator('.ws-done').click();
   await setRow(page, 'Bench press', 1).locator('.ws-done').click();
   const wid = (await active(page)).id;
+  await quietQuests(page);
   const x0 = await page.evaluate(() => S.totalXp);
   await page.click('#wkFinish');
   assert.equal(await page.locator('#wkSummary').count(), 1, 'summary shown');
@@ -1695,6 +1723,7 @@ test('11A UI: Finish with no completed working set asks first - Cancel keeps it 
   assert.equal((await active(page)).status, 'active');
   assert.equal(await untouchable(page), u0, 'Cancel changes nothing');
   assert.equal(await page.locator('#wkLive').count(), 1, 'still on the live screen');
+  await quietQuests(page);
   const x0 = await page.evaluate(() => S.totalXp);
   await page.click('#wkFinish'); await page.click('#cf_ok');
   assert.equal(await active(page), null);
@@ -1772,6 +1801,7 @@ test('11A UI: export/import keeps the active workout and it can be continued and
   assert.deepEqual(await active(page), wk);
   await openWorkouts(page);
   await page.click('#wkContinue');
+  await quietQuests(page);
   const x0 = await page.evaluate(() => S.totalXp);
   await page.click('#wkFinish');
   assert.equal(await page.evaluate(() => S.totalXp) - x0, 80);
@@ -1914,7 +1944,7 @@ test('11A UI: Finish with a PR shows it in the summary, in the history card and 
   assert.equal(await sum.isVisible(), true);
   assert.match(await sum.innerText(), /Bench press[\s\S]*Váha[\s\S]*85 kg × 8[\s\S]*Bench press[\s\S]*Opakování[\s\S]*80 kg × 9/);
   await page.click('#wkSumOk');
-  assert.match(await page.locator('.workout-card', { hasText: 'Push A' }).innerText(), /🏆 Bench press · Váha/);
+  assert.match(await page.locator('.workout-card', { hasText: 'Push A' }).innerText(), /Bench press · Váha/); // polish pass: the trophy is a line icon now
   const strip = async () => page.locator('#prList').innerText();
   assert.match(await strip(), /BENCH PRESS[\s\S]*85\s*kg[\s\S]*Váha · × 8/i);
   await persist(page); await reload(page); await openWorkouts(page);
@@ -2225,7 +2255,7 @@ test('11A UI: summary shows Performance + optional Feeling; Feeling changes late
   assert.equal(await page.evaluate(id => workoutFindById(id).result.feeling, wid), 'good');
   assert.equal(await page.getAttribute('#wkSumFeel [data-feel="good"]', 'aria-pressed'), 'true');
   await page.click('#wkSumOk');
-  assert.match(await page.locator('.workout-card', { hasText: 'Push A' }).innerText(), new RegExp(`⚡ ${snap.score}[\\s\\S]*🙂 Dobře`));
+  assert.match(await page.locator('.workout-card', { hasText: 'Push A' }).innerText(), new RegExp(`${snap.score}[\\s\\S]*Dobře`)); // polish pass: icons instead of ⚡ / 🙂
   await page.locator('.workout-card', { hasText: 'Push A' }).locator('.editBtn').click();
   assert.match(await page.locator('.wk-edit-result').innerText(), /Hodnoceno při dokončení/);
   await page.click('#wkEditFeel [data-feel="bad"]');
@@ -2438,14 +2468,14 @@ test('11A muscle XP: history - legacy exercises[] never pay; a record with exerc
   assert.ok(await page.evaluate(() => S.muscleProgress.log.some(x => x.workoutId === 'pre8')), 'the log keeps the record');
 }, { state: fixtureState() });
 
-test('11A muscle XP is parallel: Character XP 80 + VIT/skill bonus, Daily Score, Performance, PRs, Feeling, quests and achievements unchanged', async ({ page }) => {
+test('11A muscle XP is parallel: Character XP 80 + VIT (polish pass: fitness profile, no skill bonus), Daily Score, Performance, PRs, Feeling, quests and achievements unchanged', async ({ page }) => {
   await mxInit(page);
-  await page.evaluate(() => S.rpg.skillTree.unlocked.push('fitness_training_1'));
+  await quietQuests(page);
   const b = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT, log: S.xpLog.length }));
   const w = await mxFinish(page, [['mb', B(3)], ['c1', B(6)]]);
   const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT, log: S.xpLog.length }));
   const newLog = await page.evaluate(n => S.xpLog.slice(n).map(e => [e.amount, e.reason]), b.log);
-  assert.deepEqual([a.xp - b.xp, a.VIT - b.VIT, newLog], [80, 20, [[80, 'Workout: M'], [0, 'Skill bonus: Training I']]], 'Character XP: the 80 XP entry (+ the existing 0-amount skill-bonus ledger entry), +20 VIT');
+  assert.deepEqual([a.xp - b.xp, a.VIT - b.VIT, newLog], [80, 14, [[80, 'Workout: M']]], 'Character XP: the one 80 XP entry; VIT 14 from the fitness profile (balancing: no flat +20)');
   assert.ok(a.STR - b.STR > 0);
   assert.ok(Object.keys(await totals(page)).length > 0);
   // everything else is computed without reading the Muscle XP log: wipe or inflate it -> same results
@@ -2578,10 +2608,11 @@ test('11A planner: finishing the workout never completes the block and completin
   await page.evaluate(id => plannerToggleCompleted(id), bid);
   assert.deepEqual([(await blk(page, bid)).completed, (await active(page)).status], [true, 'active'], 'block done, workout still active');
   await page.evaluate(id => plannerToggleCompleted(id), bid);
+  await quietQuests(page);
   const x0 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
   await page.evaluate(id => { const w = workoutFindById(id); w.entries[0].sets.forEach(s => s.done = true); workoutFinish(id); }, wid);
   const x1 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
-  assert.deepEqual([x1.xp - x0.xp, x1.VIT - x0.VIT], [80, 20], 'standard 80 Character XP + VIT, nothing for "following the plan"');
+  assert.deepEqual([x1.xp - x0.xp, x1.VIT - x0.VIT], [80, 14], 'standard 80 Character XP + VIT 14 (fitness profile), nothing for "following the plan"');
   const b = await blk(page, bid);
   assert.equal(b.completed, false, 'workout finished, block not completed');
   assert.equal(await page.evaluate(id => plannerBlockWorkoutState(S.plannerBlocks.find(x => x.id === id)), bid), 'done', 'informative state only');
@@ -2607,8 +2638,7 @@ test('11A planner: a deleted or unknown template never breaks the planner - "Ša
   }
   assert.deepEqual(await page.evaluate(id => plannerStartWorkout(id), bid), { ok: false, reason: 'no_template' });
   await page.click(`[data-block="${bid}"] .pl-open`);
-  assert.equal(await page.locator('#pb_tpl').inputValue(), tid, 'the missing template stays selected (never auto-replaced)');
-  assert.match(await page.locator('#pb_tpl option:checked').innerText(), /Šablona není dostupná/);
+  assert.match(await page.innerText('#pb_link'), /Šablona není dostupná/, 'the missing template stays the Linked item (never auto-replaced)');
   await page.fill('#pb_notes', 'still here'); await page.click('#pb_save');
   assert.deepEqual([(await blk(page, bid)).workoutTemplateId, (await blk(page, bid)).notes], [tid, 'still here']);
   await page.evaluate(() => { view = 'home'; render(); view = 'search'; render(); });
@@ -2620,7 +2650,7 @@ test('11A planner UI: Home Today\'s plan shows the workout block (icon, template
   const { bid } = await plSetup(page);
   await page.evaluate(() => { view = 'home'; render(); });
   const row = page.locator(`[data-plan="home"] [data-block="${bid}"]`);
-  assert.match(await row.innerText(), /14:00[\s\S]*🏋️ Push A/);
+  assert.match(await row.innerText(), /14:00[\s\S]*Push A/); assert.equal(await row.locator('.plan-t svg').count(), 1, 'workout icon');
   assert.equal(await row.locator('.planWkGo').count(), 0);
   await page.evaluate(id => plannerStartWorkout(id), bid);
   await page.evaluate(() => { view = 'home'; render(); });
@@ -2631,20 +2661,20 @@ test('11A planner UI: Home Today\'s plan shows the workout block (icon, template
   assert.match(await row.innerText(), /Dokončeno/);
   assert.equal((await blk(page, bid)).completed, false, 'informative only');
   assert.match(await page.locator('[data-plan="home"] [data-block="pb_math"]').innerText(), /15:00[\s\S]*Matematika/, 'other rows unchanged');
-  assert.equal(await page.locator('[data-plan="home"] button[data-block="pb_math"]').count(), 1);
+  assert.equal(await page.locator('[data-plan="home"] .plan-row[data-block="pb_math"]').count(), 1);
 }, { state: fixtureState() });
 
-test('11A planner UI: Quick Add -> Planner block -> Trénink (template required), then Search finds it, opens it and Start works; Fitness shows "Naplánováno na"', async ({ page }) => {
+test('11A planner UI: Quick Add -> Planner block -> Linked workout (polish pass: no Block/Workout switch), then Search finds it, opens it and Start works; Fitness shows "Naplánováno na"', async ({ page }) => {
   await page.evaluate(() => { const bench = exerciseFind('Bench press'); templateSave({ name: 'Push A', exercises: [{ exerciseId: bench.id, sets: 3, repsMin: 8, weight: 80 }] }); });
   await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="planner"]');
-  await page.click('[data-pbtype="workout"]');
-  assert.equal(await page.inputValue('#pb_cat'), 'Fitness');
+  assert.equal(await page.locator('[data-pbtype]').count(), 0, 'no Block / Workout switch');
+  for (const id of ['pb_task', 'pb_goal', 'pb_workout', 'pb_desc', 'pb_tpl']) assert.equal(await page.locator('#' + id).count(), 0, `no #${id} field`);
   await page.fill('#pb_start', '18:00'); await page.fill('#pb_end', '19:00');
-  await page.click('#pb_save');
-  assert.match(await page.locator('[data-err="workoutTemplateId"]').innerText(), /Vyber šablonu/);
   const n0 = await page.evaluate(() => S.plannerBlocks.length);
   const tid = await page.evaluate(() => S.workoutTemplates[0].id);
-  await page.selectOption('#pb_tpl', tid);
+  await page.click('#pb_link');
+  await page.click(`[data-lk-type="workout"][data-lk-id="${tid}"]`);
+  assert.equal(await page.inputValue('#pb_cat'), 'Fitness', 'linking a workout sets the Fitness category');
   assert.equal(await page.inputValue('#pb_title'), 'Push A', 'title filled from the template');
   await page.click('#pb_save');
   const b = (await stateOf(page)).plannerBlocks.find(x => x.startTime === '18:00');
@@ -2724,7 +2754,7 @@ test('11A QA fix: a finished workout shows plan, Performance, Feeling, PRs and M
   await page.click('#wkFinish'); await page.click('#wkSumFeel [data-feel="great"]'); await page.click('#wkSumOk');
   const card = page.locator('.workout-card', { hasText: 'Push A' });
   const t = await card.innerText();
-  for (const re of [/2× · 80 kg × 9, 8/, /⚡ \d+ · /, /🤩 Skvěle/, /🏆 Bench press · Opakování/, /💪 \+\d+ Muscle XP/, /📋 Plán: Push A · 1 cviků · 3 sérií/]) assert.match(t, re);
+  for (const re of [/2× · 80 kg × 9, 8/, /(^|\n)\d+ · /, /Skvěle/, /Bench press · Opakování/, /\+\d+ Muscle XP/, /Plán: Push A · 1 cviků · 3 sérií/]) assert.match(t, re);
   await card.locator('.editBtn').click();
   const d = await page.locator('.wk-edit-result').innerText();
   for (const re of [/Plán: Push A/, /PERFORMANCE/i, /SVALY[\s\S]*Prsa \+\d+ XP/i, /NOVÉ OSOBNÍ REKORDY[\s\S]*80 kg × 9/i, /Jak ses cítil/i]) assert.match(d, re);
@@ -2745,11 +2775,12 @@ test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -
   await page.locator(`[data-plan="home"] [data-block="${bid}"] .planWkGo`).click();
   await setRow(page, 'Bench press', 1).locator('[data-f="reps"]').fill('10'); await setRow(page, 'Bench press', 1).locator('.ws-done').click();
   await entryCard(page, 'Bench press').locator('.wkAddWu').click(); await setRow(page, 'Bench press', 0).locator('.ws-done').click();
+  await quietQuests(page);
   const x0 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
   await page.click('#wkFinish');
   const w = await page.evaluate(() => JSON.parse(JSON.stringify(completedWorkouts(S).find(x => x.entries))));
   const x1 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
-  assert.equal(x1.VIT - x0.VIT, 20); assert.ok(x1.xp - x0.xp >= 80, '80 workout XP (+ any achievement the finish unlocks via the unchanged rules)');
+  assert.equal(x1.VIT - x0.VIT, 14, 'VIT 14 (fitness profile; balancing: no flat +20)'); assert.ok(x1.xp - x0.xp >= 80, '80 workout XP (+ any achievement the finish unlocks via the unchanged rules)');
   assert.equal(await page.evaluate(id => S.xpLog.filter(e => e.key === `workout:${id}:${todayStr()}`).map(e => e.amount).join(), w.id), '80');
   assert.deepEqual([w.status, w.result.prs.map(p => p.type), w.result.performance.planSource, w.plannerBlockId, (await blk(page, bid)).completed], ['done', ['reps'], 'template', bid, false]);
   assert.deepEqual(await page.evaluate(id => S.muscleProgress.log.filter(r => r.workoutId === id).map(r => [r.units, r.prXp, r.xp]), w.id), [[2, 15, { Chest: 25, Triceps: 7, Shoulders: 3 }]], '2 working sets (warm-up ignored) + PR');
@@ -3252,6 +3283,558 @@ test('11B UI: every Finance screen and sheet fits 320-1440 px (long names, big a
   void sheets;
 }, { state: fixtureState() });
 
+// ---------- Polish pass 1 ----------
+const PPW = [320, 375, 390, 430, 768, 1024, 1440];
+const overflowOf = page => page.evaluate(() => {
+  const vw = document.documentElement.clientWidth, bad = [];
+  if (document.documentElement.scrollWidth > vw) bad.push('page ' + (document.documentElement.scrollWidth - vw));
+  document.querySelectorAll('.sheet *').forEach(n => { const r = n.getBoundingClientRect(); if (r.width && (r.right > vw + 1 || r.left < -1)) bad.push((n.id || n.className || n.tagName) + ' ' + Math.round(r.right)); });
+  return bad.slice(0, 5);
+});
+const dupIds = page => page.evaluate(() => { const seen = {}; document.querySelectorAll('[id]').forEach(n => { seen[n.id] = (seen[n.id] || 0) + 1; }); return Object.entries(seen).filter(([, c]) => c > 1).map(([k]) => k); });
+const EMOJI_RX = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2B50}\u{23F0}-\u{23FA}]/u;
+
+test('P1 quests: the board is picked from real relevance (priority tasks, planner, training day), stable for the day, max 3', async ({ page }) => {
+  const b = await page.evaluate(() => questBoardFor('daily').map(x => x.q.id));
+  assert.equal(b.length, 3);
+  assert.equal(b[0], 'dq_priority', 'a High/Urgent task is due today -> the priority mission comes first');
+  assert.ok(b.includes('dq_plan_all'), 'planner blocks today -> the planner mission');
+  assert.ok(!b.includes('dq_workout'), 'no workout planned today (no training days, no Fitness event) -> no workout quest');
+  // relevance follows the user's real day: training days make the workout quest relevant
+  const withTraining = await page.evaluate(() => { S.settings.trainingDays = [3]; return questCandidates('daily', todayStr()).map(x => x.q.id); });
+  assert.ok(withTraining.includes('dq_workout') || withTraining.includes('dq_workout_pr'), 'Wednesday is a training day');
+  // the board itself stays as picked for the whole day
+  assert.deepEqual(await page.evaluate(() => questBoardFor('daily').map(x => x.q.id)), b, 'stable during the day');
+  const w = await page.evaluate(() => questBoardFor('weekly').map(x => x.q.id));
+  assert.equal(w.length, 3);
+  // an empty profile still gets a sensible, non-random fallback
+  const empty = await page.evaluate(() => { const keep = S; S = migrate(defaultState()); S.settings.onboarded = true; const r = questCandidates('daily', todayStr()).map(x => x.q.id); S = keep; return r; });
+  assert.deepEqual(empty, ['dq_nutrition']);
+}, { state: fixtureState() });
+
+test('P1 quests: completion uses the real completion logic, pays once, survives reload and never pays a top-up that is already done', async ({ page }) => {
+  await go(page, 'home');
+  assert.equal(await page.locator('#hQuests .quest-row').count(), 3, 'Home shows the daily quests');
+  assert.equal(await page.locator('#hRem .reminder', { hasText: /Výprava|Quest/ }).count(), 0, 'quests are no longer mixed into the reminder strip');
+  const done0 = await page.evaluate(() => S.quests.filter(q => q.questId === 'dq_priority').length);
+  assert.equal(done0, 0);
+  // the only High task due today is "Write report" -> completing it through the UI completes the priority quest
+  await page.click('nav.bottom button[data-v="tasks"]');
+  const xp0 = await page.evaluate(() => S.totalXp);
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click();
+  await page.waitForTimeout(800);
+  const s = await stateOf(page);
+  const qrec = s.quests.filter(q => q.key === `dq_priority:${TODAY}`);
+  assert.equal(qrec.length, 1, 'quest recorded once');
+  const questXp = s.xpLog.filter(e => /^Quest: /.test(e.reason) && e.ts >= 0 && e.reason.includes('prioritní'));
+  assert.equal(questXp.length, 1); assert.equal(questXp[0].amount, 40);
+  assert.equal(s.totalXp - xp0, 30 + 40, 'High task 30 XP + the quest 40 XP, nothing else');
+  // re-render, reopen, reload: nothing is paid again
+  await page.evaluate(() => { for (let i = 0; i < 3; i++) { checkQuests(); render(); } });
+  await persist(page); await reload(page);
+  await page.evaluate(() => { checkQuests(); render(); });
+  const r = await stateOf(page);
+  assert.equal(r.quests.filter(q => q.key === `dq_priority:${TODAY}`).length, 1);
+  assert.equal(r.totalXp, s.totalXp, 'idempotent across render + reload');
+  // top-up: a quest that becomes relevant through the action that completes it is never added as free XP
+  const t = await page.evaluate(() => {
+    S.questBoard = { daily: { stamp: todayStr(), items: [{ id: 'dq_nutrition', p: {} }] }, weekly: S.questBoard.weekly };
+    S.sleepLog.push({ id: 'sl_new', date: todayStr(), bedtime: '23:00', wake: '07:00', quality: 4, notes: '', createdAt: Date.now() });
+    const before = S.totalXp; checkQuests(); return { ids: S.questBoard.daily.items.map(i => i.id), gained: S.totalXp - before };
+  });
+  assert.ok(!t.ids.includes('dq_sleep'), 'already satisfied sleep quest is not topped up');
+}, { state: fixtureState() });
+
+test('P1 quests: weekly quests + Quests screen + titles with real parameters (category, habit, targets)', async ({ page }) => {
+  await go(page, 'quests');
+  assert.equal(await page.locator('#dqL .quest-row').count(), 3);
+  assert.equal(await page.locator('#wqL .quest-row').count(), 3);
+  const titles = await page.evaluate(() => [...DAILY_QUESTS, ...WEEKLY_QUESTS].map(q => q.cs));
+  assert.ok(titles.every(t => t && t.length > 8), 'every quest has a real Czech title');
+  const cat = await page.evaluate(() => { const q = DAILY_QUESTS.find(x => x.id === 'dq_category'); return questTitle(q, { cat: 'Work' }); });
+  assert.equal(cat, 'Dokonči úkol z kategorie: Práce');
+  const wk = await page.evaluate(() => questTitle(WEEKLY_QUESTS.find(x => x.id === 'wq_workouts'), {}));
+  assert.equal(wk, 'Odtrénuj svůj tréninkový týden (3×)', 'falls back to the weekly workout target');
+  const wk2 = await page.evaluate(() => { S.settings.trainingDays = [1, 3, 5, 6]; return questTitle(WEEKLY_QUESTS.find(x => x.id === 'wq_workouts'), {}); });
+  assert.equal(wk2, 'Odtrénuj svůj tréninkový týden (4×)', 'follows the training days');
+  assert.doesNotMatch(await appText(page), EMOJI_RX);
+}, { state: fixtureState() });
+
+test('P2 Home: order Daily Score -> plan -> tasks -> habits; old widget orders get the new widgets in place, custom orders are kept', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const m = o => migrate(Object.assign(JSON.parse(JSON.stringify(S)), { settings: Object.assign({}, S.settings, { widgetOrder: o }) })).settings.widgetOrder;
+    return { def: m(['reminders', 'progress', 'tasks', 'habits', 'goals', 'nutrition', 'finance', 'fitness', 'health']),
+      custom: m(['tasks', 'health', 'progress', 'habits', 'reminders', 'goals', 'nutrition', 'finance', 'fitness']),
+      again: m(['reminders', 'progress', 'planner', 'tasks', 'habits', 'quests', 'goals', 'nutrition', 'finance', 'fitness', 'health']) };
+  });
+  assert.deepEqual(r.def, ['reminders', 'progress', 'planner', 'tasks', 'habits', 'quests', 'goals', 'nutrition', 'finance', 'fitness', 'health']);
+  assert.deepEqual(r.custom, ['tasks', 'health', 'progress', 'planner', 'habits', 'quests', 'reminders', 'goals', 'nutrition', 'finance', 'fitness'], 'own order kept, new ones next to their neighbours');
+  assert.deepEqual(r.again, r.def, 'idempotent');
+  await go(page, 'home');
+  const order = await page.evaluate(() => [...document.querySelectorAll('#app .hud-wrap, #app [data-plan="home"], #hTasks, #hHabits, #hQuests')].map(n => n.id || n.dataset.plan || 'score'));
+  assert.deepEqual(order, ['score', 'home', 'hTasks', 'hHabits', 'hQuests']);
+  // Settings -> Nástěnka lists and toggles the two new widgets
+  await page.click('#settingsBtn');
+  assert.match(await page.locator('#st_widgets').innerText(), /Dnešní plán[\s\S]*Denní výpravy/);
+}, { state: fixtureState() });
+
+test('P3 Daily Score: training day = 0/1 until the workout is done (scored), rest day = "Den volna" (never a missed workout), unset = old rule', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const D = todayStr(); // Wednesday = 3
+    S.events = S.events.filter(e => e.category !== 'Fitness');
+    const w = S.workouts; S.workouts = [];
+    const unset = dailyScoreFitness(D);
+    S.settings.trainingDays = [1, 3, 5];
+    const training = dailyScoreFitness(D), scoreT = dailyScore(D).score;
+    S.settings.trainingDays = [1, 5];
+    const rest = dailyScoreFitness(D), scoreR = dailyScore(D).score;
+    S.settings.trainingDays = null; const scoreU = dailyScore(D).score;
+    S.settings.trainingDays = [1, 3, 5]; S.workouts = w;
+    const done = dailyScoreFitness(D);
+    return { unset, training, rest, done, scoreT, scoreR, scoreU };
+  });
+  assert.deepEqual([r.unset.score, r.unset.rest], [null, false], 'no schedule, no calendar plan: not scored (as before)');
+  assert.deepEqual([r.training.score, r.training.source], [0, 'training'], 'training day without a workout: 0');
+  assert.deepEqual([r.rest.score, r.rest.rest, r.rest.reason], [null, true, 'rest_day'], 'rest day: not scored');
+  assert.equal(r.scoreR, r.scoreU, 'a rest day scores exactly like a day without a plan (no penalty)');
+  assert.ok(r.scoreT < r.scoreU, 'a missed training day does count');
+  assert.deepEqual([r.done.score, r.done.workouts], [100, 1]);
+  // presentation: 0/1 on a training day, "Den volna" on a rest day, never N/A
+  await page.evaluate(() => { S.events = S.events.filter(e => e.category !== 'Fitness'); S.workouts = S.workouts.filter(w => w.date !== todayStr()); S.settings.trainingDays = [3]; view = 'home'; render(); });
+  assert.equal((await page.locator('[data-ds="card"] .ds-row[data-area="fitness"] b').innerText()).trim(), '0/1');
+  await page.evaluate(() => { S.settings.trainingDays = [1]; render(); });
+  assert.equal((await page.locator('[data-ds="card"] .ds-row[data-area="fitness"] b').innerText()).trim(), 'Den volna');
+  await page.click('[data-ds="card"]');
+  assert.match(await page.locator('[data-ds="detail"] [data-area="fitness"]').innerText(), /Den volna podle tvých tréninkových dnů/);
+  assert.doesNotMatch(await page.locator('[data-ds="detail"]').innerText(), /N\/A/);
+}, { state: fixtureState() });
+
+test('P3 Settings: training days toggle per weekday, persist, and can be cleared', async ({ page }) => {
+  await page.click('#settingsBtn');
+  assert.equal(await page.locator('#st_training .td-day').count(), 7);
+  assert.equal(await page.locator('#st_training .td-day').first().innerText().then(t => t.split('\n')[0]), 'Po', 'Monday first');
+  for (const d of [1, 3, 5]) await page.click(`#st_training .td-day[data-day="${d}"]`);
+  assert.deepEqual((await stateOf(page)).settings.trainingDays, [1, 3, 5]);
+  await page.click('#st_training .td-day[data-day="3"]');
+  assert.deepEqual((await stateOf(page)).settings.trainingDays, [1, 5]);
+  await persist(page); await reload(page);
+  assert.deepEqual((await stateOf(page)).settings.trainingDays, [1, 5]);
+  await page.click('#settingsBtn'); await page.click('#st_td_clear');
+  assert.equal((await stateOf(page)).settings.trainingDays, null);
+}, { state: fixtureState() });
+
+test('P4 attributes: grow automatically by the category profile (deterministic split, same total), no manual points, no Skill Tree', async ({ page }) => {
+  const g = await page.evaluate(() => ['fitness', 'work', 'learning', 'social', 'discipline', 'STR', 'nope'].map(p => [p, rpgAttrGains(48, p)]));
+  for (const [p, x] of g.slice(0, 6)) assert.equal(Object.values(x).reduce((a, v) => a + v, 0), 48, `${p}: total unchanged (no multiplier)`);
+  assert.deepEqual(Object.fromEntries(g), { fitness: { STR: 24, DEX: 10, VIT: 14 }, work: { INT: 17, FOC: 22, SOC: 9 }, learning: { INT: 29, FOC: 19 }, social: { SOC: 48 }, discipline: { DEX: 48 }, STR: { STR: 48 }, nope: {} });
+  // a Work task through the UI: INT + FOC + SOC grow, logged on the XP entry
+  await page.click('nav.bottom button[data-v="tasks"]');
+  await quietQuests(page);
+  const a0 = (await stateOf(page)).attrs;
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click();
+  await page.waitForTimeout(800);
+  const s = await stateOf(page);
+  const e = s.xpLog.find(x => x.key === `task:t_open:${TODAY}`);
+  assert.deepEqual([e.amount, e.attrs], [30, { INT: 6, FOC: 8, SOC: 4 }]);
+  for (const k of ['INT', 'FOC', 'SOC']) assert.equal(s.attrs[k] - a0[k], e.attrs[k], k);
+  assert.equal(s.attrs.STR, a0.STR);
+  // Character: automatic attributes explained, no + buttons, no points, no Skill Tree, no Settings shortcut
+  await page.click('nav.bottom button[data-v="character"]');
+  const txt = await appText(page);
+  assert.match(txt, /rostou automaticky/);
+  for (const re of [/Strom dovedností/i, /Skill Tree/i, /bodů atributů/i, /Skill body/i, /Body atributů/i, /Nastavení/]) assert.doesNotMatch(txt, re);
+  assert.equal(await page.locator('.spendAttrBtn, .unlockSkillBtn, .skill-node').count(), 0);
+  assert.match(await page.locator('.attr-row[data-attr="STR"] .attr-src').innerText(), /Fitness/);
+  assert.match(await page.locator('.attr-row[data-attr="INT"] .attr-src').innerText(), /Učení[\s\S]*Práce/);
+  // stored Skill Tree / points data is not deleted (export keeps it)
+  assert.ok(s.rpg.skillTree && Array.isArray(s.rpg.skillTree.unlocked));
+}, { state: fixtureState() });
+
+test('P5 XP by priority: tasks Low/Medium/High/Urgent = 10/20/30/40, habits Low/Medium/High = 10/15/25; old records keep working and are not rewritten', async ({ page }) => {
+  const r = await page.evaluate(() => ({ t: ['Low', 'Medium', 'High', 'Urgent', undefined].map(p => taskXp({ priority: p })),
+    h: [{ priority: 'Low' }, { priority: 'High' }, { xpReward: 5 }, { xpReward: 15 }, { xpReward: 30 }, {}].map(habitXp) }));
+  assert.deepEqual(r.t, [10, 20, 30, 40, 20]);
+  assert.deepEqual(r.h, [10, 25, 10, 15, 25, 15], 'old habits: importance read from their old xpReward');
+  const raw = await page.evaluate(async () => (await rawIdbGet()).habits.find(h => h.id === 'h_read'));
+  assert.equal('priority' in raw, false, 'migration does not rewrite the habit');
+  // task form: no XP field, the hint follows the priority
+  await page.click('nav.bottom button[data-v="tasks"]'); await page.click('#uiAddTask');
+  for (const [p, xp] of [['Low', 10], ['Medium', 20], ['High', 30], ['Urgent', 40]]) { await page.selectOption('#f_pri', p); assert.match(await page.innerText('#f_xpHint'), new RegExp(`\\+${xp} XP`)); }
+  await page.evaluate(() => closeSheets());
+  // habit form: Importance instead of XP reward; saving an old habit keeps its completions and id
+  await page.evaluate(() => openHabitForm(S.habits.find(h => h.id === 'h_read')));
+  assert.equal(await page.locator('#h_xp').count(), 0);
+  assert.equal(await page.inputValue('#h_pri'), 'Medium');
+  await page.selectOption('#h_pri', 'High');
+  assert.match(await page.innerText('#h_xpHint'), /\+25 XP/);
+  const before = (await stateOf(page)).habits.find(h => h.id === 'h_read');
+  await page.click('#h_save');
+  const after = (await stateOf(page)).habits.find(h => h.id === 'h_read');
+  assert.deepEqual([after.id, after.completions, after.priority], [before.id, before.completions, 'High']);
+  // a completed task keeps the XP it was paid (ledger unchanged)
+  assert.equal((await stateOf(page)).xpLog.find(x => x.key === 'task:t_old:' + dayOff(-2)).amount, 200);
+}, { state: fixtureState() });
+
+test('P6 categories: create a custom category in Settings, use it for a task/habit/goal/block, rename keeps items, archive hides it from pickers only', async ({ page }) => {
+  await page.click('#settingsBtn');
+  assert.ok(await page.locator('#st_categories .cat-row').count() >= 8, 'built-in categories listed');
+  await page.click('#st_categories [data-addcat="life"]');
+  await page.click('#cf_save');
+  assert.match(await page.locator('[data-err="name"]').innerText(), /Vyplň název/);
+  await page.fill('#cf_name', 'práce'); await page.click('#cf_save');
+  assert.match(await page.locator('[data-err="name"]').innerText(), /už existuje/, 'duplicate of the built-in label');
+  await page.fill('#cf_name', 'Hudba'); await page.click('.cf-ic[data-icon="music"]'); await page.click('.cf-col[data-color="#ec4899"]'); await page.selectOption('#cf_profile', 'learning');
+  await page.click('#cf_save');
+  const c = (await stateOf(page)).lifeCategories.find(x => x.name === 'Hudba');
+  assert.deepEqual([c.icon, c.color, c.profile, c.archived, c.scope], ['music', '#ec4899', 'learning', false, 'life']);
+  // used in forms
+  await page.click('nav.bottom button[data-v="tasks"]'); await page.click('#uiAddTask');
+  await page.fill('#f_title', 'Kytara'); await page.selectOption('#f_cat', c.key); await page.click('#f_save');
+  const t = (await stateOf(page)).tasks.find(x => x.title === 'Kytara');
+  assert.equal(t.category, c.key);
+  assert.match(await page.locator('.item', { hasText: 'Kytara' }).innerText(), /Hudba/);
+  // attributes follow the custom category's profile
+  await quietQuests(page);
+  await page.locator('.item', { hasText: 'Kytara' }).locator('.check').click(); await page.waitForTimeout(800);
+  assert.deepEqual((await stateOf(page)).xpLog.find(x => x.key === `task:${t.id}:${TODAY}`).attrs, { INT: 7, FOC: 5 }, 'learning profile: 20 XP -> 12 attribute points');
+  for (const f of ['openHabitForm()', 'openGoalForm()', 'openPlannerForm(null,{date:todayStr()})']) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    assert.equal(await page.locator(`.sheet option[value="${c.key}"]`).count(), 1, f);
+  }
+  await page.evaluate(() => closeSheets());
+  // rename: label changes everywhere, the record keeps the key
+  await page.evaluate(k => catSave({ name: 'Muzika', icon: 'music', color: '#ec4899', profile: 'learning' }, 'life', k), c.key);
+  await page.evaluate(() => { view = 'tasks'; taskFilter = 'Completed'; render(); });
+  assert.match(await page.locator('.item', { hasText: 'Kytara' }).innerText(), /Muzika/);
+  assert.equal((await stateOf(page)).tasks.find(x => x.id === t.id).category, c.key);
+  // archive: hidden for new items, still shown on the old one and when that one is edited
+  await page.evaluate(k => catSetArchived(k, 'life', true), c.key);
+  await page.evaluate(() => { closeSheets(); openForm('task'); });
+  assert.equal(await page.locator(`.sheet option[value="${c.key}"]`).count(), 0, 'archived: not offered');
+  await page.evaluate(id => { closeSheets(); openTaskEditForm(S.tasks.find(x => x.id === id)); }, t.id);
+  assert.equal(await page.inputValue('#f_cat'), c.key, 'the existing task keeps its archived category');
+  await page.evaluate(() => closeSheets());
+  // built-ins can be renamed too; old records with the built-in key follow the new label
+  await page.evaluate(() => catSave({ name: 'Kariéra', icon: 'briefcase', color: '', profile: 'work' }, 'life', 'Work'));
+  assert.equal(await page.evaluate(() => catLabel('Work', 'life')), 'Kariéra');
+  assert.equal((await stateOf(page)).tasks.find(x => x.id === 't_open').category, 'Work', 'record not rewritten');
+  // notes scope
+  await page.evaluate(() => { const r = catSave({ name: 'Recepty', icon: 'apple' }, 'notes'); window.__nk = r.category.key; openNoteForm(); });
+  assert.equal(await page.locator(`#n_cat option[value="${await page.evaluate(() => window.__nk)}"]`).count(), 1);
+  assert.equal(await page.locator('#n_cat option[value="School"]').count(), 1, 'default note categories kept');
+}, { state: fixtureState() });
+
+test('P6 categories: reload, export/import, old backup and reset', async ({ page }) => {
+  const key = await page.evaluate(() => catSave({ name: 'Zahrada', icon: 'leaf', color: '#10b981', profile: 'health' }, 'life').category.key);
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(k => catLabel(k, 'life'), key), 'Zahrada');
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  const exp = JSON.parse(readFileSync(file, 'utf8'));
+  assert.ok(exp.lifeCategories.some(c => c.key === key));
+  assert.ok('questBoard' in exp && 'trainingDays' in exp.settings);
+  await page.evaluate(() => { S.lifeCategories = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(k => S.lifeCategories.some(c => c.key === k), key);
+  const old = fixtureState(); delete old.lifeCategories; delete old.questBoard;
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => Array.isArray(S.lifeCategories) && S.lifeCategories.length === 0);
+  assert.equal(await page.evaluate(() => catList('life').length), 8, 'an old backup gets the built-ins');
+  assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Učení');
+  page.on('dialog', d => d.accept());
+  await page.evaluate(() => { S.lifeCategories = [{ key: 'cat_x', scope: 'life', name: 'x', icon: 'tag' }]; S.profile.photo = 'data:image/jpeg;base64,xx'; });
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  const s = await stateOf(page);
+  assert.deepEqual([s.lifeCategories, s.profile.photo, s.settings.trainingDays, s.profile.avatar], [[], undefined, null, 'svg:mage']);
+}, { state: fixtureState() });
+
+test('P7 planner: one Linked field (tasks blue, goals red, workouts purple); a changed link replaces the others, an untouched one keeps old multi-links and the description', async ({ page }) => {
+  await page.evaluate(() => { const bench = exerciseFind('Bench press') || exerciseAddPreset('Bench Press'); templateSave({ name: 'Push A', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 3, repsMin: 8 }] }); uiPlannerDay = todayStr(); view = 'planner'; render(); });
+  await page.click('#uiAddBlock');
+  const labels = await page.locator('.pl-form label').allInnerTexts();
+  assert.deepEqual(labels.map(l => l.trim()), ['Název', 'Datum', 'Začátek', 'Konec', 'Kategorie', 'Propojeno', 'Poznámky']);
+  await page.click('#pb_link');
+  const groups = await page.$$eval('#pb_linkList .lk-group', gs => gs.map(g => [g.className.split(' ')[1], getComputedStyle(g.querySelector('.lk-gh i')).backgroundColor]));
+  assert.deepEqual(groups.map(g => g[0]), ['lk-task', 'lk-goal', 'lk-workout']);
+  assert.deepEqual(groups.map(g => g[1]), ['rgb(96, 165, 250)', 'rgb(248, 113, 113)', 'rgb(167, 139, 250)'], 'blue / red / purple (dark theme)');
+  assert.ok(await page.locator('#pb_linkList [data-lk-type="task"] .lk-main small').first().innerText(), 'items carry a small detail');
+  await page.fill('#pb_linkFilter', 'report');
+  assert.equal(await page.locator('#pb_linkList [data-lk-type]').count(), 1, 'filter');
+  await page.click('[data-lk-type="task"][data-lk-id="t_open"]');
+  assert.equal(await page.inputValue('#pb_title'), 'Write report'); assert.equal(await page.inputValue('#pb_cat'), 'Work');
+  await page.fill('#pb_start', '19:00'); await page.fill('#pb_end', '19:30'); await page.click('#pb_save');
+  let b = (await stateOf(page)).plannerBlocks.find(x => x.startTime === '19:00' && x.date === TODAY && x.title === 'Write report');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['t_open', '', '', '']);
+  // old block with several links + description: an untouched Linked field keeps all of them
+  await page.evaluate(() => { const x = S.plannerBlocks.find(b => b.id === 'pb_push'); x.taskId = 't_med'; x.description = 'old description'; render(); });
+  await page.click('[data-block="pb_push"] .pl-open');
+  assert.match(await page.innerText('#pb_link'), /Buy groceries/, 'primary link shown');
+  await page.fill('#pb_notes', 'n'); await page.click('#pb_save');
+  b = await blk(page, 'pb_push');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.description, b.notes], ['t_med', 'g_fit', 'w2', 'old description', 'n'], 'nothing lost');
+  // choosing a workout replaces the other links; removing the link clears it
+  await page.click('[data-block="pb_push"] .pl-open'); await page.click('#pb_link');
+  const tid = await page.evaluate(() => S.workoutTemplates[0].id);
+  await page.click(`[data-lk-type="workout"][data-lk-id="${tid}"]`); await page.click('#pb_save');
+  b = await blk(page, 'pb_push');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['', '', '', tid]);
+  assert.equal(await page.locator('[data-block="pb_push"] .plWkStart').count(), 1, 'a linked workout can be started');
+  await page.click('[data-block="pb_push"] .pl-open'); await page.click('#pb_link'); await page.click('[data-lk-clear]'); await page.click('#pb_save');
+  b = await blk(page, 'pb_push');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['', '', '', '']);
+}, { state: fixtureState() });
+
+// Pointer drag on an element (mouse or synthetic touch pointer).
+const drag = (page, sel, dy, type = 'mouse', ms = 300) => page.evaluate(async ({ sel, dy, type, ms }) => {
+  const el = document.querySelector(sel); const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + Math.min(10, r.height / 2);
+  const ev = (t, yy) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 7, pointerType: type, clientX: x, clientY: yy, button: 0, buttons: t === 'pointerup' ? 0 : 1, isPrimary: true }));
+  ev('pointerdown', y); const steps = 6;
+  for (let i = 1; i <= steps; i++) { await new Promise(r => setTimeout(r, ms / steps)); ev('pointermove', y + dy * i / steps); }
+  ev('pointerup', y + dy);
+}, { sel, dy, type, ms });
+
+test('P8 sheets: pull down by the grab strip or title closes (mouse + touch); a short drag springs back; content drags and scrolling never close', async ({ page }) => {
+  const open = () => page.evaluate(() => { closeSheets(); openTaskEditForm(S.tasks.find(t => t.id === 't_open')); });
+  await open();
+  assert.equal(await page.locator('.sheet .sheet-grab').count(), 1);
+  await drag(page, '.sheet .sheet-grab', 40); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'short slow drag: springs back');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.sheet')).transform), 'none');
+  await drag(page, '.sheet .sheet-grab', 260); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'mouse: pulled down -> closed');
+  await open(); await drag(page, '.sheet h3', 260, 'touch'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'touch on the title -> closed');
+  await open(); await drag(page, '.sheet #f_desc', 300, 'touch'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'dragging inside the content never closes');
+  await page.setViewportSize({ width: 390, height: 500 });
+  await page.evaluate(() => { const s = document.querySelector('.sheet'); s.scrollTop = 200; s.dispatchEvent(new Event('scroll')); });
+  await page.mouse.move(195, 400); await page.mouse.wheel(0, -600); await page.waitForTimeout(200);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'scrolling the content never closes');
+  // fast flick
+  await drag(page, '.sheet .sheet-grab', 70, 'touch', 40); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'a quick flick closes');
+  // Escape, backdrop and the other close paths still work; onboarding cannot be pulled away
+  await open(); await page.waitForTimeout(60); await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'Escape');
+  await open(); await page.mouse.click(5, 5);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'backdrop');
+  await page.evaluate(() => showOnboarding(1)); await drag(page, '.sheet .sheet-grab', 300); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'onboarding stays');
+}, { state: fixtureState() });
+
+test('P8 sheets: every Quick Add form, picker and category sheet has the grab strip', async ({ page }) => {
+  for (const t of QUICK_ADD.filter(t => t !== 'water' && t !== 'fuel')) {
+    await page.click('#fabBtn'); await page.click(`.sheet .qopt[data-t="${t}"]`);
+    assert.equal(await page.locator('.sheet .sheet-grab').count(), 1, t);
+    await page.evaluate(() => closeSheets());
+  }
+  for (const f of ['openAvatarPicker()', "openCategoryForm('life')", 'openDayOverview(todayStr())', 'uiOpenDailyScore(todayStr())']) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    assert.equal(await page.locator('.sheet .sheet-grab').count(), 1, f);
+  }
+}, { state: fixtureState() });
+
+test('P9 avatar: SVG portraits (no emoji), own photo uploaded + cropped to a 256 px square, stored locally, removable; old emoji avatar shows a portrait', async ({ page }) => {
+  assert.equal(await page.evaluate(() => S.profile.avatar), '🦸', 'fixture keeps its old stored value');
+  await go(page, 'home');
+  assert.equal(await page.locator('.hud .avatar svg').count(), 1, 'old emoji value -> portrait');
+  assert.doesNotMatch(await page.locator('.hud .avatar').innerText(), EMOJI_RX);
+  await page.click('#settingsBtn'); await page.click('#st_avatar');
+  assert.equal(await page.locator('#avatarPicker .av-opt').count(), 8);
+  await page.click('#avatarPicker [data-av="druid"]');
+  assert.equal((await stateOf(page)).profile.avatar, 'svg:druid');
+  // photo: 400x300 PNG -> crop sheet -> save
+  const { PNG } = await import('pngjs');
+  const png = new PNG({ width: 400, height: 300 }); for (let i = 0; i < png.data.length; i += 4) { png.data[i] = 200; png.data[i + 1] = (i / 4) % 400 < 200 ? 40 : 160; png.data[i + 2] = 90; png.data[i + 3] = 255; }
+  await page.click('#st_avatar');
+  await page.setInputFiles('#avFile', { name: 'me.png', mimeType: 'image/png', buffer: PNG.sync.write(png) });
+  await page.waitForSelector('#photoCrop');
+  await page.fill('#cropZoom', '2'); await page.dispatchEvent('#cropZoom', 'input');
+  await page.mouse.move(195, 500); // drag inside the crop box pans, never closes the sheet
+  const box = await page.locator('#cropBox').boundingBox();
+  await page.mouse.move(box.x + 100, box.y + 100); await page.mouse.down(); await page.mouse.move(box.x + 40, box.y + 160, { steps: 5 }); await page.mouse.up();
+  assert.equal(await page.locator('#photoCrop').count(), 1);
+  await page.click('#cropSave');
+  const p = (await stateOf(page)).profile;
+  assert.equal(p.avatar, 'photo'); assert.match(p.photo, /^data:image\/jpeg;base64,/);
+  const dim = await page.evaluate(src => new Promise(r => { const i = new Image(); i.onload = () => r([i.naturalWidth, i.naturalHeight]); i.src = src; }), p.photo);
+  assert.deepEqual(dim, [256, 256], 'square crop');
+  assert.ok(p.photo.length < 60000, 'small enough for local storage');
+  await persist(page); await reload(page);
+  await go(page, 'character');
+  assert.equal(await page.locator('.char-hero .avatar img').count(), 1, 'photo shown after reload');
+  await page.click('#charAvatar'); await page.click('#avRemovePhoto');
+  const q = (await stateOf(page)).profile;
+  assert.deepEqual([q.avatar, q.photo], ['svg:mage', undefined]);
+}, { state: fixtureState() });
+
+test('P10 goals: the progress mode explains what Automatic and Manual do, with the goal\'s real current source', async ({ page }) => {
+  await page.evaluate(() => openGoalForm(S.goals.find(g => g.id === 'g_fit')));
+  assert.equal(await page.locator('#g_mode option').first().innerText(), 'Automaticky');
+  const auto = await page.innerText('#g_modeHelp');
+  assert.match(auto, /Automaticky:.*propojených úkolů/);
+  assert.match(auto, /Teď: 0 z 1 propojených úkolů hotovo → 0 %/);
+  await page.selectOption('#g_mode', 'manual');
+  assert.match(await page.innerText('#g_modeHelp'), /Ručně: postup zadáváš sám/);
+  assert.equal(await page.locator('#manualWrap').isVisible(), true);
+  await page.evaluate(() => { closeSheets(); openGoalForm(); });
+  assert.match(await page.innerText('#g_modeHelp'), /Po uložení propoj s cílem úkoly/);
+}, { state: fixtureState() });
+
+test('P11 design: no Apple emoji in the UI chrome of the main screens and sheets (user text excluded); icons are SVG', async ({ page }) => {
+  const bad = [];
+  for (const v of ['home', 'tasks', 'habits', 'goals', 'character', 'more', 'quests', 'planner', 'settings', 'statistics', 'nutrition', 'journal', 'notes', 'health', 'goalDetail', 'habitDetail', 'calendar', 'search']) {
+    await page.evaluate(v => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; uiPlannerDay = todayStr(); view = v; render(); }, v);
+    const found = await page.evaluate(() => { const rx = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2B50}]/u, out = [];
+      const w = document.createTreeWalker(document.getElementById('app'), NodeFilter.SHOW_TEXT); let n;
+      while ((n = w.nextNode())) if (rx.test(n.nodeValue) && !n.parentElement.closest('.note-body,input,textarea,[data-user-text]')) out.push(n.nodeValue.trim().slice(0, 30));
+      return out; });
+    if (found.length) bad.push(`${v}: ${found.join(' | ')}`);
+  }
+  for (const f of ['openQuickAdd()', 'openForm("task")', 'openHabitForm()', 'openGoalForm()', 'openAvatarPicker()', "openCategoryForm('life')"]) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    const t = await page.locator('.sheet').innerText();
+    if (EMOJI_RX.test(t)) bad.push(`${f}: ${t.match(EMOJI_RX)[0]}`);
+  }
+  assert.deepEqual(bad, []);
+  await page.evaluate(() => { closeSheets(); view = 'more'; render(); });
+  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 16);
+}, { state: fixtureState() });
+
+test('P12 layout: new screens and sheets fit 320-1440 px in dark + light, no duplicate ids, no console errors', async ({ page }) => {
+  const bad = [];
+  const sheets = ['openAvatarPicker()', "openCategoryForm('life')", "openCategoryForm('life','Work')", 'openDayOverview(todayStr())', 'openPlannerForm(null,{date:todayStr()})',
+    'openTaskEditForm(S.tasks[0])', 'openHabitForm(S.habits[0])', 'openGoalForm(S.goals[0])', 'uiOpenDailyScore(todayStr())'];
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate(t => { S.settings.theme = t; applyTheme(); S.settings.trainingDays = [1, 3, 5]; }, theme);
+    for (const width of PPW) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const v of ['home', 'character', 'planner', 'settings', 'quests', 'goals']) {
+        await page.evaluate(v => { closeSheets(); uiPlannerDay = todayStr(); view = v; render(); }, v);
+        const o = await overflowOf(page); if (o.length) bad.push(`${v}@${width}/${theme}: ${o}`);
+        const d = await dupIds(page); if (d.length) bad.push(`${v}@${width} dup ${d}`);
+      }
+      for (const f of sheets) {
+        await page.evaluate(f => { closeSheets(); eval(f); }, f);
+        if (f.startsWith('openPlannerForm')) await page.click('#pb_link');
+        const o = await overflowOf(page); if (o.length) bad.push(`${f}@${width}/${theme}: ${o}`);
+        const d = await dupIds(page); if (d.length) bad.push(`${f}@${width} dup ${d}`);
+      }
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+
+// ---------- Balancing (approved attribute rewards) ----------
+test('B1 balancing: a workout pays 80 XP and exactly 48 attribute points (STR 24, VIT 14, DEX 10) - no flat +20 VIT, form and Finish alike; stored VIT untouched', async ({ page }) => {
+  await quietQuests(page);
+  const vit0 = await page.evaluate(() => S.attrs.VIT);
+  const d = await page.evaluate(() => { const a = { ...S.attrs }; exerciseAddPreset('Bench Press');
+    const t = templateSave({ name: 'B', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id;
+    const w = workoutStart({ templateId: t }).workout; workoutUpdateSet(w.id, w.entries[0].id, w.entries[0].sets[0].id, { done: true }); workoutFinish(w.id);
+    const e = S.xpLog.find(x => x.key === `workout:${w.id}:${todayStr()}`);
+    return { amount: e.amount, attrs: e.attrs, delta: Object.fromEntries(Object.keys(ATTRS).map(k => [k, S.attrs[k] - a[k]])) }; });
+  assert.equal(d.amount, 80, 'Character XP unchanged');
+  assert.deepEqual(d.attrs, { STR: 24, DEX: 10, VIT: 14 });
+  assert.deepEqual(d.delta, { STR: 24, INT: 0, DEX: 10, VIT: 14, WIS: 0, FOC: 0, SOC: 0 }, '48 points in total, nothing else');
+  assert.ok(vit0 >= 60, 'VIT gathered earlier is kept (never recalculated or deleted)');
+  // the Log Workout form pays the same
+  await page.evaluate(() => { S.achievementsUnlocked.push('first_workout'); closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; render(); });
+  const b = await page.evaluate(() => ({ ...S.attrs, xp: S.totalXp }));
+  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.click('#w_save');
+  const a = await page.evaluate(() => ({ ...S.attrs, xp: S.totalXp }));
+  assert.deepEqual([a.xp - b.xp, a.STR - b.STR, a.VIT - b.VIT, a.DEX - b.DEX], [80, 24, 14, 10]);
+}, { state: fixtureState() });
+
+test('B2 balancing: every meal keeps its 10 XP; only the first meal logged each day gives attribute points (+6 VIT)', async ({ page }) => {
+  await quietQuests(page);
+  const log = () => page.evaluate(() => S.xpLog.filter(x => x.reason === 'Meal logged').map(x => [x.amount, x.attrs || null]));
+  const vit = () => page.evaluate(() => S.attrs.VIT);
+  const v0 = await vit(), n0 = (await log()).length;
+  for (const name of ['Snídaně', 'Oběd', 'Večeře']) {
+    await page.evaluate(() => { closeSheets(); openMealForm(); });
+    await page.fill('#m_name', name); await page.fill('#m_cal', '500'); await page.click('#m_save');
+  }
+  // the "repeat meal" button is the other way to log a meal
+  await page.evaluate(() => { view = 'nutrition'; render(); });
+  await page.locator('.meal-item .repeatBtn').first().click();
+  const l = (await log()).slice(n0);
+  assert.deepEqual(l, [[10, { VIT: 6 }], [10, null], [10, null], [10, null]], 'XP for each meal, attributes only once');
+  assert.equal(await vit() - v0, 6);
+  // next day: the first meal counts again
+  await page.clock.setFixedTime(NOW + 86400000);
+  await page.evaluate(() => { closeSheets(); openMealForm(); });
+  await page.fill('#m_name', 'Zítra'); await page.fill('#m_cal', '300'); await page.click('#m_save');
+  assert.deepEqual((await log()).slice(-1), [[10, { VIT: 6 }]]);
+  // reload / export / import keep the ledger that decides it
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(() => mealAttrProfile()), null, 'after reload the day already had its meal attributes');
+}, { state: fixtureState() });
+
+test('B3 balancing: quests keep their XP, grow attributes at 30 % of it, by the kind of activity (never all FOC/DEX)', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const Q = id => [...DAILY_QUESTS, ...WEEKLY_QUESTS].find(q => q.id === id);
+    const prof = (id, p) => JSON.stringify(rpgProfileOf(questAttrOf(Q(id), p)));
+    return {
+      xp: [...DAILY_QUESTS, ...WEEKLY_QUESTS].map(q => [q.id, q.xp]),
+      priority: prof('dq_priority'), work: JSON.stringify(ATTR_PROFILES.work),
+      plan: [prof('dq_plan_all'), prof('dq_plan_morning'), prof('wq_planner')],
+      category: [prof('dq_category', { cat: 'Learning' }), prof('dq_category', { cat: 'Social' })],
+      habits: ['dq_habits', 'dq_streak', 'dq_score', 'wq_streak', 'wq_score'].map(id => prof(id)),
+      fitness: ['dq_workout', 'dq_workout_pr', 'wq_workouts'].map(id => prof(id)),
+      food: prof('dq_nutrition'), sleep: prof('dq_sleep'),
+      mix: JSON.stringify(questTaskProfile([{ category: 'Learning' }, { category: 'Social' }])), none: questTaskProfile([]),
+    };
+  });
+  assert.deepEqual(r.xp, [['dq_priority', 40], ['dq_workout', 40], ['dq_workout_pr', 60], ['dq_plan_all', 35], ['dq_habits', 40], ['dq_category', 20], ['dq_tasks', 30], ['dq_streak', 25], ['dq_score', 40],
+    ['dq_plan_morning', 25], ['dq_sleep', 15], ['dq_nutrition', 15], ['wq_workouts', 150], ['wq_tasks', 150], ['wq_streak', 150], ['wq_goal', 100], ['wq_score', 120], ['wq_planner', 100]], 'quest XP unchanged');
+  assert.equal(r.priority, r.work, 'the only priority task today is a Work task -> work profile');
+  assert.deepEqual(r.plan, Array(3).fill('{"FOC":0.5,"DEX":0.5}'), 'planner -> FOC + DEX');
+  assert.deepEqual(r.category, ['{"INT":0.6,"FOC":0.4}', '{"SOC":1}'], 'category quest -> that category');
+  assert.deepEqual(r.habits, Array(5).fill('{"DEX":1}'), 'habits / streak / Daily Score -> DEX');
+  assert.deepEqual(r.fitness, Array(3).fill('{"STR":0.5,"VIT":0.3,"DEX":0.2}'), 'workout quests -> fitness');
+  assert.equal(r.food, '{"VIT":1}'); assert.equal(r.sleep, '{"VIT":0.6,"FOC":0.4}');
+  assert.equal(r.mix, '{"INT":0.3,"FOC":0.2,"SOC":0.5}', 'a task quest mixes the categories of the tasks it counted');
+  assert.equal(r.none, 'work', 'uncategorized tasks -> work profile');
+  // end to end: completing the priority task pays the quest 40 XP and 12 attribute points (30 %) of the work profile
+  await page.click('nav.bottom button[data-v="tasks"]');
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click(); await page.waitForTimeout(800);
+  const e = await page.evaluate(() => S.xpLog.find(x => /^Quest: /.test(x.reason) && x.reason.includes('prioritní')));
+  assert.equal(e.amount, 40);
+  assert.deepEqual(e.attrs, { INT: 4, FOC: 6, SOC: 2 }, 'round(40 x 0.3) = 12 points, work profile');
+}, { state: fixtureState() });
+
+test('B4 balancing: a simulated week follows behaviour - no attribute runs away, WIS stays the slow one, each day type leads with its own attributes', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const add = (acc, g, n = 1) => { Object.entries(g).forEach(([k, v]) => acc[k] = (acc[k] || 0) + v * n); return acc; };
+    const G = (xp, p, rate = ATTR_RATE) => rpgAttrGains(Math.round(xp * rate), p);
+    const Q = (id, p) => { const q = [...DAILY_QUESTS, ...WEEKLY_QUESTS].find(x => x.id === id); return G(q.xp, questAttrOf(q, p), QUEST_ATTR_RATE); };
+    const T = c => ({ category: c });
+    const day = {
+      fitness: add(add(add(add(add(G(80, 'fitness'), G(15, 'fitness')), G(20, 'personal')), G(10, 'nutrition')), G(10, 'sleep')), add(add(Q('dq_workout'), Q('dq_habits')), Q('dq_nutrition'))),
+      study: add(add(add(add(add(add(G(20, 'learning'), G(20, 'learning')), G(30, 'learning')), G(10, 'learning')), G(15, 'learning')), add(G(15, 'reflection'), add(G(10, 'nutrition'), G(10, 'sleep')))), add(Q('dq_category', { cat: 'Learning' }), add(Q('dq_habits'), Q('dq_nutrition')))),
+      productive: add(add(add(G(30, 'work'), G(30, 'work')), add(G(40, 'work'), add(G(20, 'work'), G(20, 'work')))), add(add(G(20, 'work'), G(15, 'health')), add(add(G(15, 'discipline'), G(10, 'nutrition')), add(G(10, 'sleep'), add(add(Q('dq_priority'), Q('dq_plan_all')), Q('dq_tasks')))))),
+      social: add(add(add(G(20, 'social'), G(20, 'social')), add(G(10, 'personal'), G(15, 'social'))), add(add(G(10, 'nutrition'), G(10, 'sleep')), add(Q('dq_category', { cat: 'Social' }), add(Q('dq_habits'), Q('dq_nutrition'))))),
+    };
+    const week = add(add(add(add({}, day.fitness, 3), day.productive, 2), day.study), day.social);
+    add(week, add(add(Q('wq_workouts'), Q('wq_streak')), G(150, 'work', QUEST_ATTR_RATE)));
+    const top = g => Object.keys(g).sort((a, b) => g[b] - g[a]).slice(0, 2);
+    return { day, week, top: Object.fromEntries(Object.entries(day).map(([k, g]) => [k, top(g)])) };
+  });
+  const tot = Object.values(r.week).reduce((a, v) => a + v, 0);
+  const share = k => (r.week[k] || 0) / tot;
+  for (const k of ['STR', 'INT', 'DEX', 'VIT', 'FOC', 'SOC']) assert.ok(share(k) <= 0.25, `${k} ${Math.round(share(k) * 100)} % <= 25 %`);
+  assert.ok(share('WIS') < 0.05, 'WIS grows slowest (variant A)');
+  const main = ['STR', 'INT', 'DEX', 'VIT', 'FOC', 'SOC'].map(k => r.week[k]);
+  assert.ok(Math.max(...main) / Math.min(...main) < 2.5, `no runaway attribute: ${JSON.stringify(r.week)}`);
+  assert.ok(r.day.fitness.STR >= 30 && r.day.fitness.VIT <= 40, 'fitness day: STR leads with VIT, no VIT flood');
+  assert.deepEqual(r.top.study.sort(), ['FOC', 'INT'], 'study day -> INT/FOC');
+  assert.equal(r.top.productive[0], 'FOC', 'work day -> FOC first');
+  assert.equal(r.top.social[0], 'SOC', 'social day -> SOC');
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
@@ -3276,10 +3859,14 @@ async function golden(page) {
     return {
       xpForLevel: Array.from({ length: 60 }, (_, i) => xpForLevel(i + 1)),
       levelFromXp: [0, 99, 100, 355, 356, 1234, 1448, 5000, 100000].map(levelFromXp),
-      achievements: fnMap(ACHV), skills: fnMap(SKILLS), skillBranches: [SKILL_BRANCH_LABELS, SKILL_BRANCH_ATTR],
+      achievements: fnMap(ACHV), // polish pass: the Skill Tree (SKILLS / branches / ATTRIBUTE_POINT_VALUE) was removed
+      attrProfiles: ATTR_PROFILES, taskXp: TASK_XP, habitXp: HABIT_XP, lifeCategories: strip(catList('life')), noteCategories: strip(catList('notes')),
+      attrGains: ['fitness', 'work', 'STR', 'learning', 'sleep'].map(p => [p, rpgAttrGains(48, p), rpgAttrGains(9, p)]),
+      attrRates: [ATTR_RATE, QUEST_ATTR_RATE], questAttrs: [...DAILY_QUESTS, ...WEEKLY_QUESTS].map(q => [q.id, questAttrOf(q, q.id === 'dq_category' ? { cat: 'Learning' } : {})]),
+      questBoard: { daily: questCandidates('daily', TODAY_).map(x => [x.q.id, x.p]), weekly: questCandidates('weekly', TODAY_).map(x => [x.q.id, x.p]) },
       dailyQuests: fnMap(DAILY_QUESTS), weeklyQuests: fnMap(WEEKLY_QUESTS),
       cats: CATS, attrs: Object.keys(ATTRS), widgets: WIDGET_DEFS, avatars: AVATAR_CHOICES, onboardingPresets: ONBOARDING_HABIT_PRESETS,
-      attributePointValue: ATTRIBUTE_POINT_VALUE, i18nKeys: Object.fromEntries(Object.entries(I18N).map(([l, t]) => [l, Object.keys(t).sort()])),
+      i18nKeys: Object.fromEntries(Object.entries(I18N).map(([l, t]) => [l, Object.keys(t).sort()])),
       defaultState: strip(defaultState()),
       migrateLegacy: strip(migrate(JSON.parse(JSON.stringify(legacy)))),
       stats: Object.fromEntries(periods.map(p => { try { return [p, strip(computeStats(p))]; } catch (e) { return [p, 'ERR ' + e.message]; } })),
@@ -3373,7 +3960,7 @@ if (args.includes('--screens')) {
       console.log(`  ✓ ${t.name} (${Date.now() - started} ms)`);
     } catch (e) {
       failed++;
-      console.log(`  ✗ ${t.name}\n      ${String(e.message).split('\n').join('\n      ')}`);
+      console.log(`  ✗ ${t.name}\n      ${String(e.message + (process.env.STACK ? "\n" + e.stack : "")).split('\n').join('\n      ')}`);
     } finally { await context?.close(); }
     tnotes.forEach(n => notes.push(`${t.name}: ${n}`));
   }

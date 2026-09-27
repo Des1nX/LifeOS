@@ -261,12 +261,15 @@ nav.bottom button.on .ic{background:var(--color-accent-muted)}
   max-height:92vh;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(20px + var(--pad-b));box-shadow:var(--shadow-elevated);
   animation:sheetup var(--dur-normal) var(--ease-standard)}
 .sheet:focus,.sheet:focus-visible{outline:none}
-.sheet::before{content:'';position:absolute;top:9px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:5px;background:var(--line)}
+.sheet-grab{position:sticky;top:-26px;z-index:3;height:26px;margin:-26px -18px 0;display:flex;align-items:center;justify-content:center;background:var(--bg2);touch-action:none;cursor:grab;border-radius:26px 26px 0 0}
+.sheet-grab i{width:40px;height:5px;border-radius:5px;background:var(--line)}
+.sheet-drag{touch-action:none;user-select:none;-webkit-user-select:none}
+.sheet .sheet-drag:is(h2,h3){cursor:grab}
 .sheet h3:first-child,.sheet>div>h3:first-child,.sheet>div>h2:first-child{font-size:20px;margin-bottom:var(--sp-4)}
 @media(min-width:700px){
   .sheet-bg{align-items:center;padding:24px}
   .sheet{border-radius:var(--radius-xl);border-bottom:1px solid var(--line);max-height:86vh;padding:28px 24px 24px;animation:modalIn var(--dur-normal) var(--ease-standard)}
-  .sheet::before{display:none}
+  .sheet-grab{top:-28px;margin:-28px -24px 0;height:28px;border-radius:var(--radius-xl) var(--radius-xl) 0 0}
 }
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 @keyframes sheetup{from{transform:translateY(40px);opacity:.3}to{transform:translateY(0);opacity:1}}
@@ -285,7 +288,7 @@ input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--sub
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--color-accent-muted)}
 input[type="checkbox"]{width:22px!important;height:22px;min-height:0;padding:0;margin:0 8px 0 0!important;accent-color:var(--accent);vertical-align:middle;cursor:pointer}
 input[type="number"]{font-variant-numeric:tabular-nums}
-label{font-size:var(--fs-caption);color:var(--sub);display:block;margin-bottom:6px;font-weight:650;letter-spacing:.01em}
+label,.label{font-size:var(--fs-caption);color:var(--sub);display:block;margin-bottom:6px;font-weight:650;letter-spacing:.01em}
 label:has(input[type="checkbox"]){display:flex;align-items:center;min-height:var(--touch);font-size:var(--fs-body-sm);color:var(--text);font-weight:600;cursor:pointer}
 .btn{background:var(--accent-grad);color:#fff;border:none;border-radius:14px;padding:13px 18px;font-size:15px;font-weight:700;width:100%;cursor:pointer;min-height:50px;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.005em;box-shadow:0 6px 18px rgba(124,92,255,.25);
@@ -385,6 +388,84 @@ button.chip::before{content:'';position:absolute;inset:-7px -2px} /* ~44px hit a
 .avatar.sm{width:30px;height:30px;font-size:15px;border-radius:10px}
 .avatar.lg{width:72px;height:72px;font-size:36px;border-radius:22px}
 .avatar.hero{background:var(--accent-grad);border:none;box-shadow:var(--glow)}
+/* Polish pass: portrait / photo avatars fill their box */
+.avatar{overflow:hidden;padding:0}
+.avatar>svg,.avatar>img{width:100%;height:100%;display:block;object-fit:cover}
+.avatar.xl{width:88px;height:88px;border-radius:26px}
+button.avatar{cursor:pointer;color:inherit;font:inherit}
+.av-edit{margin:0 auto 10px}
+.set-avatar{display:flex;align-items:center;gap:14px}
+.av-current{display:flex;align-items:center;gap:16px}
+.av-actions{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.av-actions .helper-text{margin:0}
+.av-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.av-opt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font:inherit;min-width:0}
+.av-opt .avatar{margin:0}
+.av-opt .av-name{font-size:var(--fs-caption);font-weight:650;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-opt.is-selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent)}
+.crop-box{position:relative;width:min(280px,100%);aspect-ratio:1;margin:0 auto 8px;border-radius:22px;overflow:hidden;touch-action:none;cursor:grab;background:var(--card2)}
+.crop-box canvas{width:100%;height:100%;display:block}
+.crop-frame{position:absolute;inset:0;border-radius:22px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.8);pointer-events:none}
+.ob-avatars .iconbtn.av-opt{height:auto;padding:8px}
+.gi{display:inline-flex;vertical-align:-.16em;line-height:1}
+.gi svg{width:1.15em;height:1.15em}
+.icon-circle .gi svg,.tl-ic .gi svg,.habit-icon .gi svg,.mood .gi svg{width:20px;height:20px}
+.empty .e .gi svg,.ob-emoji .gi svg{width:30px;height:30px}
+.qopt .ic .gi svg{width:24px;height:24px}
+.qopt .ic,.icon-circle,.empty .e{color:var(--accent)}
+.cat-tag{display:inline-flex;align-items:center;gap:4px}
+/* Polish pass: planner Linked picker (tasks blue, goals red, workouts purple) */
+:root{--lk-task:#2563eb;--lk-goal:#dc2626;--lk-workout:#7c3aed}
+:root[data-theme="dark"]{--lk-task:#60a5fa;--lk-goal:#f87171;--lk-workout:#a78bfa}
+.lk{margin-bottom:12px}
+.lk-task{--lk:var(--lk-task)}.lk-goal{--lk:var(--lk-goal)}.lk-workout{--lk:var(--lk-workout)}
+.lk-field{width:100%;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.lk-field[aria-expanded="true"] .lk-chev{transform:rotate(90deg)}
+.lk-chev{color:var(--sub);display:flex;transition:transform var(--dur-fast,.15s)}
+.lk-empty{display:flex;align-items:center;gap:8px;color:var(--sub);font-weight:600}
+.lk-sel{display:flex;align-items:center;gap:10px;min-width:0}
+.lk-ic{width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--lk,var(--accent));background:color-mix(in srgb,var(--lk,var(--accent)) 15%,var(--card2))}
+.lk-main{display:flex;flex-direction:column;min-width:0}
+.lk-main b{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lk-main small{color:var(--sub);font-size:var(--fs-caption)}
+.lk-panel{margin-top:8px;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:10px}
+.lk-panel input[type=search]{margin-bottom:8px}
+.lk-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:var(--fs-caption);color:var(--sub);font-weight:650;margin:0 2px 6px}
+.lk-legend span,.lk-gh{display:flex;align-items:center;gap:6px}
+.lk-legend i,.lk-gh i{width:9px;height:9px;border-radius:50%;background:var(--lk)}
+.lk-items{max-height:46vh;overflow-y:auto;overscroll-behavior:contain}
+.lk-gh{font-size:var(--fs-micro,11px);text-transform:uppercase;letter-spacing:.07em;color:var(--sub);font-weight:750;margin:10px 4px 4px}
+.lk-item{width:100%;display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:48px;padding:6px 8px;border:none;border-left:3px solid var(--lk,transparent);border-radius:10px;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.lk-item:hover{background:var(--card2)}
+.lk-item.is-selected{background:color-mix(in srgb,var(--lk) 12%,var(--card2))}
+.lk-check{color:var(--lk)}
+.lk-clear{display:flex;align-items:center;gap:8px;border-left-color:transparent;color:var(--sub);font-weight:650}
+.cat-list{display:flex;flex-direction:column}
+.cat-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:52px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.cat-row:last-child{border-bottom:none;margin-bottom:8px}
+.cat-row.is-archived{opacity:.55}
+.cat-ic{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--cc);background:color-mix(in srgb,var(--cc) 16%,var(--card2))}
+.cat-main{display:flex;flex-direction:column;min-width:0}
+.cat-main b{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-main small{color:var(--sub);font-size:var(--fs-caption);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-bottom:14px}
+.cf-ic{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cf-ic[aria-checked="true"]{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+.cf-colors{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.cf-col{width:44px;height:44px;border-radius:50%;border:2px solid transparent;background:var(--cc);cursor:pointer;color:var(--text);font-weight:750}
+.cf-col.is-auto{background:var(--card2);border-color:var(--line)}
+.cf-col[aria-checked="true"]{box-shadow:0 0 0 2px var(--bg2),0 0 0 4px var(--text)}
+.cat-tag svg{color:var(--cc,var(--accent))}
+.mode-help{display:flex;gap:8px;align-items:flex-start;margin:-4px 0 12px;padding:10px 12px;border-radius:12px;background:var(--card2);font-size:var(--fs-caption);color:var(--sub);line-height:1.45}
+.mode-help svg{flex:none;color:var(--accent);margin-top:1px}
+.mode-help b{color:var(--text)}
+.mode-help small{display:block;margin-top:4px;color:var(--text)}
+.xp-hint{display:flex;align-items:center;gap:6px;margin:-4px 0 12px}
+.xp-hint svg{color:var(--gold);flex:none}
+.ob-emoji .avatar{width:64px;height:64px;border-radius:20px}
+.ob-emoji:has(.avatar){background:none}
+.ob-avatars .av-opt .avatar{width:52px;height:52px;border-radius:16px}
+@media(max-width:360px){.av-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.av-current{flex-direction:column;align-items:flex-start}}
 .divider{height:1px;background:var(--color-border);border:none;margin:var(--sp-4) 0}
 .dropdown{position:relative}
 .dropdown select{appearance:none;padding-right:38px}
@@ -531,47 +612,22 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .point-tile .kicker{display:block;margin-bottom:2px}
 .point-tile b{font-family:var(--font-display);font-size:22px;letter-spacing:-.02em}
 .point-tile.is-available{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:linear-gradient(160deg,var(--gold-muted),var(--card2))}
-.attr-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 0}
+.attr-row{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:12px;padding:8px 0}
+.attr-row .attr-src{font-size:var(--fs-micro,11px);color:var(--sub);margin-top:5px;line-height:1.35}
 .attr-row+.attr-row{border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
 .attr-row .dot{background:var(--ac)}
 .attr-row .attr-name{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-body-sm);font-weight:650}
 .attr-row .attr-name span:last-child{color:var(--sub);font-variant-numeric:tabular-nums}
 .attr-row .bar{height:7px;margin-top:6px}
 .attr-row .bar>i{background:var(--ac)}
-.attr-row .spendAttrBtn{width:40px;height:40px;min-width:40px;color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,var(--line));font-weight:800}
-.skill-branch{margin-top:14px}
-.skill-branch-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.skill-branch-head .dot{width:30px;height:30px;font-size:10px;border-radius:9px;background:var(--ac)}
-.skill-branch-head b{font-size:15px}
-.skill-branch-head .sub{margin-left:auto}
-.skill-path{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:16px}
-.skill-path::before{content:'';position:absolute;left:5px;top:18px;bottom:18px;width:2px;border-radius:2px;background:linear-gradient(var(--ac),color-mix(in srgb,var(--ac) 10%,var(--line)))}
-.skill-node{position:relative;display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);min-height:56px}
-.skill-node::before{content:'';position:absolute;left:-16px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:var(--card);border:2px solid var(--line)}
-.skill-node .sk-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--card);flex:none}
-.skill-node .sk-main{flex:1;min-width:0}
-.skill-node .sk-name{font-weight:700;font-size:14px;min-width:0}
-.skill-node .sk-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.skill-node .sk-top .chip{flex:none;font-size:10.5px;padding:2px 8px}
-.skill-node .sk-meta{font-size:var(--fs-caption);color:var(--sub);font-weight:600;min-width:0}
-.skill-node .sk-desc{font-size:var(--fs-caption);color:var(--sub);margin-top:2px;line-height:1.4}
-.skill-node .sk-tags{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
-.skill-node.is-unlocked{border-color:color-mix(in srgb,var(--ac) 50%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 14%,var(--card2)),var(--card2))}
-.skill-node.is-unlocked::before{background:var(--ac);border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
-.skill-node.is-unlocked .sk-ic{background:color-mix(in srgb,var(--ac) 22%,var(--card))}
-.skill-node.is-available{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
-.skill-node.is-available::before{border-color:var(--gold)}
-.skill-node.is-locked{opacity:.62}
-.skill-node .unlockSkillBtn{flex:none}
-.skill-node .unlockSkillBtn:not(:disabled){background:var(--gold);border-color:var(--gold);color:#241a02}
 .ach-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .ach{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);min-width:0}
-.ach .ach-ic{font-size:22px;line-height:1}
+.ach .ach-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--gold) 16%,var(--card2));color:var(--gold)}
 .ach .ach-t{font-weight:750;font-size:14px;line-height:1.25}
 .ach .ach-d{font-size:var(--fs-caption);color:var(--sub);line-height:1.35}
 .ach .bar{height:5px;margin-top:auto}
 .ach.is-unlocked{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:linear-gradient(160deg,var(--gold-muted),var(--card2))}
-.ach.is-locked .ach-ic{filter:grayscale(1);opacity:.6}
+.ach.is-locked .ach-ic{background:var(--card2);color:var(--sub)}
 .rarity{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .rarity.r-Common{color:var(--sub)}.rarity.r-Uncommon{color:var(--accent2)}.rarity.r-Rare{color:var(--info)}.rarity.r-Epic{color:var(--wis)}.rarity.r-Legendary{color:var(--gold)}
 .timeline{display:flex;flex-direction:column}
@@ -888,6 +944,15 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .ds-row .bar{grid-column:1/3;height:4px;margin-top:2px}
 .ds-row.is-na{color:var(--sub)}
 .ds-row.is-na>b{font-weight:600}
+.ds-row.is-rest>b{color:var(--accent2)}
+.ds-counts{display:flex;gap:12px}.ds-counts span{display:inline-flex;align-items:center;gap:4px}
+.td-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.td-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;cursor:pointer;padding:4px 0;min-width:0}
+.td-day small{font-size:10.5px;color:var(--sub);font-weight:600}
+.td-day.on{background:color-mix(in srgb,var(--accent) 16%,var(--card));border-color:var(--accent)}
+.td-day.on small{color:var(--accent)}
+.linkbtn{background:none;border:none;color:var(--accent);font:inherit;font-weight:650;cursor:pointer;padding:0;min-height:0}
+.ds-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .ds-counts{margin-top:2px}
 .ring.lg{width:104px;height:104px}.ring.lg::before{width:86px;height:86px}.ring.lg>span{font-size:28px}
 .ds-areas{display:flex;flex-direction:column;gap:8px}
@@ -937,7 +1002,38 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .plan-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;padding:4px 2px;border:none;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
 .plan-row:last-child{border-bottom:none}
 .plan-row b{font-variant-numeric:tabular-nums;color:var(--accent);font-size:var(--fs-body-sm)}
-.plan-row.is-done span{text-decoration:line-through;color:var(--sub)}
+.plan-row.is-done .plan-t{text-decoration:line-through;color:var(--sub)}
+/* Polish pass: Today's plan widget + day overview */
+.plan-card.is-home{cursor:pointer;border-color:color-mix(in srgb,var(--accent) 26%,var(--line))}
+.plan-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.plan-ic{width:40px;height:40px;border-radius:13px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--accent);background:var(--color-accent-muted)}
+.plan-hd{display:flex;flex-direction:column;flex:1;min-width:0}
+.plan-hd b{font-size:var(--fs-body);font-weight:700}
+.plan-row{grid-template-columns:54px minmax(0,1fr) auto;cursor:inherit}
+.plan-time{display:flex;flex-direction:column;line-height:1.15;border-left:3px solid var(--pl-c,var(--accent));padding-left:8px}
+.plan-time small{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
+.plan-main{display:flex;flex-direction:column;min-width:0}
+.plan-t{display:flex;align-items:center;gap:6px;font-weight:650;min-width:0}
+.plan-t svg{flex:none;color:var(--pl-c,var(--accent))}
+.plan-lk{display:inline-flex;align-items:center;gap:4px;color:var(--lk,var(--sub));font-size:var(--fs-caption);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-row.is-now{background:color-mix(in srgb,var(--warn) 9%,transparent);border-radius:10px}
+.plan-more{margin-top:4px}
+.day-ov .plan-row{cursor:pointer;min-height:52px}
+/* Polish pass: quest rows */
+.quest-list{padding:6px 14px}
+.quest-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.quest-row:last-child{border-bottom:none}
+.quest-row .q-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--card2))}
+.quest-row.is-done .q-ic{color:var(--accent2);background:color-mix(in srgb,var(--accent2) 16%,var(--card2))}
+.quest-row .q-main{display:flex;flex-direction:column;gap:6px;min-width:0}
+.quest-row .q-title{font-weight:650;font-size:var(--fs-body-sm);line-height:1.3}
+.quest-row.is-done .q-title{color:var(--sub);text-decoration:line-through}
+.quest-row .bar{height:5px}
+.quest-row .q-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.quest-row .q-side b{font-variant-numeric:tabular-nums;font-size:var(--fs-caption)}
+.quest-row .q-xp{font-size:11px;font-weight:750;color:var(--gold);white-space:nowrap}
+.quest-row.is-big{padding:12px 0}
+.quest-row.is-big .q-title{font-size:var(--fs-body)}
 @media(min-width:900px){.pl-timeline{--pl-gutter:64px;padding:16px}}
 
 .task-plan{margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
@@ -1090,11 +1186,129 @@ const fmtDate=(s)=>{if(!s)return'';return formatDateDisplay(s);};
 
 const ATTRS={STR:{c:'var(--str)',label:'Strength'},INT:{c:'var(--int)',label:'Intelligence'},DEX:{c:'var(--dex)',label:'Discipline'},
   VIT:{c:'var(--vit)',label:'Vitality'},WIS:{c:'var(--wis)',label:'Wisdom'},FOC:{c:'var(--foc)',label:'Focus'},SOC:{c:'var(--soc)',label:'Social'}};
-const CATS={ // maps a task/habit/goal category to attribute + icon
-  Fitness:{a:'STR',ic:'💪'},Health:{a:'VIT',ic:'❤️'},Learning:{a:'INT',ic:'📚'},Habit:{a:'DEX',ic:'🔥'},
-  Finance:{a:'WIS',ic:'💰'},Work:{a:'FOC',ic:'💼'},Social:{a:'SOC',ic:'🎉'},Personal:{a:'FOC',ic:'✨'}
+const CATS={ // the built-in task/habit/goal categories: primary attribute (a), attribute profile (p), line icon
+  Fitness:{a:'STR',ic:'💪',p:'fitness',icon:'dumbbell'},Health:{a:'VIT',ic:'❤️',p:'health',icon:'heart'},Learning:{a:'INT',ic:'📚',p:'learning',icon:'book'},Habit:{a:'DEX',ic:'🔥',p:'discipline',icon:'flame'},
+  Finance:{a:'WIS',ic:'💰',p:'finance',icon:'wallet'},Work:{a:'FOC',ic:'💼',p:'work',icon:'briefcase'},Social:{a:'SOC',ic:'🎉',p:'social',icon:'users'},Personal:{a:'FOC',ic:'✨',p:'personal',icon:'sparkle'}
 };
 const CAT_LIST=Object.keys(CATS);
+/* ---- Polish pass: automatic attributes. Every XP grant already grew attributes by 60 % of its XP
+   (see grantXp); instead of one attribute it now follows the activity's profile, split deterministically
+   (largest remainder, ties in ATTRS order). There is no manual allocation and no multiplier: the total
+   attribute growth of an event is exactly what it was before. ---- */
+const ATTR_PROFILES={
+  fitness:{STR:.5,VIT:.3,DEX:.2}, health:{VIT:.6,FOC:.4}, learning:{INT:.6,FOC:.4}, work:{FOC:.45,INT:.35,SOC:.2},
+  social:{SOC:1}, discipline:{DEX:1}, finance:{WIS:.8,FOC:.2}, personal:{WIS:.5,FOC:.5},
+  sleep:{VIT:.6,FOC:.4}, nutrition:{VIT:1}, reflection:{WIS:.6,FOC:.4},
+  plan:{FOC:.5,DEX:.5} // planner quests
+};
+// Balancing: 60 % of XP becomes attribute points; quests (a bonus for activities that already paid their
+// own attributes) grow attributes at 30 % of their XP. Quest XP itself is unchanged.
+const ATTR_RATE=0.6, QUEST_ATTR_RATE=0.3;
+// Equal-weight mix of several profiles (e.g. the categories of the tasks a quest counted).
+function rpgMixProfiles(list){
+  const out={}; const ps=list.map(rpgProfileOf).filter(Boolean); if(!ps.length) return null;
+  ps.forEach(p=>{ const s=Object.values(p).reduce((a,v)=>a+v,0)||1; Object.keys(p).forEach(k=>{ out[k]=(out[k]||0)+p[k]/s/ps.length; }); });
+  return out;
+}
+// Meals keep their XP for every meal; attribute points only for the first meal logged that day.
+function mealAttrProfile(){
+  const d=todayStr();
+  return S.xpLog.some(x=>x.reason==='Meal logged'&&x.attrs&&uiIsoDate(x.ts)===d)?null:'nutrition';
+}
+const ATTR_PROFILE_PICK=['fitness','health','learning','work','social','discipline','finance','personal']; // choosable for a custom category
+function rpgProfileOf(x){
+  if(!x) return null;
+  if(typeof x==='object') return x;
+  if(ATTRS[x]) return {[x]:1};
+  return ATTR_PROFILES[x]||null;
+}
+function rpgAttrGains(total,profile){
+  const p=rpgProfileOf(profile), order=Object.keys(ATTRS);
+  if(!p||!(total>0)) return {};
+  const keys=order.filter(k=>p[k]>0), sum=keys.reduce((a,k)=>a+p[k],0);
+  if(!sum) return {};
+  const raw=keys.map(k=>({k,v:total*p[k]/sum})), out={};
+  let used=0; raw.forEach(r=>{ out[r.k]=Math.floor(r.v); used+=out[r.k]; });
+  raw.slice().sort((a,b)=>((b.v-Math.floor(b.v))-(a.v-Math.floor(a.v)))||(order.indexOf(a.k)-order.indexOf(b.k))).slice(0,total-used).forEach(r=>{ out[r.k]++; });
+  Object.keys(out).forEach(k=>{ if(!out[k]) delete out[k]; });
+  return out;
+}
+/* ---- Polish pass: XP follows priority (no manual XP field). A completed task keeps the XP it was paid
+   (the ledger never changes); an open one earns what its priority says. Habits have an importance
+   (Low/Medium/High); an older habit without one is read from its old xpReward (record not rewritten). ---- */
+const TASK_XP={Low:10,Medium:20,High:30,Urgent:40};
+function taskXp(t){ return TASK_XP[t&&t.priority]||TASK_XP.Medium; }
+const HABIT_XP={Low:10,Medium:15,High:25};
+function habitPriority(h){
+  if(h&&HABIT_XP[h.priority]) return h.priority;
+  const x=Number(h&&h.xpReward);
+  if(!(x>0)) return 'Medium';
+  return x<=10?'Low':x<20?'Medium':'High';
+}
+function habitXp(h){ return HABIT_XP[habitPriority(h)]; }
+/* ---- Polish pass: shared categories (scope 'life' = tasks, habits, goals, planner, events, subscriptions;
+   scope 'notes' = notes). Built-ins stay in code; S.lifeCategories only holds the user's own categories and
+   edits of built-ins. A record keeps storing the category key (a built-in's key is its old name, so every
+   old record resolves unchanged); renaming only changes the label. Archived = hidden from pickers only. ---- */
+const NOTE_CATS={Personal:'sparkle',Work:'briefcase',School:'book',Ideas:'star',Shopping:'cart',Car:'car'};
+const CAT_ICON_CHOICES=['dumbbell','heart','book','flame','wallet','briefcase','users','sparkle','target','home','music','code','leaf','globe','brush','cart','car','apple','moon','star','clock','tag'];
+const CAT_COLOR_CHOICES=['#ef4444','#f97316','#eab308','#10b981','#14b8a6','#3b82f6','#6366f1','#8b5cf6','#ec4899','#64748b'];
+function catBuiltins(scope){
+  if(scope==='notes') return Object.keys(NOTE_CATS).map(k=>({key:k,scope,name:k,icon:NOTE_CATS[k],color:'',profile:null,archived:false,builtin:true}));
+  return CAT_LIST.map(k=>({key:k,scope:'life',name:k,icon:CATS[k].icon,color:'',profile:CATS[k].p,archived:false,builtin:true}));
+}
+function catList(scope,st){
+  scope=scope||'life'; st=st||S;
+  const own=((st&&st.lifeCategories)||[]).filter(c=>(c.scope||'life')===scope);
+  const out=catBuiltins(scope).map(b=>{ const o=own.find(c=>c.key===b.key); return o?Object.assign({},b,o,{builtin:true}):b; });
+  own.filter(c=>!out.some(b=>b.key===c.key)).forEach(c=>out.push(Object.assign({icon:'tag',color:'',profile:null,archived:false},c,{builtin:false})));
+  return out;
+}
+function catInfo(key,scope){ return key?catList(scope).find(c=>c.key===key)||null:null; }
+function catLabel(key,scope){ const c=catInfo(key,scope); if(!c) return key||''; return c.builtin&&c.name===c.key?uiL(c.key):c.name; }
+function catIconName(key,scope){ const c=catInfo(key,scope); return (c&&c.icon)||'tag'; }
+function catColor(key,scope){
+  const c=catInfo(key,scope); if(!c) return 'var(--accent)';
+  if(c.color) return c.color;
+  const p=ATTR_PROFILES[c.profile]; const top=p?Object.keys(p).sort((a,b)=>p[b]-p[a])[0]:null;
+  return top&&ATTRS[top]?ATTRS[top].c:'var(--accent)';
+}
+function catProfile(key){ const c=catInfo(key,'life'); return c&&ATTR_PROFILES[c.profile]?c.profile:null; }
+function catValidate(f,scope,key){
+  const e={}, name=String(f.name||'').trim();
+  if(!name) e.name='required';
+  else if(catList(scope).some(c=>c.key!==key&&!c.archived&&catLabel(c.key,scope).toLowerCase()===name.toLowerCase())) e.name='duplicate';
+  if(f.icon&&!UI_ICONS[f.icon]) e.icon='invalid';
+  if(scope!=='notes'&&f.profile&&!ATTR_PROFILES[f.profile]) e.profile='invalid';
+  return e;
+}
+function catSave(f,scope,key){
+  scope=scope||'life';
+  const errors=catValidate(f,scope,key); if(Object.keys(errors).length) return {ok:false,errors};
+  if(!Array.isArray(S.lifeCategories)) S.lifeCategories=[];
+  const base=key?catInfo(key,scope):null;
+  if(key&&!base) return {ok:false,errors:{key:'missing'}};
+  const name=String(f.name).trim();
+  const fields={name:base&&base.builtin&&name===uiL(base.key)?base.key:name,icon:f.icon||(base&&base.icon)||'tag',color:f.color!=null?f.color:(base&&base.color)||'',
+    profile:scope==='notes'?null:(f.profile||(base&&base.profile)||'personal'),updatedAt:Date.now()};
+  let rec=key?S.lifeCategories.find(c=>c.key===key&&(c.scope||'life')===scope):null;
+  if(rec) Object.assign(rec,fields);
+  else if(base){ rec=Object.assign({key,scope,archived:!!base.archived,createdAt:Date.now()},fields); S.lifeCategories.push(rec); }
+  else { rec=Object.assign({key:'cat_'+uid(),scope,archived:false,createdAt:Date.now()},fields); S.lifeCategories.push(rec); }
+  scheduleSave();
+  return {ok:true,errors:{},category:catInfo(rec.key,scope)};
+}
+function catSetArchived(key,scope,on){
+  const c=catInfo(key,scope); if(!c) return false;
+  if(!Array.isArray(S.lifeCategories)) S.lifeCategories=[];
+  let rec=S.lifeCategories.find(x=>x.key===key&&(x.scope||'life')===(scope||'life'));
+  if(!rec){ rec={key,scope:scope||'life',name:c.name,icon:c.icon,color:c.color,profile:c.profile,createdAt:Date.now()}; S.lifeCategories.push(rec); }
+  rec.archived=!!on; rec.updatedAt=Date.now(); scheduleSave(); return true;
+}
+function catInUse(key,scope){
+  if(scope==='notes') return S.notes.filter(n=>n.category===key).length;
+  return S.tasks.filter(t=>t.category===key).length+S.habits.filter(h=>h.category===key).length+S.goals.filter(g=>g.category===key).length+(S.plannerBlocks||[]).filter(b=>b.category===key).length;
+}
 
 function xpForLevel(l){return Math.round(100*Math.pow(l,1.35));} // xp required to go from l to l+1
 function levelFromXp(totalXp){let lvl=1,xp=totalXp;while(xp>=xpForLevel(lvl)){xp-=xpForLevel(lvl);lvl++;}return{level:lvl,into:xp,need:xpForLevel(lvl)};}
@@ -1122,139 +1336,28 @@ const ACHV=[
  {id:'quest_5',title:'Adventurer',desc:'Complete 5 quests',rarity:'Uncommon',xp:60,cond:s=>s.quests.length>=5,progress:s=>Math.min(100,Math.round(s.quests.length/5*100))},
 ];
 
-/* ---- Phase 5: Skill Tree data model ----
-   Stable skill IDs. effect.type drives a small, safe, deterministic, idempotent bonus applied
-   only at a REAL existing action (never a global XP multiplier that could break XP idempotence):
-     - category_attr_bonus: bonus to `attr` when a task/habit whose category maps to that same
-       attr (via CATS) is completed -- reuses the real completion event, not a fake trigger.
-     - workout_attr_bonus: bonus to `attr` when a workout is logged (create only).
-     - finance_attr_bonus: bonus to `attr` the first time a finance entry is logged in a day
-       (same daily gate as the existing finance XP protection).
-     - habit_streak_bonus_xp: bonus XP the day a habit's current streak reaches `milestone`.
-     - badge: no numeric effect -- a perk/badge shown on Character, per the spec's own allowance
-       to leave a skill as unlock-only when no real matching action exists yet. */
-const SKILLS=[
- {id:'discipline_consistency_1',branch:'discipline',name:'Consistency I',description:'+5 bonus XP the day a habit streak reaches 7 days.',cost:1,prerequisites:[],effect:{type:'habit_streak_bonus_xp',milestone:7,value:5}},
- {id:'discipline_consistency_2',branch:'discipline',name:'Consistency II',description:'+10 bonus XP the day a habit streak reaches 30 days.',cost:2,prerequisites:['discipline_consistency_1'],effect:{type:'habit_streak_bonus_xp',milestone:30,value:10}},
- {id:'discipline_streak_master',branch:'discipline',name:'Streak Master',description:'Perk: Streak Master badge on your Character profile.',cost:3,prerequisites:['discipline_consistency_2'],effect:{type:'badge',value:'Streak Master'}},
- {id:'knowledge_learner_1',branch:'knowledge',name:'Learner I',description:'+5 bonus INT when completing a Learning-category task or habit.',cost:1,prerequisites:[],effect:{type:'category_attr_bonus',attr:'INT',value:5}},
- {id:'knowledge_learner_2',branch:'knowledge',name:'Learner II',description:'+10 additional bonus INT when completing a Learning-category task or habit.',cost:2,prerequisites:['knowledge_learner_1'],effect:{type:'category_attr_bonus',attr:'INT',value:10}},
- {id:'knowledge_master',branch:'knowledge',name:'Knowledge Master',description:'Perk: Knowledge Master badge on your Character profile.',cost:3,prerequisites:['knowledge_learner_2'],effect:{type:'badge',value:'Knowledge Master'}},
- {id:'fitness_training_1',branch:'fitness',name:'Training I',description:'+5 bonus STR on workout completion.',cost:1,prerequisites:[],effect:{type:'workout_attr_bonus',attr:'STR',value:5}},
- {id:'fitness_training_2',branch:'fitness',name:'Training II',description:'+10 additional bonus STR on workout completion.',cost:2,prerequisites:['fitness_training_1'],effect:{type:'workout_attr_bonus',attr:'STR',value:10}},
- {id:'fitness_athlete',branch:'fitness',name:'Athlete',description:'Perk: Athlete badge on your Character profile.',cost:3,prerequisites:['fitness_training_2'],effect:{type:'badge',value:'Athlete'}},
- {id:'finance_saver_1',branch:'finance',name:'Saver I',description:'+5 bonus WIS the first time you log a finance entry each day.',cost:1,prerequisites:[],effect:{type:'finance_attr_bonus',attr:'WIS',value:5}},
- {id:'finance_saver_2',branch:'finance',name:'Saver II',description:'+10 additional bonus WIS the first time you log a finance entry each day.',cost:2,prerequisites:['finance_saver_1'],effect:{type:'finance_attr_bonus',attr:'WIS',value:10}},
- {id:'finance_wealth_builder',branch:'finance',name:'Wealth Builder',description:'Perk: Wealth Builder badge on your Character profile.',cost:3,prerequisites:['finance_saver_2'],effect:{type:'badge',value:'Wealth Builder'}},
- {id:'focus_deepwork_1',branch:'focus',name:'Deep Work I',description:'+5 bonus FOC when completing a Focus-category task or habit.',cost:1,prerequisites:[],effect:{type:'category_attr_bonus',attr:'FOC',value:5}},
- {id:'focus_deepwork_2',branch:'focus',name:'Deep Work II',description:'+10 additional bonus FOC when completing a Focus-category task or habit.',cost:2,prerequisites:['focus_deepwork_1'],effect:{type:'category_attr_bonus',attr:'FOC',value:10}},
- {id:'focus_master',branch:'focus',name:'Focus Master',description:'Perk: Focus Master badge on your Character profile.',cost:3,prerequisites:['focus_deepwork_2'],effect:{type:'badge',value:'Focus Master'}},
- {id:'social_social_1',branch:'social',name:'Social I',description:'+5 bonus SOC when completing a Social-category task or habit.',cost:1,prerequisites:[],effect:{type:'category_attr_bonus',attr:'SOC',value:5}},
- {id:'social_social_2',branch:'social',name:'Social II',description:'+10 additional bonus SOC when completing a Social-category task or habit.',cost:2,prerequisites:['social_social_1'],effect:{type:'category_attr_bonus',attr:'SOC',value:10}},
- {id:'social_networker',branch:'social',name:'Networker',description:'Perk: Networker badge on your Character profile.',cost:3,prerequisites:['social_social_2'],effect:{type:'badge',value:'Networker'}},
-];
-const SKILL_BRANCH_LABELS={discipline:'Discipline',knowledge:'Knowledge',fitness:'Fitness',finance:'Finance',focus:'Focus',social:'Social'};
-const SKILL_BRANCH_ATTR={discipline:'DEX',knowledge:'INT',fitness:'STR',finance:'WIS',focus:'FOC',social:'SOC'};
-
 /* ---- Phase 5: RPG activity log (persistent, real events only) ---- */
 function logActivity(type,title,description,xp){
   S.rpg.activityLog.unshift({id:uid(),type,title,description,xp:xp||0,createdAt:Date.now()});
   if(S.rpg.activityLog.length>200) S.rpg.activityLog.length=200; // cap growth, most-recent-first
 }
 
-/* ---- Phase 5: Level-up rewards (Skill Points + Attribute Points) ----
-   Idempotent by construction: driven purely by comparing the REAL level derived from
+/* ---- Level-up log. Idempotent by construction: driven purely by comparing the REAL level derived from
    S.totalXp against the persisted S.rpg.highestLevelRewarded, never by session/UI state.
-   Re-running this (on reload, migration, or repeated calls) when no new level has been
-   reached is always a no-op, and a multi-level XP jump correctly pays out once per level. */
+   Polish pass: the Skill Tree and manual Attribute Points were removed, so a level-up no longer pays
+   points (attributes grow automatically from activities, see rpgAttrGains). Points earned before stay
+   stored in S.rpg untouched, they are just no longer used. ---- */
 function applyLevelRewards(state){
   const curLevel=levelFromXp(state.totalXp).level;
   const from=state.rpg.highestLevelRewarded||1;
   if(curLevel<=from) return 0;
   const gained=curLevel-from;
-  state.rpg.skillPoints.available+=gained; state.rpg.skillPoints.earned+=gained;
-  state.rpg.attributePoints.available+=gained*3; state.rpg.attributePoints.earned+=gained*3;
   for(let lv=from+1;lv<=curLevel;lv++){
-    state.rpg.activityLog.unshift({id:uid(),type:'levelup',title:'Level '+lv,description:'Reached Level '+lv+' — +1 Skill Point, +3 Attribute Points',xp:0,createdAt:Date.now()});
+    state.rpg.activityLog.unshift({id:uid(),type:'levelup',title:'Level '+lv,description:'Reached Level '+lv,xp:0,createdAt:Date.now()});
   }
   if(state.rpg.activityLog.length>200) state.rpg.activityLog.length=200;
   state.rpg.highestLevelRewarded=curLevel;
   return gained;
-}
-
-/* ---- Phase 5: Skill unlock + spend ---- */
-function unlockSkill(id){
-  const skill=SKILLS.find(s=>s.id===id);
-  if(!skill) return false;
-  if(S.rpg.skillTree.unlocked.includes(id)) return false; // already unlocked -- clicking again does nothing
-  if((S.rpg.skillPoints.available||0)<skill.cost) return false; // insufficient points
-  const prereqsMet=(skill.prerequisites||[]).every(p=>S.rpg.skillTree.unlocked.includes(p));
-  if(!prereqsMet) return false;
-  S.rpg.skillPoints.available-=skill.cost; // can never go negative: cost<=available was just checked
-  S.rpg.skillPoints.spent+=skill.cost;
-  S.rpg.skillTree.unlocked.push(id);
-  S.rpg.skillTree.totalSpent+=skill.cost;
-  logActivity('skill_unlock',skill.name,'Unlocked skill: '+skill.name,0);
-  toast('🌟 Skill unlocked: '+skill.name);
-  scheduleSave();
-  return true;
-}
-/* ---- Phase 5: Attribute Points -- player-directed, manual spend, never negative ---- */
-const ATTRIBUTE_POINT_VALUE=10; // raw attrs[] units added per spent point (5 points = 1 attribute level)
-function spendAttributePoint(attrKey){
-  if(!ATTRS[attrKey]) return false;
-  if((S.rpg.attributePoints.available||0)<=0) return false;
-  S.rpg.attributePoints.available-=1;
-  S.rpg.attributePoints.spent=(S.rpg.attributePoints.spent||0)+1;
-  S.attrs[attrKey]=(S.attrs[attrKey]||0)+ATTRIBUTE_POINT_VALUE;
-  scheduleSave();
-  return true;
-}
-
-/* ---- Phase 5: Skill effects -- each applied only from a REAL existing completion event,
-   gated by that same event's own idempotent key (reusing S.xpLog as the ledger, amount:0 for
-   attribute-only bonuses so S.totalXp/xpToday() are unaffected). Never a global multiplier. */
-function applyCategoryAttrSkillBonus(attrKey,key){
-  if(!attrKey||!key) return;
-  SKILLS.filter(sk=>sk.effect&&sk.effect.type==='category_attr_bonus'&&sk.effect.attr===attrKey).forEach(sk=>{
-    if(!S.rpg.skillTree.unlocked.includes(sk.id)) return;
-    const bonusKey=`skillbonus:${sk.id}:${key}`;
-    if(S.xpLog.some(x=>x.key===bonusKey)) return; // idempotent: never re-applied for the same event
-    S.attrs[attrKey]=(S.attrs[attrKey]||0)+sk.effect.value;
-    S.xpLog.push({id:uid(),amount:0,reason:'Skill bonus: '+sk.name,ts:Date.now(),key:bonusKey});
-  });
-}
-function applyWorkoutAttrSkillBonus(key){
-  if(!key) return;
-  SKILLS.filter(sk=>sk.effect&&sk.effect.type==='workout_attr_bonus').forEach(sk=>{
-    if(!S.rpg.skillTree.unlocked.includes(sk.id)) return;
-    const bonusKey=`skillbonus:${sk.id}:${key}`;
-    if(S.xpLog.some(x=>x.key===bonusKey)) return;
-    S.attrs[sk.effect.attr]=(S.attrs[sk.effect.attr]||0)+sk.effect.value;
-    S.xpLog.push({id:uid(),amount:0,reason:'Skill bonus: '+sk.name,ts:Date.now(),key:bonusKey});
-  });
-}
-function applyFinanceAttrSkillBonus(key){
-  if(!key) return;
-  SKILLS.filter(sk=>sk.effect&&sk.effect.type==='finance_attr_bonus').forEach(sk=>{
-    if(!S.rpg.skillTree.unlocked.includes(sk.id)) return;
-    const bonusKey=`skillbonus:${sk.id}:${key}`;
-    if(S.xpLog.some(x=>x.key===bonusKey)) return;
-    S.attrs[sk.effect.attr]=(S.attrs[sk.effect.attr]||0)+sk.effect.value;
-    S.xpLog.push({id:uid(),amount:0,reason:'Skill bonus: '+sk.name,ts:Date.now(),key:bonusKey});
-  });
-}
-function applyHabitStreakSkillBonus(h){
-  if(h.type==='bad') return; // clean-streak bonus for bad habits not in this phase's scope
-  const cur=currentStreak(h), date=todayStr();
-  SKILLS.filter(sk=>sk.effect&&sk.effect.type==='habit_streak_bonus_xp').forEach(sk=>{
-    if(cur!==sk.effect.milestone) return;
-    if(!S.rpg.skillTree.unlocked.includes(sk.id)) return;
-    // Keyed by date, not a one-time-ever key: a habit that later resets and rebuilds a fresh
-    // streak to the same milestone on a DIFFERENT day earns the bonus again -- but never twice
-    // for the same day's completion (edit/reload/re-render all reuse this exact key).
-    grantXp(sk.effect.value,'Skill bonus: '+sk.name+' ('+h.name+')',null,`skillbonus:${sk.id}:habit:${h.id}:${date}`);
-  });
 }
 function waterOnDate(date){return S.waterLog.filter(w=>w.date===date).reduce((a,b)=>a+Number(b.amount||0),0);}
 function waterToday(s){return waterOnDate(todayStr());}
@@ -1267,12 +1370,14 @@ function monthBalance(s){
 
 // ---- Phase 6: Settings / dashboard-widget catalogue (single source of truth for both
 // renderHome's widget order and the Settings screen's show/hide + reorder UI) ----
-const AVATAR_CHOICES=['🧙','🦸','🥷','🧝','🤖','🐱','🐺','🦉'];
+const AVATAR_CHOICES=['svg:mage','svg:knight','svg:ranger','svg:rogue','svg:paladin','svg:druid','svg:monk','svg:bard']; // Polish pass: SVG portraits (see AVATARS)
 const WIDGET_DEFS=[
   {key:'reminders',label:'Reminders'},
   {key:'progress',label:'Level Progress'},
+  {key:'planner',label:"Today's Plan"},
   {key:'tasks',label:"Today's Tasks"},
   {key:'habits',label:'Habits'},
+  {key:'quests',label:'Daily Quests'},
   {key:'goals',label:'Goals'},
   {key:'nutrition',label:'Nutrition Today'},
   {key:'finance',label:'Finance'},
@@ -1280,7 +1385,7 @@ const WIDGET_DEFS=[
   {key:'health',label:'Health'},
 ];
 function defaultState(){return{
-  profile:{name:'Hero',avatar:'🧙',createdAt:Date.now()},
+  profile:{name:'Hero',avatar:'svg:mage',createdAt:Date.now()},
   totalXp:0, xpLog:[], // {id,amount,reason,ts}
   attrs:{STR:0,INT:0,DEX:0,VIT:0,WIS:0,FOC:0,SOC:0},
   tasks:[], habits:[], goals:[],
@@ -1328,8 +1433,12 @@ function defaultState(){return{
   muscleProgress:{log:[]}, // Phase 11A: Muscle XP ledger (see muscleAwardWorkout); totals/levels are derived
   // ---- Phase 11B: Finance 2.0 (see the Finance 2.0 block); old states get these in migrate() ----
   financeCategories:[], accounts:[], recurringFinance:[], savingsGoals:[], investments:[],
+  // ---- Polish pass: user categories + edits of built-ins (see catList), quest board (see questBoardFor).
+  // Both reach old states through migrate()'s generic top-level fill-in: no schema bump. ----
+  lifeCategories:[], questBoard:{},
   settings:{
     theme:'dark', onboarded:false,
+    trainingDays:null, // polish pass: weekday numbers (0=Sun..6=Sat) of the training schedule; null = not set
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
     animations:true, sounds:true,
     widgets:Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true}))),
@@ -1468,7 +1577,10 @@ function migrate(state){
     // widgetOrder: keep the account's own order for widgets it already knows about, then
     // append any brand-new widget keys (or a totally-missing order) in the default position.
     const existingOrder=(merged.settings.widgetOrder||[]).filter(k=>d.settings.widgets.hasOwnProperty(k));
-    d.settings.widgetOrder.forEach(k=>{ if(!existingOrder.includes(k)) existingOrder.push(k); });
+    // Polish pass: a widget key the account has not seen yet goes right after its default predecessor
+    // (Today's Plan after Level Progress, Daily Quests after Habits), else to the end; the account's own
+    // order of the widgets it already knows is never changed.
+    d.settings.widgetOrder.forEach((k,i)=>{ if(existingOrder.includes(k)) return; const prev=i?existingOrder.indexOf(d.settings.widgetOrder[i-1]):-1; existingOrder.splice(i===0?0:prev>=0?prev+1:existingOrder.length,0,k); });
     merged.settings.widgetOrder=existingOrder;
   }
   merged.settings.notifications=Object.assign({},d.settings.notifications,merged.settings.notifications||{});
@@ -1632,9 +1744,9 @@ function getActiveReminders(now){
     });
   }
   if(N.quest!==false){
-    DAILY_QUESTS.forEach(q=>{
+    questBoardFor('daily',false).forEach(({q,p})=>{
       const key=questKey(q.id,'daily');
-      if(!S.quests.some(x=>x.key===key)) out.push({prefType:'quest',navType:'quest',id:q.id,text:`📜 Quest: ${q.title}`});
+      if(!S.quests.some(x=>x.key===key)) out.push({prefType:'quest',navType:'quest',id:q.id,text:`📜 Quest: ${questTitle(q,p,'en')}`});
     });
   }
   return out;
@@ -1830,14 +1942,19 @@ function habitProgressLabel(h){
   return `🔥${currentStreak(h)} day streak`;
 }
 
-function grantXp(amount, reason, attrKey, key){
+function grantXp(amount, reason, attrKey, key, attrRate){
   // Idempotency guard: if a unique event key is given (e.g. "task:<id>:<date>",
   // "habit:<id>:<date>", "milestone:<id>"), refuse to grant it twice. This checks
   // real xpLog history, not UI/toggle state, so it survives reload and app restarts.
+  // Polish pass: attrKey may be one attribute ('STR'), an attribute profile id ('fitness') or a weight
+  // map; the same 60 % of the XP is split over it deterministically (rpgAttrGains) and logged.
   if(key && S.xpLog.some(x=>x.key===key)) return false;
   S.totalXp += amount;
-  S.xpLog.push({id:uid(),amount,reason,ts:Date.now(),key});
-  if(attrKey && ATTRS[attrKey]) S.attrs[attrKey]=(S.attrs[attrKey]||0)+Math.round(amount*0.6);
+  const gains=rpgAttrGains(Math.round(amount*(attrRate!=null?attrRate:ATTR_RATE)),attrKey);
+  const entry={id:uid(),amount,reason,ts:Date.now(),key};
+  if(Object.keys(gains).length) entry.attrs=gains;
+  S.xpLog.push(entry);
+  Object.keys(gains).forEach(k=>{ S.attrs[k]=(S.attrs[k]||0)+gains[k]; });
   toast(`+${amount} XP · ${reason}`);
   checkAchievements();
   checkLevelUp();
@@ -1927,7 +2044,7 @@ function uiPumpToasts(){
     const n=document.createElement('div');
     n.className='toast is-'+t.kind;
     n.setAttribute('role',t.kind==='error'?'alert':'status');
-    n.textContent=t.msg;
+    n.textContent=t.msg; uiIconize(n);
     wrap.appendChild(n);
     setTimeout(()=>{ n.classList.add('is-leaving'); setTimeout(()=>{ n.remove(); uiToastLive--; uiPumpToasts(); },220); }, t.kind==='level'?4200:2900);
   }
@@ -1985,7 +2102,10 @@ function render(){
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
   // Phase 9: store finished days' Daily Score snapshots (no-op unless a day has ended).
   if(finalizeDailyScores()) scheduleSave();
+  // Polish pass: quests complete automatically after any action (idempotent, ledger-keyed).
+  if(S.settings.onboarded!==false && checkQuests()) scheduleSave();
   app.appendChild(map[view]());
+  uiIconize(app);
   // Phase 8B presentation: entrance animation only when the screen actually changes (not on the
   // 60 s refresh or after a tap on the same screen), motion follows Settings → Animations.
   const viewChanged=uiLastView!==view; uiLastView=view;
@@ -2015,7 +2135,7 @@ function progressCard(){
   const attrs=Object.keys(ATTRS).map(k=>{ const val=S.attrs[k]||0; return `<div class="attr-mini" style="--ac:${ATTRS[k].c}" title="${ATTRS[k].label}"><span class="k">${k}</span><span class="v">${Math.floor(val/50)+1}</span><span class="t"><i style="width:${(val%50)/50*100}%"></i></span></div>`; }).join('');
   return el(`<section class="card hud" aria-label="${uiT('level')} ${level}">
     <div class="hud-top">
-      <div class="avatar hero lg" aria-hidden="true">${S.profile.avatar||'🧙'}</div>
+      <div class="avatar hero lg" aria-hidden="true">${uiAvatarInner()}</div>
       <div class="hud-id">
         <div class="hud-greet">${uiGreeting()},</div>
         <div class="hud-name truncate">${escapeHtml(S.profile.name)}</div>
@@ -2042,7 +2162,7 @@ function uiTodayCard(){
       <div class="today-rows">
         <div class="between"><span class="kicker">Daily Score</span>${r.score!=null?`<span class="chip ${uiDsTone(r.score)}">${uiDsLabel(r.label)}</span>`:''}</div>
         ${r.score==null?`<div class="sub">${uiDsT('nothing')}</div>`:uiDsAreaRows(r,true)}
-        <div class="sub ds-counts">✅ ${doneToday}/${todayTasks.length} · 🔥 ${doneHabits}/${activeHabits.length}</div>
+        <div class="sub ds-counts"><span>${uiIcon('check',13)} ${doneToday}/${todayTasks.length}</span><span>${uiIcon('flame',13)} ${doneHabits}/${activeHabits.length}</span></div>
       </div>
     </div>
   </section>`);
@@ -2077,26 +2197,58 @@ const UI_PL={
 };
 function uiPlT(k){ return (UI_PL[uiLang()]||UI_PL.cs)[k]; }
 function uiPlDur(min){ const h=Math.floor(min/60), m=min%60; return h?`${h} h${m?` ${m} min`:''}`:`${m} min`; }
-function uiPlColor(cat){ const c=CATS[cat]; return c&&ATTRS[c.a]?ATTRS[c.a].c:'var(--accent)'; }
-function uiPlIcon(b){ return (CATS[b.category]||{}).ic||'🗓️'; }
+function uiPlColor(cat){ return catColor(cat,'life'); }
+function uiPlIcon(b){ return uiIcon(b.workoutTemplateId?'dumbbell':b.category&&catInfo(b.category,'life')?catIconName(b.category,'life'):'clock',15); }
 function uiTaskBlocks(t){ return (S.plannerBlocks||[]).filter(b=>b.taskId===t.id).sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime)); }
 function uiTaskNextBlock(t){ const today=todayStr(); return uiTaskBlocks(t).find(b=>b.date>=today)||null; }
 function uiTaskPlanBlock(t){
   const bl=uiTaskBlocks(t);
   return `<div class="task-plan"><button class="btn ghost" id="f_plan">🗓️ ${uiPlT('plan')}</button>${bl.length?`<div class="sub" style="margin-top:8px">${uiPlT('scheduled')}:</div><div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">${bl.map(b=>`<button class="chip" data-plan-day="${b.date}">🗓️ ${fmtDate(b.date)} ${b.startTime}–${b.endTime}${b.completed?' ✓':''}</button>`).join('')}</div>`:''}</div>`;
 }
-// Home: compact "Today's plan" (inside the existing Today's Tasks widget -- no new widget key).
+// Polish pass: Home "Today's plan" -- its own prominent widget (right after the Daily Score). Shows the
+// day's blocks with times; tapping it opens the day overview. Reads plannerBlocksOn() only.
+function uiPlanRowHtml(b,now){
+  const lk=plannerLinks(b), wi=b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+  const s0=plannerTimeToMin(b.startTime), e0=plannerTimeToMin(b.endTime);
+  const state=b.completed?'done':now!=null&&now>=s0&&now<e0?'now':'';
+  const link=wi&&wi.t?wi.t.name:lk.task?lk.task.title:lk.goal?lk.goal.title:lk.workout?lk.workout.name:'';
+  const lkType=wi?'workout':lk.task?'task':lk.goal?'goal':lk.workout?'workout':'';
+  return `<div class="plan-row${state?' is-'+state:''}" data-block="${b.id}" style="--pl-c:${uiPlColor(b.category)}">
+    <span class="plan-time"><b>${b.startTime}</b><small>${b.endTime}</small></span>
+    <span class="plan-main"><span class="plan-t">${uiPlIcon(b)}<span class="truncate">${escapeHtml(b.title)}</span></span>${link?`<small class="lk-${lkType} plan-lk">${uiIcon(lkType==='task'?'check':lkType==='goal'?'target':'dumbbell',12)} ${escapeHtml(link)}</small>`:''}</span>
+    ${wi&&wi.st==='active'?`<button class="btn sm planWkGo">${uiIcon('play',14)} ${uiPlT('continue_wk')}</button>`:wi&&wi.st==='done'?`<span class="chip is-success" data-wk-done>${uiLang()==='cs'?'Dokončeno':'Finished'}</span>`:b.completed?`<span class="chip is-success">${uiIcon('check',13)}</span>`:state==='now'?`<span class="chip is-warn">${uiLang()==='cs'?'Teď':'Now'}</span>`:'<span></span>'}
+  </div>`;
+}
 function uiTodaysPlanCard(){
-  const bl=plannerBlocksOn(todayStr());
-  if(!bl.length) return null;
-  const c=el(`<div class="card plan-card" data-plan="home"><div class="between" style="margin-bottom:4px"><span class="kicker">🗓️ ${uiPlT('todays_plan')}</span><button class="action section-open" style="background:none;border:none;color:var(--accent);font-weight:650;min-height:44px;cursor:pointer">${uiPlT('open')} ›</button></div>
-    <div class="plan-list">${bl.slice(0,5).map(b=>{ if(b.workoutTemplateId){ const wi=uiPlannerWorkoutInfo(b);
-      return `<div class="plan-row plan-wk${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><button class="plan-open truncate">🏋️ ${escapeHtml(wi.t?wi.t.name:b.title)}</button>${wi.st==='active'?`<button class="btn sm planWkGo">▶ ${uiPlT('continue_wk')}</button>`:wi.st==='done'?`<span class="chip is-success" data-wk-done>${uiLang()==='cs'?'Dokončeno':'Finished'}</span>`:(b.completed?'<span class="chip is-success">✓</span>':'<span></span>')}</div>`; }
-      return `<button class="plan-row${b.completed?' is-done':''}" data-block="${b.id}"><b>${b.startTime}</b><span class="truncate">${uiPlIcon(b)} ${escapeHtml(b.title)}</span>${b.completed?'<span class="chip is-success">✓</span>':'<span></span>'}</button>`; }).join('')}</div>
-    ${bl.length>5?`<div class="sub" style="margin-top:4px">+${bl.length-5}</div>`:''}</div>`);
-  c.querySelectorAll('button').forEach(b=>b.onclick=()=>uiOpenPlanner(todayStr()));
+  const cs=uiLang()==='cs', D=todayStr(), bl=plannerBlocksOn(D), sum=plannerDaySummary(D);
+  const n=new Date(), now=n.getHours()*60+n.getMinutes();
+  const c=el(`<section class="card plan-card is-home" data-plan="home" role="button" tabindex="0" aria-label="${uiPlT('todays_plan')}">
+    <div class="plan-head"><span class="plan-ic" aria-hidden="true">${uiIcon('clock',20)}</span><span class="plan-hd"><span class="kicker">${uiPlT('todays_plan')}</span>
+      <b>${bl.length?`${sum.planned} ${uiPlT('blocks')} · ${uiPlDur(sum.plannedMin)}`:(cs?'Den je zatím volný':'Nothing planned yet')}</b></span>
+      ${bl.length?`<span class="chip ${sum.completed===sum.planned?'is-success':'is-muted'}">${sum.completed}/${sum.planned}</span>`:''}</div>
+    ${bl.length?`<div class="plan-list">${bl.slice(0,4).map(b=>uiPlanRowHtml(b,now)).join('')}</div>${bl.length>4?`<div class="sub plan-more">+${bl.length-4} ${cs?'další':'more'}</div>`:''}`
+      :`<p class="sub" style="margin:8px 0 10px">${uiPlT('empty_d')}</p><button class="btn sm" id="planAdd">＋ ${cs?'Naplánovat blok':'Plan a block'}</button>`}
+  </section>`);
+  c.onclick=()=>openDayOverview(D);
+  c.onkeydown=e=>{ if(e.target===c&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); c.onclick(); } };
+  const add=c.querySelector('#planAdd'); if(add) add.onclick=e=>{ e.stopPropagation(); openPlannerForm(null,{date:D}); };
   c.querySelectorAll('.planWkGo').forEach(b=>b.onclick=e=>{ e.stopPropagation(); uiGoActiveWorkout(); });
   return c;
+}
+// Day overview sheet: every block of the day with times, links and state (the existing Planner model).
+function openDayOverview(D){
+  const cs=uiLang()==='cs', bl=plannerBlocksOn(D), sum=plannerDaySummary(D);
+  const n=new Date(), now=D===todayStr()?n.getHours()*60+n.getMinutes():null;
+  const inner=el(`<div class="day-ov" id="dayOverview"><h3>${D===todayStr()?uiPlT('todays_plan'):fmtDate(D)}</h3>
+    <div class="sub" style="margin:-8px 0 12px">${sum.planned} ${uiPlT('blocks')} · ${uiPlDur(sum.plannedMin)} ${uiPlT('planned')} · ${sum.completed} ${uiPlT('done')}</div>
+    <div class="plan-list">${bl.length?bl.map(b=>uiPlanRowHtml(b,now)).join(''):`<p class="sub">${uiPlT('empty_d')}</p>`}</div>
+    <div class="grid2" style="margin-top:14px"><button class="btn ghost" id="dovPlanner">${uiIcon('calendar',16)} ${cs?'Otevřít plánovač':'Open planner'}</button><button class="btn" id="dovAdd">＋ ${uiPlT('add')}</button></div>
+  </div>`);
+  const bg=openSheet(inner);
+  inner.querySelectorAll('.plan-row[data-block]').forEach(r=>{ r.setAttribute('role','button'); r.tabIndex=0; r.onclick=()=>{ const b=(S.plannerBlocks||[]).find(x=>x.id===r.dataset.block); bg.remove(); if(b) openPlannerForm(b); }; });
+  inner.querySelectorAll('.planWkGo').forEach(b=>b.onclick=e=>{ e.stopPropagation(); uiGoActiveWorkout(); });
+  inner.querySelector('#dovPlanner').onclick=()=>{ bg.remove(); uiOpenPlanner(D); };
+  inner.querySelector('#dovAdd').onclick=()=>{ bg.remove(); openPlannerForm(null,{date:D}); };
 }
 function uiOpenPlanner(D){ uiPlannerDay=D||todayStr(); view='planner'; render(); window.scrollTo(0,0); }
 function uiGoActiveWorkout(){ closeSheets(); uiWorkoutView={mode:'active'}; fitnessTab='workouts'; view='fitness'; render(); window.scrollTo(0,0); }
@@ -2179,57 +2331,93 @@ function renderPlanner(){
   body.appendChild(tl);
   return wrap;
 }
+// Polish pass: one "Linked" field instead of Task/Goal/Workout selects and the Block/Workout switch. A block
+// is always a Block; linking a workout (template) is what makes it startable. Stored fields are unchanged
+// (taskId, goalId, workoutId, workoutTemplateId): an untouched Linked field keeps every existing link.
+function plannerPrimaryLink(b){
+  if(!b) return null;
+  if(b.workoutTemplateId) return {type:'workout',id:b.workoutTemplateId};
+  if(b.taskId) return {type:'task',id:b.taskId};
+  if(b.goalId) return {type:'goal',id:b.goalId};
+  if(b.workoutId) return {type:'log',id:b.workoutId};
+  return null;
+}
+function plannerLinkOptions(cur){
+  const cs=uiLang()==='cs', out=[];
+  S.tasks.filter(t=>!t.done||(cur&&cur.type==='task'&&cur.id===t.id)).forEach(t=>out.push({type:'task',id:t.id,name:t.title,icon:t.category&&catInfo(t.category,'life')?catIconName(t.category,'life'):'tasks',
+    detail:[t.dueDate?fmtDate(t.dueDate):'',t.priority?uiPrioLabel(t.priority):''].filter(Boolean).join(' · ')}));
+  S.goals.filter(g=>g.status==='Active'||(cur&&cur.type==='goal'&&cur.id===g.id)).forEach(g=>out.push({type:'goal',id:g.id,name:g.title,icon:'target',detail:goalProgress(g)+' %'}));
+  [...(S.workoutTemplates||[])].sort((x,y)=>x.name.localeCompare(y.name,uiLocale())).forEach(t=>{ const sm=templateSummary(t); out.push({type:'workout',id:t.id,name:t.name,icon:'dumbbell',detail:`${sm.exercises} ${cs?'cviků':'exercises'}`}); });
+  if(cur&&cur.type==='workout'&&!templateFind(cur.id)) out.push({type:'workout',id:cur.id,name:uiPlT('tpl_missing'),icon:'dumbbell',detail:'',missing:true});
+  if(cur&&cur.type==='log'){ const w=S.workouts.find(x=>x.id===cur.id); out.push({type:'log',id:cur.id,name:w?w.name:uiPlT('missing'),icon:'dumbbell',detail:w?`${cs?'zapsaný trénink':'logged workout'} · ${fmtDate(w.date)}`:'',missing:!w}); }
+  return out;
+}
+function uiPlLinkItem(o,selected){
+  const grp=o.type==='log'?'workout':o.type;
+  return `<button type="button" class="lk-item lk-${grp}${selected?' is-selected':''}" data-lk-type="${o.type}" data-lk-id="${escapeHtml(o.id)}" role="option" aria-selected="${selected}"><span class="lk-ic" aria-hidden="true">${uiIcon(o.icon,16)}</span><span class="lk-main"><b>${escapeHtml(o.name)}</b>${o.detail?`<small>${escapeHtml(o.detail)}</small>`:''}</span>${selected?`<span class="lk-check" aria-hidden="true">${uiIcon('check',16)}</span>`:''}</button>`;
+}
 function openPlannerForm(existing,preset){
-  const b=existing, p=Object.assign({},preset||{});
+  const b=existing, p=Object.assign({},preset||{}), cs=uiLang()==='cs';
   const today=todayStr(), date=b?b.date:(p.date||today);
   let start=b?b.startTime:p.startTime, end=b?b.endTime:p.endTime;
   if(!start){ const n=new Date(); const m=date===today?Math.min(22*60,(n.getHours()+1)*60):9*60; start=plannerMinToTime(m); end=plannerMinToTime(Math.min(1439,m+60)); }
   const cur=b||p;
-  const taskOpts=S.tasks.filter(t=>!t.done||t.id===cur.taskId).map(t=>`<option value="${t.id}" ${t.id===cur.taskId?'selected':''}>${escapeHtml(t.title)}${t.dueDate?' · '+fmtDate(t.dueDate):''}</option>`).join('');
-  const goalOpts=S.goals.filter(g=>g.status==='Active'||g.id===cur.goalId).map(g=>`<option value="${g.id}" ${g.id===cur.goalId?'selected':''}>${escapeHtml(g.title)}</option>`).join('');
-  const wkOpts=[...S.workouts].sort((a,c)=>(c.date||'').localeCompare(a.date||'')).filter((w,i)=>i<30||w.id===cur.workoutId).map(w=>`<option value="${w.id}" ${w.id===cur.workoutId?'selected':''}>${escapeHtml(w.name)} · ${fmtDate(w.date)}</option>`).join('');
-  const tplId=cur.workoutTemplateId||'', tpls=[...(S.workoutTemplates||[])].sort((x,y)=>x.name.localeCompare(y.name,uiLocale()));
-  const tplOpts=`<option value="">${uiPlT('tpl_pick')}</option>${tplId&&!templateFind(tplId)?`<option value="${escapeHtml(tplId)}" selected>${uiPlT('tpl_missing')}</option>`:''}${tpls.map(t=>`<option value="${t.id}" ${t.id===tplId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}`;
+  let link=plannerPrimaryLink(cur), linkChanged=false;
   const wi=b&&b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+  const GRP=[['task',cs?'Úkoly':'Tasks'],['goal',cs?'Cíle':'Goals'],['workout',cs?'Tréninky':'Workouts']];
   const inner=el(`<div class="pl-form"><h3>${uiPlT(b?'edit':'new')}</h3>
     ${p.taskId&&!b?`<p class="helper-text" style="margin:-6px 0 12px">${uiPlT('plan_hint')}</p>`:''}
-    ${wi?`<div class="pl-wk-head">${wi.tplChip}${wi.stChip}${wi.action?`<button class="btn" id="pb_startwk">▶ ${wi.action}</button>`:''}<p class="helper-text">${uiPlT('wk_hint')}</p></div>`:''}
-    <label>${uiPlT('f_type')}</label><div class="seg pl-type" role="group" aria-label="${uiPlT('f_type')}"><button type="button" class="pill ${tplId?'':'on'}" data-pbtype="general" aria-pressed="${!tplId}">🗓️ ${uiPlT('type_general')}</button><button type="button" class="pill ${tplId?'on':''}" data-pbtype="workout" aria-pressed="${!!tplId}">🏋️ ${uiPlT('type_workout')}</button></div>
-    <div id="pb_tplRow" ${tplId?'':'hidden'}><label for="pb_tpl">${uiPlT('f_tpl')}</label>${tpls.length||tplId?`<select id="pb_tpl">${tplOpts}</select>`:`<p class="helper-text" id="pb_notpl">${uiPlT('no_tpls')}</p><select id="pb_tpl" hidden>${tplOpts}</select>`}<div class="field-error" data-err="workoutTemplateId"></div></div>
+    ${wi?`<div class="pl-wk-head">${wi.tplChip}${wi.stChip}${wi.action?`<button class="btn" id="pb_startwk">${uiIcon('play',16)} ${wi.action}</button>`:''}<p class="helper-text">${uiPlT('wk_hint')}</p></div>`:''}
     <label for="pb_title">${uiPlT('f_title')}</label><input id="pb_title" value="${escapeHtml(cur.title||'')}" autocomplete="off"><div class="field-error" data-err="title"></div>
     <label for="pb_date">${uiPlT('f_date')}</label><input type="date" id="pb_date" value="${date}"><div class="field-error" data-err="date"></div>
     <div class="grid2"><div><label for="pb_start">${uiPlT('f_start')}</label><input type="time" id="pb_start" value="${start}" step="300"><div class="field-error" data-err="startTime"></div></div>
       <div><label for="pb_end">${uiPlT('f_end')}</label><input type="time" id="pb_end" value="${end}" step="300"><div class="field-error" data-err="endTime"></div></div></div>
-    <label for="pb_cat">${uiPlT('f_cat')}</label><select id="pb_cat"><option value="">${uiPlT('none')}</option>${catOptions()}</select>
-    <label for="pb_task">${uiPlT('f_task')}</label><select id="pb_task"><option value="">${uiPlT('none')}</option>${taskOpts}</select>
-    <label for="pb_goal">${uiPlT('f_goal')}</label><select id="pb_goal"><option value="">${uiPlT('none')}</option>${goalOpts}</select>
-    <label for="pb_workout">${uiPlT('f_workout')}</label><select id="pb_workout"><option value="">${uiPlT('none')}</option>${wkOpts}</select>
-    <label for="pb_desc">${uiPlT('f_desc')}</label><textarea id="pb_desc" rows="2">${escapeHtml(cur.description||'')}</textarea>
+    <label for="pb_cat">${uiPlT('f_cat')}</label><select id="pb_cat"><option value="">${uiPlT('none')}</option>${catOptions(cur.category)}</select>
+    <label for="pb_link">${cs?'Propojeno':'Linked'}</label>
+    <div class="lk" id="pb_linkWrap"><button type="button" class="lk-field" id="pb_link" aria-expanded="false" aria-controls="pb_linkList"></button>
+      <div class="lk-panel" id="pb_linkList" hidden>
+        <input type="search" id="pb_linkFilter" placeholder="${cs?'Hledat úkol, cíl nebo trénink…':'Search a task, goal or workout…'}" aria-label="${cs?'Hledat propojení':'Search links'}" autocomplete="off">
+        <div class="lk-legend">${GRP.map(([k,l])=>`<span class="lk-${k}"><i></i>${l}</span>`).join('')}</div>
+        <div class="lk-items" role="listbox" aria-label="${cs?'Propojeno':'Linked'}"></div>
+      </div></div>
+    <p class="helper-text" style="margin:-4px 0 12px">${cs?'Propoj blok s jednou věcí: úkolem, cílem nebo tréninkem (trénink jde pak z bloku rovnou spustit).':'Link the block to one thing: a task, a goal or a workout (a linked workout can be started from the block).'}</p>
     <label for="pb_notes">${uiPlT('f_notes')}</label><textarea id="pb_notes" rows="2">${escapeHtml(cur.notes||'')}</textarea>
     <button class="btn" id="pb_save">${uiPlT('save')}</button>
     ${b?`<button class="btn danger" id="pb_delete" style="margin-top:8px">${uiPlT('del')}</button>`:''}
   </div>`);
   inner.querySelector('#pb_cat').value=cur.category||'';
   inner.querySelectorAll('.field-error').forEach(n=>n.hidden=true);
-  let pbType=tplId?'workout':'general';
-  const tplSel=inner.querySelector('#pb_tpl'), titleIn=inner.querySelector('#pb_title');
-  let autoTitle=tplId&&templateFind(tplId)&&titleIn.value===templateFind(tplId).name;
-  inner.querySelectorAll('[data-pbtype]').forEach(btn=>btn.onclick=()=>{
-    pbType=btn.dataset.pbtype;
-    inner.querySelectorAll('[data-pbtype]').forEach(x=>{ const on=x===btn; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on)); });
-    inner.querySelector('#pb_tplRow').hidden=pbType!=='workout';
-    if(pbType==='workout'&&!inner.querySelector('#pb_cat').value) inner.querySelector('#pb_cat').value='Fitness';
-  });
-  tplSel.onchange=()=>{ const t=templateFind(tplSel.value); if(t&&(!titleIn.value.trim()||autoTitle)){ titleIn.value=t.name; autoTitle=true; } };
+  const titleIn=inner.querySelector('#pb_title'), field=inner.querySelector('#pb_link'), panel=inner.querySelector('#pb_linkList'), items=inner.querySelector('.lk-items'), filt=inner.querySelector('#pb_linkFilter');
+  let autoTitle=false;
+  const opts=()=>plannerLinkOptions(link);
+  const selOpt=()=>link?opts().find(o=>o.type===link.type&&o.id===link.id)||null:null;
+  const drawField=()=>{ const o=selOpt();
+    field.innerHTML=o?`<span class="lk-sel lk-${o.type==='log'?'workout':o.type}"><span class="lk-ic" aria-hidden="true">${uiIcon(o.icon,16)}</span><span class="lk-main"><b>${escapeHtml(o.name)}</b>${o.detail?`<small>${escapeHtml(o.detail)}</small>`:''}</span></span><span class="lk-chev" aria-hidden="true">${uiIcon('chevron',16)}</span>`
+      :`<span class="lk-empty">${uiIcon('link',16)} ${cs?'Bez propojení — vybrat':'Not linked — choose'}</span><span class="lk-chev" aria-hidden="true">${uiIcon('chevron',16)}</span>`; };
+  const drawList=()=>{ const q=filt.value.trim().toLowerCase(), all=opts().filter(o=>!q||o.name.toLowerCase().includes(q));
+    const groups=GRP.map(([k,l])=>{ const xs=all.filter(o=>(o.type==='log'?'workout':o.type)===k); return xs.length?`<div class="lk-group lk-${k}" role="group" aria-label="${l}"><div class="lk-gh"><i></i>${l}</div>${xs.map(o=>uiPlLinkItem(o,!!link&&link.type===o.type&&link.id===o.id)).join('')}</div>`:''; }).join('');
+    items.innerHTML=(link?`<button type="button" class="lk-item lk-clear" data-lk-clear="1">${uiIcon('x',16)} ${cs?'Zrušit propojení':'Remove link'}</button>`:'')+(groups||`<p class="helper-text" style="padding:8px">${cs?'Nic k propojení.':'Nothing to link.'}</p>`);
+    items.querySelectorAll('[data-lk-type]').forEach(btn=>btn.onclick=()=>choose({type:btn.dataset.lkType,id:btn.dataset.lkId}));
+    const cl=items.querySelector('[data-lk-clear]'); if(cl) cl.onclick=()=>choose(null); };
+  const toggle=on=>{ panel.hidden=!on; field.setAttribute('aria-expanded',String(on)); if(on){ filt.value=''; drawList(); } };
+  const choose=l=>{
+    link=l; linkChanged=true;
+    const o=selOpt();
+    if(o&&!o.missing&&(!titleIn.value.trim()||autoTitle)){ titleIn.value=o.name; autoTitle=true; }
+    const cat=inner.querySelector('#pb_cat');
+    if(o&&!cat.value){ if(o.type==='workout') cat.value='Fitness'; else if(o.type==='task'){ const t=S.tasks.find(x=>x.id===o.id); if(t&&t.category&&catInfo(t.category,'life')) cat.value=t.category; } }
+    drawField(); toggle(false); field.focus();
+  };
+  field.onclick=()=>toggle(panel.hidden);
+  filt.oninput=drawList;
   titleIn.addEventListener('input',()=>{ autoTitle=false; });
+  drawField();
   const sw=inner.querySelector('#pb_startwk'); if(sw) sw.onclick=()=>uiPlannerStartWorkout(b);
   inner.querySelector('#pb_save').onclick=()=>{
-    const tplErr=inner.querySelector('[data-err="workoutTemplateId"]');
-    if(pbType==='workout'&&!tplSel.value){ tplErr.hidden=false; tplErr.textContent=uiPlT('e_tpl'); tplSel.setAttribute('aria-invalid','true'); if(!tplSel.hidden) tplSel.focus(); return; }
-    tplErr.hidden=true; tplSel.removeAttribute('aria-invalid');
-    const fields={title:inner.querySelector('#pb_title').value,date:inner.querySelector('#pb_date').value,startTime:inner.querySelector('#pb_start').value,endTime:inner.querySelector('#pb_end').value,workoutTemplateId:pbType==='workout'?tplSel.value:'',
-      category:inner.querySelector('#pb_cat').value,taskId:inner.querySelector('#pb_task').value,goalId:inner.querySelector('#pb_goal').value,workoutId:inner.querySelector('#pb_workout').value,
-      description:inner.querySelector('#pb_desc').value,notes:inner.querySelector('#pb_notes').value};
+    const links=linkChanged?{taskId:link&&link.type==='task'?link.id:'',goalId:link&&link.type==='goal'?link.id:'',workoutId:link&&link.type==='log'?link.id:'',workoutTemplateId:link&&link.type==='workout'?link.id:''}
+      :{taskId:cur.taskId||'',goalId:cur.goalId||'',workoutId:cur.workoutId||'',workoutTemplateId:cur.workoutTemplateId||''};
+    const fields=Object.assign({title:titleIn.value,date:inner.querySelector('#pb_date').value,startTime:inner.querySelector('#pb_start').value,endTime:inner.querySelector('#pb_end').value,
+      category:inner.querySelector('#pb_cat').value,description:b?b.description||'':'',notes:inner.querySelector('#pb_notes').value},links);
     const r=plannerSaveBlock(fields,b);
     const idOf={title:'pb_title',date:'pb_date',startTime:'pb_start',endTime:'pb_end'};
     Object.keys(idOf).forEach(k=>{ const inp=inner.querySelector('#'+idOf[k]), msg=inner.querySelector(`[data-err="${k}"]`); const code=r.errors[k];
@@ -2244,13 +2432,13 @@ function openPlannerForm(existing,preset){
 // ---- Phase 9: Daily Score presentation (reads dailyScore()/S.dailyScores only) ----
 const UI_DS={
   cs:{nothing:'Dnes zatím není co hodnotit',live:'průběžné',excellent:'Výborný den',good:'Dobrý den',solid:'Solidní den',weaker:'Slabší den',tough:'Náročný den',
-    tasks:'Úkoly',habits:'Návyky',nutrition:'Stravování',sleep:'Spánek',fitness:'Fitness',goals:'Cíle',na:'N/A',
-    why:'Proč toto skóre',weights:'Váhy: Úkoly 30 · Návyky 30 · Stravování 15 · Spánek 15 · Fitness 10. Oblasti N/A se nezapočítávají.',
+    tasks:'Úkoly',habits:'Návyky',nutrition:'Stravování',sleep:'Spánek',fitness:'Fitness',goals:'Cíle',na:'nezapočítáno',rest:'Den volna',
+    why:'Proč toto skóre',weights:'Váhy: Úkoly 30 · Návyky 30 · Stravování 15 · Spánek 15 · Fitness 10. Oblasti bez dat a dny volna se nezapočítávají.',
     separate:'Daily Score je oddělené od XP — nemění level, atributy ani odměny.',nothing_d:'Skóre vznikne, jakmile bude pro den něco relevantního: naplánovaný úkol, návyk na dnešek, zapsané jídlo, spánek nebo naplánovaný trénink.',
     snap:'uložený snímek dne'},
   en:{nothing:'Nothing to score yet today',live:'live',excellent:'Excellent day',good:'Good day',solid:'Solid day',weaker:'Weaker day',tough:'Tough day',
-    tasks:'Tasks',habits:'Habits',nutrition:'Nutrition',sleep:'Sleep',fitness:'Fitness',goals:'Goals',na:'N/A',
-    why:'Why this score',weights:'Weights: Tasks 30 · Habits 30 · Nutrition 15 · Sleep 15 · Fitness 10. N/A areas are not counted.',
+    tasks:'Tasks',habits:'Habits',nutrition:'Nutrition',sleep:'Sleep',fitness:'Fitness',goals:'Goals',na:'not counted',rest:'Rest Day',
+    why:'Why this score',weights:'Weights: Tasks 30 · Habits 30 · Nutrition 15 · Sleep 15 · Fitness 10. Areas without data and rest days are not counted.',
     separate:'Daily Score is separate from XP — it never changes level, attributes or rewards.',nothing_d:'A score appears as soon as something is relevant for the day: a planned task, a habit due today, a logged meal, sleep or a planned workout.',
     snap:'stored day snapshot'},
 };
@@ -2262,9 +2450,21 @@ function uiDsRing(score,cls){
   return `<div class="ring ${cls||''}" style="--p:${score==null?0:score};--c:${c}" role="img" aria-label="Daily Score ${score==null?'—':score+' / 100'}"><span>${score==null?'—':score}</span></div>`;
 }
 const UI_DS_AREAS=['tasks','habits','nutrition','sleep','fitness'];
+// Polish pass: every area shows a real daily state instead of "N/A" -- tasks %, habits done/total,
+// kcal, hours, workouts done/planned or Rest Day. Areas without data stay neutral (muted, bar at 0)
+// and are still left out of the score exactly as before.
+function uiDsValue(k,a){
+  const cs=uiLang()==='cs', na=a.score==null;
+  if(k==='tasks') return na?'0 %':a.score+' %';
+  if(k==='habits') return na?'0/0':`${a.done}/${a.total}`;
+  if(k==='nutrition') return na?'0 kcal':(a.parts&&a.parts.calories!=null?`${uiNum(a.calories)} kcal`:a.score+' %');
+  if(k==='sleep') return na?'0 h':`${String(a.hours).replace('.',cs?',':'.')} h`;
+  if(k==='fitness') return a.rest?uiDsT('rest'):`${Math.min(1,a.workouts||0)}/1`;
+  return na?'0':a.score+' %';
+}
 function uiDsAreaRows(r,compact){
   return UI_DS_AREAS.map(k=>{ const a=r.areas[k]; const na=a.score==null;
-    return `<div class="ds-row${na?' is-na':''}" data-area="${k}"><span>${uiDsT(k)}</span><b>${na?uiDsT('na'):a.score+' %'}</b>${compact?'':''}<div class="bar${na?'':' '+(a.score>=75?'is-success':a.score>=50?'':'is-warn')}"><i style="width:${na?0:a.score}%"></i></div></div>`;
+    return `<div class="ds-row${na?' is-na':''}${a.rest?' is-rest':''}" data-area="${k}"><span>${uiDsT(k)}</span><b>${uiDsValue(k,a)}</b><div class="bar${na?'':' '+(a.score>=75?'is-success':a.score>=50?'':'is-warn')}"><i style="width:${na?0:a.score}%"></i></div></div>`;
   }).join('');
 }
 // One plain-language reason per area -- always shown in the detail, including for N/A.
@@ -2293,8 +2493,11 @@ function uiDsReason(k,a){
     return `${String(a.hours).replace('.',cs?',':'.')} h${a.quality?` · ${cs?'kvalita':'quality'} ${a.quality}/5`:''}. ${cs?'Plné skóre v rozmezí 7–9 h.':'Full score between 7 and 9 h.'}`;
   }
   if(k==='fitness'){
-    if(a.score==null) return (cs?'Dnes nebyl naplánovaný trénink — nehodnotí se.':'No workout was planned — not scored.')+(a.bonus?` 💪 ${cs?'Bonus: trénink zapsán (mimo skóre).':'Bonus: workout logged (outside the score).'}`:'');
-    return a.workouts?(cs?'Naplánovaný trénink je splněný.':'The planned workout is done.'):(cs?'Trénink byl naplánovaný v kalendáři, ale není zapsaný.':'A workout was planned in the calendar but not logged.');
+    const bonus=a.bonus?` ${cs?'Bonus: trénink zapsán (mimo skóre).':'Bonus: workout logged (outside the score).'}`:'';
+    if(a.rest) return (cs?'Den volna podle tvých tréninkových dnů — nepočítá se jako nesplněný trénink.':'Rest day by your training days — never counted as a missed workout.')+bonus;
+    if(a.score==null) return (cs?'Dnes nebyl naplánovaný trénink — nehodnotí se. Tréninkové dny nastavíš v Nastavení.':'No workout was planned — not scored. Set your training days in Settings.')+bonus;
+    if(a.workouts) return cs?'Naplánovaný trénink je splněný.':'The planned workout is done.';
+    return a.source==='training'?(cs?'Dnes je tréninkový den — trénink zatím není dokončený.':'Today is a training day — the workout is not finished yet.'):(cs?'Trénink byl naplánovaný v kalendáři, ale není zapsaný.':'A workout was planned in the calendar but not logged.');
   }
   return '';
 }
@@ -2340,8 +2543,8 @@ function uiOpenDailyScore(D){
       <div>${r.score==null?`<div class="hud-name" style="font-size:18px">${uiDsT('nothing')}</div><p class="sub" style="margin-top:6px">${uiDsT('nothing_d')}</p>`:`<div class="hud-name" style="font-size:20px">${uiDsLabel(r.label)}</div><div class="sub num" style="margin-top:2px">${r.score} / 100</div>`}</div>
     </div>
     <div class="section-header" style="margin-top:4px"><h3>${uiDsT('why')}</h3></div>
-    <div class="ds-areas">${UI_DS_AREAS.map(k=>{ const a=r.areas[k]||{score:null}; return `<div class="ds-area${a.score==null?' is-na':''}" data-area="${k}"><div class="between"><b>${uiDsT(k)}</b><span class="chip ${uiDsTone(a.score)}">${a.score==null?uiDsT('na'):a.score+' %'}</span></div>${a.score!=null?`<div class="bar${a.score>=75?' is-success':a.score>=50?'':' is-warn'}" style="margin:8px 0 6px"><i style="width:${a.score}%"></i></div>`:''}<div class="sub">${uiDsReason(k,a)}</div></div>`; }).join('')}
-      ${ms.length?`<div class="ds-area is-na" data-area="goals"><div class="between"><b>${uiDsT('goals')}</b><span class="chip is-muted">${uiDsT('na')}</span></div><div class="sub">🚩 ${ms.map(escapeHtml).join(', ')}</div></div>`:''}
+    <div class="ds-areas">${UI_DS_AREAS.map(k=>{ const a=r.areas[k]||{score:null}; return `<div class="ds-area${a.score==null?' is-na':''}" data-area="${k}"><div class="between"><b>${uiDsT(k)}</b><span class="ds-chips"><span class="chip ${uiDsTone(a.score)}">${uiDsValue(k,a)}</span>${a.score==null?`<span class="chip is-muted">${uiDsT('na')}</span>`:k==='tasks'?'':`<span class="chip ${uiDsTone(a.score)}">${a.score} %</span>`}</span></div>${a.score!=null?`<div class="bar${a.score>=75?' is-success':a.score>=50?'':' is-warn'}" style="margin:8px 0 6px"><i style="width:${a.score}%"></i></div>`:''}<div class="sub">${uiDsReason(k,a)}</div></div>`; }).join('')}
+      ${ms.length?`<div class="ds-area is-na" data-area="goals"><div class="between"><b>${uiDsT('goals')}</b><span class="chip is-muted">${uiDsT('na')}</span></div><div class="sub">${uiIcon('flag',14)} ${ms.map(escapeHtml).join(', ')}</div></div>`:''}
     </div>
     <p class="helper-text" style="margin:12px 0 0">${uiDsT('weights')}</p>
     <p class="helper-text" style="margin:4px 0 0">${uiDsT('separate')}</p>
@@ -2395,7 +2598,7 @@ const UI_I18N={
     cost:'cena {n}', requires:'vyžaduje: {s}', badges:'Odznaky', recent_activity:'Nedávná aktivita', no_activity:'Zatím žádná RPG aktivita.',
     streaks:'Streaky', unlocked_on:'odemčeno {d}', spend_point:'Přidat 1 bod do {k}',
     // quests
-    quests:'Výpravy', daily:'Denní', weekly:'Týdenní', goal_quests:'Cílové', challenges:'Výzvy', resets_today:'končí dnes o půlnoci', resets_week:'končí {d}',
+    daily_quests:'Denní výpravy', quests:'Výpravy', daily:'Denní', weekly:'Týdenní', goal_quests:'Cílové', challenges:'Výzvy', resets_today:'končí dnes o půlnoci', resets_week:'končí {d}',
     completed_q:'Splněno', quest_goal_note:'Cílové výpravy tvoří tvé aktivní cíle — postup počítá sám cíl.', no_challenges:'Výzvy zatím nejsou k dispozici.',
     reward:'odměna',
     // more
@@ -2443,7 +2646,7 @@ const UI_I18N={
     skill_tree:'Skill Tree', sp_available:'{n} skill points available', unlock:'Unlock', unlocked:'Unlocked', available:'Available', locked:'Locked',
     cost:'cost {n}', requires:'requires: {s}', badges:'Badges', recent_activity:'Recent activity', no_activity:'No RPG activity yet.',
     streaks:'Streaks', unlocked_on:'unlocked {d}', spend_point:'Spend 1 point on {k}',
-    quests:'Quests', daily:'Daily', weekly:'Weekly', goal_quests:'Goal', challenges:'Challenges', resets_today:'ends tonight at midnight', resets_week:'ends {d}',
+    daily_quests:'Daily quests', quests:'Quests', daily:'Daily', weekly:'Weekly', goal_quests:'Goal', challenges:'Challenges', resets_today:'ends tonight at midnight', resets_week:'ends {d}',
     completed_q:'Completed', quest_goal_note:'Goal quests are your active goals — the goal itself tracks progress.', no_challenges:'Challenges are not available yet.',
     reward:'reward',
     more:'More', productivity:'Productivity', body:'Body', money:'Money', life:'Life', system:'System',
@@ -2486,7 +2689,7 @@ const UI_PHRASES_CS={
   // labels
   'Title':'Název','Description':'Popis','Category':'Kategorie','Priority':'Priorita','Due date':'Termín','Goal':'Cíl','XP reward':'Odměna XP','XP reward on completion':'Odměna XP za splnění',
   'Name':'Název','Type':'Typ','Frequency':'Frekvence','Target':'Cíl','Weekdays':'Dny v týdnu','Reminder':'Připomínka','Reminder time (optional)':'Čas připomínky (nepovinné)','Active':'Aktivní',
-  'Status':'Stav','Progress mode':'Režim postupu','Manual progress (%)':'Ruční postup (%)','Target date':'Cílové datum','Amount':'Částka','Date':'Datum','Payment method':'Platební metoda',
+  'Status':'Stav','Progress mode':'Režim postupu','Automatic':'Automaticky','Manual progress (%)':'Ruční postup (%)','Target date':'Cílové datum','Amount':'Částka','Date':'Datum','Payment method':'Platební metoda',
   'Tags (comma separated)':'Štítky (oddělené čárkou)','Recurring':'Opakování','Monthly limit':'Měsíční limit','Period':'Období','Duration (min)':'Délka (min)','Notes':'Poznámky',
   'Servings':'Porce','Calories':'Kalorie','Calories (per serving)':'Kalorie (na porci)','Protein (g)':'Bílkoviny (g)','Carbs (g)':'Sacharidy (g)','Fat (g)':'Tuky (g)','Use saved food/recipe':'Použít uložené jídlo/recept',
   'Body':'Text','Mood':'Nálada','Rating (1-10)':'Hodnocení (1–10)',"What's on your mind?":'Co máš na mysli?','Brand':'Značka','Model':'Model','Year':'Rok','Mileage (km)':'Nájezd (km)','Mileage':'Nájezd',
@@ -2500,7 +2703,8 @@ const UI_PHRASES_CS={
   'daily':'denně','weekly':'týdně','monthly':'měsíčně','weekdays':'vybrané dny','custom':'vlastní','Good (build)':'Dobrý (budovat)','Bad (avoid)':'Špatný (vyhýbat se)',
   'Paused':'Pozastavený','Completed':'Splněno','Archived':'Archivovaný','Auto':'Automaticky','Manual':'Ručně','auto':'automaticky','manual':'ručně','Yes':'Ano','No':'Ne',
   'Breakfast':'Snídaně','Lunch':'Oběd','Dinner':'Večeře','Snack':'Svačina','Oil Change':'Výměna oleje','Tires':'Pneumatiky','Inspection / STK':'Technická kontrola / STK',
-  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Učení','Finance':'Finance','Social':'Sociální',
+  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Učení','Finance':'Finance','Social':'Sociální','Habit':'Návyky','School':'Škola','Ideas':'Nápady',
+  'Importance':'Důležitost','Strength':'Síla','Intelligence':'Inteligence','Discipline':'Disciplína','Vitality':'Vitalita','Wisdom':'Moudrost','Focus':'Soustředění',
   'Home':'Domov','Food':'Jídlo','Transport':'Doprava','Shopping':'Nákupy','Bills':'Účty','Entertainment':'Zábava','Salary':'Mzda','Card':'Karta','Cash':'Hotovost','Bank':'Banka',
   'general':'obecný','resting':'klidový','workout':'při tréninku','Inactive':'Neaktivní','Productivity':'Produktivita','Mindfulness':'Mindfulness',
   // statistics / health
@@ -2539,7 +2743,7 @@ const UI_PHRASES_CS={
   'e.g. Run a 10K':'např. Uběhnout 10 km','e.g. Run first 5K':'např. První 5 km','e.g. Salary':'např. Mzda','e.g. recipe, travel':'např. recept, cestování',
   'e.g. work, gratitude':'např. práce, vděčnost','e.g. work, trip':'např. práce, výlet',
   // settings: dashboard widgets + notification types
-  'Reminders':'Připomínky','Level Progress':'Level a postup',"Today's Tasks":'Dnešní úkoly','Nutrition Today':'Výživa dnes',
+  'Reminders':'Připomínky','Level Progress':'Level a postup',"Today's Plan":'Dnešní plán','Daily Quests':'Denní výpravy',"Today's Tasks":'Dnešní úkoly','Nutrition Today':'Výživa dnes',
   'Task reminders':'Připomínky úkolů','Event reminders':'Připomínky událostí','Habit reminders':'Připomínky návyků','Goal reminders':'Připomínky cílů',
   'Subscription reminders':'Připomínky předplatného','Car reminders':'Připomínky auta','Quest reminders':'Připomínky výprav',
   'Achievement notifications':'Oznámení o úspěších','Level-up notifications':'Oznámení o levelu',
@@ -2579,8 +2783,128 @@ const UI_ICONS={
   chevron:'<path d="m9 18 6-6-6-6"/>',
   edit:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
   trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+  // Polish pass: one minimalist line-icon set for every life area (replaces the Apple emoji in the UI).
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  dumbbell:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+  wallet:'<path d="M4 8V7a2 2 0 0 1 2-2h11v3"/><rect x="4" y="8" width="16.5" height="11" rx="2.5"/><path d="M16 13.5h.01"/>',
+  apple:'<path d="M12 7.6c-1.3-1-3-1.4-4.6-.8C5 7.7 4 10.4 4.8 13.6c.8 3.3 3 6.4 5.2 6.4.8 0 1.3-.4 2-.4s1.2.4 2 .4c2.2 0 4.4-3.1 5.2-6.4.8-3.2-.2-5.9-2.6-6.8-1.6-.6-3.3-.2-4.6.8Z"/><path d="M12 7.6c0-2 1-3.6 3-4.3"/>',
+  target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12h.01"/>',
+  book:'<path d="M4.5 18.5v-13A1.5 1.5 0 0 1 6 4h13.5v14H6a1.5 1.5 0 0 0 0 3h13.5"/>',
+  journal:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9.5 3.5v7l2-1.5 2 1.5v-7"/>',
+  note:'<path d="M6 3.5h8.5L19 8v11.5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z"/><path d="M14 3.5V8h5M8.5 12.5h7M8.5 16h5"/>',
+  quest:'<path d="M7 4h11a2 2 0 0 1 0 4h-1v10a2 2 0 0 1-2 2H6a2 2 0 0 1 0-4h1V4Z"/><path d="M10.5 9h3.5M10.5 12.5h3.5"/>',
+  flag:'<path d="M5.5 21V4"/><path d="M5.5 4.5h11l-2 4 2 4h-11"/>',
+  chart:'<path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/>',
+  calendar:'<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  heart:'<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z"/>',
+  car:'<path d="M4.5 16.5v-4l2-5.5h11l2 5.5v4Z"/><path d="M4.5 12.5h15M6.5 16.5V19M17.5 16.5V19M8 14.5h.01M16 14.5h.01"/>',
+  card:'<rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M3.5 10h17M7 15h3"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.3-4.3"/>',
+  drop:'<path d="M12 3.5s6 6.3 6 10.5a6 6 0 0 1-12 0c0-4.2 6-10.5 6-10.5Z"/>',
+  fuel:'<path d="M5 20V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20M4 20h11M5 10h9"/><path d="M14 8.5h2a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 0 3 0V9l-2.5-2.5"/>',
+  briefcase:'<rect x="3.5" y="7" width="17" height="12.5" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17"/>',
+  users:'<circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.7-3 2.8-4.6 5.5-4.6s4.8 1.6 5.5 4.6"/><path d="M15.5 6.3a3 3 0 0 1 0 5.4M17 14.6c1.8.5 3 2 3.5 4.4"/>',
+  sparkle:'<path d="M11 3.5c.8 4.4 2.1 5.7 6.5 6.5-4.4.8-5.7 2.1-6.5 6.5-.8-4.4-2.1-5.7-6.5-6.5 4.4-.8 5.7-2.1 6.5-6.5Z"/><path d="M18.5 15.5v5M16 18h5"/>',
+  star:'<path d="m12 3.8 2.5 5.1 5.6.8-4 4 .9 5.6-5-2.7-5 2.7.9-5.6-4-4 5.6-.8L12 3.8Z"/>',
+  trophy:'<path d="M8 4.5h8v5a4 4 0 0 1-8 0v-5Z"/><path d="M8 6H5a3 3 0 0 0 3 4.5M16 6h3a3 3 0 0 1-3 4.5M12 13.5V17M8.5 20h7M9.5 17h5"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  bolt:'<path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12L13 3Z"/>',
+  up:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  utensils:'<path d="M7 3.5V21M4.5 3.5v5a2.5 2.5 0 0 0 5 0v-5M17 21V3.5c-2 1-3.5 3.5-3.5 7 0 1.6 1 2.5 3.5 2.5"/>',
+  income:'<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+  expense:'<path d="M12 20V9M7 13.5l5-5 5 5M5 4h14"/>',
+  bell:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  leaf:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="m5 19 8-8"/>',
+  music:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  code:'<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+  globe:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5Z"/>',
+  brush:'<path d="m14.5 4.5 5 5L11 18l-5-5 8.5-8.5Z"/><path d="M6 13c-2 1-2.5 3-2.5 6.5 3.5 0 5.5-.5 6.5-2.5"/>',
+  cart:'<path d="M3.5 4.5h2.5l2 11h10l2-8H7"/><path d="M9.5 19h.01M16.5 19h.01"/>',
+  pin:'<path d="M9 4h6l-1 5 3 3H7l3-3-1-5ZM12 12v8"/>',
+  activity:'<path d="M3.5 12h4l2.5-6 4 12 2.5-6h4"/>',
+  scale:'<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 9.5a5 5 0 0 1 7 0L13 12"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  camera:'<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="13" r="3.5"/>',
+  play:'<path d="M8 5.5v13l10-6.5-10-6.5Z"/>',
+  download:'<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+  upload:'<path d="M12 16V5M7 9.5l5-5 5 5M5 20h14"/>',
+  tag:'<path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.5 1.5 0 0 1 0 2.1l-6.4 6.4a1.5 1.5 0 0 1-2.1 0l-8.5-8.1Z"/><path d="M8 8h.01"/>',
+  archive:'<rect x="3.5" y="4" width="17" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5M10 12.5h4"/>',
+  mood1:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M8.5 16.5c2-2 5-2 7 0"/>',
+  mood2:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 16c2-1 4-1 6 0"/>',
+  mood3:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 15h6"/>',
+  mood4:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 14.5c1.7 1.5 4.3 1.5 6 0"/>',
+  mood5:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M8.5 14c2 3 5 3 7 0"/>',
 };
+UI_ICONS.flame=UI_ICONS.habits; UI_ICONS.shield=UI_ICONS.character; UI_ICONS.gear=UI_ICONS.settings;
 function uiIcon(name,size){ return `<svg viewBox="0 0 24 24" width="${size||22}" height="${size||22}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${UI_ICONS[name]||''}</svg>`; }
+// The emoji the app used as decoration, mapped onto the line-icon set. uiGlyph() is used wherever an
+// icon used to be an emoji (empty states, tiles, chips); an unknown glyph falls back to a neutral dot.
+const UI_EMOJI_ICON={'🌤️':'sun','🔥':'flame','🎯':'target','✅':'check','🎉':'star','🗓️':'clock','📅':'calendar','🔎':'search','📝':'note','📔':'journal',
+  '💰':'wallet','💸':'expense','💵':'income','🏋️':'dumbbell','💪':'dumbbell','🍎':'apple','🍽️':'utensils','❤️':'heart','😴':'moon','💤':'moon','🚗':'car','💳':'card',
+  '📜':'quest','📊':'chart','🧙':'shield','⚙️':'settings','🏆':'trophy','🔒':'lock','🌟':'star','⭐':'star','🚩':'flag','⏳':'calendar','💧':'drop','⛽':'fuel',
+  '📚':'book','💼':'briefcase','✨':'sparkle','⬆️':'up','👟':'activity','⚖️':'scale','🏅':'trophy','📋':'note','📌':'pin','🔔':'bell','⏰':'clock','🛢️':'car',
+  '🛞':'car','🛡️':'shield','🧾':'note','🏦':'wallet','🐖':'wallet','🐷':'wallet','📈':'chart','🔁':'clock','🏷️':'tag','📆':'calendar','🏠':'home','🥗':'apple','🎁':'star','❓':'search','✏️':'edit','⚔️':'shield','⬇️':'download','⬇':'download',
+  '😞':'mood1','😣':'mood1','😕':'mood2','😐':'mood3','🙂':'mood4','😄':'mood5','🤩':'mood5','🔧':'wrench','📖':'book','📍':'pin','⚡':'bolt','🤷':'search',
+  '🛍️':'cart','🎬':'play','📦':'archive','🍳':'utensils','🥤':'drop','🏃':'activity','🧘':'heart','🎓':'book','📱':'card','🌙':'moon','💡':'sparkle','🎮':'play'};
+UI_ICONS.wrench='<path d="M14.7 6.3a4 4 0 0 1 5 5l-2.3-.6-1.4 1.4-8.6 8.6a2 2 0 0 1-2.8-2.8l8.6-8.6 1.4-1.4-.6-2.3Z"/>';
+const UI_EMOJI_NORM=Object.fromEntries(Object.entries(UI_EMOJI_ICON).map(([k,v])=>[k.replace(/\uFE0F/g,''),v]));
+function uiGlyph(g,size){ const k=UI_EMOJI_NORM[String(g).replace(/\uFE0F/g,'')]||(UI_ICONS[g]?g:null); return k?uiIcon(k,size):uiIcon('sparkle',size); }
+// Polish pass: one pass over freshly built UI that swaps the app's decorative emoji for the line-icon set
+// (so every module shares one icon style without re-writing each template). User-written text (titles,
+// note/journal bodies, inputs) is left exactly as typed; <option>s cannot hold icons, so emoji are dropped there.
+const UI_EMOJI_RX=(()=>{ const ks=Object.keys(UI_EMOJI_ICON).map(k=>k.replace(/\uFE0F/g,'')).filter((k,i,a)=>a.indexOf(k)===i).sort((a,b)=>b.length-a.length);
+  return new RegExp('('+ks.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\uFE0F?','gu'); })();
+const UI_EMOJI_SKIP='input,textarea,script,style,svg,.note-body,.item-title,.goal-title,.hud-name,.q-title,.plan-t,.lk-main,.cat-main,h2,.av-name,[data-user-text]';
+function uiIconize(root){
+  if(!root) return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT), hits=[];
+  let n; while((n=w.nextNode())){ UI_EMOJI_RX.lastIndex=0; if(UI_EMOJI_RX.test(n.nodeValue)) hits.push(n); }
+  hits.forEach(t=>{
+    const par=t.parentElement; if(!par) return;
+    if(par.tagName==='OPTION'){ t.nodeValue=t.nodeValue.replace(UI_EMOJI_RX,'').replace(/^\s+/,''); return; }
+    // text typed by the user sits directly in these elements; a decorative span nested in them is converted
+    if(par.matches(UI_EMOJI_SKIP)||par.closest('input,textarea,script,style,svg,.note-body,[data-user-text]')) return;
+    const frag=document.createDocumentFragment(); let last=0; const v=t.nodeValue; UI_EMOJI_RX.lastIndex=0; let m;
+    while((m=UI_EMOJI_RX.exec(v))){ if(m.index>last) frag.appendChild(document.createTextNode(v.slice(last,m.index)));
+      const sp=document.createElement('span'); sp.className='gi'; sp.setAttribute('aria-hidden','true'); sp.innerHTML=uiGlyph(m[1],16); frag.appendChild(sp); last=m.index+m[0].length; }
+    if(last<v.length) frag.appendChild(document.createTextNode(v.slice(last)));
+    t.replaceWith(frag);
+  });
+}
+
+/* ---- Polish pass: profile avatars. Minimal flat RPG portraits (inline SVG, no ids, no emoji) or the
+   user's own square photo (S.profile.photo, a small JPEG data URL cropped in the app). S.profile.avatar
+   is 'svg:<id>' | 'photo'; an older emoji value is shown as the matching portrait (never rewritten). ---- */
+const AVATARS={
+  mage:{c:'#7c5cff',hat:'<path d="M18 26 32 4l14 22Z" fill="#0b0d12" fill-opacity=".38"/><path d="M15 26.5h34" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M33 13l1.5 3 3 .5-2.2 2 .6 3-2.9-1.5" fill="#fff" fill-opacity=".85"/>'},
+  knight:{c:'#64748b',hat:'<path d="M21 34V25a11 11 0 0 1 22 0v9Z" fill="#0b0d12" fill-opacity=".4"/><path d="M24 29.5h16" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M32 14v6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'},
+  ranger:{c:'#16a34a',hat:'<path d="M19 44c0-17 5.5-26 13-26s13 9 13 26l-4-1c0-10-3-18-9-18s-9 8-9 18Z" fill="#0b0d12" fill-opacity=".34"/><path d="M41 19c4-6 8-8 12-9-1 5-5 9-10 11" fill="#fff" fill-opacity=".85"/>'},
+  rogue:{c:'#334155',hat:'<path d="M19 44c0-17 5.5-26 13-26s13 9 13 26l-4-1c0-10-3-18-9-18s-9 8-9 18Z" fill="#0b0d12" fill-opacity=".4"/><path d="M23 29.5h18" stroke="#0b0d12" stroke-opacity=".7" stroke-width="4" stroke-linecap="round"/>'},
+  paladin:{c:'#c28a00',hat:'<path d="M21 34V25a11 11 0 0 1 22 0v9Z" fill="#fff" fill-opacity=".35"/><path d="M32 16v12M27 21h10" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'},
+  druid:{c:'#0d9488',hat:'<path d="M22 24c-3-4-1-8 3-9 1 4-.5 7-3 9ZM32 20c-2-5 0-8.5 0-10 2.5 1.5 3 6 0 10ZM42 24c3-4 1-8-3-9-1 4 .5 7 3 9Z" fill="#fff" fill-opacity=".9"/><path d="M22 25.5c6-3 14-3 20 0" stroke="#0b0d12" stroke-opacity=".35" stroke-width="2.4" fill="none" stroke-linecap="round"/>'},
+  monk:{c:'#ea580c',hat:'<path d="M22.5 26.5h19" stroke="#0b0d12" stroke-opacity=".45" stroke-width="3.2" stroke-linecap="round"/><path d="M41 27c3 1 4 4 3.5 7M41 27c1.5 2.5 1 5-1 7" stroke="#0b0d12" stroke-opacity=".45" stroke-width="2" fill="none" stroke-linecap="round"/>'},
+  bard:{c:'#db2777',hat:'<path d="M20 25c2-6 7-8.5 13-8.5s9.5 3 10.5 8.5Z" fill="#0b0d12" fill-opacity=".38"/><path d="M40 19c3-6 8-9 13-10-1 6-5 10-11 12" fill="#fff" fill-opacity=".9"/>'},
+};
+const AVATAR_LEGACY={'🧙':'mage','🦸':'paladin','🥷':'rogue','🧝':'ranger','🤖':'knight','🐱':'bard','🐺':'druid','🦉':'monk'};
+const AVATAR_LABELS={mage:['Mág','Mage'],knight:['Rytíř','Knight'],ranger:['Hraničář','Ranger'],rogue:['Zloděj','Rogue'],paladin:['Paladin','Paladin'],druid:['Druid','Druid'],monk:['Mnich','Monk'],bard:['Bard','Bard']};
+function avatarId(p){
+  const a=(p&&p.avatar)||'';
+  if(a==='photo'&&p.photo) return 'photo';
+  if(a.startsWith('svg:')&&AVATARS[a.slice(4)]) return a.slice(4);
+  return AVATAR_LEGACY[a]||'mage';
+}
+function uiAvatarSvg(id){
+  const a=AVATARS[id]||AVATARS.mage;
+  return `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true"><rect width="64" height="64" fill="${a.c}"/><path d="M12 64c1-12 9-19 20-19s19 7 20 19Z" fill="#fff" fill-opacity=".88"/><circle cx="32" cy="31" r="10" fill="#fff" fill-opacity=".95"/>${a.hat}</svg>`;
+}
+// Inner markup for any .avatar box: the user's photo or the chosen portrait.
+function uiAvatarInner(p){
+  const id=avatarId(p||S.profile);
+  return id==='photo'?`<img src="${escapeHtml((p||S.profile).photo)}" alt="">`:uiAvatarSvg(id);
+}
 // Empty state: headline + explanation + optional CTA (wired by the caller via .emptyCta).
 function uiEmpty(ic,title,text,cta){
   return `<div class="empty"><div class="e" aria-hidden="true">${ic}</div><div class="empty-title">${title}</div>${text?`<div class="empty-text">${text}</div>`:''}${cta?`<button class="btn sm emptyCta">${cta}</button>`:''}</div>`;
@@ -2590,7 +2914,7 @@ function uiRefocus(id){ const n=document.getElementById(id); if(!n) return; n.fo
 // Czech rendering of reminder strings built by getActiveReminders()/carReminders() (numbers unchanged).
 function uiReminderText(t,r){
   if(uiLang()!=='cs') return t;
-  if(r&&r.prefType==='quest'){ const q=[...DAILY_QUESTS,...WEEKLY_QUESTS].find(x=>x.id===r.id); if(q) return '📜 Výprava: '+uiQuestTitle(q); }
+  if(r&&r.prefType==='quest'){ const x=questBoardFor('daily',false).find(i=>i.q.id===r.id); if(x) return 'Výprava: '+questTitle(x.q,x.p); }
   return t.replace(/^⏰ Overdue: /,'⏰ Po termínu: ')
     .replace(/^📅 Today: (.*?)(?: at (.+))?$/,(_,a,c)=>'📅 Dnes: '+a+(c?' v '+c:''))
     .replace(/^📅 (.*) in (\d+)d$/,'📅 $1 za $2 d')
@@ -2621,7 +2945,7 @@ function renderHome(){
   const builders={
     reminders: ()=>{
       if(W.reminders===false) return null;
-      const items=getActiveReminders().slice(0,8);
+      const items=getActiveReminders().filter(r=>r.prefType!=='quest').slice(0,8); // quests have their own widget
       if(!items.length) return null;
       const rc=el(`<div class="reminder-strip" id="hRem" role="list" aria-label="${uiT('reminders')}"></div>`);
       const rl=rc;
@@ -2642,12 +2966,23 @@ function renderHome(){
       f.appendChild(progressCard()); f.appendChild(uiTodayCard());
       const box=el(`<div class="hud-wrap"></div>`); box.appendChild(f); return box;
     },
+    planner: ()=>{
+      if(W.planner===false) return null;
+      return uiTodaysPlanCard();
+    },
+    quests: ()=>{
+      if(W.quests===false) return null;
+      const board=questBoardFor('daily');
+      if(!board.length) return null;
+      const doneN=board.filter(x=>questDone(x.q,'daily')).length;
+      const qc=el(`<section>${sectionHead(uiT('daily_quests'),`${doneN}/${board.length}`,'quests')}<div class="card quest-list" id="hQuests">${board.map(x=>uiQuestRow(x.q,x.p,'daily')).join('')}</div></section>`);
+      return qc;
+    },
     tasks: ()=>{
       if(W.tasks===false) return null;
       const todayTasks=S.tasks.filter(t=>!t.done && (t.dueDate===todayStr()||!t.dueDate)).slice(0,5);
       const tc=el(`<section>${sectionHead(uiT('todays_tasks'),uiT('see_all'),'tasks')}<div class="list" id="hTasks"></div></section>`);
       const tl=tc.querySelector('#hTasks');
-      const plan=uiTodaysPlanCard(); if(plan) tl.appendChild(plan); // Phase 10
       if(!todayTasks.length){ const e=el(`<div class="card">${uiEmpty('🌤️',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openForm('task'); tl.appendChild(e); }
       todayTasks.forEach(t=>tl.appendChild(taskItem(t)));
       return tc;
@@ -2797,16 +3132,15 @@ function uiDueLabel(d){
   return fmtDate(d);
 }
 function taskItem(t){
-  const catInfo=CATS[t.category]||{ic:'📌'};
   // Resolved by ID — a deleted goal simply yields null and the chip is omitted (no crash).
   const linkedGoal=t.goalId?S.goals.find(g=>g.id===t.goalId):null;
-  const shownXp=t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10); // display of the same rule the check handler uses
+  const shownXp=taskXp(t); // Polish pass: XP follows priority (same rule the check handler uses)
   const overdue=!t.done&&t.dueDate&&t.dueDate<todayStr();
   const planned=uiTaskNextBlock(t); // Phase 10: earliest planner block for this task from today on
   const meta=[
     t.priority?`<span class="chip ${t.priority==='Urgent'?'is-danger':t.priority==='High'?'is-warn':'is-muted'}">${uiPrioLabel(t.priority)}</span>`:'',
     t.dueDate?`<span class="${overdue?'chip is-danger':''}">📅 ${uiDueLabel(t.dueDate)}</span>`:'',
-    t.category?`<span>${escapeHtml(t.category)}</span>`:'',
+    t.category?`<span class="cat-tag" style="--cc:${catColor(t.category,'life')}">${uiIcon(catIconName(t.category,'life'),13)}${escapeHtml(catLabel(t.category,'life'))}</span>`:'',
     linkedGoal?`<button class="chip linkGoal">🎯 ${escapeHtml(linkedGoal.title)}</button>`:'',
     planned?`<button class="chip planLink" aria-label="${uiPlT('scheduled')}: ${fmtDate(planned.date)} ${planned.startTime}">🗓️ ${planned.date===todayStr()?'':fmtDate(planned.date)+' '}${planned.startTime}</button>`:'',
     t.done?'':`<span class="xp-tag">+${shownXp} XP</span>`,
@@ -2814,7 +3148,7 @@ function taskItem(t){
   const it=el(`<div class="item task-item" data-prio="${t.done?'':escapeHtml(t.priority||'')}">
     <button class="check ${t.done?'done':''}" aria-label="${uiT(t.done?'reopen_task':'complete_task')}: ${escapeHtml(t.title)}" aria-pressed="${t.done?'true':'false'}">${t.done?'✓':''}</button>
     <div style="flex:1;min-width:0">
-      <div class="item-title ${t.done?'done':''}">${catInfo.ic} ${escapeHtml(t.title)}</div>
+      <div class="item-title ${t.done?'done':''}">${escapeHtml(t.title)}</div>
       ${meta?`<div class="item-meta meta-row">${meta}</div>`:''}
     </div>
     <div class="item-actions">
@@ -2825,11 +3159,9 @@ function taskItem(t){
   it.querySelector('.check').onclick=()=>{
     t.done=!t.done;
     if(t.done){
-      const xp=t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10);
-      const attrKey=(CATS[t.category]||{}).a;
+      // Polish pass: XP from priority, attributes from the category's profile (uncategorized = discipline).
       const taskKey=`task:${t.id}:${todayStr()}`;
-      const granted=grantXp(xp,'Task: '+t.title,attrKey,taskKey);
-      if(granted) applyCategoryAttrSkillBonus(attrKey,taskKey); // Phase 5 skill effect, same idempotent key
+      grantXp(taskXp(t),'Task: '+t.title,catProfile(t.category)||'discipline',taskKey);
     }
     scheduleSave();
     // Phase 8B: a just-completed task stays on screen in its completed state for a moment
@@ -2858,22 +3190,22 @@ function openTaskEditForm(t){
   const inner=el(`<div><h3>Edit Task</h3>
     <label>Title</label><input id="f_title" value="${escapeHtml(t.title)}">
     <label>Description</label><textarea id="f_desc" rows="2">${escapeHtml(t.description||'')}</textarea>
-    <label>Category</label><select id="f_cat"><option value="">None</option>${catOptions()}</select>
+    <label>Category</label><select id="f_cat"><option value="">None</option>${catOptions(t.category)}</select>
     <label>Priority</label><select id="f_pri"><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select>
+    ${uiXpHint('f_xpHint')}
     <label>Due date</label><input type="date" id="f_due" value="${t.dueDate||''}">
     <label>Goal</label><select id="f_goal">${goalOptions(t.goalId)}</select>
-    <label>XP reward</label><input type="number" id="f_xp" min="0" value="${t.xpReward!=null?t.xpReward:(t.priority==='High'||t.priority==='Urgent'?30:10)}">
     <button class="btn" id="f_save">Save Changes</button>
     ${uiTaskPlanBlock(t)}
   </div>`);
   inner.querySelector('#f_cat').value=t.category||'';
   inner.querySelector('#f_pri').value=t.priority||'Medium';
+  uiBindXpHint(inner,'f_pri','f_xpHint',p=>taskXp({priority:p}),t.done);
   inner.querySelector('#f_save').onclick=()=>{
     const title=inner.querySelector('#f_title').value.trim();
     if(!title){toast('Title required');return;}
     t.title=title; t.description=inner.querySelector('#f_desc').value; t.category=inner.querySelector('#f_cat').value; t.priority=inner.querySelector('#f_pri').value;
     t.dueDate=inner.querySelector('#f_due').value; t.goalId=inner.querySelector('#f_goal').value;
-    t.xpReward=parseFloat(inner.querySelector('#f_xp').value)||0;
     scheduleSave();closeSheets();render();toast('Task updated');
   };
   // Phase 10: schedule this task in the planner (creates a linked block; the task is not changed).
@@ -2886,6 +3218,9 @@ function openTaskEditForm(t){
    h.brokenDates or call grantXp for a habit, so every UI entry point (Home widget, Habits
    list, Habit detail) shares the exact same idempotent logic instead of re-implementing it
    (that divergence was the root cause of the Phase 1 XP-duplication bug). */
+// Polish pass: a habit grows the attributes of its category's profile (old attrReward as fallback).
+function uiHabitIcon(h,size){ return uiIcon(h.category&&catInfo(h.category,'life')?catIconName(h.category,'life'):'flame',size); }
+function habitAttrProfile(h){ return catProfile(h.category)||(ATTRS[h.attrReward]?h.attrReward:'discipline'); }
 function toggleHabitDay(h){
   // good habit, target<=1 (boolean per-day completion)
   h.completions=h.completions||[];
@@ -2894,10 +3229,8 @@ function toggleHabitDay(h){
   if(idx>=0){ h.completions.splice(idx,1); } // uncheck: never deducts XP already granted
   else {
     h.completions.push(date);
-    const attrKey=(CATS[h.category]||{a:h.attrReward||'DEX'}).a;
     const key=`habit:${h.id}:${date}`;
-    const granted=grantXp(h.xpReward||15,'Habit: '+h.name,attrKey,key);
-    if(granted){ applyCategoryAttrSkillBonus(attrKey,key); applyHabitStreakSkillBonus(h); }
+    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
   }
   scheduleSave();render();
 }
@@ -2909,10 +3242,8 @@ function incrementHabitToday(h){
   if(count>=(h.target||1)) return; // already at target — extra taps are no-ops, not extra XP
   h.completions.push(date);
   if(count+1>=(h.target||1)){
-    const attrKey=(CATS[h.category]||{a:h.attrReward||'DEX'}).a;
     const key=`habit:${h.id}:${date}`;
-    const granted=grantXp(h.xpReward||15,'Habit: '+h.name,attrKey,key);
-    if(granted){ applyCategoryAttrSkillBonus(attrKey,key); applyHabitStreakSkillBonus(h); }
+    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
   }
   scheduleSave();render();
 }
@@ -2929,10 +3260,8 @@ function markHabitClean(h,dateStr){
   const bi=h.brokenDates.indexOf(dateStr); if(bi>=0) h.brokenDates.splice(bi,1);
   if(!h.completions.includes(dateStr)){
     h.completions.push(dateStr);
-    const attrKey=(CATS[h.category]||{a:h.attrReward||'DEX'}).a;
     const key=`habit:${h.id}:${dateStr}`;
-    const granted=grantXp(h.xpReward||15,'Habit: '+h.name,attrKey,key);
-    if(granted) applyCategoryAttrSkillBonus(attrKey,key);
+    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
   }
   scheduleSave();render();
 }
@@ -2952,7 +3281,7 @@ function habitItem(h){
   const it=el(`<div class="item habit-item${h.type==='bad'?' is-bad':''}">
     <button class="check ${done?'done':''}" aria-label="${uiT(counter?'increment':(done?'unmark_habit':'mark_habit'))}: ${escapeHtml(h.name)}" aria-pressed="${done?'true':'false'}">${done?'✓':(counter?'+':'')}</button>
     <div style="flex:1;min-width:0">
-      <div class="item-title ${done?'done':''} habitTitle" style="cursor:pointer">${h.icon||'🔥'} ${escapeHtml(h.name)}</div>
+      <div class="item-title ${done?'done':''} habitTitle" style="cursor:pointer"><span class="cat-tag" style="--cc:${catColor(h.category,'life')}">${uiHabitIcon(h,15)}</span> ${escapeHtml(h.name)}</div>
       <div class="item-meta">${uiHabitLabel(h)}${linkedGoal?' · <span class="linkGoal" style="cursor:pointer;text-decoration:underline">🎯 '+escapeHtml(linkedGoal.title)+'</span>':''}</div>
     </div>
     <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(h.name)}">✕</button>
@@ -2976,7 +3305,7 @@ function goalMini(g){
   const nextMs=S.milestones.filter(m=>m.goalId===g.id && !m.completed).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))[0];
   const metaBits=[g.targetDate?uiT('by')+' '+fmtDate(g.targetDate):'',nextMs?uiT('next')+': '+escapeHtml(nextMs.title):''].filter(Boolean).join(' · ');
   const it=el(`<div class="goalMiniTap goal-mini" role="button" tabindex="0" style="cursor:pointer">
-    <div class="between"><span class="item-title truncate">🎯 ${escapeHtml(g.title)}</span><span class="goal-pct" style="font-size:18px">${pct}<small>%</small></span></div>
+    <div class="between"><span class="item-title truncate goal-mini-t">${uiIcon('target',16)} ${escapeHtml(g.title)}</span><span class="goal-pct" style="font-size:18px">${pct}<small>%</small></span></div>
     <div class="bar" style="margin-top:8px;height:8px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
     ${metaBits?`<div class="item-meta" style="margin-top:6px">${metaBits}</div>`:''}
   </div>`);
@@ -3012,14 +3341,15 @@ function completeGoal(g){
   // Idempotent: a goal's completion XP is granted at most once ever (not per-day, since
   // goal completion is not a recurring daily event like a task/habit).
   g.status='Completed';
-  grantXp(g.xpReward||200,'Goal: '+g.title,'WIS',`goal:${g.id}:complete`);
+  grantXp(g.xpReward||200,'Goal: '+g.title,catProfile(g.category)||'WIS',`goal:${g.id}:complete`);
   scheduleSave();
 }
 function toggleMilestone(m){
   m.completed=!m.completed;
   if(m.completed){
     m.completedAt=Date.now();
-    grantXp(m.xpReward||25,'Milestone: '+m.title,'WIS',`milestone:${m.id}`);
+    const g=S.goals.find(x=>x.id===m.goalId);
+    grantXp(m.xpReward||25,'Milestone: '+m.title,(g&&catProfile(g.category))||'WIS',`milestone:${m.id}`);
     checkAchievements();
   } else {
     m.completedAt=null; // unchecking never removes already-granted XP
@@ -3084,9 +3414,9 @@ function renderHabits(){
         : `<button class="check ${doneToday?'done':''}" aria-label="${uiT(doneToday?'unmark_habit':'mark_habit')}: ${nm}" aria-pressed="${doneToday}">${doneToday?'✓':''}</button>`;
     const card=el(`<div class="card habit-card${isBad?' is-bad':''}${doneToday?' is-done':''}">
       <div class="habit-head">
-        <div class="row hTap" role="button" tabindex="0" aria-label="${uiT('habit_detail')}: ${nm}"><span class="habit-icon" aria-hidden="true">${h.icon||'🔥'}</span><div style="min-width:0">
+        <div class="row hTap" role="button" tabindex="0" aria-label="${uiT('habit_detail')}: ${nm}"><span class="habit-icon" aria-hidden="true" style="color:${catColor(h.category,'life')}">${uiHabitIcon(h,20)}</span><div style="min-width:0">
           <div class="item-title">${nm}${h.active===false?` <span class="chip is-muted">${uiT('inactive')}</span>`:''}</div>
-          <div class="item-meta">${isBad?uiT('avoid'):uiFreqLabel(h)}${h.category?' · '+escapeHtml(h.category):''} · +${h.xpReward||15} XP</div>
+          <div class="item-meta">${isBad?uiT('avoid'):uiFreqLabel(h)}${h.category?' · '+escapeHtml(catLabel(h.category,'life')):''} · +${habitXp(h)} XP</div>
         </div></div>
         ${controlHtml}
       </div>
@@ -3143,9 +3473,9 @@ function renderHabitDetail(){
   const wrap=el(`<div>
     ${uiBack(uiT('habits'))}
     <section class="card hud">
-      <div class="hud-top"><span class="habit-icon" style="width:56px;height:56px;font-size:28px" aria-hidden="true">${h.icon||'🔥'}</span>
+      <div class="hud-top"><span class="habit-icon" style="width:56px;height:56px;color:${catColor(h.category,'life')}" aria-hidden="true">${uiHabitIcon(h,28)}</span>
         <div class="hud-id"><h2 style="margin:0">${escapeHtml(h.name)}</h2>
-        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${h.type==='bad'?'is-warn':'is-success'}">${h.type==='bad'?uiT('avoid'):uiT('build')}</span><span class="chip is-muted">${h.frequency}${h.frequency==='weekdays'?' ('+(h.weekdays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')+')':''} · target ${h.target||1}</span><span class="chip is-gold">+${h.xpReward||15} XP</span>${linkedGoal?`<span class="chip">🎯 ${escapeHtml(linkedGoal.title)}</span>`:''}</div></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="chip ${h.type==='bad'?'is-warn':'is-success'}">${h.type==='bad'?uiT('avoid'):uiT('build')}</span><span class="chip is-muted">${h.frequency}${h.frequency==='weekdays'?' ('+(h.weekdays||[]).map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')+')':''} · target ${h.target||1}</span><span class="chip is-gold">+${habitXp(h)} XP</span>${linkedGoal?`<span class="chip">🎯 ${escapeHtml(linkedGoal.title)}</span>`:''}</div></div>
       </div>
       ${h.description?`<p class="sub" style="margin-top:12px">${escapeHtml(h.description)}</p>`:''}
       <div class="row" style="gap:8px;margin-top:14px">
@@ -3176,14 +3506,15 @@ function openHabitForm(existing){
   const inner=el(`<div><h3>${h?'Edit Habit':'New Habit'}</h3>
     <label>Name</label><input id="h_name" value="${h?escapeHtml(h.name):''}" placeholder="e.g. Drink water">
     <label>Description</label><textarea id="h_desc" rows="2">${h?escapeHtml(h.description||''):''}</textarea>
-    <label>Category</label><select id="h_cat">${catOptions()}</select>
+    <label>Category</label><select id="h_cat">${catOptions(h?h.category:'')}</select>
     <label>Type</label><select id="h_type"><option value="good">Good habit (build)</option><option value="bad">Bad habit (avoid)</option></select>
     <label>Frequency</label><select id="h_freq"><option value="daily">Daily</option><option value="weekdays">Selected weekdays</option><option value="weekly">Weekly (X times/week)</option><option value="custom">Custom (X times/week)</option></select>
     <div id="h_wdWrap"><label>Weekdays</label><div class="row" id="h_wd" style="gap:4px;flex-wrap:wrap">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((lbl,i)=>`<button type="button" class="pill sm wdBtn" data-d="${i}">${lbl}</button>`).join('')}</div></div>
     <div id="h_targetWrap"><label>Target</label><input type="number" id="h_target" min="1" value="${h?(h.target||1):1}"></div>
     <label>Reminder time (optional)</label><input type="time" id="h_reminder" value="${h?(h.reminder||''):''}">
     <label>Goal</label><select id="h_goal">${goalOptions(h?h.goalId:'')}</select>
-    <label>XP reward</label><input type="number" id="h_xp" min="0" value="${h?(h.xpReward!=null?h.xpReward:15):15}">
+    <label for="h_pri">Importance</label><select id="h_pri"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select>
+    ${uiXpHint('h_xpHint')}
     <label>Active</label><select id="h_active"><option value="1">Active</option><option value="0">Inactive</option></select>
     <button class="btn" id="h_save">${h?'Save Changes':'Add Habit'}</button>
   </div>`);
@@ -3191,6 +3522,8 @@ function openHabitForm(existing){
   inner.querySelector('#h_type').value=h?(h.type||'good'):'good';
   inner.querySelector('#h_freq').value=h?(h.frequency||'daily'):'daily';
   inner.querySelector('#h_active').value=h&&h.active===false?'0':'1';
+  inner.querySelector('#h_pri').value=h?habitPriority(h):'Medium';
+  uiBindXpHint(inner,'h_pri','h_xpHint',p=>HABIT_XP[p]);
   const selectedWd=new Set(h?(h.weekdays||[]):[]);
   inner.querySelectorAll('.wdBtn').forEach(b=>{
     if(selectedWd.has(Number(b.dataset.d))) b.classList.add('on');
@@ -3208,11 +3541,11 @@ function openHabitForm(existing){
     const weekdays=[...inner.querySelectorAll('.wdBtn.on')].map(b=>Number(b.dataset.d));
     const fields={
       name, description:inner.querySelector('#h_desc').value, category:inner.querySelector('#h_cat').value,
-      icon:CATS[inner.querySelector('#h_cat').value]?.ic||(h?h.icon:'🔥')||'🔥',
+      icon:h?(h.icon||'🔥'):(CATS[inner.querySelector('#h_cat').value]?.ic||'🔥'), // legacy field; the UI draws the category icon
       type:inner.querySelector('#h_type').value, frequency:inner.querySelector('#h_freq').value,
       target:parseFloat(inner.querySelector('#h_target').value)||1, weekdays,
       reminder:inner.querySelector('#h_reminder').value, goalId:inner.querySelector('#h_goal').value,
-      xpReward:parseFloat(inner.querySelector('#h_xp').value)||0, active:inner.querySelector('#h_active').value==='1'
+      priority:inner.querySelector('#h_pri').value, active:inner.querySelector('#h_active').value==='1'
     };
     if(h){
       // Edit in place: SAME object/id, completion history (h.completions/h.brokenDates) and
@@ -3247,7 +3580,7 @@ function renderGoals(){
     const overdue=g.status==='Active'&&g.targetDate&&g.targetDate<todayStr();
     const card=el(`<div class="card goal-card">
       <div class="goal-top gTap" role="button" tabindex="0">
-        <div style="flex:1;min-width:0"><div class="goal-title">🎯 ${escapeHtml(g.title)}</div>
+        <div style="flex:1;min-width:0"><div class="goal-title">${uiIcon('target',17)} ${escapeHtml(g.title)}</div>
         ${g.description?`<div class="sub" style="margin-top:3px">${escapeHtml(g.description)}</div>`:''}</div>
         <div class="goal-pct">${pct}<small>%</small></div>
       </div>
@@ -3257,7 +3590,7 @@ function renderGoals(){
         ${g.targetDate?`<span class="chip ${overdue?'is-danger':'is-muted'}">⏳ ${fmtDate(g.targetDate)}</span>`:''}
         ${msAll.length?`<span class="chip is-muted">🚩 ${msDone}/${msAll.length}</span>`:''}
         <span class="chip is-gold">+${g.xpReward||200} XP</span>
-        <span class="sub">${g.mode==='manual'?uiT('progress_manual'):'auto'}</span>
+        <span class="sub">${g.mode==='manual'?uiT('progress_manual'):(uiLang()==='cs'?'automaticky z propojených úkolů':'automatic from linked tasks')}</span>
       </div>
       <div class="goal-actions">
         ${g.status!=='Completed'?`<button class="pill sm sm-done">✓ ${uiT('mark_complete')}</button>`:''}
@@ -3285,10 +3618,11 @@ function openGoalForm(existing){
   const inner=el(`<div><h3>${g?'Edit Goal':'New Goal'}</h3>
     <label>Title</label><input id="g_title" value="${g?escapeHtml(g.title):''}" placeholder="e.g. Run a 10K">
     <label>Description</label><textarea id="g_desc" rows="2">${g?escapeHtml(g.description||''):''}</textarea>
-    <label>Category</label><select id="g_cat"><option value="">None</option>${catOptions()}</select>
+    <label>Category</label><select id="g_cat"><option value="">None</option>${catOptions(g?g.category:'')}</select>
     <label>Target date</label><input type="date" id="g_due" value="${g?(g.targetDate||''):''}">
     <label>Status</label><select id="g_status"><option>Active</option><option>Paused</option><option>Archived</option><option>Completed</option></select>
-    <label>Progress mode</label><select id="g_mode"><option value="auto">Automatic (from linked tasks/milestones)</option><option value="manual">Manual</option></select>
+    <label>Progress mode</label><select id="g_mode"><option value="auto">Automatic</option><option value="manual">Manual</option></select>
+    <div class="mode-help" id="g_modeHelp" aria-live="polite"></div>
     <div id="manualWrap"><label>Manual progress (%)</label><input type="number" id="g_manual" min="0" max="100" value="${g?(g.manualProgress||0):0}"></div>
     <label>XP reward on completion</label><input type="number" id="g_xp" min="0" value="${g?(g.xpReward||200):200}">
     <button class="btn" id="g_save">${g?'Save Changes':'Add Goal'}</button>
@@ -3317,7 +3651,19 @@ function openGoalForm(existing){
   };
   const modeSel=inner.querySelector('#g_mode'), manualWrap=inner.querySelector('#manualWrap');
   function syncManualVisibility(){ manualWrap.style.display = modeSel.value==='manual' ? '' : (g&&!S.tasks.some(t=>t.goalId===g.id)&&!S.milestones.some(m=>m.goalId===g.id) ? '' : 'none'); }
-  modeSel.onchange=syncManualVisibility; syncManualVisibility();
+  // Polish pass: say exactly what each mode does, using goalProgress()'s real order of sources.
+  const help=inner.querySelector('#g_modeHelp'), cs=uiLang()==='cs';
+  function syncModeHelp(){
+    if(modeSel.value==='manual'){ help.innerHTML=`${uiIcon('edit',15)}<span>${cs?'<b>Ručně:</b> postup zadáváš sám v procentech níže. Úkoly, milníky ani návyky ho nemění.':'<b>Manual:</b> you enter the progress yourself in percent below. Tasks, milestones and habits do not change it.'}</span>`; return; }
+    const lt=g?S.tasks.filter(t=>t.goalId===g.id):[], ms=g?S.milestones.filter(m=>m.goalId===g.id):[], lh=g?S.habits.filter(h=>h.goalId===g.id):[];
+    const now=!g?(cs?'Po uložení propoj s cílem úkoly (v úpravě úkolu) nebo mu přidej milníky.':'After saving, link tasks to this goal (in the task edit) or add milestones.')
+      :lt.length?(cs?`Teď: ${lt.filter(t=>t.done).length} z ${lt.length} propojených úkolů hotovo → ${goalProgress(g)} %.`:`Now: ${lt.filter(t=>t.done).length} of ${lt.length} linked tasks done → ${goalProgress(g)} %.`)
+      :ms.length?(cs?`Teď: ${ms.filter(m=>m.completed).length} z ${ms.length} milníků splněno → ${goalProgress(g)} %.`:`Now: ${ms.filter(m=>m.completed).length} of ${ms.length} milestones done → ${goalProgress(g)} %.`)
+      :lh.length?(cs?`Teď: plnění ${lh.length} propojených návyků za posledních 30 dní → ${goalProgress(g)} %.`:`Now: completion of ${lh.length} linked habits over the last 30 days → ${goalProgress(g)} %.`)
+      :(cs?'Teď: cíl zatím nemá nic propojeného, drží se poslední ruční hodnota.':'Now: nothing is linked yet, the last manual value is kept.');
+    help.innerHTML=`${uiIcon('sparkle',15)}<span>${cs?'<b>Automaticky:</b> postup se počítá z hotových propojených úkolů (hotové / všechny). Když cíl nemá úkoly, použijí se jeho milníky, pak propojené návyky.':'<b>Automatic:</b> progress is calculated from the linked tasks that are done (done / all). A goal without tasks uses its milestones, then linked habits.'} <br><small>${now}</small></span>`;
+  }
+  modeSel.onchange=()=>{ syncManualVisibility(); syncModeHelp(); }; syncManualVisibility(); syncModeHelp();
   openSheet(inner);
 }
 
@@ -3400,101 +3746,74 @@ function openMilestoneForm(goalId,existing){
 }
 
 /* ---- Character view ---- */
+// Polish pass: achievements keep their rules; only the icon follows the line-icon style.
+const ACHV_ICON={first_task:'check',seven_streak:'flame',thirty_streak:'flame',ten_tasks:'check',first_goal:'target',level5:'star',level10:'star',
+  five_habits:'flame',money_tracker:'wallet',saver:'wallet',first_workout:'dumbbell',fitness_beast:'dumbbell',first_meal:'apple',hydrated:'drop',
+  first_note:'note',first_journal:'journal',journal_week:'journal',first_vehicle:'car',first_sub:'card',quest_5:'quest'};
+// Where each attribute comes from: the categories whose profile contains it + the fixed activities.
+function rpgAttrSources(k){
+  const cs=uiLang()==='cs', out=[];
+  catList('life').filter(c=>!c.archived&&ATTR_PROFILES[c.profile]&&ATTR_PROFILES[c.profile][k]).forEach(c=>out.push(catLabel(c.key,'life')));
+  const fixed=[['fitness',cs?'trénink':'workouts'],['sleep',cs?'spánek':'sleep'],['nutrition',cs?'jídlo':'meals'],['reflection',cs?'deník':'journal']];
+  fixed.forEach(([p,l])=>{ if(ATTR_PROFILES[p][k]) out.push(l); });
+  if(k==='WIS') out.push(cs?'finance':'finance',cs?'cíle':'goals');
+  return [...new Set(out)];
+}
 function renderCharacter(){
+  const cs=uiLang()==='cs';
   const {level,into,need}=levelFromXp(S.totalXp);
   const pct=Math.min(100,Math.round(into/need*100));
   const bestStreakOverall=S.habits.reduce((m,h)=>Math.max(m,bestStreak(h)),0);
   const curStreakOverall=S.habits.reduce((m,h)=>Math.max(m,currentStreak(h)),0);
-  const badgeSkills=SKILLS.filter(sk=>sk.effect&&sk.effect.type==='badge'&&S.rpg.skillTree.unlocked.includes(sk.id));
-  const sp=S.rpg.skillPoints, ap=S.rpg.attributePoints;
   const wrap=el(`<div class="character">${uiPageHead(uiT('character'))}<div class="char-cols"><div class="char-main"></div><div class="char-side"></div></div></div>`);
   const main=wrap.querySelector('.char-main'), side=wrap.querySelector('.char-side');
 
-  // ---- Hero: avatar, level, XP, points (Phase 5 data, read-only here) ----
+  // ---- Hero: avatar (tap to change), level, XP ----
   main.appendChild(el(`<section class="card hud char-hero" aria-label="${escapeHtml(S.profile.name)}">
-    <div class="avatar hero lg" aria-hidden="true">${S.profile.avatar?S.profile.avatar:(S.profile.name||'H')[0].toUpperCase()}</div>
+    <button class="avatar hero xl av-edit" id="charAvatar" aria-label="${cs?'Změnit avatar':'Change avatar'}">${uiAvatarInner()}</button>
     <div class="hud-name">${escapeHtml(S.profile.name)}</div>
     <div class="row" style="justify-content:center;gap:8px;margin-top:6px">
       <span class="badge is-gold">${uiT('level')} ${level}</span><span class="badge">${uiNum(S.totalXp)} ${uiT('total_xp')}</span>
     </div>
     <div class="xp-row" style="margin-top:18px"><span><b>${uiNum(into)}</b> / ${uiNum(need)} XP</span><span>${uiT('xp_to_next',{n:level+1})}</span></div>
     <div class="xp-bar" role="progressbar" aria-label="XP" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
-    <div class="char-points">
-      <div class="point-tile${sp.available>0?' is-available':''}"><span class="kicker">⭐ ${uiT('skill_points')}</span><b>${sp.available}</b><div class="sub">${sp.earned} ${uiT('earned')} · ${sp.spent} ${uiT('spent')}</div></div>
-      <div class="point-tile${ap.available>0?' is-available':''}"><span class="kicker">🔵 ${uiT('attr_points')}</span><b>${ap.available}</b><div class="sub">${ap.earned} ${uiT('earned')} · ${ap.spent} ${uiT('spent')}</div></div>
-    </div>
   </section>`));
+  main.querySelector('#charAvatar').onclick=openAvatarPicker;
 
-  main.appendChild(el(`<div class="stat-grid cols-4">
-    <div class="stat-card"><div class="stat-label">🏆 ${uiT('achievements')}</div><div class="stat-value">${S.achievementsUnlocked.length}<small>/${ACHV.length}</small></div></div>
-    <div class="stat-card"><div class="stat-label">🌟 ${uiT('skills_unlocked')}</div><div class="stat-value">${S.rpg.skillTree.unlocked.length}<small>/${SKILLS.length}</small></div></div>
-    <div class="stat-card"><div class="stat-label">🔥 ${uiT('current_streak')}</div><div class="stat-value">${curStreakOverall}</div></div>
-    <div class="stat-card"><div class="stat-label">🏅 ${uiT('best_streak')}</div><div class="stat-value">${bestStreakOverall}</div></div>
+  main.appendChild(el(`<div class="stat-grid cols-3">
+    <div class="stat-card"><div class="stat-label">${uiIcon('trophy',14)} ${uiT('achievements')}</div><div class="stat-value">${S.achievementsUnlocked.length}<small>/${ACHV.length}</small></div></div>
+    <div class="stat-card"><div class="stat-label">${uiIcon('flame',14)} ${uiT('current_streak')}</div><div class="stat-value">${curStreakOverall}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiIcon('star',14)} ${uiT('best_streak')}</div><div class="stat-value">${bestStreakOverall}</div></div>
   </div>`));
-  if(badgeSkills.length) main.appendChild(el(`<div class="card"><div class="kicker" style="margin-bottom:8px">${uiT('badges')}</div><div class="row" style="flex-wrap:wrap;gap:6px">${badgeSkills.map(b=>`<span class="chip is-gold">🏅 ${escapeHtml(b.effect.value)}</span>`).join('')}</div></div>`));
 
-  // ---- Attributes: level = floor(value/50)+1, bar = progress inside that level (unchanged rule) ----
-  const ac=el(`<section class="card"><div class="section-header"><h3>${uiT('attributes')}</h3></div></section>`);
-  const availAttrPts=S.rpg.attributePoints.available||0;
-  if(availAttrPts>0) ac.appendChild(el(`<div class="chip is-gold" style="margin-bottom:8px">🔵 ${uiT('attr_points_avail',{n:availAttrPts})}</div>`));
+  // ---- Attributes: level = floor(value/50)+1, bar = progress inside that level (unchanged rule).
+  // They grow on their own from real activities (rpgAttrGains) -- nothing to allocate by hand. ----
+  const ac=el(`<section class="card attr-card"><div class="section-header"><h3>${uiT('attributes')}</h3><span class="chip is-muted">${uiIcon('sparkle',13)} ${cs?'rostou automaticky':'grow automatically'}</span></div>
+    <p class="helper-text" style="margin:0 0 8px">${cs?'Atributy se rozvíjejí podle toho, co v LifeOS skutečně děláš — každá splněná aktivita posílí atributy své kategorie.':'Attributes develop from what you actually do in LifeOS — every completed activity strengthens the attributes of its category.'}</p></section>`);
   Object.keys(ATTRS).forEach(k=>{
     const val=S.attrs[k]||0; const lvl=Math.floor(val/50)+1; const into2=val%50;
-    const row=el(`<div class="attr attr-row" style="--ac:${ATTRS[k].c}">
+    const src=rpgAttrSources(k);
+    ac.appendChild(el(`<div class="attr attr-row" style="--ac:${ATTRS[k].c}" data-attr="${k}">
       <div class="dot">${k}</div>
-      <div style="min-width:0"><div class="attr-name"><span>${ATTRS[k].label}</span><span>Lv ${lvl} · ${val}</span></div>
-      <div class="bar" role="progressbar" aria-label="${ATTRS[k].label}" aria-valuenow="${Math.round(into2/50*100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${into2/50*100}%"></i></div></div>
-      ${availAttrPts>0?`<button class="iconbtn spendAttrBtn" data-attr="${k}" title="${uiT('spend_point',{k})}" aria-label="${uiT('spend_point',{k})}">+</button>`:'<span></span>'}
-    </div>`);
-    ac.appendChild(row);
+      <div style="min-width:0"><div class="attr-name"><span>${uiL(ATTRS[k].label)}</span><span>Lv ${lvl} · ${val}</span></div>
+      <div class="bar" role="progressbar" aria-label="${ATTRS[k].label}" aria-valuenow="${Math.round(into2/50*100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${into2/50*100}%"></i></div>
+      <div class="attr-src">${src.length?escapeHtml(src.join(' · ')):'—'}</div></div>
+    </div>`));
   });
-  ac.querySelectorAll('.spendAttrBtn').forEach(b=>b.onclick=()=>{ if(spendAttributePoint(b.dataset.attr)) render(); });
-  main.appendChild(ac);
-
-  // ---- Skill Tree: 6 branches x 3 skills, cost/prerequisite gated by unlockSkill() ----
-  const skC=el(`<section class="card"><div class="section-header"><h3>${uiT('skill_tree')}</h3><span class="chip ${S.rpg.skillPoints.available>0?'is-gold':'is-muted'}">⭐ ${uiT('sp_available',{n:S.rpg.skillPoints.available})}</span></div></section>`);
-  Object.keys(SKILL_BRANCH_LABELS).forEach(branchKey=>{
-    const attr=SKILL_BRANCH_ATTR[branchKey];
-    const branchSkills=SKILLS.filter(sk=>sk.branch===branchKey);
-    const doneN=branchSkills.filter(sk=>S.rpg.skillTree.unlocked.includes(sk.id)).length;
-    const branchWrap=el(`<div class="skill-branch" style="--ac:${ATTRS[attr].c}"><div class="skill-branch-head"><span class="dot">${attr}</span><b>${SKILL_BRANCH_LABELS[branchKey]}</b><span class="sub">${doneN}/${branchSkills.length}</span></div><div class="skill-path"></div></div>`);
-    const path=branchWrap.querySelector('.skill-path');
-    branchSkills.forEach(sk=>{
-      const isUnlocked=S.rpg.skillTree.unlocked.includes(sk.id);
-      const prereqsMet=(sk.prerequisites||[]).every(p=>S.rpg.skillTree.unlocked.includes(p));
-      const canAfford=(S.rpg.skillPoints.available||0)>=sk.cost;
-      const canUnlock=!isUnlocked&&prereqsMet&&canAfford;
-      const state=isUnlocked?'unlocked':prereqsMet?'available':'locked';
-      const prereqNames=(sk.prerequisites||[]).map(id=>(SKILLS.find(x=>x.id===id)||{name:id}).name).join(', ');
-      // The Unlock button is shown whenever prerequisites are met (disabled without enough
-      // points, exactly as before); a skill still behind prerequisites just shows what it needs.
-      const row=el(`<div class="skill-node is-${state}" data-skill="${sk.id}">
-        <span class="sk-ic" aria-hidden="true">${isUnlocked?'✅':prereqsMet?'✨':'🔒'}</span>
-        <div class="sk-main">
-          <div class="sk-top"><span class="sk-name">${escapeHtml(sk.name)}</span><span class="chip ${isUnlocked?'is-success':state==='available'?'is-gold':'is-muted'}">${uiT(state)}</span></div>
-          <div class="sk-desc">${escapeHtml(sk.description)}</div>
-          ${isUnlocked?'':`<div class="sk-tags"><span class="sk-meta">⭐ ${uiT('cost',{n:sk.cost})}${!prereqsMet&&prereqNames?' · '+uiT('requires',{s:escapeHtml(prereqNames)}):''}</span>${prereqsMet?`<button class="pill sm unlockSkillBtn" data-id="${sk.id}" ${canUnlock?'':'disabled'} aria-label="${uiT('unlock')}: ${escapeHtml(sk.name)}">${uiT('unlock')}</button>`:''}</div>`}
-        </div>
-      </div>`);
-      const btn=row.querySelector('.unlockSkillBtn');
-      if(btn) btn.onclick=()=>{ if(unlockSkill(sk.id)) render(); };
-      path.appendChild(row);
-    });
-    skC.appendChild(branchWrap);
-  });
-  side.appendChild(skC);
+  side.appendChild(ac);
 
   // ---- Achievements: unlocked first (with real unlock date), then locked with real progress ----
   const unlockedA=ACHV.filter(a=>S.achievementsUnlocked.includes(a.id));
   const lockedA=ACHV.filter(a=>!S.achievementsUnlocked.includes(a.id));
-  const achC=el(`<section class="card"><div class="section-header"><h3>${uiT('achievements')}</h3><span class="chip is-gold">🏆 ${unlockedA.length}/${ACHV.length}</span></div><div class="ach-grid" id="achl"></div></section>`);
+  const achC=el(`<section class="card"><div class="section-header"><h3>${uiT('achievements')}</h3><span class="chip is-gold">${uiIcon('trophy',13)} ${unlockedA.length}/${ACHV.length}</span></div><div class="ach-grid" id="achl"></div></section>`);
   const al=achC.querySelector('#achl');
   unlockedA.forEach(a=>{
     const at=S.achievementUnlockedAt&&S.achievementUnlockedAt[a.id];
-    al.appendChild(el(`<div class="ach is-unlocked"><span class="ach-ic" aria-hidden="true">🏆</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="rarity r-${a.rarity}">${a.rarity}</span>${at?`<span class="sub" style="font-size:11px">${fmtDate(uiIsoDate(at))}</span>`:''}</div></div>`));
+    al.appendChild(el(`<div class="ach is-unlocked"><span class="ach-ic" aria-hidden="true">${uiIcon(ACHV_ICON[a.id]||'trophy',20)}</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="rarity r-${a.rarity}">${a.rarity}</span>${at?`<span class="sub" style="font-size:11px">${fmtDate(uiIsoDate(at))}</span>`:''}</div></div>`));
   });
   lockedA.forEach(a=>{
     const p=a.progress?Math.max(0,Math.min(100,a.progress(S))):0;
-    al.appendChild(el(`<div class="ach is-locked"><span class="ach-ic" aria-hidden="true">🔒</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><span class="rarity r-${a.rarity}">${a.rarity} · ${Math.round(p)}%</span><div class="bar"><i style="width:${p}%"></i></div></div>`));
+    al.appendChild(el(`<div class="ach is-locked"><span class="ach-ic" aria-hidden="true">${uiIcon('lock',18)}</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><span class="rarity r-${a.rarity}">${a.rarity} · ${Math.round(p)}%</span><div class="bar"><i style="width:${p}%"></i></div></div>`));
   });
   wrap.appendChild(achC);
 
@@ -3503,16 +3822,128 @@ function renderCharacter(){
   const actl=actC.querySelector('#actl');
   const recent=(S.rpg.activityLog||[]).slice(0,10);
   if(!recent.length) actl.appendChild(el(uiEmpty('✨',uiT('no_activity'),'','')));
-  const ACTIVITY_ICON={levelup:'⬆️',skill_unlock:'🌟',achievement:'🏆',quest_complete:'📜',xp:'✨'};
-  recent.forEach(a=>actl.appendChild(el(`<div class="tl-item"><span class="tl-ic" aria-hidden="true">${ACTIVITY_ICON[a.type]||'✨'}</span><div style="min-width:0"><div class="item-title" style="font-size:14px">${escapeHtml(a.title)}</div><div class="item-meta">${escapeHtml(a.description||'')}</div></div></div>`)));
+  const ACTIVITY_ICON={levelup:'up',skill_unlock:'star',achievement:'trophy',quest_complete:'quest',xp:'bolt'};
+  recent.forEach(a=>actl.appendChild(el(`<div class="tl-item"><span class="tl-ic" aria-hidden="true">${uiIcon(ACTIVITY_ICON[a.type]||'sparkle',16)}</span><div style="min-width:0"><div class="item-title" style="font-size:14px">${escapeHtml(a.title)}</div><div class="item-meta">${escapeHtml(a.type==='levelup'?String(a.description||'').replace(/ — \+1 Skill Point, \+3 Attribute Points$/,''):(a.description||''))}</div></div></div>`)));
   wrap.appendChild(actC);
-
-  // Phase 6: name/avatar/widgets/export/import/reset live in the dedicated Settings screen --
-  // this just links there instead of duplicating the same controls in two places.
-  const setLink=el(`<button class="card is-link between" style="width:100%;text-align:left;font:inherit;color:inherit"><span>${tr('open_settings')}</span><span class="sub" aria-hidden="true">›</span></button>`);
-  setLink.onclick=()=>{view='settings';render();window.scrollTo(0,0);};
-  wrap.appendChild(setLink);
+  // Polish pass: no Settings shortcut here -- Settings stay in More (and the header button).
   return wrap;
+}
+
+/* ---- Polish pass: avatar picker (portraits + own photo with a square crop, stored locally) ---- */
+function openAvatarPicker(){
+  const cs=uiLang()==='cs', cur=avatarId(S.profile);
+  const opt=(id,label,inner)=>`<button class="av-opt${cur===id?' is-selected':''}" data-av="${id}" aria-pressed="${cur===id}" aria-label="Avatar: ${label}"><span class="avatar lg">${inner}</span><span class="av-name">${label}</span></button>`;
+  const inner=el(`<div class="av-picker" id="avatarPicker"><h3>Avatar</h3>
+    <div class="av-current"><div class="avatar hero xl" id="avPreview">${uiAvatarInner()}</div>
+      <div class="av-actions"><button class="btn sm" id="avUpload">${uiIcon('camera',18)} ${cs?'Nahrát fotku':'Upload photo'}</button>
+        ${S.profile.photo?`<button class="btn ghost sm" id="avRemovePhoto">${uiIcon('trash',16)} ${cs?'Odebrat fotku':'Remove photo'}</button>`:''}
+        <p class="helper-text">${cs?'Fotka se ořízne na čtverec a uloží jen v tomto zařízení.':'The photo is cropped to a square and stored on this device only.'}</p>
+        <input type="file" id="avFile" accept="image/*" class="hide"></div></div>
+    <div class="kicker" style="margin:14px 0 8px">${cs?'Nebo vyber postavu':'Or pick a character'}</div>
+    <div class="av-grid">${S.profile.photo?opt('photo',cs?'Moje fotka':'My photo',`<img src="${escapeHtml(S.profile.photo)}" alt="">`):''}${Object.keys(AVATARS).map(id=>opt(id,AVATAR_LABELS[id][cs?0:1],uiAvatarSvg(id))).join('')}</div>
+  </div>`);
+  const bg=openSheet(inner);
+  inner.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>{
+    S.profile.avatar=b.dataset.av==='photo'?'photo':'svg:'+b.dataset.av; scheduleSave(); bg.remove(); render();
+  });
+  const file=inner.querySelector('#avFile');
+  inner.querySelector('#avUpload').onclick=()=>file.click();
+  file.onchange=()=>{ const f=file.files&&file.files[0]; if(f){ bg.remove(); openPhotoCrop(f); } };
+  const rm=inner.querySelector('#avRemovePhoto');
+  if(rm) rm.onclick=()=>{ delete S.profile.photo; if(S.profile.avatar==='photo') S.profile.avatar='svg:mage'; scheduleSave(); bg.remove(); render(); };
+}
+function openPhotoCrop(file){
+  const cs=uiLang()==='cs';
+  const url=URL.createObjectURL(file), img=new Image();
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast(cs?'Obrázek se nepodařilo načíst':'Could not read the image'); };
+  img.onload=()=>{
+    const W=img.naturalWidth, H=img.naturalHeight, N=600;
+    let z=1, cx=W/2, cy=H/2;
+    const inner=el(`<div class="crop" id="photoCrop"><h3>${cs?'Oříznout fotku':'Crop photo'}</h3>
+      <div class="crop-box" id="cropBox"><canvas id="cropCanvas" width="${N}" height="${N}"></canvas><div class="crop-frame" aria-hidden="true"></div></div>
+      <p class="helper-text" style="text-align:center">${cs?'Posuň fotku tažením, přibliž posuvníkem.':'Drag to move, use the slider to zoom.'}</p>
+      <label for="cropZoom">${cs?'Přiblížení':'Zoom'}</label><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1">
+      <div class="grid2" style="margin-top:12px"><button class="btn ghost" id="cropCancel">${cs?'Zrušit':'Cancel'}</button><button class="btn" id="cropSave">${cs?'Uložit avatar':'Save avatar'}</button></div>
+    </div>`);
+    const cv=inner.querySelector('#cropCanvas'), ctx=cv.getContext('2d'), box=inner.querySelector('#cropBox');
+    const side=()=>Math.min(W,H)/z; // visible square, in image pixels
+    const clamp=()=>{ const h=side()/2; cx=Math.max(h,Math.min(W-h,cx)); cy=Math.max(h,Math.min(H-h,cy)); };
+    const draw=(c,n)=>{ clamp(); const s=side(); c.clearRect(0,0,n,n); c.drawImage(img,cx-s/2,cy-s/2,s,s,0,0,n,n); };
+    draw(ctx,N);
+    inner.querySelector('#cropZoom').oninput=e=>{ z=Number(e.target.value)||1; draw(ctx,N); };
+    let drag=null;
+    box.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; box.setPointerCapture&&box.setPointerCapture(e.pointerId); e.preventDefault(); });
+    box.addEventListener('pointermove',e=>{ if(!drag) return; const k=side()/box.clientWidth; cx-=(e.clientX-drag.x)*k; cy-=(e.clientY-drag.y)*k; drag={x:e.clientX,y:e.clientY}; draw(ctx,N); });
+    const end=()=>{ drag=null; }; box.addEventListener('pointerup',end); box.addEventListener('pointercancel',end);
+    const bg=openSheet(inner);
+    const done=()=>{ URL.revokeObjectURL(url); bg.remove(); };
+    inner.querySelector('#cropCancel').onclick=()=>{ done(); openAvatarPicker(); };
+    inner.querySelector('#cropSave').onclick=()=>{
+      const out=document.createElement('canvas'); out.width=out.height=256; draw(out.getContext('2d'),256);
+      S.profile.photo=out.toDataURL('image/jpeg',0.86); S.profile.avatar='photo';
+      scheduleSave(); done(); render(); toast(cs?'Avatar uložen':'Avatar saved');
+    };
+  };
+  img.src=url;
+}
+
+/* ---- Polish pass: category management (Settings → Kategorie) ---- */
+const UI_PROFILE_LABELS={fitness:['Pohyb a sport','Fitness & sport'],health:['Zdraví','Health'],learning:['Studium','Study'],work:['Práce','Work'],
+  social:['Společenské aktivity','Social'],discipline:['Disciplína','Discipline'],finance:['Finance','Finance'],personal:['Osobní rozvoj','Personal growth']};
+function uiProfileLabel(p){ const l=UI_PROFILE_LABELS[p]; const w=ATTR_PROFILES[p]||{}; return (l?l[uiLang()==='cs'?0:1]:p)+' · '+Object.keys(w).sort((a,b)=>w[b]-w[a]).join(' '); }
+function uiCategorySettings(){
+  const cs=uiLang()==='cs';
+  const sec=el(`<section class="card set-group" id="st_categories"><h3>${cs?'Kategorie':'Categories'}</h3>
+    <p class="helper-text" style="margin:-2px 0 6px">${cs?'Vlastní kategorie pro úkoly, návyky, cíle a plánovač. Kategorie určuje ikonu, barvu a které atributy se rozvíjejí.':'Your own categories for tasks, habits, goals and the planner. A category sets the icon, colour and which attributes grow.'}</p>
+    <div class="cat-list" data-scope="life"></div>
+    <button class="btn ghost sm" data-addcat="life">＋ ${cs?'Nová kategorie':'New category'}</button>
+    <div class="kicker" style="margin:16px 0 4px">${cs?'Poznámky':'Notes'}</div>
+    <div class="cat-list" data-scope="notes"></div>
+    <button class="btn ghost sm" data-addcat="notes">＋ ${cs?'Nová kategorie poznámek':'New note category'}</button>
+    <p class="helper-text" style="margin:10px 0 0">${cs?'Finance mají vlastní kategorie ve Finance → Kategorie.':'Finance keeps its own categories in Finance → Categories.'}</p>
+  </section>`);
+  ['life','notes'].forEach(scope=>{
+    const box=sec.querySelector(`.cat-list[data-scope="${scope}"]`);
+    catList(scope).forEach(c=>{
+      const n=catInUse(c.key,scope);
+      const row=el(`<div class="cat-row${c.archived?' is-archived':''}" data-cat="${escapeHtml(c.key)}">
+        <span class="cat-ic" style="--cc:${catColor(c.key,scope)}" aria-hidden="true">${uiIcon(c.icon||'tag',18)}</span>
+        <span class="cat-main"><b>${escapeHtml(catLabel(c.key,scope))}</b><small>${scope==='life'&&c.profile?escapeHtml(uiProfileLabel(c.profile)):''}${n?` · ${n}×`:''}${c.archived?` · ${cs?'archivováno':'archived'}`:''}</small></span>
+        <button class="iconbtn ghost-ic catEdit" aria-label="${uiT('edit')}: ${escapeHtml(catLabel(c.key,scope))}">${uiIcon('edit',17)}</button>
+      </div>`);
+      row.querySelector('.catEdit').onclick=()=>openCategoryForm(scope,c.key);
+      box.appendChild(row);
+    });
+  });
+  sec.querySelectorAll('[data-addcat]').forEach(b=>b.onclick=()=>openCategoryForm(b.dataset.addcat));
+  return sec;
+}
+function openCategoryForm(scope,key){
+  const cs=uiLang()==='cs', c=key?catInfo(key,scope):null;
+  let icon=(c&&c.icon)||'tag', color=c?(c.color||''):CAT_COLOR_CHOICES[5];
+  const inner=el(`<div class="cat-form" id="catForm"><h3>${c?(cs?'Upravit kategorii':'Edit category'):(cs?'Nová kategorie':'New category')}</h3>
+    <label for="cf_name">${cs?'Název':'Name'}</label><input id="cf_name" value="${c?escapeHtml(catLabel(c.key,scope)):''}" autocomplete="off"><div class="field-error" data-err="name" hidden></div>
+    <label>${cs?'Ikona':'Icon'}</label><div class="cf-icons" role="radiogroup" aria-label="${cs?'Ikona':'Icon'}">${CAT_ICON_CHOICES.map(i=>`<button type="button" class="cf-ic" data-icon="${i}" role="radio" aria-checked="${i===icon}" aria-label="${i}">${uiIcon(i,20)}</button>`).join('')}</div>
+    <label>${cs?'Barva':'Colour'}</label><div class="cf-colors" role="radiogroup" aria-label="${cs?'Barva':'Colour'}">${c&&c.builtin?`<button type="button" class="cf-col is-auto" data-color="" role="radio" aria-checked="${color===''}" aria-label="${cs?'Výchozí':'Default'}">A</button>`:''}${CAT_COLOR_CHOICES.map(x=>`<button type="button" class="cf-col" data-color="${x}" style="--cc:${x}" role="radio" aria-checked="${x===color}" aria-label="${x}"></button>`).join('')}</div>
+    ${scope==='life'?`<label for="cf_profile">${cs?'Rozvíjí atributy':'Grows attributes'}</label><select id="cf_profile">${ATTR_PROFILE_PICK.map(p=>`<option value="${p}">${escapeHtml(uiProfileLabel(p))}</option>`).join('')}</select>
+    <p class="helper-text" style="margin:-4px 0 12px">${cs?'Splněné úkoly a návyky této kategorie posílí tyto atributy.':'Completed tasks and habits of this category strengthen these attributes.'}</p>`:''}
+    <button class="btn" id="cf_save">${cs?'Uložit kategorii':'Save category'}</button>
+    ${c?`<button class="btn ghost" id="cf_archive" style="margin-top:8px">${uiIcon('archive',16)} ${c.archived?(cs?'Obnovit z archivu':'Restore'):(cs?'Archivovat':'Archive')}</button>
+    <p class="helper-text" style="margin-top:8px">${cs?'Archivovaná kategorie se nenabízí u nových položek; existující položky ji dál mají.':'An archived category is not offered for new items; existing items keep it.'}</p>`:''}
+  </div>`);
+  const prof=inner.querySelector('#cf_profile'); if(prof) prof.value=(c&&c.profile)||'personal';
+  const pick=(sel,attr,val)=>inner.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-checked',String(b.dataset[attr]===val)));
+  inner.querySelectorAll('.cf-ic').forEach(b=>b.onclick=()=>{ icon=b.dataset.icon; pick('.cf-ic','icon',icon); });
+  inner.querySelectorAll('.cf-col').forEach(b=>b.onclick=()=>{ color=b.dataset.color; pick('.cf-col','color',color); });
+  const bg=openSheet(inner);
+  inner.querySelector('#cf_save').onclick=()=>{
+    const r=catSave({name:inner.querySelector('#cf_name').value,icon,color,profile:prof?prof.value:null},scope,key);
+    const err=inner.querySelector('[data-err="name"]');
+    if(!r.ok){ err.hidden=false; err.textContent=r.errors.name==='duplicate'?(cs?'Kategorie s tímto názvem už existuje':'A category with this name already exists'):(cs?'Vyplň název':'Name required'); inner.querySelector('#cf_name').focus(); return; }
+    bg.remove(); render(); toast(cs?'Kategorie uložena':'Category saved');
+  };
+  const ar=inner.querySelector('#cf_archive');
+  if(ar) ar.onclick=()=>{ catSetArchived(key,scope,!c.archived); bg.remove(); render(); };
 }
 
 /* ---- Phase 6: Settings screen ---- */
@@ -3525,16 +3956,11 @@ function renderSettings(){
   // -- Profile: name + avatar --
   const prof=el(`<section class="card set-group"><h3>${tr('settings_profile')}</h3>
     <div class="set-field"><label for="st_name">${tr('settings_name')}</label><input id="st_name" value="${escapeHtml(S.profile.name)}" placeholder="${tr('settings_name')}"></div>
-    <div class="set-field"><label>${tr('settings_avatar')}</label>
-    <div class="avatar-pick" id="st_avatars"></div></div>
+    <div class="set-field"><span class="label">${tr('settings_avatar')}</span>
+    <div class="set-avatar"><div class="avatar hero lg">${uiAvatarInner()}</div><button class="btn ghost sm" id="st_avatar">${uiIcon('edit',16)} ${cs?'Změnit avatar':'Change avatar'}</button></div></div>
   </section>`);
   prof.querySelector('#st_name').oninput=(e)=>{S.profile.name=e.target.value;scheduleSave();};
-  const avWrap=prof.querySelector('#st_avatars');
-  AVATAR_CHOICES.forEach(a=>{
-    const b=el(`<button class="iconbtn${a===S.profile.avatar?' is-selected':''}" aria-pressed="${a===S.profile.avatar}" aria-label="${tr('settings_avatar')} ${a}">${a}</button>`);
-    b.onclick=()=>{S.profile.avatar=a;scheduleSave();render();};
-    avWrap.appendChild(b);
-  });
+  prof.querySelector('#st_avatar').onclick=openAvatarPicker;
   wrap.appendChild(prof);
 
   // -- Language / Date / Time / First day of week --
@@ -3598,6 +4024,7 @@ function renderSettings(){
     dw.appendChild(row);
   });
   wrap.appendChild(dash);
+  wrap.appendChild(uiCategorySettings());
 
   // -- Gamification: animations / sounds --
   // Animations/sounds switches now live in the Appearance card (th); same ids + handlers.
@@ -3645,6 +4072,20 @@ function renderSettings(){
   bindNum('#st_wpw',v=>S.dailyTargets.workoutsPerWeek=v);
   bindNum('#st_tpd',v=>S.dailyTargets.tasksPerDay=v);
   bindNum('#st_hpd',v=>S.dailyTargets.habitsPerDay=v);
+  // Polish pass: training days -- the other days are Rest Days (never a missed workout in Daily Score).
+  const td=Array.isArray(S.settings.trainingDays)?S.settings.trainingDays:null;
+  const dayOrder=S.settings.firstDayOfWeek==='sunday'?[0,1,2,3,4,5,6]:[1,2,3,4,5,6,0];
+  const dayNames=cs?['Ne','Po','Út','St','Čt','Pá','So']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const tdBox=el(`<div class="set-field" id="st_training"><span class="label">${cs?'Tréninkové dny':'Training days'}</span>
+    <div class="td-days" role="group" aria-label="${cs?'Tréninkové dny':'Training days'}">${dayOrder.map(d=>{ const on=!!td&&td.includes(d); return `<button type="button" class="td-day${on?' on':''}" data-day="${d}" aria-pressed="${on}"><b>${dayNames[d]}</b><small>${on?(cs?'trénink':'train'):(td?(cs?'volno':'rest'):'–')}</small></button>`; }).join('')}</div>
+    <p class="helper-text" style="margin:8px 0 0">${td?(cs?`Tréninkové dny: ${td.length}× týdně. Ostatní dny jsou Den volna a v Daily Score se nepočítají jako nesplněný trénink.`:`${td.length} training days a week. The other days are Rest Days and never count as a missed workout.`):(cs?'Zatím nenastaveno — Fitness se v Daily Score hodnotí jen podle tréninku naplánovaného v kalendáři.':'Not set — Daily Score only scores fitness on days with a workout planned in the calendar.')}${td?` <button class="linkbtn" id="st_td_clear">${cs?'Zrušit rozvrh':'Clear schedule'}</button>`:''}</p></div>`);
+  tdBox.querySelectorAll('.td-day').forEach(b=>b.onclick=()=>{
+    const d=Number(b.dataset.day), cur=Array.isArray(S.settings.trainingDays)?S.settings.trainingDays.slice():[];
+    S.settings.trainingDays=cur.includes(d)?cur.filter(x=>x!==d):[...cur,d].sort((a,c)=>a-c);
+    scheduleSave(); render();
+  });
+  const tdc=tdBox.querySelector('#st_td_clear'); if(tdc) tdc.onclick=()=>{ S.settings.trainingDays=null; scheduleSave(); render(); };
+  dt.appendChild(tdBox);
   wrap.appendChild(dt);
 
   // -- Data: export / import / reset (existing functions, unchanged) --
@@ -3710,9 +4151,6 @@ function financeGrantXp(){
   const today=todayStr();
   if(S.financeXpDate!==today){
     S.financeXpDate=today; grantXp(5,'Finance logged','WIS');
-    // Phase 5 skill effect: gated by the exact same once-per-day check as the XP above, so it
-    // can never double-fire regardless of how many finance entries are logged that day.
-    applyFinanceAttrSkillBonus('finance:'+today);
   }
 }
 /* ================= Phase 11B: Finance 2.0 -- model + the ONE set of calculations =================
@@ -5178,11 +5616,9 @@ function workoutFinish(wid){
   // Muscle XP (parallel system): historical muscle snapshot + one idempotent log record per exercise
   muscleAwardWorkout(w);
   const key=`workout:${w.id}:${w.date}`;
-  const granted=grantXp(80,'Workout: '+w.name,'STR',key);
-  if(granted){
-    S.attrs.VIT=(S.attrs.VIT||0)+20;
-    applyWorkoutAttrSkillBonus(key);
-  }
+  // Balancing: 80 XP -> 48 attribute points by the fitness profile (STR 24, VIT 14, DEX 10); the old flat
+  // +20 VIT bonus was removed (VIT already stored from past workouts stays untouched).
+  const granted=grantXp(80,'Workout: '+w.name,'fitness',key);
   checkAchievements();
   return {ok:true,workout:w,granted:!!granted};
 }
@@ -6075,11 +6511,7 @@ function openWorkoutForm(existing){
       const wid=uid();
       const key=`workout:${wid}:${fields.date}`;
       S.workouts.push(Object.assign({id:wid,createdAt:Date.now()},fields));
-      const granted=grantXp(80,'Workout: '+name,'STR',key);
-      if(granted){
-        S.attrs.VIT=(S.attrs.VIT||0)+20; // conditioning bonus, granted only alongside the XP itself
-        applyWorkoutAttrSkillBonus(key); // Phase 5 skill effect, gated by the same idempotent key
-      }
+      grantXp(80,'Workout: '+name,'fitness',key); // same reward as workoutFinish (no flat +20 VIT any more)
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(w?'Workout updated':'Workout logged');
@@ -6131,7 +6563,7 @@ function renderNutrition(){
     it.querySelector('.editBtn').onclick=()=>openMealForm(m);
     it.querySelector('.repeatBtn').onclick=()=>{
       S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()});
-      grantXp(10,'Meal logged','VIT'); checkAchievements(); scheduleSave();render();toast('Meal repeated');
+      grantXp(10,'Meal logged',mealAttrProfile()); checkAchievements(); scheduleSave();render();toast('Meal repeated');
     };
     it.querySelector('.delbtn').onclick=()=>{
       if(!confirm(`Delete "${m.name}"?`)) return;
@@ -6191,7 +6623,7 @@ function openMealForm(existing){
       Object.assign(m,fields);
     } else {
       S.meals.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields));
-      grantXp(10,'Meal logged','VIT');
+      grantXp(10,'Meal logged',mealAttrProfile());
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(m?'Meal updated':'Meal added');
@@ -6219,7 +6651,7 @@ function renderNotes(){
   notes.forEach(n=>{
     const ttl=escapeHtml(n.title||uiL('Untitled'));
     const it=el(`<div class="card note-card${n.pinned?' is-pinned':''}">
-      <div class="between" style="align-items:flex-start"><div class="item-title">${ttl}</div>${n.category?`<span class="chip is-muted">${escapeHtml(uiL(n.category))}</span>`:''}</div>
+      <div class="between" style="align-items:flex-start"><div class="item-title">${ttl}</div>${n.category?`<span class="chip is-muted cat-tag" style="--cc:${catColor(n.category,'notes')}">${uiIcon(catIconName(n.category,'notes'),13)}${escapeHtml(catLabel(n.category,'notes'))}</span>`:''}</div>
       ${n.body?`<div class="note-body">${escapeHtml((n.body||'').slice(0,220))}${(n.body||'').length>220?'…':''}</div>`:''}
       ${(n.tags||[]).length?`<div class="row" style="gap:5px;flex-wrap:wrap;margin-top:8px">${(n.tags||[]).map(t=>`<span class="chip">#${escapeHtml(t)}</span>`).join('')}</div>`:''}
       <div class="note-foot"><span class="sub">${n.updatedAt?fmtDate(uiIsoDate(n.updatedAt)):''}</span>
@@ -6241,7 +6673,7 @@ function openNoteForm(existing){
   const n=existing;
   const inner=el(`<div><h3>${n?'Edit Note':'New Note'}</h3>
     <label>Title</label><input id="n_title" value="${n?escapeHtml(n.title||''):''}" placeholder="Title">
-    <label>Category</label><select id="n_cat"><option>Personal</option><option>Work</option><option>School</option><option>Ideas</option><option>Shopping</option><option>Car</option></select>
+    <label>Category</label><select id="n_cat">${catOptions(n?n.category:'','notes')}</select>
     <label>Body</label><textarea id="n_body" rows="6">${n?escapeHtml(n.body||''):''}</textarea>
     <label>Tags (comma separated)</label><input id="n_tags" value="${n?(n.tags||[]).join(', '):''}" placeholder="e.g. recipe, travel">
     <label><input type="checkbox" id="n_pin" style="width:auto;display:inline-block;margin-right:6px">Pinned</label>
@@ -6323,7 +6755,7 @@ function openJournalForm(existing){
       Object.assign(j,fields); // same id/date — editing never creates a second entry for that day
     } else {
       S.journal.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields));
-      grantXp(15,'Journal entry','FOC');
+      grantXp(15,'Journal entry','reflection');
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(j?'Entry updated':'Entry saved');
@@ -6597,81 +7029,187 @@ function tasksCompletedThisWeek(s){const ws=weekStart();return s.tasks.filter(t=
 function workoutsThisWeek(s){const ws=weekStart();return completedWorkouts(s).filter(w=>w.date>=ws).length;}
 function habitsWithActivityThisWeekCount(s){const ws=weekStart();return habitsActiveList(s).filter(h=>(h.completions||[]).some(d=>d>=ws)).length;}
 function weeklyHabitTarget(s){return habitsActiveList(s).length;}
-const DAILY_QUESTS=[
- {id:'dq_tasks',title:'Complete 3 tasks today',xp:50,attr:'FOC',check:s=>tasksCompletedToday(s)>=3,max:3,val:s=>Math.min(3,tasksCompletedToday(s))},
- {id:'dq_habits',title:'Complete all active habits',xp:50,attr:'DEX',check:s=>allHabitsDoneToday(s),max:1,val:s=>allHabitsDoneToday(s)?1:0},
- {id:'dq_log',title:'Log a workout, meal or finance entry',xp:20,attr:'VIT',check:s=>completedWorkouts(s).some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s),max:1,val:s=>(completedWorkouts(s).some(w=>w.date===todayStr())||s.meals.some(m=>m.date===todayStr())||loggedFinanceToday(s))?1:0},
- {id:'dq_workout',title:'Complete 1 workout today',xp:40,attr:'STR',check:s=>completedWorkouts(s).some(w=>w.date===todayStr()),max:1,val:s=>completedWorkouts(s).some(w=>w.date===todayStr())?1:0},
- {id:'dq_nutrition',title:'Log at least one meal today',xp:20,attr:'VIT',check:s=>s.meals.some(m=>m.date===todayStr()),max:1,val:s=>s.meals.some(m=>m.date===todayStr())?1:0},
-];
-const WEEKLY_QUESTS=[
- {id:'wq_streak',title:'Maintain a 7-day habit streak',xp:250,attr:'DEX',check:s=>s.habits.some(h=>currentStreak(h)>=7),max:1,val:s=>s.habits.some(h=>currentStreak(h)>=7)?1:0},
- {id:'wq_goal',title:'Make progress on an active goal',xp:100,attr:'WIS',check:s=>s.goals.some(g=>g.status==='Active'&&goalProgress(g)>0),max:1,val:s=>s.goals.some(g=>g.status==='Active'&&goalProgress(g)>0)?1:0},
- {id:'wq_tasks',title:'Complete 15 tasks this week',xp:200,attr:'FOC',check:s=>tasksCompletedThisWeek(s)>=15,max:15,val:s=>Math.min(15,tasksCompletedThisWeek(s))},
- {id:'wq_habits',title:'Complete this week\'s habit target',xp:150,attr:'DEX',check:s=>weeklyHabitTarget(s)>0 && habitsWithActivityThisWeekCount(s)>=weeklyHabitTarget(s),max:s=>Math.max(1,weeklyHabitTarget(s)),val:s=>habitsWithActivityThisWeekCount(s)},
- {id:'wq_workouts',title:'Complete 3 workouts this week',xp:150,attr:'STR',check:s=>workoutsThisWeek(s)>=3,max:3,val:s=>Math.min(3,workoutsThisWeek(s))},
-];
-function questKey(qid,period){return period==='daily'?qid+':'+todayStr():qid+':'+weekStart();}
-function checkQuests(){
-  DAILY_QUESTS.forEach(q=>{
-    const key=questKey(q.id,'daily');
-    if(!S.quests.some(x=>x.key===key) && q.check(S)){
-      S.quests.push({key,questId:q.id,date:todayStr(),period:'daily'});
-      toast(`📜 Daily Quest complete: ${q.title}`);
-      logActivity('quest_complete',q.title,'Completed daily quest: '+q.title,q.xp);
-      grantXp(q.xp,'Quest: '+q.title,q.attr);
-    }
-  });
-  WEEKLY_QUESTS.forEach(q=>{
-    const key=questKey(q.id,'weekly');
-    if(!S.quests.some(x=>x.key===key) && q.check(S)){
-      S.quests.push({key,questId:q.id,date:todayStr(),period:'weekly'});
-      toast(`📜 Weekly Quest complete: ${q.title}`);
-      logActivity('quest_complete',q.title,'Completed weekly quest: '+q.title,q.xp);
-      grantXp(q.xp,'Quest: '+q.title,q.attr);
-    }
-  });
+/* ---- Polish pass: Quests 2.0 -- small missions tied to how the app is really used ----
+   Each quest reads the SAME completion logic the modules use (task done + its task:<id>:<day> XP key,
+   isDayComplete / dailyScoreHabits, completedWorkouts + the PR snapshot, planner block .completed,
+   dailyScore, meals, sleepLog). A quest is only offered when it is relevant to the user's day (a planned
+   workout, priority tasks, planner blocks...). The board is picked deterministically (priority order +
+   rotation by date) and then kept for the whole day/week in S.questBoard, topping up while it has fewer
+   than 3 quests. Rewards go through grantXp() once, under the unchanged questKey() ledger key. ---- */
+const QUEST_BOARD_SIZE=3;
+function questDayIndex(D){ return Math.round(new Date(D+'T00:00').getTime()/86400000); }
+function taskDoneOn(t,D){ return !!t.done&&S.xpLog.some(x=>x.key===`task:${t.id}:${D}`); }
+function tasksDoneBetween(from,to){
+  const ids=new Set(); S.xpLog.forEach(x=>{ const m=/^task:(.+):(\d{4}-\d{2}-\d{2})$/.exec(x.key||''); if(m&&m[2]>=from&&m[2]<=to) ids.add(m[1]); });
+  return S.tasks.filter(t=>t.done&&ids.has(t.id));
 }
-function questMax(q){ return typeof q.max==='function'?q.max(S):q.max; }
-// Czech display names for the fixed quest definitions (ids and rules untouched).
-const UI_QUEST_CS={dq_tasks:'Splň dnes 3 úkoly',dq_habits:'Splň všechny aktivní návyky',dq_log:'Zapiš trénink, jídlo nebo finance',dq_workout:'Dokonči dnes 1 trénink',
-  dq_nutrition:'Zapiš dnes aspoň jedno jídlo',wq_streak:'Udrž 7denní streak návyku',wq_goal:'Posuň aktivní cíl',wq_tasks:'Splň tento týden 15 úkolů',
-  wq_habits:'Splň týdenní cíl návyků',wq_workouts:'Dokonči tento týden 3 tréninky'};
-function uiQuestTitle(q){ return uiLang()==='cs'&&UI_QUEST_CS[q.id]?UI_QUEST_CS[q.id]:q.title; }
+function questOpenTasksToday(D){ return S.tasks.filter(t=>!t.done&&(!t.dueDate||t.dueDate<=D)); }
+function questTopCategory(D){
+  const n={}; questOpenTasksToday(D).forEach(t=>{ if(t.category&&catInfo(t.category,'life')) n[t.category]=(n[t.category]||0)+1; });
+  const keys=Object.keys(n).sort((a,b)=>n[b]-n[a]||a.localeCompare(b));
+  return keys.length?keys[questDayIndex(D)%Math.min(keys.length,2)]:null;
+}
+function questStreakHabit(D){
+  return S.habits.filter(h=>h.active!==false&&h.type!=='bad'&&(h.frequency==='daily'||h.frequency==='weekdays')&&isScheduledDate(h,D)&&currentStreak(h)>=3)
+    .sort((a,b)=>currentStreak(b)-currentStreak(a)||a.name.localeCompare(b.name))[0]||null;
+}
+const QD=()=>todayStr();
+// Task quests grow the attributes of the tasks they counted (their categories mixed; uncategorized = work).
+function questTaskProfile(tasks){ return rpgMixProfiles((tasks||[]).map(t=>catProfile(t.category)||'work'))||'work'; }
+function questAttrOf(q,p){ return typeof q.attr==='function'?q.attr(S,p||{}):q.attr; }
+// Every 3rd planned training day with some history (3+ earlier workouts) asks for a PR instead; counted
+// from workouts before D only, so finishing today's workout can never switch the quest mid-day.
+function questPrDay(s,D){ return completedWorkouts(s).filter(w=>w.date<D).length>=3&&questDayIndex(D)%3===0; }
+const DAILY_QUESTS=[
+ {id:'dq_priority',core:true,title:'Finish all of today\'s priority tasks',cs:'Dokonči všechny dnešní prioritní úkoly',xp:40,attr:(s,p,D=QD())=>questTaskProfile(s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent'))),icon:'bolt',
+  params:(s,D)=>{ const n=s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')).length; return n?{}:null; },
+  max:(s,p,D=QD())=>Math.max(1,s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')).length),
+  val:(s,p,D=QD())=>s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')&&t.done).length},
+ {id:'dq_workout',core:true,title:'Do today\'s workout',cs:'Udělej dnešní trénink',xp:40,attr:'fitness',icon:'dumbbell',
+  params:(s,D)=>{ const pl=fitnessDayPlan(D); if(pl!=='calendar'&&pl!=='training') return null; return questPrDay(s,D)?null:{}; },
+  max:()=>1, val:(s,p,D=QD())=>completedWorkouts(s).some(w=>w.date===D)?1:0},
+ {id:'dq_workout_pr',core:true,title:'Finish a workout with at least one PR',cs:'Dokonči trénink a udělej aspoň jeden osobní rekord',xp:60,attr:'fitness',icon:'trophy',
+  params:(s,D)=>{ const pl=fitnessDayPlan(D); return (pl==='calendar'||pl==='training')&&questPrDay(s,D)?{}:null; },
+  max:()=>1, val:(s,p,D=QD())=>completedWorkouts(s).some(w=>w.date===D&&w.result&&(w.result.prs||[]).length>0)?1:0},
+ {id:'dq_plan_all',core:true,title:'Complete today\'s planned blocks',cs:'Dokonči plánované bloky dne',xp:35,attr:'plan',icon:'clock',
+  params:(s,D)=>(s.plannerBlocks||[]).some(b=>b.date===D)?{}:null,
+  max:(s,p,D=QD())=>Math.max(1,(s.plannerBlocks||[]).filter(b=>b.date===D).length),
+  val:(s,p,D=QD())=>(s.plannerBlocks||[]).filter(b=>b.date===D&&b.completed).length},
+ {id:'dq_habits',core:true,title:'Complete all of today\'s habits',cs:'Splň všechny dnešní návyky',xp:40,attr:'discipline',icon:'flame',
+  params:(s,D)=>dailyScoreHabits(D).total?{}:null,
+  max:(s,p,D=QD())=>Math.max(1,dailyScoreHabits(D).total||0), val:(s,p,D=QD())=>dailyScoreHabits(D).done||0},
+ {id:'dq_category',title:'Finish a task from a category',cs:'Dokonči úkol z kategorie',xp:20,attr:(s,p)=>(p&&catProfile(p.cat))||'work',icon:'tag',
+  params:(s,D)=>{ const c=questTopCategory(D); return c?{cat:c}:null; },
+  max:()=>1, val:(s,p,D=QD())=>p&&p.cat&&s.tasks.some(t=>t.category===p.cat&&taskDoneOn(t,D))?1:0},
+ {id:'dq_tasks',title:'Complete 3 tasks today',cs:'Dokonči dnes 3 úkoly',xp:30,attr:(s,p,D=QD())=>questTaskProfile(s.tasks.filter(t=>taskDoneOn(t,D))),icon:'check',
+  params:(s,D)=>questOpenTasksToday(D).length+s.tasks.filter(t=>taskDoneOn(t,D)).length>=3?{}:null,
+  max:()=>3, val:(s,p,D=QD())=>Math.min(3,s.tasks.filter(t=>taskDoneOn(t,D)).length)},
+ {id:'dq_streak',title:'Keep a habit streak going',cs:'Udrž streak návyku',xp:25,attr:'discipline',icon:'flame',
+  params:(s,D)=>{ const h=questStreakHabit(D); return h?{habit:h.id}:null; },
+  max:()=>1, val:(s,p,D=QD())=>{ const h=p&&s.habits.find(x=>x.id===p.habit); return h&&isDayComplete(h,D)?1:0; }},
+ {id:'dq_score',title:'Reach a Daily Score of 75',cs:'Dosáhni Daily Score 75',xp:40,attr:'discipline',icon:'target',
+  params:(s,D)=>dailyScore(D).relevant>=2?{}:null,
+  max:()=>75, val:(s,p,D=QD())=>Math.min(75,dailyScore(D).score||0)},
+ {id:'dq_plan_morning',title:'Finish your morning block',cs:'Dokonči ranní plánovaný blok',xp:25,attr:'plan',icon:'sun',
+  params:(s,D)=>(s.plannerBlocks||[]).some(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60)?{}:null,
+  max:(s,p,D=QD())=>Math.max(1,(s.plannerBlocks||[]).filter(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60).length),
+  val:(s,p,D=QD())=>(s.plannerBlocks||[]).filter(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60&&b.completed).length},
+ {id:'dq_sleep',title:'Log last night\'s sleep',cs:'Zapiš dnešní spánek',xp:15,attr:'sleep',icon:'moon',
+  params:(s,D)=>s.sleepLog.some(x=>x.date>=addDays(D,-14)&&x.date<D)?{}:null,
+  max:()=>1, val:(s,p,D=QD())=>s.sleepLog.some(x=>x.date===D)?1:0},
+ {id:'dq_nutrition',title:'Log today\'s meals',cs:'Zapiš dnešní stravu',xp:15,attr:'nutrition',icon:'apple',
+  params:()=>({}), max:()=>1, val:(s,p,D=QD())=>s.meals.some(m=>m.date===D)?1:0},
+];
+const QW=()=>weekStart();
+const WEEKLY_QUESTS=[
+ {id:'wq_workouts',title:'Complete your training week',cs:'Odtrénuj svůj tréninkový týden',xp:150,attr:'fitness',icon:'dumbbell',
+  params:s=>Array.isArray(s.settings.trainingDays)&&s.settings.trainingDays.length||completedWorkouts(s).length?{}:null,
+  max:s=>Math.max(1,Array.isArray(s.settings.trainingDays)&&s.settings.trainingDays.length?s.settings.trainingDays.length:Number(s.dailyTargets.workoutsPerWeek)||3),
+  val:(s,p,W=QW())=>completedWorkouts(s).filter(w=>w.date>=W&&w.date<=addDays(W,6)).length},
+ {id:'wq_tasks',title:'Complete your weekly task target',cs:'Splň týdenní počet úkolů',xp:150,attr:(s,p,W=QW())=>questTaskProfile(tasksDoneBetween(W,addDays(W,6))),icon:'check',
+  params:s=>s.tasks.length?{}:null, max:s=>Math.max(5,Math.round((Number(s.dailyTargets.tasksPerDay)||3)*5)),
+  val:(s,p,W=QW())=>tasksDoneBetween(W,addDays(W,6)).length},
+ {id:'wq_streak',title:'Maintain a 7-day habit streak',cs:'Udrž 7denní streak návyku',xp:150,attr:'discipline',icon:'flame',
+  params:s=>s.habits.some(h=>h.active!==false&&h.type!=='bad')?{}:null, max:()=>7, val:s=>Math.min(7,s.habits.reduce((m,h)=>Math.max(m,h.type==='bad'?0:currentStreak(h)),0))},
+ {id:'wq_goal',title:'Move a goal forward',cs:'Posuň cíl: milník nebo propojený úkol',xp:100,attr:'WIS',icon:'target',
+  params:s=>s.goals.some(g=>g.status==='Active')?{}:null, max:()=>1,
+  val:(s,p,W=QW())=>{ const end=addDays(W,6), ms=s.milestones.some(m=>m.completed&&m.completedAt&&uiIsoDate(m.completedAt)>=W&&uiIsoDate(m.completedAt)<=end);
+    return ms||tasksDoneBetween(W,end).some(t=>t.goalId&&s.goals.some(g=>g.id===t.goalId))?1:0; }},
+ {id:'wq_score',title:'Daily Score 75+ on 3 days',cs:'Daily Score 75+ ve 3 dnech',xp:120,attr:'discipline',icon:'target',
+  params:s=>Object.keys(s.dailyScores||{}).length||dailyScore(todayStr()).score!=null?{}:null, max:()=>3,
+  val:(s,p,W=QW())=>{ const t=todayStr(); let n=Object.entries(s.dailyScores||{}).filter(([d,v])=>d>=W&&d<t&&v&&v.score>=75).length; const live=dailyScore(t).score; if(live!=null&&live>=75) n++; return Math.min(3,n); }},
+ {id:'wq_planner',title:'Complete 5 planned blocks',cs:'Dokonči 5 plánovaných bloků',xp:100,attr:'plan',icon:'clock',
+  params:s=>(s.plannerBlocks||[]).some(b=>b.date>=addDays(todayStr(),-14))?{}:null, max:()=>5,
+  val:(s,p,W=QW())=>Math.min(5,(s.plannerBlocks||[]).filter(b=>b.date>=W&&b.date<=addDays(W,6)&&b.completed).length)},
+];
+// Relevant quests of a day/week in board order: daily = up to 2 core missions (priority order), then the
+// rest rotated by the date; weekly = priority order. Pure: reads S, writes nothing.
+function questCandidates(period,D){
+  if(period==='weekly') return WEEKLY_QUESTS.map(q=>({q,p:q.params(S)})).filter(x=>x.p);
+  const rel=DAILY_QUESTS.map(q=>({q,p:q.params(S,D)})).filter(x=>x.p);
+  const core=rel.filter(x=>x.q.core), rest=rel.filter(x=>!x.q.core);
+  const first=core.slice(0,2), others=[...core.slice(2),...rest];
+  const k=others.length?questDayIndex(D)%others.length:0;
+  return [...first,...others.slice(k),...others.slice(0,k)];
+}
+// The board of today / this week (kept once picked; topped up while it has fewer than 3 quests).
+function questBoardFor(period,write){
+  const D=todayStr(), stamp=period==='daily'?D:weekStart();
+  const qb=(S.questBoard&&typeof S.questBoard==='object')?S.questBoard:{};
+  const cur=qb[period]&&qb[period].stamp===stamp?qb[period].items.slice():[];
+  if(cur.length<QUEST_BOARD_SIZE){
+    // A first pick may contain what was already done today; a later top-up only adds quests still open
+    // (a quest that becomes relevant through the very action that completes it is never free XP).
+    const topUp=cur.length>0||!!(qb[period]&&qb[period].stamp===stamp);
+    questCandidates(period,D).forEach(x=>{ if(cur.length<QUEST_BOARD_SIZE&&!cur.some(i=>i.id===x.q.id)&&!(topUp&&x.q.check(S,x.p))) cur.push({id:x.q.id,p:x.p}); });
+    if(write!==false){ S.questBoard=Object.assign({},qb,{[period]:{stamp,items:cur}}); }
+  }
+  const pool=period==='daily'?DAILY_QUESTS:WEEKLY_QUESTS;
+  return cur.map(i=>({q:pool.find(q=>q.id===i.id),p:i.p||{}})).filter(x=>x.q);
+}
+function questKey(qid,period){return period==='daily'?qid+':'+todayStr():qid+':'+weekStart();}
+function questDone(q,period){ return S.quests.some(x=>x.key===questKey(q.id,period)); }
+function questMax(q,p){ return typeof q.max==='function'?q.max(S,p||{}):q.max; }
+function questVal(q,p){ return q.val?q.val(S,p||{}):0; }
+DAILY_QUESTS.concat(WEEKLY_QUESTS).forEach(q=>{ q.check=(s,p)=>q.val(s,p||{})>=q.max(s,p||{}); });
+function checkQuests(){
+  let changed=false;
+  ['daily','weekly'].forEach(period=>{
+    questBoardFor(period).forEach(({q,p})=>{
+      const key=questKey(q.id,period);
+      if(S.quests.some(x=>x.key===key) || !q.check(S,p)) return;
+      const title=questTitle(q,p);
+      S.quests.push({key,questId:q.id,date:todayStr(),period});
+      toast(`📜 ${period==='daily'?'Daily':'Weekly'} Quest complete: ${title}`);
+      logActivity('quest_complete',title,`Completed ${period} quest: ${title}`,q.xp);
+      grantXp(q.xp,'Quest: '+title,questAttrOf(q,p),undefined,QUEST_ATTR_RATE);
+      changed=true;
+    });
+  });
+  return changed;
+}
+// Titles with the quest's own parameters (category, habit, weekly target).
+function questTitle(q,p,lang){
+  const cs=(lang||uiLang())==='cs'; p=p||{};
+  let t=cs?q.cs:q.title;
+  if(q.id==='dq_category'&&p.cat) t+=(cs?': ':': ')+catLabel(p.cat,'life');
+  if(q.id==='dq_streak'&&p.habit){ const h=S.habits.find(x=>x.id===p.habit); if(h) t+=`: ${h.name} (${currentStreak(h)} ${cs?'dní':'days'})`; }
+  if(q.id==='wq_workouts'||q.id==='wq_tasks') t+=` (${questMax(q,p)}×)`;
+  return t;
+}
+function uiQuestTitle(q,p){ return questTitle(q,p); }
+// One quest row (Home widget and the Quests screen).
+function uiQuestRow(q,p,period,big){
+  const done=questDone(q,period), max=questMax(q,p), val=Math.min(questVal(q,p),max), pct=uiPct(val,max);
+  const t=escapeHtml(questTitle(q,p));
+  return `<div class="quest-row${done?' is-done':''}${big?' is-big':''}" data-quest="${q.id}">
+    <span class="q-ic" aria-hidden="true">${uiIcon(done?'check':q.icon||'quest',big?20:17)}</span>
+    <span class="q-main"><span class="q-title">${t}</span>
+      <span class="bar${done?' is-success':''}" role="progressbar" aria-label="${t}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></span></span>
+    <span class="q-side"><b>${q.id==='dq_score'?val:`${val}/${max}`}</b><span class="q-xp">+${q.xp} XP</span></span>
+  </div>`;
+}
 function renderQuests(){
   checkQuests();
-  const dailyDone=DAILY_QUESTS.filter(q=>S.quests.some(x=>x.key===questKey(q.id,'daily'))).length;
-  const weeklyDone=WEEKLY_QUESTS.filter(q=>S.quests.some(x=>x.key===questKey(q.id,'weekly'))).length;
+  const cs=uiLang()==='cs';
+  const daily=questBoardFor('daily'), weekly=questBoardFor('weekly');
+  const dailyDone=daily.filter(x=>questDone(x.q,'daily')).length, weeklyDone=weekly.filter(x=>questDone(x.q,'weekly')).length;
   const activeGoals=S.goals.filter(g=>g.status==='Active');
   const weekEnd=addDays(weekStart(),6);
   const wrap=el(`<div>${uiPageHead(uiT('quests'))}
+    <p class="helper-text" style="margin:-4px 2px 12px">${cs?'Výpravy se vybírají podle tvého dne — naplánovaného tréninku, prioritních úkolů, bloků v plánovači a návyků — a plní se samy, jakmile věc opravdu uděláš.':'Quests are picked from your day — planned workout, priority tasks, planner blocks and habits — and complete by themselves once you actually do the thing.'}</p>
     <div class="stat-grid cols-3">
-      <div class="stat-card"><div class="stat-label">📜 ${uiT('daily')}</div><div class="stat-value">${dailyDone}<small>/${DAILY_QUESTS.length}</small></div><div class="bar is-success"><i style="width:${uiPct(dailyDone,DAILY_QUESTS.length)}%"></i></div></div>
-      <div class="stat-card"><div class="stat-label">🗓️ ${uiT('weekly')}</div><div class="stat-value">${weeklyDone}<small>/${WEEKLY_QUESTS.length}</small></div><div class="bar is-success"><i style="width:${uiPct(weeklyDone,WEEKLY_QUESTS.length)}%"></i></div></div>
-      <div class="stat-card"><div class="stat-label">🎯 ${uiT('goal_quests')}</div><div class="stat-value">${activeGoals.length}</div></div>
+      <div class="stat-card"><div class="stat-label">${uiIcon('quest',14)} ${uiT('daily')}</div><div class="stat-value">${dailyDone}<small>/${daily.length}</small></div><div class="bar is-success"><i style="width:${uiPct(dailyDone,daily.length)}%"></i></div></div>
+      <div class="stat-card"><div class="stat-label">${uiIcon('calendar',14)} ${uiT('weekly')}</div><div class="stat-value">${weeklyDone}<small>/${weekly.length}</small></div><div class="bar is-success"><i style="width:${uiPct(weeklyDone,weekly.length)}%"></i></div></div>
+      <div class="stat-card"><div class="stat-label">${uiIcon('target',14)} ${uiT('goal_quests')}</div><div class="stat-value">${activeGoals.length}</div></div>
     </div>
-    <div class="section-header"><h3>${uiT('daily')}</h3><span class="chip is-muted">⏳ ${uiT('resets_today')}</span></div><div class="list" id="dqL"></div>
-    <div class="section-header"><h3>${uiT('weekly')}</h3><span class="chip is-muted">⏳ ${uiT('resets_week',{d:fmtDate(weekEnd)})}</span></div><div class="list" id="wqL"></div>
+    <div class="section-header"><h3>${uiT('daily')}</h3><span class="chip is-muted">${uiIcon('clock',13)} ${uiT('resets_today')}</span></div><div class="card quest-list" id="dqL"></div>
+    <div class="section-header"><h3>${uiT('weekly')}</h3><span class="chip is-muted">${uiIcon('clock',13)} ${uiT('resets_week',{d:fmtDate(weekEnd)})}</span></div><div class="card quest-list" id="wqL"></div>
     <div class="section-header"><h3>${uiT('goal_quests')}</h3></div><div class="list" id="gqL"></div>
-    <div class="section-header"><h3>${uiT('challenges')}</h3></div><div class="card"><div class="sub">${uiT('no_challenges')}</div></div>
   </div>`);
-  const questCard=(q,done)=>{
-    const max=questMax(q);
-    const val=q.val?q.val(S):(done?1:0);
-    const pct=Math.round(val/max*100);
-    return el(`<div class="card quest${done?' is-done':''}">
-      <div class="quest-top"><span class="icon-circle" aria-hidden="true">${done?'✅':'📜'}</span>
-        <div style="flex:1;min-width:0"><div class="quest-title ${done?'item-title done':''}">${escapeHtml(uiQuestTitle(q))}</div>
-        <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><span class="chip is-gold">+${q.xp} XP</span><span class="chip is-muted">${q.attr}</span>${done?`<span class="chip is-success">✓ ${uiT('completed_q')}</span>`:''}</div></div>
-      </div>
-      <div class="bar" role="progressbar" aria-valuenow="${Math.min(100,pct)}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(uiQuestTitle(q))}"><i style="width:${Math.min(100,pct)}%"></i></div>
-      <div class="quest-foot"><span>${Math.min(val,max)}/${max}</span><span>${Math.min(100,pct)}%</span></div>
-    </div>`);
-  };
-  const dl=wrap.querySelector('#dqL');
-  DAILY_QUESTS.forEach(q=>dl.appendChild(questCard(q,S.quests.some(x=>x.key===questKey(q.id,'daily')))));
-  const wl=wrap.querySelector('#wqL');
-  WEEKLY_QUESTS.forEach(q=>wl.appendChild(questCard(q,S.quests.some(x=>x.key===questKey(q.id,'weekly')))));
+  const dl=wrap.querySelector('#dqL'), wl=wrap.querySelector('#wqL');
+  dl.innerHTML=daily.length?daily.map(x=>uiQuestRow(x.q,x.p,'daily',true)).join(''):`<div class="sub">${cs?'Dnes není nic k výpravě.':'No quests today.'}</div>`;
+  wl.innerHTML=weekly.length?weekly.map(x=>uiQuestRow(x.q,x.p,'weekly',true)).join(''):`<div class="sub">${cs?'Tento týden žádné výpravy.':'No quests this week.'}</div>`;
   // Goal quests are the user's real active goals (progress = goalProgress, reward = goal XP).
   const gl=wrap.querySelector('#gqL');
   if(!activeGoals.length){ const e=el(`<div class="card">${uiEmpty('🎯',uiT('empty_goals_t'),uiT('quest_goal_note'),uiT('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openGoalForm(); gl.appendChild(e); }
@@ -6679,7 +7217,7 @@ function renderQuests(){
   activeGoals.forEach(g=>{
     const c=el(`<div class="card quest"></div>`);
     c.appendChild(goalMini(g));
-    c.appendChild(el(`<div class="row" style="gap:6px"><span class="chip is-gold">+${g.xpReward||200} XP</span>${g.targetDate?`<span class="chip is-muted">⏳ ${fmtDate(g.targetDate)}</span>`:''}</div>`));
+    c.appendChild(el(`<div class="row" style="gap:6px"><span class="chip is-gold">+${g.xpReward||200} XP</span>${g.targetDate?`<span class="chip is-muted">${uiIcon('calendar',13)} ${fmtDate(g.targetDate)}</span>`:''}</div>`));
     gl.appendChild(c);
   });
   return wrap;
@@ -7034,7 +7572,7 @@ function computeStats(period){
     tasks:{tasksCreated,tasksCompleted,tasksTotal,completionRate,overdueTasks,byPriority},
     habits:{activeCount:activeHabits.length,goodHabits,badHabits,checks:habitChecks,completion:habitCompletion,bestStreakOverall,currentStreakOverall},
     goals:{activeGoals,completedGoals,avgGoalProgress,completedMilestonesInPeriod,completedMilestonesAll,goalsByCategory},
-    xp:{xpEarned,xpTodayVal,xpThisWeek,xpThisMonth,level,into,need,skillPoints:S.rpg.skillPoints.available,attributePoints:S.rpg.attributePoints.available},
+    xp:{xpEarned,xpTodayVal,xpThisWeek,xpThisMonth,level,into,need},
     fitness, nutrition, finance, health, journal,
     streaks:{taskStreak:currentTaskStreak(), habitBest:bestStreakOverall, habitCurrent:currentStreakOverall},
   };
@@ -7080,13 +7618,12 @@ function renderStats(){
     ['Average progress',st.goals.avgGoalProgress+'%'],
     ['Milestones completed (period)',st.goals.completedMilestonesInPeriod],['Milestones completed (all-time)',st.goals.completedMilestonesAll],
   ])));
-  const catRows=Object.keys(st.goals.goalsByCategory).length?Object.entries(st.goals.goalsByCategory).map(([c,n])=>`<div class="kv"><span>${escapeHtml(uiL(c))}</span><b>${n}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No goals yet.')}</div>`;
+  const catRows=Object.keys(st.goals.goalsByCategory).length?Object.entries(st.goals.goalsByCategory).map(([c,n])=>`<div class="kv"><span>${escapeHtml(c==='None'?uiL(c):catLabel(c,'life'))}</span><b>${n}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No goals yet.')}</div>`;
   body.appendChild(el(`<div class="card"><h3>${uiL('Goals by category')}</h3>${catRows}</div>`));
 
   body.appendChild(el(statCard('XP / RPG',[
     ['XP earned (period)',st.xp.xpEarned],['XP today',st.xp.xpTodayVal],['XP this week',st.xp.xpThisWeek],['XP this month',st.xp.xpThisMonth],
     ['Level',st.xp.level],['Progress to next level',st.xp.into+' / '+st.xp.need],
-    ['Skill Points available',st.xp.skillPoints],['Attribute Points available',st.xp.attributePoints],
   ])));
   body.appendChild(el(chartCard(uiL('XP trend'),chartValuesForLog(S.xpLog.map(x=>({date:new Date(x.ts).toISOString().slice(0,10),amount:x.amount})),statsPeriod,x=>x.amount),null,{type:'line'})));
 
@@ -7190,15 +7727,15 @@ function searchNavigate(type,obj){
 function searchGroups(q){
   q=String(q||'').toLowerCase(); // defensively case-insensitive regardless of caller
   return [
-    ['Tasks','✅','task', S.tasks.filter(t=>searchMatch([t.title,t.description,t.category,...(t.tags||[])],q))
+    ['Tasks','✅','task', S.tasks.filter(t=>searchMatch([t.title,t.description,t.category,catLabel(t.category,'life'),...(t.tags||[])],q))
       .map(t=>({title:t.title,meta:[t.priority,t.dueDate?fmtDate(t.dueDate):''].filter(Boolean).join(' · '),obj:t}))],
     ['Events','📅','event', S.events.filter(e=>searchMatch([e.title,e.description,e.location,e.category],q))
       .map(e=>({title:e.title,meta:fmtDate(e.date),obj:e}))],
     ['Planner','🗓️','plannerBlock', (S.plannerBlocks||[]).filter(b=>searchMatch([b.title,b.description,b.notes,...(b.workoutTemplateId?[(templateFind(b.workoutTemplateId)||{}).name]:[])],q))
       .map(b=>({title:b.title,meta:fmtDate(b.date)+' · '+b.startTime+'–'+b.endTime+(b.workoutTemplateId?' · 🏋️ '+((templateFind(b.workoutTemplateId)||{}).name||uiPlT('tpl_missing')):''),obj:b}))],
-    ['Habits','🔥','habit', S.habits.filter(h=>searchMatch([h.name,h.description,h.category],q))
+    ['Habits','🔥','habit', S.habits.filter(h=>searchMatch([h.name,h.description,h.category,catLabel(h.category,'life')],q))
       .map(h=>({title:h.name,meta:h.category||'',obj:h}))],
-    ['Goals','🎯','goal', S.goals.filter(g=>searchMatch([g.title,g.description,g.category],q))
+    ['Goals','🎯','goal', S.goals.filter(g=>searchMatch([g.title,g.description,g.category,catLabel(g.category,'life')],q))
       .map(g=>({title:g.title,meta:g.status||'',obj:g}))],
     ['Milestones','🚩','milestone', S.milestones.filter(m=>searchMatch([m.title,m.description],q))
       .map(m=>({title:m.title,meta:m.completed?'Completed':'Open',obj:m}))],
@@ -7227,8 +7764,8 @@ function searchGroups(q){
       .map(s=>({title:s.type||'Service',meta:fmtDate(s.date),obj:s}))],
     ['Fuel Entries','⛽','fuel', S.fuelEntries.filter(f=>searchMatch([f.station],q))
       .map(f=>({title:f.station||'Fuel entry',meta:fmtDate(f.date),obj:f}))],
-    ['Quests','📜','quest', [...DAILY_QUESTS,...WEEKLY_QUESTS].filter(qd=>searchMatch([qd.title],q))
-      .map(qd=>({title:qd.title,meta:'+'+qd.xp+' XP',obj:qd}))],
+    ['Quests','📜','quest', [...DAILY_QUESTS,...WEEKLY_QUESTS].filter(qd=>searchMatch([qd.title,qd.cs],q))
+      .map(qd=>({title:uiLang()==='cs'?qd.cs:qd.title,meta:'+'+qd.xp+' XP',obj:qd}))],
     ['Achievements','🏆','achievement', ACHV.filter(a=>searchMatch([a.title,a.desc],q))
       .map(a=>({title:a.title,meta:S.achievementsUnlocked.includes(a.id)?'Unlocked':'Locked',obj:a}))],
   ];
@@ -7358,7 +7895,7 @@ function plannerToggleCompleted(id){ const b=(S.plannerBlocks||[]).find(x=>x.id=
    Strictly read-only: never grants XP, never touches level/attributes/points/achievements/quests.
    Every area returns {score:0..100|null, ...details}; null = N/A (not relevant or no data) and
    N/A areas are left out of the weighted average entirely (weights re-normalize). ---- */
-const DAILY_SCORE_ALGO=1;
+const DAILY_SCORE_ALGO=2; // 2 (polish pass): Fitness is also planned by the user's training days (see fitnessDayPlan)
 const DAILY_SCORE_WEIGHTS={tasks:30,habits:30,nutrition:15,sleep:15,fitness:10}; // goals: info only (weight 0)
 const DAILY_SCORE_PRIORITY_WEIGHT={Low:1,Medium:1,High:1.5,Urgent:2};
 function dailyScoreLabelKey(score){
@@ -7455,12 +7992,21 @@ function dailyScoreSleep(D){
   return {score:Math.round(dailyScoreSleepBand(hours)),hours,quality:best.quality!=null&&best.quality!==''?Number(best.quality):null};
 }
 // Fitness is scored only when a workout was planned: a Fitness-category calendar event on D
-// (same "stored date or next occurrence" rule as the calendar). Unplanned workouts = bonus info.
+// (same "stored date or next occurrence" rule as the calendar) or -- polish pass -- one of the user's
+// training days (S.settings.trainingDays, weekday numbers 0=Sun..6=Sat). Any other day of a set
+// schedule is a Rest Day: never scored, never a missed workout. Without a schedule (null) only the
+// calendar plans a workout, exactly as before. Unplanned workouts = bonus info.
+function fitnessDayPlan(D){
+  if(S.events.some(e=>e.category==='Fitness'&&(e.date===D||eventUpcomingDate(e)===D))) return 'calendar';
+  const td=S.settings&&Array.isArray(S.settings.trainingDays)?S.settings.trainingDays:null;
+  if(!td) return 'none';
+  return td.includes(new Date(D+'T00:00').getDay())?'training':'rest';
+}
 function dailyScoreFitness(D){
-  const planned=S.events.some(e=>e.category==='Fitness'&&(e.date===D||eventUpcomingDate(e)===D));
+  const plan=fitnessDayPlan(D);
   const workouts=completedWorkouts(S).filter(w=>w.date===D).length;
-  if(!planned) return {score:null,reason:'not_planned',bonus:workouts>0,workouts};
-  return {score:workouts>0?100:0,planned:true,workouts};
+  if(plan==='none'||plan==='rest') return {score:null,reason:plan==='rest'?'rest_day':'not_planned',rest:plan==='rest',bonus:workouts>0,workouts};
+  return {score:workouts>0?100:0,planned:true,source:plan,workouts};
 }
 // Goals: information only in algo 1 (never part of the score).
 function dailyScoreGoals(D){
@@ -7685,7 +8231,7 @@ function openSleepForm(existing){
     } else {
       const id=uid();
       S.sleepLog.push(Object.assign({id,createdAt:Date.now()},fields));
-      grantXp(10,'Sleep logged','VIT',`sleep:${id}`); // idempotent: this exact new record's id can only ever grant once
+      grantXp(10,'Sleep logged','sleep',`sleep:${id}`); // idempotent: this exact new record's id can only ever grant once
     }
     scheduleSave();closeSheets();render();toast(s?'Sleep entry updated':'Sleep logged');
   };
@@ -7801,8 +8347,14 @@ function openSheet(contentEl){
   // Phase 8B presentation: localized fixed labels, dialog semantics, Escape closes (same as a
   // backdrop tap -- onboarding clears bg.onclick, so it stays non-dismissable), focus moves in.
   uiLocalizeTree(sheet);
+  uiIconize(sheet);
   const h=sheet.querySelector('h2,h3'); if(h){ if(!h.id) h.id='uiSheetTitle'+Math.random().toString(36).slice(2,7); sheet.setAttribute('aria-labelledby',h.id); }
   bg.onkeydown=(e)=>{ if(e.key==='Escape'&&bg.onclick) bg.remove(); };
+  // Polish pass: every sheet can be pulled down to close -- by its grab strip or its title (never by the
+  // content, so scrolling a long form can't dismiss it). Same close as a backdrop tap / Escape.
+  const grab=el(`<div class="sheet-grab" aria-hidden="true"><i></i></div>`);
+  sheet.insertBefore(grab,sheet.firstChild);
+  uiSheetDrag(bg,sheet,[grab,h&&h.closest('.ob')?null:h]);
   document.body.appendChild(bg);
   const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button');
   // Never steal focus from a field the user already moved to (the timer can fire late on slow devices).
@@ -7810,7 +8362,49 @@ function openSheet(contentEl){
   sheet.tabIndex=-1;
   return bg;
 }
-function catOptions(){return CAT_LIST.map(c=>`<option value="${c}">${CATS[c].ic} ${c}</option>`).join('');}
+// Polish pass: options of the shared category list (archived ones only when currently selected).
+function uiSheetDrag(bg,sheet,zones){
+  let st=null;
+  const reset=()=>{ sheet.style.transition=''; sheet.style.transform=''; bg.style.opacity=''; };
+  const down=e=>{
+    if(!bg.onclick||(e.pointerType==='mouse'&&e.button!==0)) return; // non-dismissable sheets (onboarding) stay put
+    st={y:e.clientY,t:e.timeStamp,id:e.pointerId,dy:0};
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+    sheet.style.transition='none';
+  };
+  const move=e=>{
+    if(!st||e.pointerId!==st.id) return;
+    st.dy=Math.max(0,e.clientY-st.y);
+    sheet.style.transform=st.dy?`translateY(${st.dy}px)`:'';
+    bg.style.opacity=String(Math.max(.35,1-st.dy/(sheet.offsetHeight*1.4||600)));
+    if(st.dy>3) e.preventDefault();
+  };
+  const up=e=>{
+    if(!st||e.pointerId!==st.id) return;
+    const dy=st.dy, v=dy/Math.max(1,e.timeStamp-st.t); st=null;
+    if(bg.onclick&&(dy>Math.min(120,sheet.offsetHeight*.25)||(dy>40&&v>.6))){
+      const quick=!animationsOn()||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if(quick){ bg.remove(); return; }
+      sheet.style.transition='transform .18s ease-in'; sheet.style.transform=`translateY(${sheet.offsetHeight}px)`;
+      setTimeout(()=>bg.remove(),170); return;
+    }
+    sheet.style.transition='transform .2s ease-out'; sheet.style.transform=''; bg.style.opacity='';
+    setTimeout(reset,220);
+  };
+  zones.filter(Boolean).forEach(z=>{
+    z.classList.add('sheet-drag');
+    z.addEventListener('pointerdown',down); z.addEventListener('pointermove',move); z.addEventListener('pointerup',up);
+    z.addEventListener('pointercancel',()=>{ if(st){ st=null; reset(); } });
+  });
+}
+function catOptions(current,scope){ return catList(scope||'life').filter(c=>!c.archived||c.key===current).map(c=>`<option value="${escapeHtml(c.key)}">${escapeHtml(catLabel(c.key,scope||'life'))}</option>`).join(''); }
+// "Odměna +20 XP" line under a priority select, kept in sync with it.
+function uiXpHint(id){ return `<p class="helper-text xp-hint" id="${id}" aria-live="polite"></p>`; }
+function uiBindXpHint(root,selId,hintId,xpOf,done){
+  const sel=root.querySelector('#'+selId), hint=root.querySelector('#'+hintId), cs=uiLang()==='cs';
+  const upd=()=>{ hint.innerHTML=`${uiIcon('bolt',14)} ${cs?'Odměna':'Reward'} <b>+${xpOf(sel.value)} XP</b> · ${cs?'podle priority, počítá se automaticky':'set by priority automatically'}${done?(cs?' (hotový úkol si ponechá už získané XP)':' (a done task keeps the XP it already earned)'):''}`; };
+  sel.addEventListener('change',upd); upd();
+}
 
 function openQuickAdd(){
   const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽'],['planner','🗓️']];
@@ -7844,18 +8438,18 @@ function openForm(type){
       <label>Description</label><textarea id="f_desc" rows="2"></textarea>
       <label>Category</label><select id="f_cat"><option value="">None</option>${catOptions()}</select>
       <label>Priority</label><select id="f_pri"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select>
+      ${uiXpHint('f_xpHint')}
       <label>Due date</label><input type="date" id="f_due" value="${todayStr()}">
       <label>Goal</label><select id="f_goal">${goalOptions()}</select>
-      <label>XP reward</label><input type="number" id="f_xp" min="0" value="10">
       <button class="btn" id="f_save">Add Task</button>
     </div>`);
-    const priSel=inner.querySelector('#f_pri'), xpInput=inner.querySelector('#f_xp');
-    priSel.onchange=()=>{ xpInput.value = (priSel.value==='High'||priSel.value==='Urgent')?30:10; };
+    const priSel=inner.querySelector('#f_pri');
+    uiBindXpHint(inner,'f_pri','f_xpHint',p=>taskXp({priority:p}));
     inner.querySelector('#f_save').onclick=()=>{
       const title=inner.querySelector('#f_title').value.trim();
       if(!title){toast('Title required');return;}
       S.tasks.push({id:uid(),title,description:inner.querySelector('#f_desc').value,category:inner.querySelector('#f_cat').value,priority:priSel.value,
-        dueDate:inner.querySelector('#f_due').value,goalId:inner.querySelector('#f_goal').value,xpReward:parseFloat(xpInput.value)||0,done:false,createdAt:Date.now()});
+        dueDate:inner.querySelector('#f_due').value,goalId:inner.querySelector('#f_goal').value,done:false,createdAt:Date.now()});
       scheduleSave();closeSheets();view='tasks';render();toast('Task added');
     };
   } else if(type==='habit'){
@@ -7997,7 +8591,7 @@ try{
 // hasn't been filled in yet (name/avatar collected so far are kept; nothing else is invented). ----
 const ONBOARDING_HABIT_PRESETS=['Drink water','Exercise','Read'];
 function defaultOnboardingData(){
-  return {name:'', avatar:'🧙', goalTitle:'', goalDate:'', habitPicks:[],
+  return {name:'', avatar:'svg:mage', goalTitle:'', goalDate:'', habitPicks:[],
     targets:{calories:2200,protein:150,water:2500,workoutsPerWeek:3,tasksPerDay:3,habitsPerDay:1}};
 }
 function showOnboarding(step,data){
@@ -8012,18 +8606,19 @@ function showOnboarding(step,data){
     return row;
   };
   // Phase 8B: progress header for every step (presentation only).
-  const obHead=(emoji,title,lead)=>`<div class="ob-steps" aria-label="${uiT('ob_step',{n:step})}">${[1,2,3,4,5,6].map(i=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div><div class="kicker" style="margin-bottom:10px">${uiT('ob_step',{n:step})}</div><div class="ob-emoji" aria-hidden="true">${emoji}</div><h2>${title}</h2><p class="ob-lead">${lead}</p>`;
+  const obHead=(emoji,title,lead)=>`<div class="ob-steps" aria-label="${uiT('ob_step',{n:step})}">${[1,2,3,4,5,6].map(i=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div><div class="kicker" style="margin-bottom:10px">${uiT('ob_step',{n:step})}</div><div class="ob-emoji" aria-hidden="true">${/^</.test(emoji)?emoji:uiGlyph(emoji,30)}</div><h2>${title}</h2><p class="ob-lead">${lead}</p>`;
   let inner;
   if(step===1){
     inner=el(`<div class="ob">${obHead('⚔️','Vítej v LifeOS','Tvůj život jako RPG. Plň úkoly a návyky, sbírej XP a vylepšuj svou postavu. Jak ti máme říkat?')}
       <label for="ob_name">Jméno</label><input id="ob_name" placeholder="např. David" autocomplete="given-name" value="${escapeHtml(data.name)}"></div>`);
     inner.appendChild(stepBtns('Next',()=>{ data.name=inner.querySelector('#ob_name').value.trim(); showOnboarding(2,data); }));
   } else if(step===2){
-    inner=el(`<div class="ob">${obHead(data.avatar,'Vyber si avatara','Tvoje postava na obrazovce Domů a v profilu. Kdykoli ho změníš v Nastavení.')}
+    inner=el(`<div class="ob">${obHead(`<span class="avatar hero xl">${uiAvatarInner({avatar:data.avatar})}</span>`,'Vyber si avatara','Tvoje postava na obrazovce Domů a v profilu. Kdykoli ji změníš nebo nahraješ vlastní fotku v Nastavení.')}
       <div class="ob-avatars" id="ob_avatars"></div></div>`);
     const av=inner.querySelector('#ob_avatars');
     AVATAR_CHOICES.forEach(a=>{
-      const b=el(`<button class="iconbtn${a===data.avatar?' is-selected':''}" aria-pressed="${a===data.avatar}" aria-label="Avatar ${a}">${a}</button>`);
+      const id=a.slice(4);
+      const b=el(`<button class="iconbtn av-opt${a===data.avatar?' is-selected':''}" aria-pressed="${a===data.avatar}" aria-label="Avatar ${AVATAR_LABELS[id][0]}"><span class="avatar">${uiAvatarSvg(id)}</span></button>`);
       b.onclick=()=>{ data.avatar=a; showOnboarding(2,data); };
       av.appendChild(b);
     });
@@ -8091,7 +8686,7 @@ function showOnboarding(step,data){
 // never re-trap the user in the wizard on next load.
 function finishOnboardingWizard(data,skipped,withSeed){
   S.profile.name = data.name || 'Hero';
-  S.profile.avatar = data.avatar || '🧙';
+  S.profile.avatar = data.avatar || 'svg:mage';
   if(!skipped){
     if(data.goalTitle) S.goals.push({id:uid(),title:data.goalTitle,description:'',targetDate:data.goalDate||'',status:'Active',manualProgress:0,createdAt:Date.now()});
     (data.habitPicks||[]).forEach(name=>{ S.habits.push(migrateHabit({id:uid(),name,createdAt:Date.now()})); });
