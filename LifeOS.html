@@ -2831,7 +2831,7 @@ const UI_EMOJI_ICON={'🌤️':'sun','🔥':'flame','🎯':'target','✅':'check
   '💰':'wallet','💸':'expense','💵':'income','🏋️':'dumbbell','💪':'dumbbell','🍎':'apple','🍽️':'utensils','❤️':'heart','😴':'moon','💤':'moon','🚗':'car','💳':'card',
   '📜':'quest','📊':'chart','🧙':'shield','⚙️':'settings','🏆':'trophy','🔒':'lock','🌟':'star','⭐':'star','🚩':'flag','⏳':'calendar','💧':'drop','⛽':'fuel',
   '📚':'book','💼':'briefcase','✨':'sparkle','⬆️':'up','👟':'activity','⚖️':'scale','🏅':'trophy','📋':'note','📌':'pin','🔔':'bell','⏰':'clock','🛢️':'car',
-  '🛞':'car','🛡️':'shield','🧾':'note','🏦':'wallet','🐖':'wallet','🐷':'wallet','📈':'chart','🔁':'clock','🏷️':'tag','📆':'calendar','🏠':'home','🥗':'apple','🎁':'star','❓':'search','✏️':'edit','⚔️':'shield',
+  '🛞':'car','🛡️':'shield','🧾':'note','🏦':'wallet','🐖':'wallet','🐷':'wallet','📈':'chart','🔁':'clock','🏷️':'tag','📆':'calendar','🏠':'home','🥗':'apple','🎁':'star','❓':'search','✏️':'edit','⚔️':'shield','⬇️':'download','⬇':'download',
   '😞':'mood1','😣':'mood1','😕':'mood2','😐':'mood3','🙂':'mood4','😄':'mood5','🤩':'mood5','🔧':'wrench','📖':'book','📍':'pin','⚡':'bolt','🤷':'search',
   '🛍️':'cart','🎬':'play','📦':'archive','🍳':'utensils','🥤':'drop','🏃':'activity','🧘':'heart','🎓':'book','📱':'card','🌙':'moon','💡':'sparkle','🎮':'play'};
 UI_ICONS.wrench='<path d="M14.7 6.3a4 4 0 0 1 5 5l-2.3-.6-1.4 1.4-8.6 8.6a2 2 0 0 1-2.8-2.8l8.6-8.6 1.4-1.4-.6-2.3Z"/>';
@@ -2850,7 +2850,8 @@ function uiIconize(root){
   hits.forEach(t=>{
     const par=t.parentElement; if(!par) return;
     if(par.tagName==='OPTION'){ t.nodeValue=t.nodeValue.replace(UI_EMOJI_RX,'').replace(/^\s+/,''); return; }
-    if(par.closest(UI_EMOJI_SKIP)&&!par.closest('.icon-circle,.chip,.kicker,.stat-label')) return;
+    // text typed by the user sits directly in these elements; a decorative span nested in them is converted
+    if(par.matches(UI_EMOJI_SKIP)||par.closest('input,textarea,script,style,svg,.note-body,[data-user-text]')) return;
     const frag=document.createDocumentFragment(); let last=0; const v=t.nodeValue; UI_EMOJI_RX.lastIndex=0; let m;
     while((m=UI_EMOJI_RX.exec(v))){ if(m.index>last) frag.appendChild(document.createTextNode(v.slice(last,m.index)));
       const sp=document.createElement('span'); sp.className='gi'; sp.setAttribute('aria-hidden','true'); sp.innerHTML=uiGlyph(m[1],16); frag.appendChild(sp); last=m.index+m[0].length; }

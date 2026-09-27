@@ -3283,6 +3283,449 @@ test('11B UI: every Finance screen and sheet fits 320-1440 px (long names, big a
   void sheets;
 }, { state: fixtureState() });
 
+// ---------- Polish pass 1 ----------
+const PPW = [320, 375, 390, 430, 768, 1024, 1440];
+const overflowOf = page => page.evaluate(() => {
+  const vw = document.documentElement.clientWidth, bad = [];
+  if (document.documentElement.scrollWidth > vw) bad.push('page ' + (document.documentElement.scrollWidth - vw));
+  document.querySelectorAll('.sheet *').forEach(n => { const r = n.getBoundingClientRect(); if (r.width && (r.right > vw + 1 || r.left < -1)) bad.push((n.id || n.className || n.tagName) + ' ' + Math.round(r.right)); });
+  return bad.slice(0, 5);
+});
+const dupIds = page => page.evaluate(() => { const seen = {}; document.querySelectorAll('[id]').forEach(n => { seen[n.id] = (seen[n.id] || 0) + 1; }); return Object.entries(seen).filter(([, c]) => c > 1).map(([k]) => k); });
+const EMOJI_RX = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2B50}\u{23F0}-\u{23FA}]/u;
+
+test('P1 quests: the board is picked from real relevance (priority tasks, planner, training day), stable for the day, max 3', async ({ page }) => {
+  const b = await page.evaluate(() => questBoardFor('daily').map(x => x.q.id));
+  assert.equal(b.length, 3);
+  assert.equal(b[0], 'dq_priority', 'a High/Urgent task is due today -> the priority mission comes first');
+  assert.ok(b.includes('dq_plan_all'), 'planner blocks today -> the planner mission');
+  assert.ok(!b.includes('dq_workout'), 'no workout planned today (no training days, no Fitness event) -> no workout quest');
+  // relevance follows the user's real day: training days make the workout quest relevant
+  const withTraining = await page.evaluate(() => { S.settings.trainingDays = [3]; return questCandidates('daily', todayStr()).map(x => x.q.id); });
+  assert.ok(withTraining.includes('dq_workout') || withTraining.includes('dq_workout_pr'), 'Wednesday is a training day');
+  // the board itself stays as picked for the whole day
+  assert.deepEqual(await page.evaluate(() => questBoardFor('daily').map(x => x.q.id)), b, 'stable during the day');
+  const w = await page.evaluate(() => questBoardFor('weekly').map(x => x.q.id));
+  assert.equal(w.length, 3);
+  // an empty profile still gets a sensible, non-random fallback
+  const empty = await page.evaluate(() => { const keep = S; S = migrate(defaultState()); S.settings.onboarded = true; const r = questCandidates('daily', todayStr()).map(x => x.q.id); S = keep; return r; });
+  assert.deepEqual(empty, ['dq_nutrition']);
+}, { state: fixtureState() });
+
+test('P1 quests: completion uses the real completion logic, pays once, survives reload and never pays a top-up that is already done', async ({ page }) => {
+  await go(page, 'home');
+  assert.equal(await page.locator('#hQuests .quest-row').count(), 3, 'Home shows the daily quests');
+  assert.equal(await page.locator('#hRem .reminder', { hasText: /Výprava|Quest/ }).count(), 0, 'quests are no longer mixed into the reminder strip');
+  const done0 = await page.evaluate(() => S.quests.filter(q => q.questId === 'dq_priority').length);
+  assert.equal(done0, 0);
+  // the only High task due today is "Write report" -> completing it through the UI completes the priority quest
+  await page.click('nav.bottom button[data-v="tasks"]');
+  const xp0 = await page.evaluate(() => S.totalXp);
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click();
+  await page.waitForTimeout(800);
+  const s = await stateOf(page);
+  const qrec = s.quests.filter(q => q.key === `dq_priority:${TODAY}`);
+  assert.equal(qrec.length, 1, 'quest recorded once');
+  const questXp = s.xpLog.filter(e => /^Quest: /.test(e.reason) && e.ts >= 0 && e.reason.includes('prioritní'));
+  assert.equal(questXp.length, 1); assert.equal(questXp[0].amount, 40);
+  assert.equal(s.totalXp - xp0, 30 + 40, 'High task 30 XP + the quest 40 XP, nothing else');
+  // re-render, reopen, reload: nothing is paid again
+  await page.evaluate(() => { for (let i = 0; i < 3; i++) { checkQuests(); render(); } });
+  await persist(page); await reload(page);
+  await page.evaluate(() => { checkQuests(); render(); });
+  const r = await stateOf(page);
+  assert.equal(r.quests.filter(q => q.key === `dq_priority:${TODAY}`).length, 1);
+  assert.equal(r.totalXp, s.totalXp, 'idempotent across render + reload');
+  // top-up: a quest that becomes relevant through the action that completes it is never added as free XP
+  const t = await page.evaluate(() => {
+    S.questBoard = { daily: { stamp: todayStr(), items: [{ id: 'dq_nutrition', p: {} }] }, weekly: S.questBoard.weekly };
+    S.sleepLog.push({ id: 'sl_new', date: todayStr(), bedtime: '23:00', wake: '07:00', quality: 4, notes: '', createdAt: Date.now() });
+    const before = S.totalXp; checkQuests(); return { ids: S.questBoard.daily.items.map(i => i.id), gained: S.totalXp - before };
+  });
+  assert.ok(!t.ids.includes('dq_sleep'), 'already satisfied sleep quest is not topped up');
+}, { state: fixtureState() });
+
+test('P1 quests: weekly quests + Quests screen + titles with real parameters (category, habit, targets)', async ({ page }) => {
+  await go(page, 'quests');
+  assert.equal(await page.locator('#dqL .quest-row').count(), 3);
+  assert.equal(await page.locator('#wqL .quest-row').count(), 3);
+  const titles = await page.evaluate(() => [...DAILY_QUESTS, ...WEEKLY_QUESTS].map(q => q.cs));
+  assert.ok(titles.every(t => t && t.length > 8), 'every quest has a real Czech title');
+  const cat = await page.evaluate(() => { const q = DAILY_QUESTS.find(x => x.id === 'dq_category'); return questTitle(q, { cat: 'Work' }); });
+  assert.equal(cat, 'Dokonči úkol z kategorie: Práce');
+  const wk = await page.evaluate(() => questTitle(WEEKLY_QUESTS.find(x => x.id === 'wq_workouts'), {}));
+  assert.equal(wk, 'Odtrénuj svůj tréninkový týden (3×)', 'falls back to the weekly workout target');
+  const wk2 = await page.evaluate(() => { S.settings.trainingDays = [1, 3, 5, 6]; return questTitle(WEEKLY_QUESTS.find(x => x.id === 'wq_workouts'), {}); });
+  assert.equal(wk2, 'Odtrénuj svůj tréninkový týden (4×)', 'follows the training days');
+  assert.doesNotMatch(await appText(page), EMOJI_RX);
+}, { state: fixtureState() });
+
+test('P2 Home: order Daily Score -> plan -> tasks -> habits; old widget orders get the new widgets in place, custom orders are kept', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const m = o => migrate(Object.assign(JSON.parse(JSON.stringify(S)), { settings: Object.assign({}, S.settings, { widgetOrder: o }) })).settings.widgetOrder;
+    return { def: m(['reminders', 'progress', 'tasks', 'habits', 'goals', 'nutrition', 'finance', 'fitness', 'health']),
+      custom: m(['tasks', 'health', 'progress', 'habits', 'reminders', 'goals', 'nutrition', 'finance', 'fitness']),
+      again: m(['reminders', 'progress', 'planner', 'tasks', 'habits', 'quests', 'goals', 'nutrition', 'finance', 'fitness', 'health']) };
+  });
+  assert.deepEqual(r.def, ['reminders', 'progress', 'planner', 'tasks', 'habits', 'quests', 'goals', 'nutrition', 'finance', 'fitness', 'health']);
+  assert.deepEqual(r.custom, ['tasks', 'health', 'progress', 'planner', 'habits', 'quests', 'reminders', 'goals', 'nutrition', 'finance', 'fitness'], 'own order kept, new ones next to their neighbours');
+  assert.deepEqual(r.again, r.def, 'idempotent');
+  await go(page, 'home');
+  const order = await page.evaluate(() => [...document.querySelectorAll('#app .hud-wrap, #app [data-plan="home"], #hTasks, #hHabits, #hQuests')].map(n => n.id || n.dataset.plan || 'score'));
+  assert.deepEqual(order, ['score', 'home', 'hTasks', 'hHabits', 'hQuests']);
+  // Settings -> Nástěnka lists and toggles the two new widgets
+  await page.click('#settingsBtn');
+  assert.match(await page.locator('#st_widgets').innerText(), /Dnešní plán[\s\S]*Denní výpravy/);
+}, { state: fixtureState() });
+
+test('P3 Daily Score: training day = 0/1 until the workout is done (scored), rest day = "Den volna" (never a missed workout), unset = old rule', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const D = todayStr(); // Wednesday = 3
+    S.events = S.events.filter(e => e.category !== 'Fitness');
+    const w = S.workouts; S.workouts = [];
+    const unset = dailyScoreFitness(D);
+    S.settings.trainingDays = [1, 3, 5];
+    const training = dailyScoreFitness(D), scoreT = dailyScore(D).score;
+    S.settings.trainingDays = [1, 5];
+    const rest = dailyScoreFitness(D), scoreR = dailyScore(D).score;
+    S.settings.trainingDays = null; const scoreU = dailyScore(D).score;
+    S.settings.trainingDays = [1, 3, 5]; S.workouts = w;
+    const done = dailyScoreFitness(D);
+    return { unset, training, rest, done, scoreT, scoreR, scoreU };
+  });
+  assert.deepEqual([r.unset.score, r.unset.rest], [null, false], 'no schedule, no calendar plan: not scored (as before)');
+  assert.deepEqual([r.training.score, r.training.source], [0, 'training'], 'training day without a workout: 0');
+  assert.deepEqual([r.rest.score, r.rest.rest, r.rest.reason], [null, true, 'rest_day'], 'rest day: not scored');
+  assert.equal(r.scoreR, r.scoreU, 'a rest day scores exactly like a day without a plan (no penalty)');
+  assert.ok(r.scoreT < r.scoreU, 'a missed training day does count');
+  assert.deepEqual([r.done.score, r.done.workouts], [100, 1]);
+  // presentation: 0/1 on a training day, "Den volna" on a rest day, never N/A
+  await page.evaluate(() => { S.events = S.events.filter(e => e.category !== 'Fitness'); S.workouts = S.workouts.filter(w => w.date !== todayStr()); S.settings.trainingDays = [3]; view = 'home'; render(); });
+  assert.equal((await page.locator('[data-ds="card"] .ds-row[data-area="fitness"] b').innerText()).trim(), '0/1');
+  await page.evaluate(() => { S.settings.trainingDays = [1]; render(); });
+  assert.equal((await page.locator('[data-ds="card"] .ds-row[data-area="fitness"] b').innerText()).trim(), 'Den volna');
+  await page.click('[data-ds="card"]');
+  assert.match(await page.locator('[data-ds="detail"] [data-area="fitness"]').innerText(), /Den volna podle tvých tréninkových dnů/);
+  assert.doesNotMatch(await page.locator('[data-ds="detail"]').innerText(), /N\/A/);
+}, { state: fixtureState() });
+
+test('P3 Settings: training days toggle per weekday, persist, and can be cleared', async ({ page }) => {
+  await page.click('#settingsBtn');
+  assert.equal(await page.locator('#st_training .td-day').count(), 7);
+  assert.equal(await page.locator('#st_training .td-day').first().innerText().then(t => t.split('\n')[0]), 'Po', 'Monday first');
+  for (const d of [1, 3, 5]) await page.click(`#st_training .td-day[data-day="${d}"]`);
+  assert.deepEqual((await stateOf(page)).settings.trainingDays, [1, 3, 5]);
+  await page.click('#st_training .td-day[data-day="3"]');
+  assert.deepEqual((await stateOf(page)).settings.trainingDays, [1, 5]);
+  await persist(page); await reload(page);
+  assert.deepEqual((await stateOf(page)).settings.trainingDays, [1, 5]);
+  await page.click('#settingsBtn'); await page.click('#st_td_clear');
+  assert.equal((await stateOf(page)).settings.trainingDays, null);
+}, { state: fixtureState() });
+
+test('P4 attributes: grow automatically by the category profile (deterministic split, same total), no manual points, no Skill Tree', async ({ page }) => {
+  const g = await page.evaluate(() => ['fitness', 'work', 'learning', 'social', 'discipline', 'STR', 'nope'].map(p => [p, rpgAttrGains(48, p)]));
+  for (const [p, x] of g.slice(0, 6)) assert.equal(Object.values(x).reduce((a, v) => a + v, 0), 48, `${p}: total unchanged (no multiplier)`);
+  assert.deepEqual(Object.fromEntries(g), { fitness: { STR: 24, DEX: 10, VIT: 14 }, work: { INT: 17, FOC: 22, SOC: 9 }, learning: { INT: 29, FOC: 19 }, social: { SOC: 48 }, discipline: { DEX: 48 }, STR: { STR: 48 }, nope: {} });
+  // a Work task through the UI: INT + FOC + SOC grow, logged on the XP entry
+  await page.click('nav.bottom button[data-v="tasks"]');
+  await quietQuests(page);
+  const a0 = (await stateOf(page)).attrs;
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click();
+  await page.waitForTimeout(800);
+  const s = await stateOf(page);
+  const e = s.xpLog.find(x => x.key === `task:t_open:${TODAY}`);
+  assert.deepEqual([e.amount, e.attrs], [30, { INT: 6, FOC: 8, SOC: 4 }]);
+  for (const k of ['INT', 'FOC', 'SOC']) assert.equal(s.attrs[k] - a0[k], e.attrs[k], k);
+  assert.equal(s.attrs.STR, a0.STR);
+  // Character: automatic attributes explained, no + buttons, no points, no Skill Tree, no Settings shortcut
+  await page.click('nav.bottom button[data-v="character"]');
+  const txt = await appText(page);
+  assert.match(txt, /rostou automaticky/);
+  for (const re of [/Strom dovedností/i, /Skill Tree/i, /bodů atributů/i, /Skill body/i, /Body atributů/i, /Nastavení/]) assert.doesNotMatch(txt, re);
+  assert.equal(await page.locator('.spendAttrBtn, .unlockSkillBtn, .skill-node').count(), 0);
+  assert.match(await page.locator('.attr-row[data-attr="STR"] .attr-src').innerText(), /Fitness/);
+  assert.match(await page.locator('.attr-row[data-attr="INT"] .attr-src').innerText(), /Učení[\s\S]*Práce/);
+  // stored Skill Tree / points data is not deleted (export keeps it)
+  assert.ok(s.rpg.skillTree && Array.isArray(s.rpg.skillTree.unlocked));
+}, { state: fixtureState() });
+
+test('P5 XP by priority: tasks Low/Medium/High/Urgent = 10/20/30/40, habits Low/Medium/High = 10/15/25; old records keep working and are not rewritten', async ({ page }) => {
+  const r = await page.evaluate(() => ({ t: ['Low', 'Medium', 'High', 'Urgent', undefined].map(p => taskXp({ priority: p })),
+    h: [{ priority: 'Low' }, { priority: 'High' }, { xpReward: 5 }, { xpReward: 15 }, { xpReward: 30 }, {}].map(habitXp) }));
+  assert.deepEqual(r.t, [10, 20, 30, 40, 20]);
+  assert.deepEqual(r.h, [10, 25, 10, 15, 25, 15], 'old habits: importance read from their old xpReward');
+  const raw = await page.evaluate(async () => (await rawIdbGet()).habits.find(h => h.id === 'h_read'));
+  assert.equal('priority' in raw, false, 'migration does not rewrite the habit');
+  // task form: no XP field, the hint follows the priority
+  await page.click('nav.bottom button[data-v="tasks"]'); await page.click('#uiAddTask');
+  for (const [p, xp] of [['Low', 10], ['Medium', 20], ['High', 30], ['Urgent', 40]]) { await page.selectOption('#f_pri', p); assert.match(await page.innerText('#f_xpHint'), new RegExp(`\\+${xp} XP`)); }
+  await page.evaluate(() => closeSheets());
+  // habit form: Importance instead of XP reward; saving an old habit keeps its completions and id
+  await page.evaluate(() => openHabitForm(S.habits.find(h => h.id === 'h_read')));
+  assert.equal(await page.locator('#h_xp').count(), 0);
+  assert.equal(await page.inputValue('#h_pri'), 'Medium');
+  await page.selectOption('#h_pri', 'High');
+  assert.match(await page.innerText('#h_xpHint'), /\+25 XP/);
+  const before = (await stateOf(page)).habits.find(h => h.id === 'h_read');
+  await page.click('#h_save');
+  const after = (await stateOf(page)).habits.find(h => h.id === 'h_read');
+  assert.deepEqual([after.id, after.completions, after.priority], [before.id, before.completions, 'High']);
+  // a completed task keeps the XP it was paid (ledger unchanged)
+  assert.equal((await stateOf(page)).xpLog.find(x => x.key === 'task:t_old:' + dayOff(-2)).amount, 200);
+}, { state: fixtureState() });
+
+test('P6 categories: create a custom category in Settings, use it for a task/habit/goal/block, rename keeps items, archive hides it from pickers only', async ({ page }) => {
+  await page.click('#settingsBtn');
+  assert.ok(await page.locator('#st_categories .cat-row').count() >= 8, 'built-in categories listed');
+  await page.click('#st_categories [data-addcat="life"]');
+  await page.click('#cf_save');
+  assert.match(await page.locator('[data-err="name"]').innerText(), /Vyplň název/);
+  await page.fill('#cf_name', 'práce'); await page.click('#cf_save');
+  assert.match(await page.locator('[data-err="name"]').innerText(), /už existuje/, 'duplicate of the built-in label');
+  await page.fill('#cf_name', 'Hudba'); await page.click('.cf-ic[data-icon="music"]'); await page.click('.cf-col[data-color="#ec4899"]'); await page.selectOption('#cf_profile', 'learning');
+  await page.click('#cf_save');
+  const c = (await stateOf(page)).lifeCategories.find(x => x.name === 'Hudba');
+  assert.deepEqual([c.icon, c.color, c.profile, c.archived, c.scope], ['music', '#ec4899', 'learning', false, 'life']);
+  // used in forms
+  await page.click('nav.bottom button[data-v="tasks"]'); await page.click('#uiAddTask');
+  await page.fill('#f_title', 'Kytara'); await page.selectOption('#f_cat', c.key); await page.click('#f_save');
+  const t = (await stateOf(page)).tasks.find(x => x.title === 'Kytara');
+  assert.equal(t.category, c.key);
+  assert.match(await page.locator('.item', { hasText: 'Kytara' }).innerText(), /Hudba/);
+  // attributes follow the custom category's profile
+  await quietQuests(page);
+  await page.locator('.item', { hasText: 'Kytara' }).locator('.check').click(); await page.waitForTimeout(800);
+  assert.deepEqual((await stateOf(page)).xpLog.find(x => x.key === `task:${t.id}:${TODAY}`).attrs, { INT: 7, FOC: 5 }, 'learning profile: 20 XP -> 12 attribute points');
+  for (const f of ['openHabitForm()', 'openGoalForm()', 'openPlannerForm(null,{date:todayStr()})']) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    assert.equal(await page.locator(`.sheet option[value="${c.key}"]`).count(), 1, f);
+  }
+  await page.evaluate(() => closeSheets());
+  // rename: label changes everywhere, the record keeps the key
+  await page.evaluate(k => catSave({ name: 'Muzika', icon: 'music', color: '#ec4899', profile: 'learning' }, 'life', k), c.key);
+  await page.evaluate(() => { view = 'tasks'; taskFilter = 'Completed'; render(); });
+  assert.match(await page.locator('.item', { hasText: 'Kytara' }).innerText(), /Muzika/);
+  assert.equal((await stateOf(page)).tasks.find(x => x.id === t.id).category, c.key);
+  // archive: hidden for new items, still shown on the old one and when that one is edited
+  await page.evaluate(k => catSetArchived(k, 'life', true), c.key);
+  await page.evaluate(() => { closeSheets(); openForm('task'); });
+  assert.equal(await page.locator(`.sheet option[value="${c.key}"]`).count(), 0, 'archived: not offered');
+  await page.evaluate(id => { closeSheets(); openTaskEditForm(S.tasks.find(x => x.id === id)); }, t.id);
+  assert.equal(await page.inputValue('#f_cat'), c.key, 'the existing task keeps its archived category');
+  await page.evaluate(() => closeSheets());
+  // built-ins can be renamed too; old records with the built-in key follow the new label
+  await page.evaluate(() => catSave({ name: 'Kariéra', icon: 'briefcase', color: '', profile: 'work' }, 'life', 'Work'));
+  assert.equal(await page.evaluate(() => catLabel('Work', 'life')), 'Kariéra');
+  assert.equal((await stateOf(page)).tasks.find(x => x.id === 't_open').category, 'Work', 'record not rewritten');
+  // notes scope
+  await page.evaluate(() => { const r = catSave({ name: 'Recepty', icon: 'apple' }, 'notes'); window.__nk = r.category.key; openNoteForm(); });
+  assert.equal(await page.locator(`#n_cat option[value="${await page.evaluate(() => window.__nk)}"]`).count(), 1);
+  assert.equal(await page.locator('#n_cat option[value="School"]').count(), 1, 'default note categories kept');
+}, { state: fixtureState() });
+
+test('P6 categories: reload, export/import, old backup and reset', async ({ page }) => {
+  const key = await page.evaluate(() => catSave({ name: 'Zahrada', icon: 'leaf', color: '#10b981', profile: 'health' }, 'life').category.key);
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(k => catLabel(k, 'life'), key), 'Zahrada');
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path();
+  const exp = JSON.parse(readFileSync(file, 'utf8'));
+  assert.ok(exp.lifeCategories.some(c => c.key === key));
+  assert.ok('questBoard' in exp && 'trainingDays' in exp.settings);
+  await page.evaluate(() => { S.lifeCategories = []; });
+  await page.setInputFiles('#st_impFile', file);
+  await page.waitForFunction(k => S.lifeCategories.some(c => c.key === k), key);
+  const old = fixtureState(); delete old.lifeCategories; delete old.questBoard;
+  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await page.waitForFunction(() => Array.isArray(S.lifeCategories) && S.lifeCategories.length === 0);
+  assert.equal(await page.evaluate(() => catList('life').length), 8, 'an old backup gets the built-ins');
+  assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Učení');
+  page.on('dialog', d => d.accept());
+  await page.evaluate(() => { S.lifeCategories = [{ key: 'cat_x', scope: 'life', name: 'x', icon: 'tag' }]; S.profile.photo = 'data:image/jpeg;base64,xx'; });
+  await page.click('#settingsBtn'); await page.click('#st_reset');
+  const s = await stateOf(page);
+  assert.deepEqual([s.lifeCategories, s.profile.photo, s.settings.trainingDays, s.profile.avatar], [[], undefined, null, 'svg:mage']);
+}, { state: fixtureState() });
+
+test('P7 planner: one Linked field (tasks blue, goals red, workouts purple); a changed link replaces the others, an untouched one keeps old multi-links and the description', async ({ page }) => {
+  await page.evaluate(() => { const bench = exerciseFind('Bench press') || exerciseAddPreset('Bench Press'); templateSave({ name: 'Push A', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 3, repsMin: 8 }] }); uiPlannerDay = todayStr(); view = 'planner'; render(); });
+  await page.click('#uiAddBlock');
+  const labels = await page.locator('.pl-form label').allInnerTexts();
+  assert.deepEqual(labels.map(l => l.trim()), ['Název', 'Datum', 'Začátek', 'Konec', 'Kategorie', 'Propojeno', 'Poznámky']);
+  await page.click('#pb_link');
+  const groups = await page.$$eval('#pb_linkList .lk-group', gs => gs.map(g => [g.className.split(' ')[1], getComputedStyle(g.querySelector('.lk-gh i')).backgroundColor]));
+  assert.deepEqual(groups.map(g => g[0]), ['lk-task', 'lk-goal', 'lk-workout']);
+  assert.deepEqual(groups.map(g => g[1]), ['rgb(96, 165, 250)', 'rgb(248, 113, 113)', 'rgb(167, 139, 250)'], 'blue / red / purple (dark theme)');
+  assert.ok(await page.locator('#pb_linkList [data-lk-type="task"] .lk-main small').first().innerText(), 'items carry a small detail');
+  await page.fill('#pb_linkFilter', 'report');
+  assert.equal(await page.locator('#pb_linkList [data-lk-type]').count(), 1, 'filter');
+  await page.click('[data-lk-type="task"][data-lk-id="t_open"]');
+  assert.equal(await page.inputValue('#pb_title'), 'Write report'); assert.equal(await page.inputValue('#pb_cat'), 'Work');
+  await page.fill('#pb_start', '19:00'); await page.fill('#pb_end', '19:30'); await page.click('#pb_save');
+  let b = (await stateOf(page)).plannerBlocks.find(x => x.startTime === '19:00' && x.date === TODAY && x.title === 'Write report');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['t_open', '', '', '']);
+  // old block with several links + description: an untouched Linked field keeps all of them
+  await page.evaluate(() => { const x = S.plannerBlocks.find(b => b.id === 'pb_push'); x.taskId = 't_med'; x.description = 'old description'; render(); });
+  await page.click('[data-block="pb_push"] .pl-open');
+  assert.match(await page.innerText('#pb_link'), /Buy groceries/, 'primary link shown');
+  await page.fill('#pb_notes', 'n'); await page.click('#pb_save');
+  b = await blk(page, 'pb_push');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.description, b.notes], ['t_med', 'g_fit', 'w2', 'old description', 'n'], 'nothing lost');
+  // choosing a workout replaces the other links; removing the link clears it
+  await page.click('[data-block="pb_push"] .pl-open'); await page.click('#pb_link');
+  const tid = await page.evaluate(() => S.workoutTemplates[0].id);
+  await page.click(`[data-lk-type="workout"][data-lk-id="${tid}"]`); await page.click('#pb_save');
+  b = await blk(page, 'pb_push');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['', '', '', tid]);
+  assert.equal(await page.locator('[data-block="pb_push"] .plWkStart').count(), 1, 'a linked workout can be started');
+  await page.click('[data-block="pb_push"] .pl-open'); await page.click('#pb_link'); await page.click('[data-lk-clear]'); await page.click('#pb_save');
+  b = await blk(page, 'pb_push');
+  assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['', '', '', '']);
+}, { state: fixtureState() });
+
+// Pointer drag on an element (mouse or synthetic touch pointer).
+const drag = (page, sel, dy, type = 'mouse', ms = 300) => page.evaluate(async ({ sel, dy, type, ms }) => {
+  const el = document.querySelector(sel); const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + Math.min(10, r.height / 2);
+  const ev = (t, yy) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 7, pointerType: type, clientX: x, clientY: yy, button: 0, buttons: t === 'pointerup' ? 0 : 1, isPrimary: true }));
+  ev('pointerdown', y); const steps = 6;
+  for (let i = 1; i <= steps; i++) { await new Promise(r => setTimeout(r, ms / steps)); ev('pointermove', y + dy * i / steps); }
+  ev('pointerup', y + dy);
+}, { sel, dy, type, ms });
+
+test('P8 sheets: pull down by the grab strip or title closes (mouse + touch); a short drag springs back; content drags and scrolling never close', async ({ page }) => {
+  const open = () => page.evaluate(() => { closeSheets(); openTaskEditForm(S.tasks.find(t => t.id === 't_open')); });
+  await open();
+  assert.equal(await page.locator('.sheet .sheet-grab').count(), 1);
+  await drag(page, '.sheet .sheet-grab', 40); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'short slow drag: springs back');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.sheet')).transform), 'none');
+  await drag(page, '.sheet .sheet-grab', 260); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'mouse: pulled down -> closed');
+  await open(); await drag(page, '.sheet h3', 260, 'touch'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'touch on the title -> closed');
+  await open(); await drag(page, '.sheet #f_desc', 300, 'touch'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'dragging inside the content never closes');
+  await page.setViewportSize({ width: 390, height: 500 });
+  await page.evaluate(() => { const s = document.querySelector('.sheet'); s.scrollTop = 200; s.dispatchEvent(new Event('scroll')); });
+  await page.mouse.move(195, 400); await page.mouse.wheel(0, -600); await page.waitForTimeout(200);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'scrolling the content never closes');
+  // fast flick
+  await drag(page, '.sheet .sheet-grab', 70, 'touch', 40); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'a quick flick closes');
+  // Escape, backdrop and the other close paths still work; onboarding cannot be pulled away
+  await open(); await page.waitForTimeout(60); await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'Escape');
+  await open(); await page.mouse.click(5, 5);
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'backdrop');
+  await page.evaluate(() => showOnboarding(1)); await drag(page, '.sheet .sheet-grab', 300); await page.waitForTimeout(300);
+  assert.equal(await page.locator('.sheet-bg').count(), 1, 'onboarding stays');
+}, { state: fixtureState() });
+
+test('P8 sheets: every Quick Add form, picker and category sheet has the grab strip', async ({ page }) => {
+  for (const t of QUICK_ADD.filter(t => t !== 'water' && t !== 'fuel')) {
+    await page.click('#fabBtn'); await page.click(`.sheet .qopt[data-t="${t}"]`);
+    assert.equal(await page.locator('.sheet .sheet-grab').count(), 1, t);
+    await page.evaluate(() => closeSheets());
+  }
+  for (const f of ['openAvatarPicker()', "openCategoryForm('life')", 'openDayOverview(todayStr())', 'uiOpenDailyScore(todayStr())']) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    assert.equal(await page.locator('.sheet .sheet-grab').count(), 1, f);
+  }
+}, { state: fixtureState() });
+
+test('P9 avatar: SVG portraits (no emoji), own photo uploaded + cropped to a 256 px square, stored locally, removable; old emoji avatar shows a portrait', async ({ page }) => {
+  assert.equal(await page.evaluate(() => S.profile.avatar), '🦸', 'fixture keeps its old stored value');
+  await go(page, 'home');
+  assert.equal(await page.locator('.hud .avatar svg').count(), 1, 'old emoji value -> portrait');
+  assert.doesNotMatch(await page.locator('.hud .avatar').innerText(), EMOJI_RX);
+  await page.click('#settingsBtn'); await page.click('#st_avatar');
+  assert.equal(await page.locator('#avatarPicker .av-opt').count(), 8);
+  await page.click('#avatarPicker [data-av="druid"]');
+  assert.equal((await stateOf(page)).profile.avatar, 'svg:druid');
+  // photo: 400x300 PNG -> crop sheet -> save
+  const { PNG } = await import('pngjs');
+  const png = new PNG({ width: 400, height: 300 }); for (let i = 0; i < png.data.length; i += 4) { png.data[i] = 200; png.data[i + 1] = (i / 4) % 400 < 200 ? 40 : 160; png.data[i + 2] = 90; png.data[i + 3] = 255; }
+  await page.click('#st_avatar');
+  await page.setInputFiles('#avFile', { name: 'me.png', mimeType: 'image/png', buffer: PNG.sync.write(png) });
+  await page.waitForSelector('#photoCrop');
+  await page.fill('#cropZoom', '2'); await page.dispatchEvent('#cropZoom', 'input');
+  await page.mouse.move(195, 500); // drag inside the crop box pans, never closes the sheet
+  const box = await page.locator('#cropBox').boundingBox();
+  await page.mouse.move(box.x + 100, box.y + 100); await page.mouse.down(); await page.mouse.move(box.x + 40, box.y + 160, { steps: 5 }); await page.mouse.up();
+  assert.equal(await page.locator('#photoCrop').count(), 1);
+  await page.click('#cropSave');
+  const p = (await stateOf(page)).profile;
+  assert.equal(p.avatar, 'photo'); assert.match(p.photo, /^data:image\/jpeg;base64,/);
+  const dim = await page.evaluate(src => new Promise(r => { const i = new Image(); i.onload = () => r([i.naturalWidth, i.naturalHeight]); i.src = src; }), p.photo);
+  assert.deepEqual(dim, [256, 256], 'square crop');
+  assert.ok(p.photo.length < 60000, 'small enough for local storage');
+  await persist(page); await reload(page);
+  await go(page, 'character');
+  assert.equal(await page.locator('.char-hero .avatar img').count(), 1, 'photo shown after reload');
+  await page.click('#charAvatar'); await page.click('#avRemovePhoto');
+  const q = (await stateOf(page)).profile;
+  assert.deepEqual([q.avatar, q.photo], ['svg:mage', undefined]);
+}, { state: fixtureState() });
+
+test('P10 goals: the progress mode explains what Automatic and Manual do, with the goal\'s real current source', async ({ page }) => {
+  await page.evaluate(() => openGoalForm(S.goals.find(g => g.id === 'g_fit')));
+  assert.equal(await page.locator('#g_mode option').first().innerText(), 'Automaticky');
+  const auto = await page.innerText('#g_modeHelp');
+  assert.match(auto, /Automaticky:.*propojených úkolů/);
+  assert.match(auto, /Teď: 0 z 1 propojených úkolů hotovo → 0 %/);
+  await page.selectOption('#g_mode', 'manual');
+  assert.match(await page.innerText('#g_modeHelp'), /Ručně: postup zadáváš sám/);
+  assert.equal(await page.locator('#manualWrap').isVisible(), true);
+  await page.evaluate(() => { closeSheets(); openGoalForm(); });
+  assert.match(await page.innerText('#g_modeHelp'), /Po uložení propoj s cílem úkoly/);
+}, { state: fixtureState() });
+
+test('P11 design: no Apple emoji in the UI chrome of the main screens and sheets (user text excluded); icons are SVG', async ({ page }) => {
+  const bad = [];
+  for (const v of ['home', 'tasks', 'habits', 'goals', 'character', 'more', 'quests', 'planner', 'settings', 'statistics', 'nutrition', 'journal', 'notes', 'health', 'goalDetail', 'habitDetail', 'calendar', 'search']) {
+    await page.evaluate(v => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; uiPlannerDay = todayStr(); view = v; render(); }, v);
+    const found = await page.evaluate(() => { const rx = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2B50}]/u, out = [];
+      const w = document.createTreeWalker(document.getElementById('app'), NodeFilter.SHOW_TEXT); let n;
+      while ((n = w.nextNode())) if (rx.test(n.nodeValue) && !n.parentElement.closest('.note-body,input,textarea,[data-user-text]')) out.push(n.nodeValue.trim().slice(0, 30));
+      return out; });
+    if (found.length) bad.push(`${v}: ${found.join(' | ')}`);
+  }
+  for (const f of ['openQuickAdd()', 'openForm("task")', 'openHabitForm()', 'openGoalForm()', 'openAvatarPicker()', "openCategoryForm('life')"]) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    const t = await page.locator('.sheet').innerText();
+    if (EMOJI_RX.test(t)) bad.push(`${f}: ${t.match(EMOJI_RX)[0]}`);
+  }
+  assert.deepEqual(bad, []);
+  await page.evaluate(() => { closeSheets(); view = 'more'; render(); });
+  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 16);
+}, { state: fixtureState() });
+
+test('P12 layout: new screens and sheets fit 320-1440 px in dark + light, no duplicate ids, no console errors', async ({ page }) => {
+  const bad = [];
+  const sheets = ['openAvatarPicker()', "openCategoryForm('life')", "openCategoryForm('life','Work')", 'openDayOverview(todayStr())', 'openPlannerForm(null,{date:todayStr()})',
+    'openTaskEditForm(S.tasks[0])', 'openHabitForm(S.habits[0])', 'openGoalForm(S.goals[0])', 'uiOpenDailyScore(todayStr())'];
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate(t => { S.settings.theme = t; applyTheme(); S.settings.trainingDays = [1, 3, 5]; }, theme);
+    for (const width of PPW) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const v of ['home', 'character', 'planner', 'settings', 'quests', 'goals']) {
+        await page.evaluate(v => { closeSheets(); uiPlannerDay = todayStr(); view = v; render(); }, v);
+        const o = await overflowOf(page); if (o.length) bad.push(`${v}@${width}/${theme}: ${o}`);
+        const d = await dupIds(page); if (d.length) bad.push(`${v}@${width} dup ${d}`);
+      }
+      for (const f of sheets) {
+        await page.evaluate(f => { closeSheets(); eval(f); }, f);
+        if (f.startsWith('openPlannerForm')) await page.click('#pb_link');
+        const o = await overflowOf(page); if (o.length) bad.push(`${f}@${width}/${theme}: ${o}`);
+        const d = await dupIds(page); if (d.length) bad.push(`${f}@${width} dup ${d}`);
+      }
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
