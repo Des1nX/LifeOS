@@ -250,383 +250,536 @@
    "xp": 60
   }
  },
- "skills": {
-  "discipline_consistency_1": {
-   "id": "discipline_consistency_1",
-   "branch": "discipline",
-   "name": "Consistency I",
-   "description": "+5 bonus XP the day a habit streak reaches 7 days.",
-   "cost": 1,
-   "prerequisites": [],
-   "effect": {
-    "type": "habit_streak_bonus_xp",
-    "milestone": 7,
-    "value": 5
-   }
+ "attrProfiles": {
+  "fitness": {
+   "STR": 0.5,
+   "VIT": 0.3,
+   "DEX": 0.2
   },
-  "discipline_consistency_2": {
-   "id": "discipline_consistency_2",
-   "branch": "discipline",
-   "name": "Consistency II",
-   "description": "+10 bonus XP the day a habit streak reaches 30 days.",
-   "cost": 2,
-   "prerequisites": [
-    "discipline_consistency_1"
-   ],
-   "effect": {
-    "type": "habit_streak_bonus_xp",
-    "milestone": 30,
-    "value": 10
-   }
+  "health": {
+   "VIT": 0.6,
+   "FOC": 0.4
   },
-  "discipline_streak_master": {
-   "id": "discipline_streak_master",
-   "branch": "discipline",
-   "name": "Streak Master",
-   "description": "Perk: Streak Master badge on your Character profile.",
-   "cost": 3,
-   "prerequisites": [
-    "discipline_consistency_2"
-   ],
-   "effect": {
-    "type": "badge",
-    "value": "Streak Master"
-   }
+  "learning": {
+   "INT": 0.6,
+   "FOC": 0.4
   },
-  "knowledge_learner_1": {
-   "id": "knowledge_learner_1",
-   "branch": "knowledge",
-   "name": "Learner I",
-   "description": "+5 bonus INT when completing a Learning-category task or habit.",
-   "cost": 1,
-   "prerequisites": [],
-   "effect": {
-    "type": "category_attr_bonus",
-    "attr": "INT",
-    "value": 5
-   }
+  "work": {
+   "FOC": 0.45,
+   "INT": 0.35,
+   "SOC": 0.2
   },
-  "knowledge_learner_2": {
-   "id": "knowledge_learner_2",
-   "branch": "knowledge",
-   "name": "Learner II",
-   "description": "+10 additional bonus INT when completing a Learning-category task or habit.",
-   "cost": 2,
-   "prerequisites": [
-    "knowledge_learner_1"
-   ],
-   "effect": {
-    "type": "category_attr_bonus",
-    "attr": "INT",
-    "value": 10
-   }
+  "social": {
+   "SOC": 1
   },
-  "knowledge_master": {
-   "id": "knowledge_master",
-   "branch": "knowledge",
-   "name": "Knowledge Master",
-   "description": "Perk: Knowledge Master badge on your Character profile.",
-   "cost": 3,
-   "prerequisites": [
-    "knowledge_learner_2"
-   ],
-   "effect": {
-    "type": "badge",
-    "value": "Knowledge Master"
-   }
+  "discipline": {
+   "DEX": 1
   },
-  "fitness_training_1": {
-   "id": "fitness_training_1",
-   "branch": "fitness",
-   "name": "Training I",
-   "description": "+5 bonus STR on workout completion.",
-   "cost": 1,
-   "prerequisites": [],
-   "effect": {
-    "type": "workout_attr_bonus",
-    "attr": "STR",
-    "value": 5
-   }
+  "finance": {
+   "WIS": 0.8,
+   "FOC": 0.2
   },
-  "fitness_training_2": {
-   "id": "fitness_training_2",
-   "branch": "fitness",
-   "name": "Training II",
-   "description": "+10 additional bonus STR on workout completion.",
-   "cost": 2,
-   "prerequisites": [
-    "fitness_training_1"
-   ],
-   "effect": {
-    "type": "workout_attr_bonus",
-    "attr": "STR",
-    "value": 10
-   }
+  "personal": {
+   "WIS": 0.5,
+   "FOC": 0.5
   },
-  "fitness_athlete": {
-   "id": "fitness_athlete",
-   "branch": "fitness",
-   "name": "Athlete",
-   "description": "Perk: Athlete badge on your Character profile.",
-   "cost": 3,
-   "prerequisites": [
-    "fitness_training_2"
-   ],
-   "effect": {
-    "type": "badge",
-    "value": "Athlete"
-   }
+  "sleep": {
+   "VIT": 0.6,
+   "FOC": 0.4
   },
-  "finance_saver_1": {
-   "id": "finance_saver_1",
-   "branch": "finance",
-   "name": "Saver I",
-   "description": "+5 bonus WIS the first time you log a finance entry each day.",
-   "cost": 1,
-   "prerequisites": [],
-   "effect": {
-    "type": "finance_attr_bonus",
-    "attr": "WIS",
-    "value": 5
-   }
+  "nutrition": {
+   "VIT": 1
   },
-  "finance_saver_2": {
-   "id": "finance_saver_2",
-   "branch": "finance",
-   "name": "Saver II",
-   "description": "+10 additional bonus WIS the first time you log a finance entry each day.",
-   "cost": 2,
-   "prerequisites": [
-    "finance_saver_1"
-   ],
-   "effect": {
-    "type": "finance_attr_bonus",
-    "attr": "WIS",
-    "value": 10
-   }
-  },
-  "finance_wealth_builder": {
-   "id": "finance_wealth_builder",
-   "branch": "finance",
-   "name": "Wealth Builder",
-   "description": "Perk: Wealth Builder badge on your Character profile.",
-   "cost": 3,
-   "prerequisites": [
-    "finance_saver_2"
-   ],
-   "effect": {
-    "type": "badge",
-    "value": "Wealth Builder"
-   }
-  },
-  "focus_deepwork_1": {
-   "id": "focus_deepwork_1",
-   "branch": "focus",
-   "name": "Deep Work I",
-   "description": "+5 bonus FOC when completing a Focus-category task or habit.",
-   "cost": 1,
-   "prerequisites": [],
-   "effect": {
-    "type": "category_attr_bonus",
-    "attr": "FOC",
-    "value": 5
-   }
-  },
-  "focus_deepwork_2": {
-   "id": "focus_deepwork_2",
-   "branch": "focus",
-   "name": "Deep Work II",
-   "description": "+10 additional bonus FOC when completing a Focus-category task or habit.",
-   "cost": 2,
-   "prerequisites": [
-    "focus_deepwork_1"
-   ],
-   "effect": {
-    "type": "category_attr_bonus",
-    "attr": "FOC",
-    "value": 10
-   }
-  },
-  "focus_master": {
-   "id": "focus_master",
-   "branch": "focus",
-   "name": "Focus Master",
-   "description": "Perk: Focus Master badge on your Character profile.",
-   "cost": 3,
-   "prerequisites": [
-    "focus_deepwork_2"
-   ],
-   "effect": {
-    "type": "badge",
-    "value": "Focus Master"
-   }
-  },
-  "social_social_1": {
-   "id": "social_social_1",
-   "branch": "social",
-   "name": "Social I",
-   "description": "+5 bonus SOC when completing a Social-category task or habit.",
-   "cost": 1,
-   "prerequisites": [],
-   "effect": {
-    "type": "category_attr_bonus",
-    "attr": "SOC",
-    "value": 5
-   }
-  },
-  "social_social_2": {
-   "id": "social_social_2",
-   "branch": "social",
-   "name": "Social II",
-   "description": "+10 additional bonus SOC when completing a Social-category task or habit.",
-   "cost": 2,
-   "prerequisites": [
-    "social_social_1"
-   ],
-   "effect": {
-    "type": "category_attr_bonus",
-    "attr": "SOC",
-    "value": 10
-   }
-  },
-  "social_networker": {
-   "id": "social_networker",
-   "branch": "social",
-   "name": "Networker",
-   "description": "Perk: Networker badge on your Character profile.",
-   "cost": 3,
-   "prerequisites": [
-    "social_social_2"
-   ],
-   "effect": {
-    "type": "badge",
-    "value": "Networker"
-   }
+  "reflection": {
+   "WIS": 0.6,
+   "FOC": 0.4
   }
  },
- "skillBranches": [
+ "taskXp": {
+  "Low": 10,
+  "Medium": 20,
+  "High": 30,
+  "Urgent": 40
+ },
+ "habitXp": {
+  "Low": 10,
+  "Medium": 15,
+  "High": 25
+ },
+ "lifeCategories": [
   {
-   "discipline": "Discipline",
-   "knowledge": "Knowledge",
-   "fitness": "Fitness",
-   "finance": "Finance",
-   "focus": "Focus",
-   "social": "Social"
+   "key": "Fitness",
+   "scope": "life",
+   "name": "Fitness",
+   "icon": "dumbbell",
+   "color": "",
+   "profile": "fitness",
+   "archived": false,
+   "builtin": true
   },
   {
-   "discipline": "DEX",
-   "knowledge": "INT",
-   "fitness": "STR",
-   "finance": "WIS",
-   "focus": "FOC",
-   "social": "SOC"
+   "key": "Health",
+   "scope": "life",
+   "name": "Health",
+   "icon": "heart",
+   "color": "",
+   "profile": "health",
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Learning",
+   "scope": "life",
+   "name": "Learning",
+   "icon": "book",
+   "color": "",
+   "profile": "learning",
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Habit",
+   "scope": "life",
+   "name": "Habit",
+   "icon": "flame",
+   "color": "",
+   "profile": "discipline",
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Finance",
+   "scope": "life",
+   "name": "Finance",
+   "icon": "wallet",
+   "color": "",
+   "profile": "finance",
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Work",
+   "scope": "life",
+   "name": "Work",
+   "icon": "briefcase",
+   "color": "",
+   "profile": "work",
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Social",
+   "scope": "life",
+   "name": "Social",
+   "icon": "users",
+   "color": "",
+   "profile": "social",
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Personal",
+   "scope": "life",
+   "name": "Personal",
+   "icon": "sparkle",
+   "color": "",
+   "profile": "personal",
+   "archived": false,
+   "builtin": true
   }
  ],
+ "noteCategories": [
+  {
+   "key": "Personal",
+   "scope": "notes",
+   "name": "Personal",
+   "icon": "sparkle",
+   "color": "",
+   "profile": null,
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Work",
+   "scope": "notes",
+   "name": "Work",
+   "icon": "briefcase",
+   "color": "",
+   "profile": null,
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "School",
+   "scope": "notes",
+   "name": "School",
+   "icon": "book",
+   "color": "",
+   "profile": null,
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Ideas",
+   "scope": "notes",
+   "name": "Ideas",
+   "icon": "star",
+   "color": "",
+   "profile": null,
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Shopping",
+   "scope": "notes",
+   "name": "Shopping",
+   "icon": "cart",
+   "color": "",
+   "profile": null,
+   "archived": false,
+   "builtin": true
+  },
+  {
+   "key": "Car",
+   "scope": "notes",
+   "name": "Car",
+   "icon": "car",
+   "color": "",
+   "profile": null,
+   "archived": false,
+   "builtin": true
+  }
+ ],
+ "attrGains": [
+  [
+   "fitness",
+   {
+    "STR": 24,
+    "DEX": 10,
+    "VIT": 14
+   },
+   {
+    "STR": 4,
+    "DEX": 2,
+    "VIT": 3
+   }
+  ],
+  [
+   "work",
+   {
+    "INT": 17,
+    "FOC": 22,
+    "SOC": 9
+   },
+   {
+    "INT": 3,
+    "FOC": 4,
+    "SOC": 2
+   }
+  ],
+  [
+   "STR",
+   {
+    "STR": 48
+   },
+   {
+    "STR": 9
+   }
+  ],
+  [
+   "learning",
+   {
+    "INT": 29,
+    "FOC": 19
+   },
+   {
+    "INT": 5,
+    "FOC": 4
+   }
+  ],
+  [
+   "sleep",
+   {
+    "VIT": 29,
+    "FOC": 19
+   },
+   {
+    "VIT": 5,
+    "FOC": 4
+   }
+  ]
+ ],
+ "questBoard": {
+  "daily": [
+   [
+    "dq_priority",
+    {}
+   ],
+   [
+    "dq_plan_all",
+    {}
+   ],
+   [
+    "dq_nutrition",
+    {}
+   ],
+   [
+    "dq_habits",
+    {}
+   ],
+   [
+    "dq_category",
+    {
+     "cat": "Work"
+    }
+   ],
+   [
+    "dq_streak",
+    {
+     "habit": "h_read"
+    }
+   ],
+   [
+    "dq_score",
+    {}
+   ],
+   [
+    "dq_plan_morning",
+    {}
+   ],
+   [
+    "dq_sleep",
+    {}
+   ]
+  ],
+  "weekly": [
+   [
+    "wq_workouts",
+    {}
+   ],
+   [
+    "wq_tasks",
+    {}
+   ],
+   [
+    "wq_streak",
+    {}
+   ],
+   [
+    "wq_goal",
+    {}
+   ],
+   [
+    "wq_score",
+    {}
+   ],
+   [
+    "wq_planner",
+    {}
+   ]
+  ]
+ },
  "dailyQuests": {
-  "dq_tasks": {
-   "id": "dq_tasks",
-   "title": "Complete 3 tasks today",
-   "xp": 50,
+  "dq_priority": {
+   "id": "dq_priority",
+   "core": true,
+   "title": "Finish all of today's priority tasks",
+   "cs": "Dokonči všechny dnešní prioritní úkoly",
+   "xp": 40,
    "attr": "FOC",
-   "max": 3
-  },
-  "dq_habits": {
-   "id": "dq_habits",
-   "title": "Complete all active habits",
-   "xp": 50,
-   "attr": "DEX",
-   "max": 1
-  },
-  "dq_log": {
-   "id": "dq_log",
-   "title": "Log a workout, meal or finance entry",
-   "xp": 20,
-   "attr": "VIT",
-   "max": 1
+   "icon": "bolt"
   },
   "dq_workout": {
    "id": "dq_workout",
-   "title": "Complete 1 workout today",
+   "core": true,
+   "title": "Do today's workout",
+   "cs": "Udělej dnešní trénink",
    "xp": 40,
-   "attr": "STR",
-   "max": 1
+   "attr": "fitness",
+   "icon": "dumbbell"
+  },
+  "dq_workout_pr": {
+   "id": "dq_workout_pr",
+   "core": true,
+   "title": "Finish a workout with at least one PR",
+   "cs": "Dokonči trénink a udělej aspoň jeden osobní rekord",
+   "xp": 60,
+   "attr": "fitness",
+   "icon": "trophy"
+  },
+  "dq_plan_all": {
+   "id": "dq_plan_all",
+   "core": true,
+   "title": "Complete today's planned blocks",
+   "cs": "Dokonči plánované bloky dne",
+   "xp": 35,
+   "attr": "FOC",
+   "icon": "clock"
+  },
+  "dq_habits": {
+   "id": "dq_habits",
+   "core": true,
+   "title": "Complete all of today's habits",
+   "cs": "Splň všechny dnešní návyky",
+   "xp": 40,
+   "attr": "discipline",
+   "icon": "flame"
+  },
+  "dq_category": {
+   "id": "dq_category",
+   "title": "Finish a task from a category",
+   "cs": "Dokonči úkol z kategorie",
+   "xp": 20,
+   "attr": "FOC",
+   "icon": "tag"
+  },
+  "dq_tasks": {
+   "id": "dq_tasks",
+   "title": "Complete 3 tasks today",
+   "cs": "Dokonči dnes 3 úkoly",
+   "xp": 30,
+   "attr": "FOC",
+   "icon": "check"
+  },
+  "dq_streak": {
+   "id": "dq_streak",
+   "title": "Keep a habit streak going",
+   "cs": "Udrž streak návyku",
+   "xp": 25,
+   "attr": "discipline",
+   "icon": "flame"
+  },
+  "dq_score": {
+   "id": "dq_score",
+   "title": "Reach a Daily Score of 75",
+   "cs": "Dosáhni Daily Score 75",
+   "xp": 40,
+   "attr": "discipline",
+   "icon": "target"
+  },
+  "dq_plan_morning": {
+   "id": "dq_plan_morning",
+   "title": "Finish your morning block",
+   "cs": "Dokonči ranní plánovaný blok",
+   "xp": 25,
+   "attr": "FOC",
+   "icon": "sun"
+  },
+  "dq_sleep": {
+   "id": "dq_sleep",
+   "title": "Log last night's sleep",
+   "cs": "Zapiš dnešní spánek",
+   "xp": 15,
+   "attr": "sleep",
+   "icon": "moon"
   },
   "dq_nutrition": {
    "id": "dq_nutrition",
-   "title": "Log at least one meal today",
-   "xp": 20,
-   "attr": "VIT",
-   "max": 1
+   "title": "Log today's meals",
+   "cs": "Zapiš dnešní stravu",
+   "xp": 15,
+   "attr": "nutrition",
+   "icon": "apple"
   }
  },
  "weeklyQuests": {
-  "wq_streak": {
-   "id": "wq_streak",
-   "title": "Maintain a 7-day habit streak",
-   "xp": 250,
-   "attr": "DEX",
-   "max": 1
-  },
-  "wq_goal": {
-   "id": "wq_goal",
-   "title": "Make progress on an active goal",
-   "xp": 100,
-   "attr": "WIS",
-   "max": 1
+  "wq_workouts": {
+   "id": "wq_workouts",
+   "title": "Complete your training week",
+   "cs": "Odtrénuj svůj tréninkový týden",
+   "xp": 150,
+   "attr": "fitness",
+   "icon": "dumbbell"
   },
   "wq_tasks": {
    "id": "wq_tasks",
-   "title": "Complete 15 tasks this week",
-   "xp": 200,
+   "title": "Complete your weekly task target",
+   "cs": "Splň týdenní počet úkolů",
+   "xp": 150,
    "attr": "FOC",
-   "max": 15
+   "icon": "check"
   },
-  "wq_habits": {
-   "id": "wq_habits",
-   "title": "Complete this week's habit target",
+  "wq_streak": {
+   "id": "wq_streak",
+   "title": "Maintain a 7-day habit streak",
+   "cs": "Udrž 7denní streak návyku",
    "xp": 150,
-   "attr": "DEX"
+   "attr": "discipline",
+   "icon": "flame"
   },
-  "wq_workouts": {
-   "id": "wq_workouts",
-   "title": "Complete 3 workouts this week",
-   "xp": 150,
-   "attr": "STR",
-   "max": 3
+  "wq_goal": {
+   "id": "wq_goal",
+   "title": "Move a goal forward",
+   "cs": "Posuň cíl: milník nebo propojený úkol",
+   "xp": 100,
+   "attr": "WIS",
+   "icon": "target"
+  },
+  "wq_score": {
+   "id": "wq_score",
+   "title": "Daily Score 75+ on 3 days",
+   "cs": "Daily Score 75+ ve 3 dnech",
+   "xp": 120,
+   "attr": "discipline",
+   "icon": "target"
+  },
+  "wq_planner": {
+   "id": "wq_planner",
+   "title": "Complete 5 planned blocks",
+   "cs": "Dokonči 5 plánovaných bloků",
+   "xp": 100,
+   "attr": "FOC",
+   "icon": "clock"
   }
  },
  "cats": {
   "Fitness": {
    "a": "STR",
-   "ic": "💪"
+   "ic": "💪",
+   "p": "fitness",
+   "icon": "dumbbell"
   },
   "Health": {
    "a": "VIT",
-   "ic": "❤️"
+   "ic": "❤️",
+   "p": "health",
+   "icon": "heart"
   },
   "Learning": {
    "a": "INT",
-   "ic": "📚"
+   "ic": "📚",
+   "p": "learning",
+   "icon": "book"
   },
   "Habit": {
    "a": "DEX",
-   "ic": "🔥"
+   "ic": "🔥",
+   "p": "discipline",
+   "icon": "flame"
   },
   "Finance": {
    "a": "WIS",
-   "ic": "💰"
+   "ic": "💰",
+   "p": "finance",
+   "icon": "wallet"
   },
   "Work": {
    "a": "FOC",
-   "ic": "💼"
+   "ic": "💼",
+   "p": "work",
+   "icon": "briefcase"
   },
   "Social": {
    "a": "SOC",
-   "ic": "🎉"
+   "ic": "🎉",
+   "p": "social",
+   "icon": "users"
   },
   "Personal": {
    "a": "FOC",
-   "ic": "✨"
+   "ic": "✨",
+   "p": "personal",
+   "icon": "sparkle"
   }
  },
  "attrs": [
@@ -648,12 +801,20 @@
    "label": "Level Progress"
   },
   {
+   "key": "planner",
+   "label": "Today's Plan"
+  },
+  {
    "key": "tasks",
    "label": "Today's Tasks"
   },
   {
    "key": "habits",
    "label": "Habits"
+  },
+  {
+   "key": "quests",
+   "label": "Daily Quests"
   },
   {
    "key": "goals",
@@ -677,21 +838,20 @@
   }
  ],
  "avatars": [
-  "🧙",
-  "🦸",
-  "🥷",
-  "🧝",
-  "🤖",
-  "🐱",
-  "🐺",
-  "🦉"
+  "svg:mage",
+  "svg:knight",
+  "svg:ranger",
+  "svg:rogue",
+  "svg:paladin",
+  "svg:druid",
+  "svg:monk",
+  "svg:bard"
  ],
  "onboardingPresets": [
   "Drink water",
   "Exercise",
   "Read"
  ],
- "attributePointValue": 10,
  "i18nKeys": {
   "cs": [
    "day_monday",
@@ -787,7 +947,7 @@
  "defaultState": {
   "profile": {
    "name": "Hero",
-   "avatar": "🧙",
+   "avatar": "svg:mage",
    "createdAt": "<time>"
   },
   "totalXp": 0,
@@ -875,9 +1035,12 @@
   "recurringFinance": [],
   "savingsGoals": [],
   "investments": [],
+  "lifeCategories": [],
+  "questBoard": {},
   "settings": {
    "theme": "dark",
    "onboarded": false,
+   "trainingDays": null,
    "language": "cs",
    "dateFormat": "DD.MM.YYYY",
    "timeFormat": "24h",
@@ -887,8 +1050,10 @@
    "widgets": {
     "reminders": true,
     "progress": true,
+    "planner": true,
     "tasks": true,
     "habits": true,
+    "quests": true,
     "goals": true,
     "nutrition": true,
     "finance": true,
@@ -898,8 +1063,10 @@
    "widgetOrder": [
     "reminders",
     "progress",
+    "planner",
     "tasks",
     "habits",
+    "quests",
     "goals",
     "nutrition",
     "finance",
@@ -923,7 +1090,7 @@
  "migrateLegacy": {
   "profile": {
    "name": "Hero",
-   "avatar": "🧙",
+   "avatar": "svg:mage",
    "createdAt": "<time>"
   },
   "totalXp": 800,
@@ -1037,13 +1204,13 @@
   "achievementUnlockedAt": {},
   "rpg": {
    "skillPoints": {
-    "available": 3,
-    "earned": 3,
+    "available": 0,
+    "earned": 0,
     "spent": 0
    },
    "attributePoints": {
-    "available": 9,
-    "earned": 9,
+    "available": 0,
+    "earned": 0,
     "spent": 0
    },
    "highestLevelRewarded": 4,
@@ -1056,7 +1223,7 @@
      "id": "<uid>",
      "type": "levelup",
      "title": "Level 4",
-     "description": "Reached Level 4 — +1 Skill Point, +3 Attribute Points",
+     "description": "Reached Level 4",
      "xp": 0,
      "createdAt": "<time>"
     },
@@ -1064,7 +1231,7 @@
      "id": "<uid>",
      "type": "levelup",
      "title": "Level 3",
-     "description": "Reached Level 3 — +1 Skill Point, +3 Attribute Points",
+     "description": "Reached Level 3",
      "xp": 0,
      "createdAt": "<time>"
     },
@@ -1072,7 +1239,7 @@
      "id": "<uid>",
      "type": "levelup",
      "title": "Level 2",
-     "description": "Reached Level 2 — +1 Skill Point, +3 Attribute Points",
+     "description": "Reached Level 2",
      "xp": 0,
      "createdAt": "<time>"
     }
@@ -1222,9 +1389,12 @@
   "recurringFinance": [],
   "savingsGoals": [],
   "investments": [],
+  "lifeCategories": [],
+  "questBoard": {},
   "settings": {
    "theme": "dark",
    "onboarded": false,
+   "trainingDays": null,
    "language": "cs",
    "dateFormat": "DD.MM.YYYY",
    "timeFormat": "24h",
@@ -1234,8 +1404,10 @@
    "widgets": {
     "reminders": true,
     "progress": true,
+    "planner": true,
     "tasks": true,
     "habits": true,
+    "quests": true,
     "goals": true,
     "nutrition": true,
     "finance": true,
@@ -1245,8 +1417,10 @@
    "widgetOrder": [
     "reminders",
     "progress",
+    "planner",
     "tasks",
     "habits",
+    "quests",
     "goals",
     "nutrition",
     "finance",
@@ -1309,15 +1483,13 @@
     }
    },
    "xp": {
-    "xpEarned": 1199,
-    "xpTodayVal": 999,
-    "xpThisWeek": 1199,
-    "xpThisMonth": 2199,
+    "xpEarned": 824,
+    "xpTodayVal": 624,
+    "xpThisWeek": 824,
+    "xpThisMonth": 1824,
     "level": 5,
-    "into": 753,
-    "need": 878,
-    "skillPoints": 3,
-    "attributePoints": 8
+    "into": 378,
+    "need": 878
    },
    "fitness": {
     "count": 2,
@@ -1413,15 +1585,13 @@
     }
    },
    "xp": {
-    "xpEarned": 2199,
-    "xpTodayVal": 999,
-    "xpThisWeek": 1199,
-    "xpThisMonth": 2199,
+    "xpEarned": 1824,
+    "xpTodayVal": 624,
+    "xpThisWeek": 824,
+    "xpThisMonth": 1824,
     "level": 5,
-    "into": 753,
-    "need": 878,
-    "skillPoints": 3,
-    "attributePoints": 8
+    "into": 378,
+    "need": 878
    },
    "fitness": {
     "count": 2,
@@ -1517,15 +1687,13 @@
     }
    },
    "xp": {
-    "xpEarned": 2199,
-    "xpTodayVal": 999,
-    "xpThisWeek": 1199,
-    "xpThisMonth": 2199,
+    "xpEarned": 1824,
+    "xpTodayVal": 624,
+    "xpThisWeek": 824,
+    "xpThisMonth": 1824,
     "level": 5,
-    "into": 753,
-    "need": 878,
-    "skillPoints": 3,
-    "attributePoints": 8
+    "into": 378,
+    "need": 878
    },
    "fitness": {
     "count": 2,
@@ -1621,15 +1789,13 @@
     }
    },
    "xp": {
-    "xpEarned": 2199,
-    "xpTodayVal": 999,
-    "xpThisWeek": 1199,
-    "xpThisMonth": 2199,
+    "xpEarned": 1824,
+    "xpTodayVal": 624,
+    "xpThisWeek": 824,
+    "xpThisMonth": 1824,
     "level": 5,
-    "into": 753,
-    "need": 878,
-    "skillPoints": 3,
-    "attributePoints": 8
+    "into": 378,
+    "need": 878
    },
    "fitness": {
     "count": 2,
@@ -2455,10 +2621,10 @@
  },
  "level": {
   "level": 5,
-  "into": 753,
+  "into": 378,
   "need": 878
  },
- "xpToday": 999,
+ "xpToday": 624,
  "finance": 40380,
  "fuel": {
   "intervals": [
@@ -2528,14 +2694,14 @@
   {
    "prefType": "quest",
    "navType": "quest",
-   "id": "dq_tasks",
-   "text": "📜 Quest: Complete 3 tasks today"
+   "id": "dq_priority",
+   "text": "📜 Quest: Finish all of today's priority tasks"
   },
   {
    "prefType": "quest",
    "navType": "quest",
-   "id": "dq_habits",
-   "text": "📜 Quest: Complete all active habits"
+   "id": "dq_plan_all",
+   "text": "📜 Quest: Complete today's planned blocks"
   }
  ],
  "search": [
@@ -3321,101 +3487,224 @@
    "quest",
    [
     {
-     "title": "Complete 3 tasks today",
-     "meta": "+50 XP",
+     "title": "Dokonči všechny dnešní prioritní úkoly",
+     "meta": "+40 XP",
      "obj": {
-      "id": "dq_tasks",
-      "title": "Complete 3 tasks today",
-      "xp": 50,
+      "id": "dq_priority",
+      "core": true,
+      "title": "Finish all of today's priority tasks",
+      "cs": "Dokonči všechny dnešní prioritní úkoly",
+      "xp": 40,
       "attr": "FOC",
-      "max": 3
+      "icon": "bolt"
      }
     },
     {
-     "title": "Complete all active habits",
-     "meta": "+50 XP",
-     "obj": {
-      "id": "dq_habits",
-      "title": "Complete all active habits",
-      "xp": 50,
-      "attr": "DEX",
-      "max": 1
-     }
-    },
-    {
-     "title": "Log a workout, meal or finance entry",
-     "meta": "+20 XP",
-     "obj": {
-      "id": "dq_log",
-      "title": "Log a workout, meal or finance entry",
-      "xp": 20,
-      "attr": "VIT",
-      "max": 1
-     }
-    },
-    {
-     "title": "Complete 1 workout today",
+     "title": "Udělej dnešní trénink",
      "meta": "+40 XP",
      "obj": {
       "id": "dq_workout",
-      "title": "Complete 1 workout today",
+      "core": true,
+      "title": "Do today's workout",
+      "cs": "Udělej dnešní trénink",
       "xp": 40,
-      "attr": "STR",
-      "max": 1
+      "attr": "fitness",
+      "icon": "dumbbell"
      }
     },
     {
-     "title": "Log at least one meal today",
+     "title": "Dokonči trénink a udělej aspoň jeden osobní rekord",
+     "meta": "+60 XP",
+     "obj": {
+      "id": "dq_workout_pr",
+      "core": true,
+      "title": "Finish a workout with at least one PR",
+      "cs": "Dokonči trénink a udělej aspoň jeden osobní rekord",
+      "xp": 60,
+      "attr": "fitness",
+      "icon": "trophy"
+     }
+    },
+    {
+     "title": "Dokonči plánované bloky dne",
+     "meta": "+35 XP",
+     "obj": {
+      "id": "dq_plan_all",
+      "core": true,
+      "title": "Complete today's planned blocks",
+      "cs": "Dokonči plánované bloky dne",
+      "xp": 35,
+      "attr": "FOC",
+      "icon": "clock"
+     }
+    },
+    {
+     "title": "Splň všechny dnešní návyky",
+     "meta": "+40 XP",
+     "obj": {
+      "id": "dq_habits",
+      "core": true,
+      "title": "Complete all of today's habits",
+      "cs": "Splň všechny dnešní návyky",
+      "xp": 40,
+      "attr": "discipline",
+      "icon": "flame"
+     }
+    },
+    {
+     "title": "Dokonči úkol z kategorie",
      "meta": "+20 XP",
      "obj": {
-      "id": "dq_nutrition",
-      "title": "Log at least one meal today",
+      "id": "dq_category",
+      "title": "Finish a task from a category",
+      "cs": "Dokonči úkol z kategorie",
       "xp": 20,
-      "attr": "VIT",
-      "max": 1
+      "attr": "FOC",
+      "icon": "tag"
      }
     },
     {
-     "title": "Maintain a 7-day habit streak",
-     "meta": "+250 XP",
+     "title": "Dokonči dnes 3 úkoly",
+     "meta": "+30 XP",
+     "obj": {
+      "id": "dq_tasks",
+      "title": "Complete 3 tasks today",
+      "cs": "Dokonči dnes 3 úkoly",
+      "xp": 30,
+      "attr": "FOC",
+      "icon": "check"
+     }
+    },
+    {
+     "title": "Udrž streak návyku",
+     "meta": "+25 XP",
+     "obj": {
+      "id": "dq_streak",
+      "title": "Keep a habit streak going",
+      "cs": "Udrž streak návyku",
+      "xp": 25,
+      "attr": "discipline",
+      "icon": "flame"
+     }
+    },
+    {
+     "title": "Dosáhni Daily Score 75",
+     "meta": "+40 XP",
+     "obj": {
+      "id": "dq_score",
+      "title": "Reach a Daily Score of 75",
+      "cs": "Dosáhni Daily Score 75",
+      "xp": 40,
+      "attr": "discipline",
+      "icon": "target"
+     }
+    },
+    {
+     "title": "Dokonči ranní plánovaný blok",
+     "meta": "+25 XP",
+     "obj": {
+      "id": "dq_plan_morning",
+      "title": "Finish your morning block",
+      "cs": "Dokonči ranní plánovaný blok",
+      "xp": 25,
+      "attr": "FOC",
+      "icon": "sun"
+     }
+    },
+    {
+     "title": "Zapiš dnešní spánek",
+     "meta": "+15 XP",
+     "obj": {
+      "id": "dq_sleep",
+      "title": "Log last night's sleep",
+      "cs": "Zapiš dnešní spánek",
+      "xp": 15,
+      "attr": "sleep",
+      "icon": "moon"
+     }
+    },
+    {
+     "title": "Zapiš dnešní stravu",
+     "meta": "+15 XP",
+     "obj": {
+      "id": "dq_nutrition",
+      "title": "Log today's meals",
+      "cs": "Zapiš dnešní stravu",
+      "xp": 15,
+      "attr": "nutrition",
+      "icon": "apple"
+     }
+    },
+    {
+     "title": "Odtrénuj svůj tréninkový týden",
+     "meta": "+150 XP",
+     "obj": {
+      "id": "wq_workouts",
+      "title": "Complete your training week",
+      "cs": "Odtrénuj svůj tréninkový týden",
+      "xp": 150,
+      "attr": "fitness",
+      "icon": "dumbbell"
+     }
+    },
+    {
+     "title": "Splň týdenní počet úkolů",
+     "meta": "+150 XP",
+     "obj": {
+      "id": "wq_tasks",
+      "title": "Complete your weekly task target",
+      "cs": "Splň týdenní počet úkolů",
+      "xp": 150,
+      "attr": "FOC",
+      "icon": "check"
+     }
+    },
+    {
+     "title": "Udrž 7denní streak návyku",
+     "meta": "+150 XP",
      "obj": {
       "id": "wq_streak",
       "title": "Maintain a 7-day habit streak",
-      "xp": 250,
-      "attr": "DEX",
-      "max": 1
+      "cs": "Udrž 7denní streak návyku",
+      "xp": 150,
+      "attr": "discipline",
+      "icon": "flame"
      }
     },
     {
-     "title": "Make progress on an active goal",
+     "title": "Posuň cíl: milník nebo propojený úkol",
      "meta": "+100 XP",
      "obj": {
       "id": "wq_goal",
-      "title": "Make progress on an active goal",
+      "title": "Move a goal forward",
+      "cs": "Posuň cíl: milník nebo propojený úkol",
       "xp": 100,
       "attr": "WIS",
-      "max": 1
+      "icon": "target"
      }
     },
     {
-     "title": "Complete 15 tasks this week",
-     "meta": "+200 XP",
+     "title": "Daily Score 75+ ve 3 dnech",
+     "meta": "+120 XP",
      "obj": {
-      "id": "wq_tasks",
-      "title": "Complete 15 tasks this week",
-      "xp": 200,
+      "id": "wq_score",
+      "title": "Daily Score 75+ on 3 days",
+      "cs": "Daily Score 75+ ve 3 dnech",
+      "xp": 120,
+      "attr": "discipline",
+      "icon": "target"
+     }
+    },
+    {
+     "title": "Dokonči 5 plánovaných bloků",
+     "meta": "+100 XP",
+     "obj": {
+      "id": "wq_planner",
+      "title": "Complete 5 planned blocks",
+      "cs": "Dokonči 5 plánovaných bloků",
+      "xp": 100,
       "attr": "FOC",
-      "max": 15
-     }
-    },
-    {
-     "title": "Complete this week's habit target",
-     "meta": "+150 XP",
-     "obj": {
-      "id": "wq_habits",
-      "title": "Complete this week's habit target",
-      "xp": 150,
-      "attr": "DEX"
+      "icon": "clock"
      }
     }
    ]
@@ -3636,7 +3925,7 @@
     },
     {
      "title": "Adventurer",
-     "meta": "Unlocked",
+     "meta": "Locked",
      "obj": {
       "id": "quest_5",
       "title": "Adventurer",
@@ -3650,22 +3939,57 @@
  ],
  "quests": [
   [
-   "dq_tasks",
+   "dq_priority",
+   false,
+   0
+  ],
+  [
+   "dq_workout",
+   true,
+   1
+  ],
+  [
+   "dq_workout_pr",
+   false,
+   0
+  ],
+  [
+   "dq_plan_all",
    false,
    1
   ],
   [
    "dq_habits",
    false,
+   1
+  ],
+  [
+   "dq_category",
+   false,
    0
   ],
   [
-   "dq_log",
+   "dq_tasks",
+   false,
+   0
+  ],
+  [
+   "dq_streak",
+   false,
+   0
+  ],
+  [
+   "dq_score",
+   false,
+   57
+  ],
+  [
+   "dq_plan_morning",
    true,
    1
   ],
   [
-   "dq_workout",
+   "dq_sleep",
    true,
    1
   ],
@@ -3675,9 +3999,19 @@
    1
   ],
   [
+   "wq_workouts",
+   false,
+   2
+  ],
+  [
+   "wq_tasks",
+   false,
+   1
+  ],
+  [
    "wq_streak",
    true,
-   1
+   7
   ],
   [
    "wq_goal",
@@ -3685,19 +4019,14 @@
    0
   ],
   [
-   "wq_tasks",
+   "wq_score",
    false,
-   2
+   0
   ],
   [
-   "wq_habits",
-   true,
-   4
-  ],
-  [
-   "wq_workouts",
+   "wq_planner",
    false,
-   2
+   1
   ]
  ],
  "achievementsNow": [
@@ -3798,8 +4127,8 @@
   ],
   [
    "quest_5",
-   true,
-   100
+   false,
+   40
   ]
  ]
 }
