@@ -1468,8 +1468,8 @@ test('11A active: Start grants nothing and counts nowhere; Finish counts everywh
   assert.equal(x1.wk.length, 1); assert.equal(x1.wk[0].amount, 80); assert.equal(x1.wk[0].reason, 'Workout: Push A');
   assert.equal(x1.ach, true, 'Finish runs the normal achievement check: Beast Mode (first workout) unlocks now');
   assert.equal(x1.xp - x0.xp, 80 + 20, '80 workout XP + 20 from the Beast Mode achievement');
-  // polish pass: the workout's 48 attribute points follow the fitness profile (STR 24, VIT 14, DEX 10) + the existing flat +20 VIT
-  assert.equal(x1.vit - x0.vit, 34); assert.equal(x1.str - x0.str, 24);
+  // balancing: the workout's 48 attribute points follow the fitness profile (STR 24, VIT 14, DEX 10); no flat +20 VIT any more
+  assert.equal(x1.vit - x0.vit, 14); assert.equal(x1.str - x0.str, 24);
   const w = (await stateOf(page)).workouts.find(z => z.id === wid);
   assert.equal(w.status, 'done'); assert.ok(w.finishedAt >= w.startedAt); assert.equal(w.duration, '1');
   await page.evaluate(() => { checkQuests(); checkAchievements(); });
@@ -1501,7 +1501,7 @@ test('11A active: Finish pays exactly what the Log Workout form pays (same XP an
   const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
   const viaForm = { xp: a.xp - b.xp, STR: a.STR - b.STR, VIT: a.VIT - b.VIT };
   assert.deepEqual(viaFinish, viaForm);
-  assert.deepEqual([viaFinish.xp, viaFinish.STR, viaFinish.VIT], [80, 24, 34], '80 Character XP; STR 24 + VIT 14 from the fitness profile, +20 VIT as before');
+  assert.deepEqual([viaFinish.xp, viaFinish.STR, viaFinish.VIT], [80, 24, 14], '80 Character XP; STR 24 + VIT 14 from the fitness profile (balancing: no flat +20 VIT)');
 }, { state: noWorkoutState() });
 
 test('11A active: an active workout survives reload and is resumed (same id, same values); discard removes it without any reward', async ({ page }) => {
@@ -2475,7 +2475,7 @@ test('11A muscle XP is parallel: Character XP 80 + VIT (polish pass: fitness pro
   const w = await mxFinish(page, [['mb', B(3)], ['c1', B(6)]]);
   const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT, log: S.xpLog.length }));
   const newLog = await page.evaluate(n => S.xpLog.slice(n).map(e => [e.amount, e.reason]), b.log);
-  assert.deepEqual([a.xp - b.xp, a.VIT - b.VIT, newLog], [80, 34, [[80, 'Workout: M']]], 'Character XP: the one 80 XP entry; VIT 14 from the fitness profile + the flat 20');
+  assert.deepEqual([a.xp - b.xp, a.VIT - b.VIT, newLog], [80, 14, [[80, 'Workout: M']]], 'Character XP: the one 80 XP entry; VIT 14 from the fitness profile (balancing: no flat +20)');
   assert.ok(a.STR - b.STR > 0);
   assert.ok(Object.keys(await totals(page)).length > 0);
   // everything else is computed without reading the Muscle XP log: wipe or inflate it -> same results
@@ -2612,7 +2612,7 @@ test('11A planner: finishing the workout never completes the block and completin
   const x0 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
   await page.evaluate(id => { const w = workoutFindById(id); w.entries[0].sets.forEach(s => s.done = true); workoutFinish(id); }, wid);
   const x1 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
-  assert.deepEqual([x1.xp - x0.xp, x1.VIT - x0.VIT], [80, 34], 'standard 80 Character XP + VIT (fitness profile 14 + flat 20), nothing for "following the plan"');
+  assert.deepEqual([x1.xp - x0.xp, x1.VIT - x0.VIT], [80, 14], 'standard 80 Character XP + VIT 14 (fitness profile), nothing for "following the plan"');
   const b = await blk(page, bid);
   assert.equal(b.completed, false, 'workout finished, block not completed');
   assert.equal(await page.evaluate(id => plannerBlockWorkoutState(S.plannerBlocks.find(x => x.id === id)), bid), 'done', 'informative state only');
@@ -2780,7 +2780,7 @@ test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -
   await page.click('#wkFinish');
   const w = await page.evaluate(() => JSON.parse(JSON.stringify(completedWorkouts(S).find(x => x.entries))));
   const x1 = await page.evaluate(() => ({ xp: S.totalXp, VIT: S.attrs.VIT }));
-  assert.equal(x1.VIT - x0.VIT, 34, 'VIT 14 (fitness profile) + flat 20'); assert.ok(x1.xp - x0.xp >= 80, '80 workout XP (+ any achievement the finish unlocks via the unchanged rules)');
+  assert.equal(x1.VIT - x0.VIT, 14, 'VIT 14 (fitness profile; balancing: no flat +20)'); assert.ok(x1.xp - x0.xp >= 80, '80 workout XP (+ any achievement the finish unlocks via the unchanged rules)');
   assert.equal(await page.evaluate(id => S.xpLog.filter(e => e.key === `workout:${id}:${todayStr()}`).map(e => e.amount).join(), w.id), '80');
   assert.deepEqual([w.status, w.result.prs.map(p => p.type), w.result.performance.planSource, w.plannerBlockId, (await blk(page, bid)).completed], ['done', ['reps'], 'template', bid, false]);
   assert.deepEqual(await page.evaluate(id => S.muscleProgress.log.filter(r => r.workoutId === id).map(r => [r.units, r.prXp, r.xp]), w.id), [[2, 15, { Chest: 25, Triceps: 7, Shoulders: 3 }]], '2 working sets (warm-up ignored) + PR');
@@ -3726,6 +3726,115 @@ test('P12 layout: new screens and sheets fit 320-1440 px in dark + light, no dup
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
+
+// ---------- Balancing (approved attribute rewards) ----------
+test('B1 balancing: a workout pays 80 XP and exactly 48 attribute points (STR 24, VIT 14, DEX 10) - no flat +20 VIT, form and Finish alike; stored VIT untouched', async ({ page }) => {
+  await quietQuests(page);
+  const vit0 = await page.evaluate(() => S.attrs.VIT);
+  const d = await page.evaluate(() => { const a = { ...S.attrs }; exerciseAddPreset('Bench Press');
+    const t = templateSave({ name: 'B', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id;
+    const w = workoutStart({ templateId: t }).workout; workoutUpdateSet(w.id, w.entries[0].id, w.entries[0].sets[0].id, { done: true }); workoutFinish(w.id);
+    const e = S.xpLog.find(x => x.key === `workout:${w.id}:${todayStr()}`);
+    return { amount: e.amount, attrs: e.attrs, delta: Object.fromEntries(Object.keys(ATTRS).map(k => [k, S.attrs[k] - a[k]])) }; });
+  assert.equal(d.amount, 80, 'Character XP unchanged');
+  assert.deepEqual(d.attrs, { STR: 24, DEX: 10, VIT: 14 });
+  assert.deepEqual(d.delta, { STR: 24, INT: 0, DEX: 10, VIT: 14, WIS: 0, FOC: 0, SOC: 0 }, '48 points in total, nothing else');
+  assert.ok(vit0 >= 60, 'VIT gathered earlier is kept (never recalculated or deleted)');
+  // the Log Workout form pays the same
+  await page.evaluate(() => { S.achievementsUnlocked.push('first_workout'); closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; render(); });
+  const b = await page.evaluate(() => ({ ...S.attrs, xp: S.totalXp }));
+  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.click('#w_save');
+  const a = await page.evaluate(() => ({ ...S.attrs, xp: S.totalXp }));
+  assert.deepEqual([a.xp - b.xp, a.STR - b.STR, a.VIT - b.VIT, a.DEX - b.DEX], [80, 24, 14, 10]);
+}, { state: fixtureState() });
+
+test('B2 balancing: every meal keeps its 10 XP; only the first meal logged each day gives attribute points (+6 VIT)', async ({ page }) => {
+  await quietQuests(page);
+  const log = () => page.evaluate(() => S.xpLog.filter(x => x.reason === 'Meal logged').map(x => [x.amount, x.attrs || null]));
+  const vit = () => page.evaluate(() => S.attrs.VIT);
+  const v0 = await vit(), n0 = (await log()).length;
+  for (const name of ['Snídaně', 'Oběd', 'Večeře']) {
+    await page.evaluate(() => { closeSheets(); openMealForm(); });
+    await page.fill('#m_name', name); await page.fill('#m_cal', '500'); await page.click('#m_save');
+  }
+  // the "repeat meal" button is the other way to log a meal
+  await page.evaluate(() => { view = 'nutrition'; render(); });
+  await page.locator('.meal-item .repeatBtn').first().click();
+  const l = (await log()).slice(n0);
+  assert.deepEqual(l, [[10, { VIT: 6 }], [10, null], [10, null], [10, null]], 'XP for each meal, attributes only once');
+  assert.equal(await vit() - v0, 6);
+  // next day: the first meal counts again
+  await page.clock.setFixedTime(NOW + 86400000);
+  await page.evaluate(() => { closeSheets(); openMealForm(); });
+  await page.fill('#m_name', 'Zítra'); await page.fill('#m_cal', '300'); await page.click('#m_save');
+  assert.deepEqual((await log()).slice(-1), [[10, { VIT: 6 }]]);
+  // reload / export / import keep the ledger that decides it
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(() => mealAttrProfile()), null, 'after reload the day already had its meal attributes');
+}, { state: fixtureState() });
+
+test('B3 balancing: quests keep their XP, grow attributes at 30 % of it, by the kind of activity (never all FOC/DEX)', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const Q = id => [...DAILY_QUESTS, ...WEEKLY_QUESTS].find(q => q.id === id);
+    const prof = (id, p) => JSON.stringify(rpgProfileOf(questAttrOf(Q(id), p)));
+    return {
+      xp: [...DAILY_QUESTS, ...WEEKLY_QUESTS].map(q => [q.id, q.xp]),
+      priority: prof('dq_priority'), work: JSON.stringify(ATTR_PROFILES.work),
+      plan: [prof('dq_plan_all'), prof('dq_plan_morning'), prof('wq_planner')],
+      category: [prof('dq_category', { cat: 'Learning' }), prof('dq_category', { cat: 'Social' })],
+      habits: ['dq_habits', 'dq_streak', 'dq_score', 'wq_streak', 'wq_score'].map(id => prof(id)),
+      fitness: ['dq_workout', 'dq_workout_pr', 'wq_workouts'].map(id => prof(id)),
+      food: prof('dq_nutrition'), sleep: prof('dq_sleep'),
+      mix: JSON.stringify(questTaskProfile([{ category: 'Learning' }, { category: 'Social' }])), none: questTaskProfile([]),
+    };
+  });
+  assert.deepEqual(r.xp, [['dq_priority', 40], ['dq_workout', 40], ['dq_workout_pr', 60], ['dq_plan_all', 35], ['dq_habits', 40], ['dq_category', 20], ['dq_tasks', 30], ['dq_streak', 25], ['dq_score', 40],
+    ['dq_plan_morning', 25], ['dq_sleep', 15], ['dq_nutrition', 15], ['wq_workouts', 150], ['wq_tasks', 150], ['wq_streak', 150], ['wq_goal', 100], ['wq_score', 120], ['wq_planner', 100]], 'quest XP unchanged');
+  assert.equal(r.priority, r.work, 'the only priority task today is a Work task -> work profile');
+  assert.deepEqual(r.plan, Array(3).fill('{"FOC":0.5,"DEX":0.5}'), 'planner -> FOC + DEX');
+  assert.deepEqual(r.category, ['{"INT":0.6,"FOC":0.4}', '{"SOC":1}'], 'category quest -> that category');
+  assert.deepEqual(r.habits, Array(5).fill('{"DEX":1}'), 'habits / streak / Daily Score -> DEX');
+  assert.deepEqual(r.fitness, Array(3).fill('{"STR":0.5,"VIT":0.3,"DEX":0.2}'), 'workout quests -> fitness');
+  assert.equal(r.food, '{"VIT":1}'); assert.equal(r.sleep, '{"VIT":0.6,"FOC":0.4}');
+  assert.equal(r.mix, '{"INT":0.3,"FOC":0.2,"SOC":0.5}', 'a task quest mixes the categories of the tasks it counted');
+  assert.equal(r.none, 'work', 'uncategorized tasks -> work profile');
+  // end to end: completing the priority task pays the quest 40 XP and 12 attribute points (30 %) of the work profile
+  await page.click('nav.bottom button[data-v="tasks"]');
+  await page.locator('.item', { hasText: 'Write report' }).locator('.check').click(); await page.waitForTimeout(800);
+  const e = await page.evaluate(() => S.xpLog.find(x => /^Quest: /.test(x.reason) && x.reason.includes('prioritní')));
+  assert.equal(e.amount, 40);
+  assert.deepEqual(e.attrs, { INT: 4, FOC: 6, SOC: 2 }, 'round(40 x 0.3) = 12 points, work profile');
+}, { state: fixtureState() });
+
+test('B4 balancing: a simulated week follows behaviour - no attribute runs away, WIS stays the slow one, each day type leads with its own attributes', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const add = (acc, g, n = 1) => { Object.entries(g).forEach(([k, v]) => acc[k] = (acc[k] || 0) + v * n); return acc; };
+    const G = (xp, p, rate = ATTR_RATE) => rpgAttrGains(Math.round(xp * rate), p);
+    const Q = (id, p) => { const q = [...DAILY_QUESTS, ...WEEKLY_QUESTS].find(x => x.id === id); return G(q.xp, questAttrOf(q, p), QUEST_ATTR_RATE); };
+    const T = c => ({ category: c });
+    const day = {
+      fitness: add(add(add(add(add(G(80, 'fitness'), G(15, 'fitness')), G(20, 'personal')), G(10, 'nutrition')), G(10, 'sleep')), add(add(Q('dq_workout'), Q('dq_habits')), Q('dq_nutrition'))),
+      study: add(add(add(add(add(add(G(20, 'learning'), G(20, 'learning')), G(30, 'learning')), G(10, 'learning')), G(15, 'learning')), add(G(15, 'reflection'), add(G(10, 'nutrition'), G(10, 'sleep')))), add(Q('dq_category', { cat: 'Learning' }), add(Q('dq_habits'), Q('dq_nutrition')))),
+      productive: add(add(add(G(30, 'work'), G(30, 'work')), add(G(40, 'work'), add(G(20, 'work'), G(20, 'work')))), add(add(G(20, 'work'), G(15, 'health')), add(add(G(15, 'discipline'), G(10, 'nutrition')), add(G(10, 'sleep'), add(add(Q('dq_priority'), Q('dq_plan_all')), Q('dq_tasks')))))),
+      social: add(add(add(G(20, 'social'), G(20, 'social')), add(G(10, 'personal'), G(15, 'social'))), add(add(G(10, 'nutrition'), G(10, 'sleep')), add(Q('dq_category', { cat: 'Social' }), add(Q('dq_habits'), Q('dq_nutrition'))))),
+    };
+    const week = add(add(add(add({}, day.fitness, 3), day.productive, 2), day.study), day.social);
+    add(week, add(add(Q('wq_workouts'), Q('wq_streak')), G(150, 'work', QUEST_ATTR_RATE)));
+    const top = g => Object.keys(g).sort((a, b) => g[b] - g[a]).slice(0, 2);
+    return { day, week, top: Object.fromEntries(Object.entries(day).map(([k, g]) => [k, top(g)])) };
+  });
+  const tot = Object.values(r.week).reduce((a, v) => a + v, 0);
+  const share = k => (r.week[k] || 0) / tot;
+  for (const k of ['STR', 'INT', 'DEX', 'VIT', 'FOC', 'SOC']) assert.ok(share(k) <= 0.25, `${k} ${Math.round(share(k) * 100)} % <= 25 %`);
+  assert.ok(share('WIS') < 0.05, 'WIS grows slowest (variant A)');
+  const main = ['STR', 'INT', 'DEX', 'VIT', 'FOC', 'SOC'].map(k => r.week[k]);
+  assert.ok(Math.max(...main) / Math.min(...main) < 2.5, `no runaway attribute: ${JSON.stringify(r.week)}`);
+  assert.ok(r.day.fitness.STR >= 30 && r.day.fitness.VIT <= 40, 'fitness day: STR leads with VIT, no VIT flood');
+  assert.deepEqual(r.top.study.sort(), ['FOC', 'INT'], 'study day -> INT/FOC');
+  assert.equal(r.top.productive[0], 'FOC', 'work day -> FOC first');
+  assert.equal(r.top.social[0], 'SOC', 'social day -> SOC');
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
@@ -3753,6 +3862,7 @@ async function golden(page) {
       achievements: fnMap(ACHV), // polish pass: the Skill Tree (SKILLS / branches / ATTRIBUTE_POINT_VALUE) was removed
       attrProfiles: ATTR_PROFILES, taskXp: TASK_XP, habitXp: HABIT_XP, lifeCategories: strip(catList('life')), noteCategories: strip(catList('notes')),
       attrGains: ['fitness', 'work', 'STR', 'learning', 'sleep'].map(p => [p, rpgAttrGains(48, p), rpgAttrGains(9, p)]),
+      attrRates: [ATTR_RATE, QUEST_ATTR_RATE], questAttrs: [...DAILY_QUESTS, ...WEEKLY_QUESTS].map(q => [q.id, questAttrOf(q, q.id === 'dq_category' ? { cat: 'Learning' } : {})]),
       questBoard: { daily: questCandidates('daily', TODAY_).map(x => [x.q.id, x.p]), weekly: questCandidates('weekly', TODAY_).map(x => [x.q.id, x.p]) },
       dailyQuests: fnMap(DAILY_QUESTS), weeklyQuests: fnMap(WEEKLY_QUESTS),
       cats: CATS, attrs: Object.keys(ATTRS), widgets: WIDGET_DEFS, avatars: AVATAR_CHOICES, onboardingPresets: ONBOARDING_HABIT_PRESETS,

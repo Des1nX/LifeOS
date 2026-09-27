@@ -293,6 +293,10 @@
   "reflection": {
    "WIS": 0.6,
    "FOC": 0.4
+  },
+  "plan": {
+   "FOC": 0.5,
+   "DEX": 0.5
   }
  },
  "taskXp": {
@@ -509,6 +513,92 @@
    }
   ]
  ],
+ "attrRates": [
+  0.6,
+  0.3
+ ],
+ "questAttrs": [
+  [
+   "dq_priority",
+   {
+    "FOC": 0.45,
+    "INT": 0.35,
+    "SOC": 0.2
+   }
+  ],
+  [
+   "dq_workout",
+   "fitness"
+  ],
+  [
+   "dq_workout_pr",
+   "fitness"
+  ],
+  [
+   "dq_plan_all",
+   "plan"
+  ],
+  [
+   "dq_habits",
+   "discipline"
+  ],
+  [
+   "dq_category",
+   "learning"
+  ],
+  [
+   "dq_tasks",
+   "work"
+  ],
+  [
+   "dq_streak",
+   "discipline"
+  ],
+  [
+   "dq_score",
+   "discipline"
+  ],
+  [
+   "dq_plan_morning",
+   "plan"
+  ],
+  [
+   "dq_sleep",
+   "sleep"
+  ],
+  [
+   "dq_nutrition",
+   "nutrition"
+  ],
+  [
+   "wq_workouts",
+   "fitness"
+  ],
+  [
+   "wq_tasks",
+   {
+    "FOC": 0.45,
+    "INT": 0.35,
+    "SOC": 0.2
+   }
+  ],
+  [
+   "wq_streak",
+   "discipline"
+  ],
+  [
+   "wq_goal",
+   "WIS"
+  ],
+  [
+   "wq_score",
+   "discipline"
+  ],
+  [
+   "wq_planner",
+   "plan"
+  ]
+ ],
  "questBoard": {
   "daily": [
    [
@@ -586,7 +676,6 @@
    "title": "Finish all of today's priority tasks",
    "cs": "Dokonči všechny dnešní prioritní úkoly",
    "xp": 40,
-   "attr": "FOC",
    "icon": "bolt"
   },
   "dq_workout": {
@@ -613,7 +702,7 @@
    "title": "Complete today's planned blocks",
    "cs": "Dokonči plánované bloky dne",
    "xp": 35,
-   "attr": "FOC",
+   "attr": "plan",
    "icon": "clock"
   },
   "dq_habits": {
@@ -630,7 +719,6 @@
    "title": "Finish a task from a category",
    "cs": "Dokonči úkol z kategorie",
    "xp": 20,
-   "attr": "FOC",
    "icon": "tag"
   },
   "dq_tasks": {
@@ -638,7 +726,6 @@
    "title": "Complete 3 tasks today",
    "cs": "Dokonči dnes 3 úkoly",
    "xp": 30,
-   "attr": "FOC",
    "icon": "check"
   },
   "dq_streak": {
@@ -662,7 +749,7 @@
    "title": "Finish your morning block",
    "cs": "Dokonči ranní plánovaný blok",
    "xp": 25,
-   "attr": "FOC",
+   "attr": "plan",
    "icon": "sun"
   },
   "dq_sleep": {
@@ -696,7 +783,6 @@
    "title": "Complete your weekly task target",
    "cs": "Splň týdenní počet úkolů",
    "xp": 150,
-   "attr": "FOC",
    "icon": "check"
   },
   "wq_streak": {
@@ -728,7 +814,7 @@
    "title": "Complete 5 planned blocks",
    "cs": "Dokonči 5 plánovaných bloků",
    "xp": 100,
-   "attr": "FOC",
+   "attr": "plan",
    "icon": "clock"
   }
  },
@@ -3495,7 +3581,6 @@
       "title": "Finish all of today's priority tasks",
       "cs": "Dokonči všechny dnešní prioritní úkoly",
       "xp": 40,
-      "attr": "FOC",
       "icon": "bolt"
      }
     },
@@ -3534,7 +3619,7 @@
       "title": "Complete today's planned blocks",
       "cs": "Dokonči plánované bloky dne",
       "xp": 35,
-      "attr": "FOC",
+      "attr": "plan",
       "icon": "clock"
      }
     },
@@ -3559,7 +3644,6 @@
       "title": "Finish a task from a category",
       "cs": "Dokonči úkol z kategorie",
       "xp": 20,
-      "attr": "FOC",
       "icon": "tag"
      }
     },
@@ -3571,7 +3655,6 @@
       "title": "Complete 3 tasks today",
       "cs": "Dokonči dnes 3 úkoly",
       "xp": 30,
-      "attr": "FOC",
       "icon": "check"
      }
     },
@@ -3607,7 +3690,7 @@
       "title": "Finish your morning block",
       "cs": "Dokonči ranní plánovaný blok",
       "xp": 25,
-      "attr": "FOC",
+      "attr": "plan",
       "icon": "sun"
      }
     },
@@ -3655,7 +3738,6 @@
       "title": "Complete your weekly task target",
       "cs": "Splň týdenní počet úkolů",
       "xp": 150,
-      "attr": "FOC",
       "icon": "check"
      }
     },
@@ -3703,7 +3785,7 @@
       "title": "Complete 5 planned blocks",
       "cs": "Dokonči 5 plánovaných bloků",
       "xp": 100,
-      "attr": "FOC",
+      "attr": "plan",
       "icon": "clock"
      }
     }

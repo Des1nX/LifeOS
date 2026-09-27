@@ -1198,8 +1198,23 @@ const CAT_LIST=Object.keys(CATS);
 const ATTR_PROFILES={
   fitness:{STR:.5,VIT:.3,DEX:.2}, health:{VIT:.6,FOC:.4}, learning:{INT:.6,FOC:.4}, work:{FOC:.45,INT:.35,SOC:.2},
   social:{SOC:1}, discipline:{DEX:1}, finance:{WIS:.8,FOC:.2}, personal:{WIS:.5,FOC:.5},
-  sleep:{VIT:.6,FOC:.4}, nutrition:{VIT:1}, reflection:{WIS:.6,FOC:.4}
+  sleep:{VIT:.6,FOC:.4}, nutrition:{VIT:1}, reflection:{WIS:.6,FOC:.4},
+  plan:{FOC:.5,DEX:.5} // planner quests
 };
+// Balancing: 60 % of XP becomes attribute points; quests (a bonus for activities that already paid their
+// own attributes) grow attributes at 30 % of their XP. Quest XP itself is unchanged.
+const ATTR_RATE=0.6, QUEST_ATTR_RATE=0.3;
+// Equal-weight mix of several profiles (e.g. the categories of the tasks a quest counted).
+function rpgMixProfiles(list){
+  const out={}; const ps=list.map(rpgProfileOf).filter(Boolean); if(!ps.length) return null;
+  ps.forEach(p=>{ const s=Object.values(p).reduce((a,v)=>a+v,0)||1; Object.keys(p).forEach(k=>{ out[k]=(out[k]||0)+p[k]/s/ps.length; }); });
+  return out;
+}
+// Meals keep their XP for every meal; attribute points only for the first meal logged that day.
+function mealAttrProfile(){
+  const d=todayStr();
+  return S.xpLog.some(x=>x.reason==='Meal logged'&&x.attrs&&uiIsoDate(x.ts)===d)?null:'nutrition';
+}
 const ATTR_PROFILE_PICK=['fitness','health','learning','work','social','discipline','finance','personal']; // choosable for a custom category
 function rpgProfileOf(x){
   if(!x) return null;
@@ -1927,7 +1942,7 @@ function habitProgressLabel(h){
   return `🔥${currentStreak(h)} day streak`;
 }
 
-function grantXp(amount, reason, attrKey, key){
+function grantXp(amount, reason, attrKey, key, attrRate){
   // Idempotency guard: if a unique event key is given (e.g. "task:<id>:<date>",
   // "habit:<id>:<date>", "milestone:<id>"), refuse to grant it twice. This checks
   // real xpLog history, not UI/toggle state, so it survives reload and app restarts.
@@ -1935,7 +1950,7 @@ function grantXp(amount, reason, attrKey, key){
   // map; the same 60 % of the XP is split over it deterministically (rpgAttrGains) and logged.
   if(key && S.xpLog.some(x=>x.key===key)) return false;
   S.totalXp += amount;
-  const gains=rpgAttrGains(Math.round(amount*0.6),attrKey);
+  const gains=rpgAttrGains(Math.round(amount*(attrRate!=null?attrRate:ATTR_RATE)),attrKey);
   const entry={id:uid(),amount,reason,ts:Date.now(),key};
   if(Object.keys(gains).length) entry.attrs=gains;
   S.xpLog.push(entry);
@@ -5601,10 +5616,9 @@ function workoutFinish(wid){
   // Muscle XP (parallel system): historical muscle snapshot + one idempotent log record per exercise
   muscleAwardWorkout(w);
   const key=`workout:${w.id}:${w.date}`;
+  // Balancing: 80 XP -> 48 attribute points by the fitness profile (STR 24, VIT 14, DEX 10); the old flat
+  // +20 VIT bonus was removed (VIT already stored from past workouts stays untouched).
   const granted=grantXp(80,'Workout: '+w.name,'fitness',key);
-  if(granted){
-    S.attrs.VIT=(S.attrs.VIT||0)+20;
-  }
   checkAchievements();
   return {ok:true,workout:w,granted:!!granted};
 }
@@ -6497,10 +6511,7 @@ function openWorkoutForm(existing){
       const wid=uid();
       const key=`workout:${wid}:${fields.date}`;
       S.workouts.push(Object.assign({id:wid,createdAt:Date.now()},fields));
-      const granted=grantXp(80,'Workout: '+name,'fitness',key);
-      if(granted){
-        S.attrs.VIT=(S.attrs.VIT||0)+20; // conditioning bonus, granted only alongside the XP itself
-      }
+      grantXp(80,'Workout: '+name,'fitness',key); // same reward as workoutFinish (no flat +20 VIT any more)
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(w?'Workout updated':'Workout logged');
@@ -6552,7 +6563,7 @@ function renderNutrition(){
     it.querySelector('.editBtn').onclick=()=>openMealForm(m);
     it.querySelector('.repeatBtn').onclick=()=>{
       S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()});
-      grantXp(10,'Meal logged','VIT'); checkAchievements(); scheduleSave();render();toast('Meal repeated');
+      grantXp(10,'Meal logged',mealAttrProfile()); checkAchievements(); scheduleSave();render();toast('Meal repeated');
     };
     it.querySelector('.delbtn').onclick=()=>{
       if(!confirm(`Delete "${m.name}"?`)) return;
@@ -6612,7 +6623,7 @@ function openMealForm(existing){
       Object.assign(m,fields);
     } else {
       S.meals.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields));
-      grantXp(10,'Meal logged','VIT');
+      grantXp(10,'Meal logged',mealAttrProfile());
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(m?'Meal updated':'Meal added');
@@ -7043,11 +7054,14 @@ function questStreakHabit(D){
     .sort((a,b)=>currentStreak(b)-currentStreak(a)||a.name.localeCompare(b.name))[0]||null;
 }
 const QD=()=>todayStr();
+// Task quests grow the attributes of the tasks they counted (their categories mixed; uncategorized = work).
+function questTaskProfile(tasks){ return rpgMixProfiles((tasks||[]).map(t=>catProfile(t.category)||'work'))||'work'; }
+function questAttrOf(q,p){ return typeof q.attr==='function'?q.attr(S,p||{}):q.attr; }
 // Every 3rd planned training day with some history (3+ earlier workouts) asks for a PR instead; counted
 // from workouts before D only, so finishing today's workout can never switch the quest mid-day.
 function questPrDay(s,D){ return completedWorkouts(s).filter(w=>w.date<D).length>=3&&questDayIndex(D)%3===0; }
 const DAILY_QUESTS=[
- {id:'dq_priority',core:true,title:'Finish all of today\'s priority tasks',cs:'Dokonči všechny dnešní prioritní úkoly',xp:40,attr:'FOC',icon:'bolt',
+ {id:'dq_priority',core:true,title:'Finish all of today\'s priority tasks',cs:'Dokonči všechny dnešní prioritní úkoly',xp:40,attr:(s,p,D=QD())=>questTaskProfile(s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent'))),icon:'bolt',
   params:(s,D)=>{ const n=s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')).length; return n?{}:null; },
   max:(s,p,D=QD())=>Math.max(1,s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')).length),
   val:(s,p,D=QD())=>s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')&&t.done).length},
@@ -7057,17 +7071,17 @@ const DAILY_QUESTS=[
  {id:'dq_workout_pr',core:true,title:'Finish a workout with at least one PR',cs:'Dokonči trénink a udělej aspoň jeden osobní rekord',xp:60,attr:'fitness',icon:'trophy',
   params:(s,D)=>{ const pl=fitnessDayPlan(D); return (pl==='calendar'||pl==='training')&&questPrDay(s,D)?{}:null; },
   max:()=>1, val:(s,p,D=QD())=>completedWorkouts(s).some(w=>w.date===D&&w.result&&(w.result.prs||[]).length>0)?1:0},
- {id:'dq_plan_all',core:true,title:'Complete today\'s planned blocks',cs:'Dokonči plánované bloky dne',xp:35,attr:'FOC',icon:'clock',
+ {id:'dq_plan_all',core:true,title:'Complete today\'s planned blocks',cs:'Dokonči plánované bloky dne',xp:35,attr:'plan',icon:'clock',
   params:(s,D)=>(s.plannerBlocks||[]).some(b=>b.date===D)?{}:null,
   max:(s,p,D=QD())=>Math.max(1,(s.plannerBlocks||[]).filter(b=>b.date===D).length),
   val:(s,p,D=QD())=>(s.plannerBlocks||[]).filter(b=>b.date===D&&b.completed).length},
  {id:'dq_habits',core:true,title:'Complete all of today\'s habits',cs:'Splň všechny dnešní návyky',xp:40,attr:'discipline',icon:'flame',
   params:(s,D)=>dailyScoreHabits(D).total?{}:null,
   max:(s,p,D=QD())=>Math.max(1,dailyScoreHabits(D).total||0), val:(s,p,D=QD())=>dailyScoreHabits(D).done||0},
- {id:'dq_category',title:'Finish a task from a category',cs:'Dokonči úkol z kategorie',xp:20,attr:'FOC',icon:'tag',
+ {id:'dq_category',title:'Finish a task from a category',cs:'Dokonči úkol z kategorie',xp:20,attr:(s,p)=>(p&&catProfile(p.cat))||'work',icon:'tag',
   params:(s,D)=>{ const c=questTopCategory(D); return c?{cat:c}:null; },
   max:()=>1, val:(s,p,D=QD())=>p&&p.cat&&s.tasks.some(t=>t.category===p.cat&&taskDoneOn(t,D))?1:0},
- {id:'dq_tasks',title:'Complete 3 tasks today',cs:'Dokonči dnes 3 úkoly',xp:30,attr:'FOC',icon:'check',
+ {id:'dq_tasks',title:'Complete 3 tasks today',cs:'Dokonči dnes 3 úkoly',xp:30,attr:(s,p,D=QD())=>questTaskProfile(s.tasks.filter(t=>taskDoneOn(t,D))),icon:'check',
   params:(s,D)=>questOpenTasksToday(D).length+s.tasks.filter(t=>taskDoneOn(t,D)).length>=3?{}:null,
   max:()=>3, val:(s,p,D=QD())=>Math.min(3,s.tasks.filter(t=>taskDoneOn(t,D)).length)},
  {id:'dq_streak',title:'Keep a habit streak going',cs:'Udrž streak návyku',xp:25,attr:'discipline',icon:'flame',
@@ -7076,7 +7090,7 @@ const DAILY_QUESTS=[
  {id:'dq_score',title:'Reach a Daily Score of 75',cs:'Dosáhni Daily Score 75',xp:40,attr:'discipline',icon:'target',
   params:(s,D)=>dailyScore(D).relevant>=2?{}:null,
   max:()=>75, val:(s,p,D=QD())=>Math.min(75,dailyScore(D).score||0)},
- {id:'dq_plan_morning',title:'Finish your morning block',cs:'Dokonči ranní plánovaný blok',xp:25,attr:'FOC',icon:'sun',
+ {id:'dq_plan_morning',title:'Finish your morning block',cs:'Dokonči ranní plánovaný blok',xp:25,attr:'plan',icon:'sun',
   params:(s,D)=>(s.plannerBlocks||[]).some(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60)?{}:null,
   max:(s,p,D=QD())=>Math.max(1,(s.plannerBlocks||[]).filter(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60).length),
   val:(s,p,D=QD())=>(s.plannerBlocks||[]).filter(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60&&b.completed).length},
@@ -7092,7 +7106,7 @@ const WEEKLY_QUESTS=[
   params:s=>Array.isArray(s.settings.trainingDays)&&s.settings.trainingDays.length||completedWorkouts(s).length?{}:null,
   max:s=>Math.max(1,Array.isArray(s.settings.trainingDays)&&s.settings.trainingDays.length?s.settings.trainingDays.length:Number(s.dailyTargets.workoutsPerWeek)||3),
   val:(s,p,W=QW())=>completedWorkouts(s).filter(w=>w.date>=W&&w.date<=addDays(W,6)).length},
- {id:'wq_tasks',title:'Complete your weekly task target',cs:'Splň týdenní počet úkolů',xp:150,attr:'FOC',icon:'check',
+ {id:'wq_tasks',title:'Complete your weekly task target',cs:'Splň týdenní počet úkolů',xp:150,attr:(s,p,W=QW())=>questTaskProfile(tasksDoneBetween(W,addDays(W,6))),icon:'check',
   params:s=>s.tasks.length?{}:null, max:s=>Math.max(5,Math.round((Number(s.dailyTargets.tasksPerDay)||3)*5)),
   val:(s,p,W=QW())=>tasksDoneBetween(W,addDays(W,6)).length},
  {id:'wq_streak',title:'Maintain a 7-day habit streak',cs:'Udrž 7denní streak návyku',xp:150,attr:'discipline',icon:'flame',
@@ -7104,7 +7118,7 @@ const WEEKLY_QUESTS=[
  {id:'wq_score',title:'Daily Score 75+ on 3 days',cs:'Daily Score 75+ ve 3 dnech',xp:120,attr:'discipline',icon:'target',
   params:s=>Object.keys(s.dailyScores||{}).length||dailyScore(todayStr()).score!=null?{}:null, max:()=>3,
   val:(s,p,W=QW())=>{ const t=todayStr(); let n=Object.entries(s.dailyScores||{}).filter(([d,v])=>d>=W&&d<t&&v&&v.score>=75).length; const live=dailyScore(t).score; if(live!=null&&live>=75) n++; return Math.min(3,n); }},
- {id:'wq_planner',title:'Complete 5 planned blocks',cs:'Dokonči 5 plánovaných bloků',xp:100,attr:'FOC',icon:'clock',
+ {id:'wq_planner',title:'Complete 5 planned blocks',cs:'Dokonči 5 plánovaných bloků',xp:100,attr:'plan',icon:'clock',
   params:s=>(s.plannerBlocks||[]).some(b=>b.date>=addDays(todayStr(),-14))?{}:null, max:()=>5,
   val:(s,p,W=QW())=>Math.min(5,(s.plannerBlocks||[]).filter(b=>b.date>=W&&b.date<=addDays(W,6)&&b.completed).length)},
 ];
@@ -7148,7 +7162,7 @@ function checkQuests(){
       S.quests.push({key,questId:q.id,date:todayStr(),period});
       toast(`📜 ${period==='daily'?'Daily':'Weekly'} Quest complete: ${title}`);
       logActivity('quest_complete',title,`Completed ${period} quest: ${title}`,q.xp);
-      grantXp(q.xp,'Quest: '+title,q.attr);
+      grantXp(q.xp,'Quest: '+title,questAttrOf(q,p),undefined,QUEST_ATTR_RATE);
       changed=true;
     });
   });
