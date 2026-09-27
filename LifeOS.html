@@ -593,6 +593,9 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 /* Finance */
 .fin-hero{padding:18px}
 /* Phase 11B: Finance 2.0 */
+.fin .page-head{flex-wrap:wrap;row-gap:8px}
+.fin-detail .kv>b{white-space:normal;overflow-wrap:anywhere;text-align:right}
+.fin-detail .big,.fin-detail h3{overflow-wrap:anywhere}
 .fin-monthbar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px;padding:8px;margin-bottom:10px}
 .fin-month-pick{position:relative;display:flex;justify-content:center;align-items:center;min-height:44px;margin:0;color:var(--text);font-size:var(--fs-body);cursor:pointer}
 .fin-month-pick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;margin:0}
@@ -612,8 +615,12 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 @media(min-width:1000px){.fin-charts{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .fin-legend{display:flex;gap:14px;font-size:var(--fs-caption);color:var(--sub);margin-bottom:8px}
 .fin-legend .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
-.dot.is-inc,.fin-col-bars i.is-inc{background:var(--accent2)}
-.dot.is-exp,.fin-col-bars i.is-exp{background:var(--danger)}
+/* chart pair validated with the dataviz palette checker (dark: all pass, CVD dE 9.8; light: the app's own pair, CVD dE 7.6 + position/gap/legend) */
+.fin{--fin-inc:#1fae83;--fin-exp:#c2415a}
+:root[data-theme="light"] .fin{--fin-inc:var(--accent2);--fin-exp:var(--danger)}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]):not([data-theme="light"]) .fin{--fin-inc:var(--accent2);--fin-exp:var(--danger)}}
+.dot.is-inc,.fin-col-bars i.is-inc{background:var(--fin-inc)}
+.dot.is-exp,.fin-col-bars i.is-exp{background:var(--fin-exp)}
 .fin-cols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;align-items:end;height:128px}
 .fin-col{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;min-width:0}
 .fin-col span{font-size:var(--fs-micro);color:var(--sub);white-space:nowrap}
@@ -4169,6 +4176,7 @@ function uiFinT(k){
     under:'under budget',near:'near the limit',over:'over the limit',left:'left',overby:'over by',of:'of'};
   return (cs?CS:E)[k]!=null?(cs?CS:E)[k]:k;
 }
+function uiFinPct(v,signed){ const n=Number(v)||0; return (signed&&n>=0?'+':'')+n.toLocaleString(uiLocale(),{maximumFractionDigits:1})+'\u00a0%'; }
 function uiMoney(n){ const v=finRound(finNum(n)); return (v<0?'−':'')+Number(Math.abs(v)).toLocaleString(uiLocale(),{maximumFractionDigits:2}); }
 function uiFinMonthLabel(ym){ try{ const s=new Date(ym+'-01T00:00').toLocaleDateString(uiLocale(),{month:'long',year:'numeric'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return ym; } }
 function uiFinMonthShort(ym){ try{ return new Date(ym+'-01T00:00').toLocaleDateString(uiLocale(),{month:'short'}).replace('.',''); }catch(e){ return ym.slice(5); } }
@@ -4206,7 +4214,7 @@ function uiFinChartIncomeExpense(series){
 function uiFinChartCategories(byCategory){
   if(!byCategory.length) return `<div class="chart-empty">${uiFinT('no_data')}</div>`;
   const max=byCategory[0].amount||1;
-  return `<div class="fin-hbars">${byCategory.map(c=>`<div class="fin-hbar" title="${escapeHtml(uiFinCatName(c.name))}: ${uiMoney(c.amount)} (${c.pct} %)"><div class="between"><span class="truncate">${escapeHtml(uiFinCatName(c.name))}</span><span class="num"><b>${uiMoney(c.amount)}</b> · ${c.pct} %</span></div>
+  return `<div class="fin-hbars">${byCategory.map(c=>`<div class="fin-hbar" title="${escapeHtml(uiFinCatName(c.name))}: ${uiMoney(c.amount)} (${uiFinPct(c.pct)})"><div class="between"><span class="truncate">${escapeHtml(uiFinCatName(c.name))}</span><span class="num"><b>${uiMoney(c.amount)}</b> · ${uiFinPct(c.pct)}</span></div>
     <div class="bar"><i style="width:${Math.max(2,Math.round(c.amount/max*100))}%"></i></div></div>`).join('')}</div>`;
 }
 function uiFinChartBalance(series){
@@ -4226,7 +4234,7 @@ function uiFinBudgetRows(usage,withActions){
   return usage.map(u=>`<div class="metric fin-bud" data-budget="${u.budget.id}">
     <div class="metric-head"><span class="truncate">${escapeHtml(uiFinCatName(u.name))}${u.override?` <span class="chip is-muted">${uiFinMonthShort(u.budget.month)}</span>`:''}</span><span class="num"><b>${uiMoney(u.spent)}</b> / ${uiMoney(u.limit)}</span></div>
     <div class="bar ${u.status==='over'?'is-danger':u.status==='near'?'is-warn':'is-success'}" role="progressbar" aria-valuenow="${Math.min(100,Math.round(u.pct))}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(uiFinCatName(u.name))}"><i style="width:${Math.min(100,u.pct)}%"></i></div>
-    <div class="between sub fin-bud-foot"><span>${u.status==='over'?'▲':u.status==='near'?'●':'✓'} ${uiFinT(u.status)} · ${u.pct} %</span><span class="num">${u.remaining>=0?`${uiMoney(u.remaining)} ${uiFinT('left')}`:`${uiFinT('overby')} ${uiMoney(-u.remaining)}`}</span></div>
+    <div class="between sub fin-bud-foot"><span>${u.status==='over'?'▲':u.status==='near'?'●':'✓'} ${uiFinT(u.status)} · ${uiFinPct(u.pct)}</span><span class="num">${u.remaining>=0?`${uiMoney(u.remaining)} ${uiFinT('left')}`:`${uiFinT('overby')} ${uiMoney(-u.remaining)}`}</span></div>
     ${withActions?`<div class="fin-row-actions"><button class="iconbtn ghost-ic finBudEdit" aria-label="${uiFinT('edit')}: ${escapeHtml(u.name)}">${uiIcon('edit',16)}</button></div>`:''}</div>`).join('');
 }
 function uiFinTxRow(x,kind){
@@ -4268,7 +4276,7 @@ function renderFinanceDashboard(){
       ${tile('kpiExp',uiFinT('exps'),uiMoney(t.expenses),`${t.expenseCount}×`,'')}
       ${tile('kpiBud',uiFinT('budget'),budLim?`${Math.round(budSp/budLim*100)} %`:'—',budLim?`${uiMoney(budSp)} ${uiFinT('of')} ${uiMoney(budLim)}`:'',budLim&&budSp>budLim?'is-exp':'')}
       ${tile('kpiSav',uiFinT('savings'),uiMoney(savCur),savTgt?`${uiFinT('of')} ${uiMoney(savTgt)}`:'','')}
-      ${tile('kpiInv',uiFinT('invest'),uiMoney(inv.value),inv.invested?`${inv.gain>=0?'+':''}${uiMoney(inv.gain)}${inv.pct!=null?` · ${inv.pct>=0?'+':''}${inv.pct} %`:''}`:'','')}
+      ${tile('kpiInv',uiFinT('invest'),uiMoney(inv.value),inv.invested?`${inv.gain>=0?'+':''}${uiMoney(inv.gain)}${inv.pct!=null?` · ${uiFinPct(inv.pct,true)}`:''}`:'','')}
     </div>
     <div class="section-header"><h3>${uiFinT('expected')}</h3><button class="action" id="finGoRec">${uiFinT('all')} ›</button></div>
     <div class="card fin-expected" id="finExpected"><p class="helper-text" style="margin:0 0 8px">${uiFinT('expected_d')}</p>${uiFinExpectedList(ex)}</div>
@@ -4488,7 +4496,7 @@ function renderFinanceSavings(){
     const p=financeSavingsProgress(g);
     const it=el(`<button class="card fin-card" data-goal="${g.id}"><div class="between"><span class="item-title truncate">${escapeHtml(g.icon)} ${escapeHtml(g.name)}${g.active===false?` <span class="chip is-muted">${uiFin2T('inactive')}</span>`:''}</span><span class="num"><b>${uiMoney(p.current)}</b> / ${uiMoney(p.target)}</span></div>
       <div class="bar ${p.done?'is-success':''}" style="margin:8px 0 6px"><i style="width:${p.pct}%"></i></div>
-      <div class="between sub"><span>${p.pct} % · ${uiFin2T('remaining')} ${uiMoney(p.remaining)}</span><span>${p.done?`✓ ${uiFin2T('reached')}`:p.overdue?`${uiFin2T('overdue')}`:p.requiredMonthly!=null?`${uiFin2T('need')} ${uiMoney(p.requiredMonthly)} ${uiFin2T('per_month')}`:''}</span></div></button>`);
+      <div class="between sub"><span>${uiFinPct(p.pct)} · ${uiFin2T('remaining')} ${uiMoney(p.remaining)}</span><span>${p.done?`✓ ${uiFin2T('reached')}`:p.overdue?`${uiFin2T('overdue')}`:p.requiredMonthly!=null?`${uiFin2T('need')} ${uiMoney(p.requiredMonthly)} ${uiFin2T('per_month')}`:''}</span></div></button>`);
     it.onclick=()=>openSavingsDetail(g);
     list.appendChild(it);
   });
@@ -4518,7 +4526,7 @@ function openSavingsDetail(g){
   const row=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
   const inner=el(`<div class="fin-detail" id="goalDetail"><h3>${escapeHtml(g.icon)} ${escapeHtml(g.name)}</h3>
     <div class="bar ${p.done?'is-success':''}" style="margin:6px 0 10px"><i style="width:${p.pct}%"></i></div>
-    <div class="card">${row(uiFinT('savings'),`${uiMoney(p.current)} / ${uiMoney(p.target)} (${p.pct} %)`)}${row(uiFin2T('remaining'),uiMoney(p.remaining))}
+    <div class="card">${row(uiFinT('savings'),`${uiMoney(p.current)} / ${uiMoney(p.target)} (${uiFinPct(p.pct)})`)}${row(uiFin2T('remaining'),uiMoney(p.remaining))}
       ${g.deadline?row(uiFin2T('deadline'),`${fmtDate(g.deadline)} · ${p.daysLeft} d`):''}
       ${p.requiredMonthly!=null?row(uiFin2T('need'),`${uiMoney(p.requiredMonthly)} ${uiFin2T('per_month')} · ${uiMoney(p.requiredWeekly)} ${uiFin2T('per_week')}`):''}
       ${p.overdue?row('⚠︎',uiFin2T('overdue')):''}</div>
@@ -4545,14 +4553,14 @@ function renderFinanceInvestments(){
     <p class="helper-text" style="margin:0 2px 10px">${uiFin2T('manual')}</p>
     <div class="stat-grid cols-3"><div class="stat-card"><div class="stat-label">${uiFin2T('value')}</div><div class="stat-value num">${uiMoney(sum.value)}</div></div>
       <div class="stat-card"><div class="stat-label">${uiFin2T('invested')}</div><div class="stat-value num">${uiMoney(sum.invested)}</div></div>
-      <div class="stat-card"><div class="stat-label">${uiFin2T('gain')}</div><div class="stat-value num ${sum.gain>=0?'is-inc':'is-exp'}">${sum.gain>=0?'+':''}${uiMoney(sum.gain)}</div><div class="stat-sub">${sum.pct!=null?`${sum.pct>=0?'+':''}${sum.pct} %`:''}</div></div></div>
+      <div class="stat-card"><div class="stat-label">${uiFin2T('gain')}</div><div class="stat-value num ${sum.gain>=0?'is-inc':'is-exp'}">${sum.gain>=0?'+':''}${uiMoney(sum.gain)}</div><div class="stat-sub">${sum.pct!=null?`${uiFinPct(sum.pct,true)}`:''}</div></div></div>
     <div class="list" id="finInvList"></div></div>`);
   const list=wrap.querySelector('#finInvList');
   if(!all.length){ const e=el(`<div class="card">${uiEmpty('📈',uiFin2T('no_inv'),uiFin2T('no_inv_d'),'＋ '+uiFin2T('add_inv'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openInvestmentForm(); list.appendChild(e); }
   all.forEach(i=>{
     const p=financeInvestmentPerformance(i);
     const it=el(`<button class="card fin-card" data-investment="${i.id}"><div class="between"><span class="item-title truncate">${escapeHtml(i.name)}${i.ticker?` <span class="sub">${escapeHtml(i.ticker)}</span>`:''}${i.active===false?` <span class="chip is-muted">${uiFin2T('inactive')}</span>`:''}</span><b class="num fin-big">${uiMoney(p.value)} <small>${escapeHtml(i.currency)}</small></b></div>
-      <div class="between sub"><span>${uiFin2T(i.type)||escapeHtml(i.type)} · ${uiFin2T('invested')} ${uiMoney(p.invested)}${p.hasValuation?` · ${fmtDate(p.valuationDate)}`:` · ${uiFin2T('no_val')}`}</span><b class="num ${p.gain>=0?'is-inc':'is-exp'}">${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` (${p.pct>=0?'+':''}${p.pct} %)`:''}</b></div></button>`);
+      <div class="between sub"><span>${uiFin2T(i.type)||escapeHtml(i.type)} · ${uiFin2T('invested')} ${uiMoney(p.invested)}${p.hasValuation?` · ${fmtDate(p.valuationDate)}`:` · ${uiFin2T('no_val')}`}</span><b class="num ${p.gain>=0?'is-inc':'is-exp'}">${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` (${uiFinPct(p.pct,true)})`:''}</b></div></button>`);
     it.onclick=()=>openInvestmentDetail(i);
     list.appendChild(it);
   });
@@ -4585,7 +4593,7 @@ function openInvestmentDetail(i){
   const hist=[...i.contributions.map(c=>[c.date,`${uiFin2T('add_contrib')}${c.note?' · '+escapeHtml(c.note):''}`,`${c.amount>0?'+':''}${uiMoney(c.amount)}`]),...i.valuations.map(v=>[v.date,uiFin2T('value'),`= ${uiMoney(v.value)}`])].sort((a,b)=>b[0].localeCompare(a[0]));
   const inner=el(`<div class="fin-detail" id="invDetail"><h3>${escapeHtml(i.name)}${i.ticker?` <span class="sub">${escapeHtml(i.ticker)}</span>`:''}</h3>
     <div class="card">${row(uiFin2T('value'),`${uiMoney(p.value)} ${escapeHtml(i.currency)}${p.hasValuation?'':` (${uiFin2T('no_val')})`}`)}${row(uiFin2T('invested'),uiMoney(p.invested))}
-      ${row(uiFin2T('gain'),`${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` · ${p.pct>=0?'+':''}${p.pct} %`:''}`)}</div>
+      ${row(uiFin2T('gain'),`${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` · ${uiFinPct(p.pct,true)}`:''}`)}</div>
     <p class="helper-text">${uiFin2T('manual')}</p>
     <div class="grid2"><div><label for="iv_val">${uiFin2T('val')}</label><input type="number" id="iv_val" inputmode="decimal" min="0" step="0.01"><div class="field-error" hidden data-err="iv_val"></div></div><div><label for="iv_date">${uiFinT('f_date')}</label><input type="date" id="iv_date" value="${todayStr()}"></div></div>
     <button class="btn ghost" id="iv_save">${uiFin2T('add_val')}</button>
@@ -7196,9 +7204,9 @@ function searchGroups(q){
       .map(m=>({title:m.title,meta:m.completed?'Completed':'Open',obj:m}))],
     ['Notes','📝','note', S.notes.filter(n=>searchMatch([n.title,n.body,n.category,...(n.tags||[])],q))
       .map(n=>({title:n.title||'Untitled',meta:n.category||'',obj:n}))],
-    ['Expenses','💸','expense', S.expenses.filter(e=>searchMatch([e.description,e.category,financeCategoryLabel(e,'expense'),...(e.tags||[])],q))
+    ['Expenses','💸','expense', S.expenses.filter(e=>searchMatch([e.description,e.category,financeCategoryLabel(e,'expense'),uiL(financeCategoryLabel(e,'expense')),...(e.tags||[])],q))
       .map(e=>({title:e.description||financeCategoryLabel(e,'expense')||'Expense',meta:fmtDate(e.date)+' · '+uiMoney(e.amount),obj:e}))],
-    ['Income','💵','income', S.income.filter(i=>searchMatch([i.description,i.category,financeCategoryLabel(i,'income'),...(i.tags||[])],q))
+    ['Income','💵','income', S.income.filter(i=>searchMatch([i.description,i.category,financeCategoryLabel(i,'income'),uiL(financeCategoryLabel(i,'income')),...(i.tags||[])],q))
       .map(i=>({title:i.description||financeCategoryLabel(i,'income')||'Income',meta:fmtDate(i.date)+' · '+uiMoney(i.amount),obj:i}))],
     ['Finance categories','🏷️','financeCategory', (S.financeCategories||[]).filter(c=>searchMatch([c.name,uiL(c.name)],q)).map(c=>({title:uiL(c.name),meta:c.active?c.type:c.type+' · inactive',obj:c}))],
     ['Recurring plans','🔁','recurringFinance', (S.recurringFinance||[]).filter(r=>searchMatch([r.name,r.notes],q)).map(r=>({title:r.name,meta:uiMoney(r.amount)+' · '+r.frequency,obj:r}))],
