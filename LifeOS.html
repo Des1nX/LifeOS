@@ -1267,6 +1267,8 @@ function defaultState(){return{
   exerciseLibrary:[],
   workoutTemplates:[], // Phase 11A: plans for Start Workout (see templateSave)
   muscleProgress:{log:[]}, // Phase 11A: Muscle XP ledger (see muscleAwardWorkout); totals/levels are derived
+  // ---- Phase 11B: Finance 2.0 (see the Finance 2.0 block); old states get these in migrate() ----
+  financeCategories:[], accounts:[], recurringFinance:[], savingsGoals:[], investments:[],
   settings:{
     theme:'dark', onboarded:false,
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
@@ -1427,6 +1429,14 @@ function migrate(state){
   // finished new-model workouts that have no log record yet (idempotent by key).
   if(!merged.muscleProgress||typeof merged.muscleProgress!=='object') merged.muscleProgress={log:[]};
   if(!Array.isArray(merged.muscleProgress.log)) merged.muscleProgress.log=[];
+  // Phase 11B: Finance 2.0. A state without categories gets the default set + every category name its
+  // own history uses. Old transactions/budgets are NOT rewritten: they resolve their category by exact
+  // name on read (financeCategoryOf); the id is only written when the user renames that category.
+  merged.financeCategories=Array.isArray(state&&state.financeCategories)?merged.financeCategories.map(migrateFinanceCategory):financeSeedCategories(merged);
+  merged.accounts=(merged.accounts||[]).map(migrateAccount);
+  merged.recurringFinance=(merged.recurringFinance||[]).map(migrateRecurring);
+  merged.savingsGoals=(merged.savingsGoals||[]).map(migrateSavingsGoal);
+  merged.investments=(merged.investments||[]).map(migrateInvestment);
   muscleRecover(merged);
   merged.schemaVersion=d.schemaVersion;
   return merged;
@@ -3649,6 +3659,435 @@ function financeGrantXp(){
     // can never double-fire regardless of how many finance entries are logged that day.
     applyFinanceAttrSkillBonus('finance:'+today);
   }
+}
+/* ================= Phase 11B: Finance 2.0 -- model + the ONE set of calculations =================
+   Collections (all reach old states/backups through migrate(); schemaVersion stays 8):
+   financeCategories[] {id,name,type:'expense'|'income'|'both',icon,color,active,createdAt,updatedAt}
+   expenses[]/income[]  existing records + optional categoryId, accountId, recurringId, recurringFor,
+                        subscriptionId, updatedAt (the old free-text `category` is kept untouched)
+   budgets[]            {id,categoryId,category,amount,month:null|'YYYY-MM',note,...}: month null = the
+                        default monthly limit, month 'YYYY-MM' = an override for that one month
+   recurringFinance[]   {id,type,name,amount,categoryId,accountId,frequency:'weekly'|'monthly'|'yearly',
+                        startDate,active,notes,createdAt,updatedAt} -- a PLAN, never counted as money
+   accounts[]           {id,name,type:'bank'|'cash'|'card',currency,openingBalance,openingDate,active,notes,
+                        checkpoints:[{id,date,balance,note}],createdAt,updatedAt}
+   savingsGoals[]       {id,name,targetAmount,deadline,accountId,icon,color,active,contributions:[{id,amount,date,note,accountId}],...}
+   investments[]        {id,name,ticker,type,currency,accountId,active,notes,contributions:[{id,amount,date,note}],
+                        valuations:[{id,date,value}],createdAt,updatedAt} -- manual values only, no market data
+   Money is counted ONLY from expenses[]/income[]. Recurring plans and subscriptions are "expected";
+   paying one creates a normal transaction linked by recurringId/subscriptionId + recurringFor
+   (the occurrence date), after which that occurrence counts as realized and is never counted twice. */
+const FIN_DEFAULT_CATS=[['Food','expense','🍎','#f59e0b'],['Housing','expense','🏠','#6366f1'],['Transport','expense','🚗','#0ea5e9'],
+  ['Shopping','expense','🛍️','#ec4899'],['Entertainment','expense','🎬','#8b5cf6'],['Health','expense','❤️','#ef4444'],
+  ['Subscriptions','expense','💳','#14b8a6'],['Education','expense','📚','#22c55e'],['Other','expense','📦','#94a3b8'],
+  ['Salary','income','💼','#10b981'],['Other income','income','💵','#84cc16']];
+const FIN_ACCOUNT_TYPES=['bank','cash','card'];
+const FIN_FREQUENCIES=['weekly','monthly','yearly'];
+const FIN_BUDGET_NEAR=80; // % of the limit from which a budget is "near"
+function finDefaults(x,d){ const r=Object.assign({},x); Object.keys(d).forEach(k=>{ if(r[k]===undefined) r[k]=d[k]; }); return r; } // keeps the record's key order
+function finSlug(name){ return String(name||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'x'; }
+function finNum(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
+function finRound(n){ return Math.round(n*100)/100; }
+function finYm(d){ return String(d||todayStr()).slice(0,7); }
+function finMonthRange(ym){ const [y,m]=ym.split('-').map(Number); const last=new Date(y,m,0).getDate(); return {from:`${ym}-01`,to:`${ym}-${String(last).padStart(2,'0')}`}; }
+function finShiftMonth(ym,k){ const [y,m]=ym.split('-').map(Number); const d=new Date(y,m-1+k,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function finDaysBetween(a,b){ return Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000); }
+// ---- categories ----
+function financeSeedCategories(st){
+  // default set + every distinct category name already used by old transactions/budgets (never lost)
+  const cats=[], byKey=new Map();
+  const add=(name,type,icon,color)=>{
+    name=String(name||'').trim().replace(/\s+/g,' '); const k=exerciseKey(name); if(!k) return;
+    const ex=byKey.get(k); if(ex){ if(ex.type!==type) ex.type='both'; return; }
+    let id='fcat_'+finSlug(name); while(cats.some(c=>c.id===id)) id+='_';
+    const c={id,name,type,icon:icon||'🏷️',color:color||'#94a3b8',active:true,createdAt:Date.now(),updatedAt:Date.now()};
+    cats.push(c); byKey.set(k,c);
+  };
+  FIN_DEFAULT_CATS.forEach(([n,t,i,c])=>add(n,t,i,c));
+  (st.expenses||[]).forEach(e=>add(e.category,'expense'));
+  (st.income||[]).forEach(e=>add(e.category,'income'));
+  (st.budgets||[]).forEach(b=>add(b.category,'expense'));
+  return cats;
+}
+function migrateFinanceCategory(c){
+  const r=finDefaults(c,{name:'',type:'expense',icon:'🏷️',color:'#94a3b8',active:true,createdAt:Date.now()});
+  if(!['expense','income','both'].includes(r.type)) r.type='expense';
+  if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function financeCategoryById(id,st){ return id?((st||S).financeCategories||[]).find(c=>c.id===id)||null:null; }
+function financeCategoryOf(x,kind,st){
+  // a record's category: its categoryId, else the exact (normalized) name of its old text category
+  const c=financeCategoryById(x&&x.categoryId,st); if(c) return c;
+  const k=exerciseKey(x&&x.category); if(!k) return null;
+  const all=(st||S).financeCategories||[];
+  return all.find(c=>exerciseKey(c.name)===k&&(!kind||c.type===kind||c.type==='both'))||all.find(c=>exerciseKey(c.name)===k)||null;
+}
+function financeCategoryKey(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.id:'name:'+(exerciseKey(x&&x.category)||'other'); }
+function financeCategoryLabel(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.name:(String((x&&x.category)||'').trim()||'—'); }
+function financeCategoriesFor(kind,includeId,st){
+  return ((st||S).financeCategories||[]).filter(c=>(c.active||c.id===includeId)&&(c.type===kind||c.type==='both')).sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
+}
+function financeCategoryValidate(f,id){
+  const e={}; const name=String(f.name||'').trim();
+  if(!name) e.name='required';
+  else if((S.financeCategories||[]).some(c=>c.id!==id&&exerciseKey(c.name)===exerciseKey(name)&&(c.type===f.type||c.type==='both'||f.type==='both'))) e.name='duplicate';
+  if(!['expense','income','both'].includes(f.type)) e.type='invalid';
+  return e;
+}
+function financeCategorySave(f,id){
+  const errors=financeCategoryValidate(f,id); if(Object.keys(errors).length) return {ok:false,errors};
+  S.financeCategories=S.financeCategories||[];
+  const fields={name:String(f.name).trim().replace(/\s+/g,' '),type:f.type,icon:String(f.icon||'🏷️').trim()||'🏷️',color:f.color||'#94a3b8',updatedAt:Date.now()};
+  let c=id?S.financeCategories.find(x=>x.id===id):null;
+  if(c){
+    // renaming: records that still point at this category only by its old text name get its id first,
+    // so the rename never disconnects history (the old text itself stays on the record)
+    if(exerciseKey(c.name)!==exerciseKey(fields.name)) [[S.expenses,'expense'],[S.income,'income'],[S.budgets,'expense'],[S.recurringFinance||[],null]].forEach(([list,kind])=>list.forEach(x=>{ if(!x.categoryId&&financeCategoryOf(x,kind)===c) x.categoryId=c.id; }));
+    Object.assign(c,fields);
+  }
+  else { c=Object.assign({id:uid(),active:true,createdAt:Date.now()},fields); S.financeCategories.push(c); }
+  return {ok:true,category:c};
+}
+function financeCategoryInUse(id){
+  const c=financeCategoryById(id); const used=x=>x.categoryId===id||(!x.categoryId&&c&&financeCategoryOf(x,null)===c);
+  return S.expenses.some(used)||S.income.some(used)||S.budgets.some(used)||(S.recurringFinance||[]).some(used);
+}
+function financeCategorySetActive(id,active){ const c=financeCategoryById(id); if(!c) return false; c.active=!!active; c.updatedAt=Date.now(); return true; }
+function financeCategoryDelete(id){
+  // a category that any record uses is only deactivated -- history keeps showing it
+  if(financeCategoryInUse(id)){ financeCategorySetActive(id,false); return 'deactivated'; }
+  const n=S.financeCategories.length; S.financeCategories=S.financeCategories.filter(c=>c.id!==id); return S.financeCategories.length<n?'deleted':null;
+}
+// ---- transactions ----
+function financeTxList(kind,st){ return kind==='income'?((st||S).income||[]):((st||S).expenses||[]); }
+function financeTxValidate(f){
+  const e={};
+  if(!(finNum(f.amount)>0)) e.amount='invalid';
+  if(!plannerValidDate(f.date)) e.date='invalid';
+  if(f.accountId&&!financeAccountById(f.accountId)) e.accountId='invalid';
+  return e;
+}
+function financeSaveTransaction(kind,f,id){
+  // the one create/edit path (Finance, Quick Add, recurring/subscription confirm). A NEW transaction
+  // runs the existing once-a-day Finance XP (financeGrantXp) exactly like before; edits never do.
+  const errors=financeTxValidate(f); if(Object.keys(errors).length) return {ok:false,errors};
+  const list=financeTxList(kind);
+  const cat=financeCategoryById(f.categoryId);
+  const fields={amount:finRound(finNum(f.amount)),date:f.date,categoryId:cat?cat.id:(f.categoryId||''),category:cat?cat.name:String(f.category||''),
+    description:String(f.description||''),accountId:f.accountId||'',paymentMethod:String(f.paymentMethod||''),
+    tags:Array.isArray(f.tags)?f.tags:String(f.tags||'').split(',').map(t=>t.trim()).filter(Boolean),updatedAt:Date.now()};
+  ['recurringId','recurringFor','subscriptionId'].forEach(k=>{ if(k in f) fields[k]=f[k]||''; });
+  let tx=id?list.find(x=>x.id===id):null;
+  if(tx){ Object.assign(tx,fields); return {ok:true,tx,created:false}; }
+  tx=Object.assign({id:uid(),recurring:false,recurringId:'',recurringFor:'',subscriptionId:'',createdAt:Date.now()},fields);
+  list.push(tx);
+  financeGrantXp(); checkAchievements();
+  return {ok:true,tx,created:true};
+}
+function financeDeleteTransaction(kind,id){
+  const n=financeTxList(kind).length;
+  if(kind==='income') S.income=S.income.filter(x=>x.id!==id); else S.expenses=S.expenses.filter(x=>x.id!==id);
+  return financeTxList(kind).length<n;
+}
+function financeTxInRange(kind,from,to,st){ return financeTxList(kind,st).filter(x=>x.date&&x.date>=from&&x.date<=to); }
+function financeMonthTotals(ym,st){
+  // everything a month view shows is computed here (Finance dashboard, Home, Review)
+  st=st||S; const {from,to}=finMonthRange(ym);
+  const exp=financeTxInRange('expense',from,to,st), inc=financeTxInRange('income',from,to,st);
+  const income=finRound(inc.reduce((a,x)=>a+finNum(x.amount),0)), expenses=finRound(exp.reduce((a,x)=>a+finNum(x.amount),0));
+  const cats=new Map();
+  exp.forEach(x=>{ const k=financeCategoryKey(x,'expense',st); const c=cats.get(k)||{key:k,categoryId:k.startsWith('name:')?'':k,name:financeCategoryLabel(x,'expense',st),amount:0,count:0}; c.amount=finRound(c.amount+finNum(x.amount)); c.count++; cats.set(k,c); });
+  const byCategory=[...cats.values()].sort((a,b)=>b.amount-a.amount||a.name.localeCompare(b.name)).map(c=>Object.assign(c,{pct:expenses>0?Math.round(c.amount/expenses*1000)/10:0}));
+  const savings=finRound((st.savingsGoals||[]).reduce((a,g)=>a+(g.contributions||[]).filter(c=>c.date>=from&&c.date<=to).reduce((b,c)=>b+finNum(c.amount),0),0));
+  return {ym,from,to,income,expenses,net:finRound(income-expenses),incomeCount:inc.length,expenseCount:exp.length,byCategory,savingsContributions:savings};
+}
+function financeTotalsBetween(from,to,st){
+  const exp=financeTxInRange('expense',from,to,st), inc=financeTxInRange('income',from,to,st);
+  const income=finRound(inc.reduce((a,x)=>a+finNum(x.amount),0)), expenses=finRound(exp.reduce((a,x)=>a+finNum(x.amount),0));
+  const byCategory={}; exp.forEach(x=>{ const l=financeCategoryLabel(x,'expense',st); byCategory[l]=finRound((byCategory[l]||0)+finNum(x.amount)); });
+  return {income,expenses,net:finRound(income-expenses),count:exp.length+inc.length,byCategory};
+}
+function financeMonthSeries(ym,n,st){
+  // n months ending at ym (oldest first): income, expenses, net and the balance at each month end
+  return Array.from({length:n},(_,i)=>finShiftMonth(ym,i-n+1)).map(m=>{ const t=financeMonthTotals(m,st); return {ym:m,income:t.income,expenses:t.expenses,net:t.net,balance:financeBalanceAt(finMonthRange(m).to,st)}; });
+}
+// ---- accounts ----
+function migrateAccount(a){
+  const r=finDefaults(a,{name:'',type:'bank',currency:'CZK',openingBalance:0,openingDate:'',active:true,notes:'',checkpoints:[],createdAt:Date.now()});
+  if(!FIN_ACCOUNT_TYPES.includes(r.type)) r.type='bank';
+  r.openingBalance=finNum(r.openingBalance); if(!r.updatedAt) r.updatedAt=r.createdAt;
+  if(!Array.isArray(r.checkpoints)) r.checkpoints=[];
+  return r;
+}
+function financeAccountById(id,st){ return id?((st||S).accounts||[]).find(a=>a.id===id)||null:null; }
+function financeAccountValidate(f){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  if(!FIN_ACCOUNT_TYPES.includes(f.type)) e.type='invalid';
+  if(f.openingBalance!==''&&f.openingBalance!=null&&!Number.isFinite(Number(f.openingBalance))) e.openingBalance='invalid';
+  if(f.openingDate&&!plannerValidDate(f.openingDate)) e.openingDate='invalid';
+  return e;
+}
+function financeAccountSave(f,id){
+  const errors=financeAccountValidate(f); if(Object.keys(errors).length) return {ok:false,errors};
+  S.accounts=S.accounts||[];
+  const fields={name:String(f.name).trim(),type:f.type,currency:String(f.currency||'CZK').trim().toUpperCase()||'CZK',openingBalance:finRound(finNum(f.openingBalance)),
+    openingDate:f.openingDate||todayStr(),notes:String(f.notes||''),updatedAt:Date.now()};
+  let a=id?S.accounts.find(x=>x.id===id):null;
+  if(a) Object.assign(a,fields);
+  else { a=migrateAccount(Object.assign({id:uid(),active:true,checkpoints:[],createdAt:Date.now()},fields)); S.accounts.push(a); }
+  return {ok:true,account:a};
+}
+function financeAccountSetActive(id,active){ const a=financeAccountById(id); if(!a) return false; a.active=!!active; a.updatedAt=Date.now(); return true; }
+function financeAccountBalance(acc,date,st){
+  // openingBalance (at the start of openingDate) + income - expenses booked to the account from
+  // openingDate up to and including `date` (default: all). Nothing else moves an account.
+  st=st||S; if(!acc) return 0;
+  const from=acc.openingDate||'0000-00-00', to=date||'9999-12-31';
+  const sum=kind=>financeTxList(kind,st).filter(x=>x.accountId===acc.id&&x.date>=from&&x.date<=to).reduce((a,x)=>a+finNum(x.amount),0);
+  return finRound(finNum(acc.openingBalance)+sum('income')-sum('expense'));
+}
+function financeAccountStatus(acc,st){
+  // calculated balance + the latest checkpoint (a real balance the user entered) and the difference
+  // between it and the calculated balance on that date; a checkpoint never rewrites any transaction
+  const calculated=financeAccountBalance(acc,null,st);
+  const cps=[...(acc.checkpoints||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.createdAt||0)-(b.createdAt||0));
+  const cp=cps[cps.length-1]||null;
+  if(!cp) return {calculated,checkpoint:null,calculatedAtCheckpoint:null,difference:null,fromCheckpoint:null};
+  const atCp=financeAccountBalance(acc,cp.date,st);
+  const after=kind=>financeTxList(kind,st).filter(x=>x.accountId===acc.id&&x.date>cp.date).reduce((a,x)=>a+finNum(x.amount),0);
+  return {calculated,checkpoint:cp,calculatedAtCheckpoint:atCp,difference:finRound(finNum(cp.balance)-atCp),fromCheckpoint:finRound(finNum(cp.balance)+after('income')-after('expense'))};
+}
+function financeAccountAddCheckpoint(id,f){
+  const a=financeAccountById(id); if(!a) return {ok:false,errors:{account:'invalid'}};
+  const e={}; if(!plannerValidDate(f.date)) e.date='invalid'; if(f.balance===''||f.balance==null||!Number.isFinite(Number(f.balance))) e.balance='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const cp={id:uid(),date:f.date,balance:finRound(finNum(f.balance)),note:String(f.note||''),createdAt:Date.now()};
+  a.checkpoints.push(cp); a.updatedAt=Date.now(); return {ok:true,checkpoint:cp};
+}
+function financeBalanceAt(date,st){
+  // all money at the end of `date`: every account's balance + transactions without a (known) account
+  st=st||S;
+  const accs=(st.accounts||[]).filter(a=>!a.openingDate||a.openingDate<=date);
+  const known=new Set((st.accounts||[]).map(a=>a.id));
+  const free=kind=>financeTxList(kind,st).filter(x=>(!x.accountId||!known.has(x.accountId))&&x.date<=date).reduce((a,x)=>a+finNum(x.amount),0);
+  return finRound(accs.reduce((a,acc)=>a+financeAccountBalance(acc,date,st),0)+free('income')-free('expense'));
+}
+// ---- budgets ----
+function financeBudgetCategoryId(b,st){ const c=financeCategoryOf(b,'expense',st); return c?c.id:'name:'+exerciseKey(b.category); }
+function financeBudgetLimit(b){ return b.period==='Yearly'&&!b.month?finRound(finNum(b.amount)/12):finNum(b.amount); } // legacy yearly = 1/12 per month
+function financeBudgetFor(catKey,ym,st){
+  const bs=((st||S).budgets||[]).filter(b=>financeBudgetCategoryId(b,st)===catKey);
+  return bs.find(b=>b.month===ym)||bs.find(b=>!b.month)||null;
+}
+function financeBudgetUsage(ym,st){
+  // per category with a limit for ym (its month override, else its default): spent = that month's
+  // expense transactions of the category only (never income, savings or investments)
+  st=st||S; const t=financeMonthTotals(ym,st);
+  const keys=[...new Set((st.budgets||[]).map(b=>financeBudgetCategoryId(b,st)))];
+  return keys.map(k=>{
+    const b=financeBudgetFor(k,ym,st); if(!b) return null;
+    const limit=financeBudgetLimit(b), spent=(t.byCategory.find(c=>c.key===k)||{amount:0}).amount;
+    const pct=limit>0?Math.round(spent/limit*1000)/10:0;
+    const c=financeCategoryById(k,st);
+    return {categoryId:k,name:c?c.name:b.category,limit,spent,remaining:finRound(limit-spent),pct,status:spent>limit?'over':pct>=FIN_BUDGET_NEAR?'near':'under',budget:b,override:b.month===ym};
+  }).filter(Boolean).sort((a,b)=>b.pct-a.pct||a.name.localeCompare(b.name));
+}
+function financeBudgetSave(f,id){
+  const e={}; const cat=financeCategoryById(f.categoryId);
+  if(!cat) e.categoryId='required';
+  if(!(finNum(f.amount)>0)) e.amount='invalid';
+  if(f.month&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(f.month)) e.month='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const month=f.month||null;
+  let b=id?S.budgets.find(x=>x.id===id):null;
+  // one budget per category and month (default or override): saving replaces the same slot
+  const clash=S.budgets.find(x=>x.id!==id&&financeBudgetCategoryId(x)===cat.id&&(x.month||null)===month);
+  if(clash) S.budgets=S.budgets.filter(x=>x.id!==clash.id);
+  const fields={categoryId:cat.id,category:cat.name,amount:finRound(finNum(f.amount)),month,period:'Monthly',note:String(f.note||''),updatedAt:Date.now()};
+  if(b) Object.assign(b,fields); else { b=Object.assign({id:uid(),createdAt:Date.now()},fields); S.budgets.push(b); }
+  return {ok:true,budget:b};
+}
+// ---- recurring plans + subscriptions (expected, not money) ----
+function migrateRecurring(r){
+  const x=finDefaults(r,{type:'expense',name:'',amount:0,categoryId:'',accountId:'',frequency:'monthly',startDate:todayStr(),active:true,notes:'',subscriptionId:'',createdAt:Date.now()});
+  if(!FIN_FREQUENCIES.includes(x.frequency)) x.frequency='monthly';
+  if(!x.updatedAt) x.updatedAt=x.createdAt;
+  return x;
+}
+function finAddMonthsClamped(anchor,k){
+  // same day of month k months later; a missing day (31st, 29 Feb) becomes the month's last day
+  const [y,m,d]=anchor.split('-').map(Number); const t=new Date(y,m-1+k,1); const last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(Math.min(d,last)).padStart(2,'0');
+}
+function financeOccurrences(frequency,anchor,from,to,allowBefore){
+  // occurrence dates in [from,to]; plans start at their anchor, subscriptions (rolling anchor) may look back
+  if(!plannerValidDate(anchor)) return [];
+  const out=[]; const step=k=>frequency==='weekly'?addDays(anchor,7*k):finAddMonthsClamped(anchor,frequency==='yearly'?12*k:k);
+  const per=frequency==='weekly'?7:frequency==='yearly'?365:30;
+  let k=allowBefore?Math.floor(finDaysBetween(anchor,from)/per)-1:0; if(!allowBefore&&k<0) k=0;
+  for(let guard=0;guard<600;guard++,k++){ const d=step(k); if(d>to) break; if(d>=from&&(allowBefore||d>=anchor)) out.push(d); }
+  return out;
+}
+function financeRecurringValidate(f){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  if(!['expense','income'].includes(f.type)) e.type='invalid';
+  if(!(finNum(f.amount)>0)) e.amount='invalid';
+  if(!FIN_FREQUENCIES.includes(f.frequency)) e.frequency='invalid';
+  if(!plannerValidDate(f.startDate)) e.startDate='invalid';
+  return e;
+}
+function financeRecurringSave(f,id){
+  const errors=financeRecurringValidate(f); if(Object.keys(errors).length) return {ok:false,errors};
+  S.recurringFinance=S.recurringFinance||[];
+  const fields={type:f.type,name:String(f.name).trim(),amount:finRound(finNum(f.amount)),categoryId:f.categoryId||'',accountId:f.accountId||'',frequency:f.frequency,
+    startDate:f.startDate,notes:String(f.notes||''),subscriptionId:f.subscriptionId||'',updatedAt:Date.now()};
+  let r=id?S.recurringFinance.find(x=>x.id===id):null;
+  if(r) Object.assign(r,fields); else { r=migrateRecurring(Object.assign({id:uid(),active:true,createdAt:Date.now()},fields)); S.recurringFinance.push(r); }
+  return {ok:true,recurring:r};
+}
+function financeSubStartDate(s){ return s.createdAt?new Date(s.createdAt).toISOString().slice(0,10):null; }
+function financeExpectedInRange(from,to,st){
+  // every expected occurrence in [from,to]: active recurring plans + active subscriptions (a
+  // subscription that a plan already covers via subscriptionId is listed once, as that plan);
+  // each is realized when a transaction carries its link + recurringFor = that date
+  st=st||S; const out=[];
+  const covered=new Set((st.recurringFinance||[]).filter(r=>r.active&&r.subscriptionId).map(r=>r.subscriptionId));
+  (st.recurringFinance||[]).filter(r=>r.active).forEach(r=>financeOccurrences(r.frequency,r.startDate,from,to,false).forEach(date=>{
+    const tx=financeTxList(r.type,st).find(x=>x.recurringId===r.id&&x.recurringFor===date)||null;
+    out.push({source:'recurring',id:r.id,type:r.type,name:r.name,amount:finNum(r.amount),date,realized:tx,item:r});
+  }));
+  (st.subscriptions||[]).filter(s=>s.active!==false&&!covered.has(s.id)&&s.nextPayment).forEach(s=>{
+    const start=financeSubStartDate(s);
+    financeOccurrences(s.period==='Yearly'?'yearly':'monthly',s.nextPayment,from,to,true).filter(d=>!start||d>=start.slice(0,7)+'-01').forEach(date=>{
+      const tx=(st.expenses||[]).find(x=>x.subscriptionId===s.id&&x.recurringFor===date)||null;
+      out.push({source:'subscription',id:s.id,type:'expense',name:s.name,amount:finNum(s.price),date,realized:tx,item:s});
+    });
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date)||a.name.localeCompare(b.name));
+}
+function financeExpectedMonth(ym,st){
+  const {from,to}=finMonthRange(ym), items=financeExpectedInRange(from,to,st);
+  const pend=t=>finRound(items.filter(i=>i.type===t&&!i.realized).reduce((a,i)=>a+i.amount,0));
+  return {items,pendingExpense:pend('expense'),pendingIncome:pend('income'),realized:items.filter(i=>i.realized).length,pending:items.filter(i=>!i.realized).length};
+}
+function financeConfirmExpected(source,id,date,over){
+  // "Zaplaceno / Přijato": creates the ONE real transaction for that occurrence (idempotent)
+  over=over||{};
+  const it=financeExpectedInRange(date,date).find(i=>i.source===source&&i.id===id&&i.date===date);
+  if(!it) return {ok:false,reason:'no_occurrence'};
+  if(it.realized) return {ok:true,tx:it.realized,created:false};
+  const base=source==='recurring'?{categoryId:it.item.categoryId,accountId:it.item.accountId,recurringId:id,recurringFor:date,subscriptionId:it.item.subscriptionId||''}
+    :{categoryId:(financeCategoryOf({category:'Subscriptions'},'expense')||{}).id||'',accountId:'',subscriptionId:id,recurringFor:date,recurringId:''};
+  return financeSaveTransaction(it.type,Object.assign({amount:it.amount,date:over.date||date,description:it.name},base,over));
+}
+function financeRecurringNextDue(r,st){
+  // next occurrence from today on that is not realized yet
+  const to=r.frequency==='yearly'?finAddMonthsClamped(todayStr(),26):finAddMonthsClamped(todayStr(),3);
+  const it=financeExpectedInRange(todayStr(),to,st).find(i=>i.source==='recurring'&&i.id===r.id&&!i.realized);
+  return it?it.date:null;
+}
+function financeMonthlyEquivalent(amount,frequency){ return frequency==='weekly'?finRound(amount*52/12):frequency==='yearly'?finRound(amount/12):finNum(amount); }
+// ---- savings ----
+function migrateSavingsGoal(g){
+  const r=finDefaults(g,{name:'',targetAmount:0,deadline:'',accountId:'',icon:'🎯',color:'#10b981',active:true,contributions:[],createdAt:Date.now()});
+  r.targetAmount=finNum(r.targetAmount); if(!Array.isArray(r.contributions)) r.contributions=[]; if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function financeSavingsSave(f,id){
+  const e={};
+  if(!String(f.name||'').trim()) e.name='required';
+  if(!(finNum(f.targetAmount)>0)) e.targetAmount='invalid';
+  if(f.deadline&&!plannerValidDate(f.deadline)) e.deadline='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  S.savingsGoals=S.savingsGoals||[];
+  const fields={name:String(f.name).trim(),targetAmount:finRound(finNum(f.targetAmount)),deadline:f.deadline||'',accountId:f.accountId||'',icon:String(f.icon||'🎯').trim()||'🎯',color:f.color||'#10b981',updatedAt:Date.now()};
+  let g=id?S.savingsGoals.find(x=>x.id===id):null;
+  if(g) Object.assign(g,fields); else { g=migrateSavingsGoal(Object.assign({id:uid(),active:true,contributions:[],createdAt:Date.now()},fields)); S.savingsGoals.push(g); }
+  return {ok:true,goal:g};
+}
+function financeSavingsContribute(id,f){
+  // a withdrawal is a negative amount; zero is refused
+  const g=(S.savingsGoals||[]).find(x=>x.id===id); if(!g) return {ok:false,errors:{goal:'invalid'}};
+  const e={}; if(!finNum(f.amount)) e.amount='invalid'; if(!plannerValidDate(f.date)) e.date='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const c={id:uid(),amount:finRound(finNum(f.amount)),date:f.date,note:String(f.note||''),accountId:f.accountId||'',createdAt:Date.now()};
+  g.contributions.push(c); g.updatedAt=Date.now(); return {ok:true,contribution:c};
+}
+function financeSavingsProgress(g,today){
+  // current = sum of contributions; remaining = max(0, target - current); with a deadline:
+  // monthsLeft = daysLeft / 30.4375, required monthly = remaining / max(1, monthsLeft) (all of it when
+  // less than a month is left or the deadline has passed), required weekly = remaining / max(1, daysLeft / 7)
+  today=today||todayStr();
+  const current=finRound((g.contributions||[]).reduce((a,c)=>a+finNum(c.amount),0)), target=finNum(g.targetAmount);
+  const remaining=finRound(Math.max(0,target-current)), pct=target>0?Math.min(100,Math.round(current/target*1000)/10):0;
+  const out={current,target,remaining,pct,done:target>0&&current>=target,daysLeft:null,monthsLeft:null,requiredMonthly:null,requiredWeekly:null,overdue:false};
+  if(g.deadline&&plannerValidDate(g.deadline)){
+    const days=finDaysBetween(today,g.deadline); out.daysLeft=days; out.monthsLeft=Math.round(Math.max(0,days)/30.4375*10)/10;
+    if(remaining>0){ out.overdue=days<0; out.requiredMonthly=finRound(remaining/Math.max(1,Math.max(0,days)/30.4375)); out.requiredWeekly=finRound(remaining/Math.max(1,Math.max(0,days)/7)); }
+  }
+  return out;
+}
+function financeSavingsTotal(st){ return finRound(((st||S).savingsGoals||[]).reduce((a,g)=>a+financeSavingsProgress(g).current,0)); }
+// ---- investments ----
+function migrateInvestment(i){
+  const r=finDefaults(i,{name:'',ticker:'',type:'stock',currency:'CZK',accountId:'',active:true,notes:'',contributions:[],valuations:[],createdAt:Date.now()});
+  if(!Array.isArray(r.contributions)) r.contributions=[]; if(!Array.isArray(r.valuations)) r.valuations=[]; if(!r.updatedAt) r.updatedAt=r.createdAt;
+  return r;
+}
+function financeInvestmentSave(f,id){
+  const e={}; if(!String(f.name||'').trim()) e.name='required';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  S.investments=S.investments||[];
+  const fields={name:String(f.name).trim(),ticker:String(f.ticker||'').trim().toUpperCase(),type:String(f.type||'stock'),currency:String(f.currency||'CZK').trim().toUpperCase()||'CZK',
+    accountId:f.accountId||'',notes:String(f.notes||''),updatedAt:Date.now()};
+  let inv=id?S.investments.find(x=>x.id===id):null;
+  if(inv) Object.assign(inv,fields); else { inv=migrateInvestment(Object.assign({id:uid(),active:true,createdAt:Date.now()},fields)); S.investments.push(inv); }
+  return {ok:true,investment:inv};
+}
+function financeInvestmentAdd(id,what,f){
+  // what: 'contribution' {amount (negative = withdrawal), date, note} | 'valuation' {value >= 0, date}
+  const inv=(S.investments||[]).find(x=>x.id===id); if(!inv) return {ok:false,errors:{investment:'invalid'}};
+  const e={}; if(!plannerValidDate(f.date)) e.date='invalid';
+  if(what==='valuation'){ if(f.value===''||f.value==null||!(finNum(f.value)>=0)||!Number.isFinite(Number(f.value))) e.value='invalid'; }
+  else if(!finNum(f.amount)) e.amount='invalid';
+  if(Object.keys(e).length) return {ok:false,errors:e};
+  const rec=what==='valuation'?{id:uid(),date:f.date,value:finRound(finNum(f.value)),createdAt:Date.now()}:{id:uid(),amount:finRound(finNum(f.amount)),date:f.date,note:String(f.note||''),createdAt:Date.now()};
+  (what==='valuation'?inv.valuations:inv.contributions).push(rec); inv.updatedAt=Date.now();
+  return {ok:true,record:rec};
+}
+function financeInvestmentPerformance(inv,date){
+  // invested = contributions up to `date`; value = the latest manual valuation up to `date` (none ->
+  // the invested amount, flagged hasValuation:false); gain = value - invested; pct = gain / invested
+  const D=date||todayStr();
+  const invested=finRound((inv.contributions||[]).filter(c=>c.date<=D).reduce((a,c)=>a+finNum(c.amount),0));
+  const vals=(inv.valuations||[]).filter(v=>v.date<=D).sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt||0)-(b.createdAt||0));
+  const last=vals[vals.length-1]||null;
+  const value=last?finNum(last.value):invested, gain=finRound(value-invested);
+  return {invested,value:finRound(value),gain,pct:invested>0?Math.round(gain/invested*1000)/10:null,hasValuation:!!last,valuationDate:last?last.date:null};
+}
+function financeInvestmentsSummary(date,st){
+  const list=((st||S).investments||[]).filter(i=>i.active!==false).map(i=>Object.assign({investment:i},financeInvestmentPerformance(i,date)));
+  const invested=finRound(list.reduce((a,x)=>a+x.invested,0)), value=finRound(list.reduce((a,x)=>a+x.value,0));
+  return {list,invested,value,gain:finRound(value-invested),pct:invested>0?Math.round((value-invested)/invested*1000)/10:null};
+}
+function financeInvestmentMonthChange(ym,st){
+  // value at the end of ym vs. the end of the previous month, and how much of it was new money
+  const end=finMonthRange(ym).to, prevEnd=finMonthRange(finShiftMonth(ym,-1)).to, {from}=finMonthRange(ym);
+  const a=financeInvestmentsSummary(end,st), b=financeInvestmentsSummary(prevEnd,st);
+  const contributions=finRound(((st||S).investments||[]).filter(i=>i.active!==false).reduce((s,i)=>s+(i.contributions||[]).filter(c=>c.date>=from&&c.date<=end).reduce((x,c)=>x+finNum(c.amount),0),0));
+  const change=finRound(a.value-b.value);
+  return {valueStart:b.value,valueEnd:a.value,change,contributions,marketChange:finRound(change-contributions)};
+}
+function financeMonthReview(ym,st){
+  // facts only, for the Monthly Review screen
+  st=st||S; const t=financeMonthTotals(ym,st), ex=financeExpectedMonth(ym,st);
+  return {totals:t,topCategories:t.byCategory.slice(0,5),budgets:financeBudgetUsage(ym,st),savings:t.savingsContributions,
+    investments:financeInvestmentMonthChange(ym,st),expected:ex,
+    accounts:(st.accounts||[]).filter(a=>a.active!==false).map(a=>({account:a,balance:financeAccountBalance(a,finMonthRange(ym).to,st)})),
+    balanceEnd:financeBalanceAt(finMonthRange(ym).to,st)};
 }
 function renderFinance(){
   const ym=todayStr().slice(0,7);

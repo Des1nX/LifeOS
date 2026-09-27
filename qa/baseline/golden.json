@@ -870,6 +870,11 @@
   "muscleProgress": {
    "log": []
   },
+  "financeCategories": [],
+  "accounts": [],
+  "recurringFinance": [],
+  "savingsGoals": [],
+  "investments": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
@@ -1101,6 +1106,122 @@
   "muscleProgress": {
    "log": []
   },
+  "financeCategories": [
+   {
+    "id": "fcat_food",
+    "name": "Food",
+    "type": "expense",
+    "icon": "🍎",
+    "color": "#f59e0b",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_housing",
+    "name": "Housing",
+    "type": "expense",
+    "icon": "🏠",
+    "color": "#6366f1",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_transport",
+    "name": "Transport",
+    "type": "expense",
+    "icon": "🚗",
+    "color": "#0ea5e9",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_shopping",
+    "name": "Shopping",
+    "type": "expense",
+    "icon": "🛍️",
+    "color": "#ec4899",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_entertainment",
+    "name": "Entertainment",
+    "type": "expense",
+    "icon": "🎬",
+    "color": "#8b5cf6",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_health",
+    "name": "Health",
+    "type": "expense",
+    "icon": "❤️",
+    "color": "#ef4444",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_subscriptions",
+    "name": "Subscriptions",
+    "type": "expense",
+    "icon": "💳",
+    "color": "#14b8a6",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_education",
+    "name": "Education",
+    "type": "expense",
+    "icon": "📚",
+    "color": "#22c55e",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_other",
+    "name": "Other",
+    "type": "expense",
+    "icon": "📦",
+    "color": "#94a3b8",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_salary",
+    "name": "Salary",
+    "type": "income",
+    "icon": "💼",
+    "color": "#10b981",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   },
+   {
+    "id": "fcat_other_income",
+    "name": "Other income",
+    "type": "income",
+    "icon": "💵",
+    "color": "#84cc16",
+    "active": true,
+    "createdAt": "<time>",
+    "updatedAt": "<time>"
+   }
+  ],
+  "accounts": [],
+  "recurringFinance": [],
+  "savingsGoals": [],
+  "investments": [],
   "settings": {
    "theme": "dark",
    "onboarded": false,
