@@ -248,6 +248,9 @@ function compare(base, cur, approved = loadApproved()) {
   const bag = ui => { const m = new Map(); for (const v of Object.values(ui)) for (const d of v.data || []) m.set(d, (m.get(d) || 0) + 1); return m; };
   const bb = bag(base.ui), cb = bag(cur.ui);
   for (const d of approved.uiEffects) if (cb.get(d)) { cb.set(d, cb.get(d) - 1); if (!cb.get(d)) cb.delete(d); reviews.push(`APPROVED new UI data effect ${d}`); }
+  // Baseline UI data effects that were deliberately moved out of the UI (e.g. into an approved logic
+  // function) are pinned in uiEffectsRemoved; each counts as still present, once, and is listed for review.
+  for (const d of approved.uiEffectsRemoved || []) if ((bb.get(d) || 0) > (cb.get(d) || 0)) { cb.set(d, (cb.get(d) || 0) + 1); reviews.push(`APPROVED removed UI data effect ${d}`); }
   const sameBag = bb.size === cb.size && [...bb].every(([k, v]) => cb.get(k) === v);
   for (const k of new Set([...Object.keys(base.ui), ...Object.keys(cur.ui)])) {
     const b = base.ui[k], c = cur.ui[k];
@@ -283,9 +286,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const bb = bag(base.ui), extra = [];
     for (const [d, n] of bag(fp.ui)) for (let i = 0; i < n - (bb.get(d) || 0); i++) extra.push(d);
     ap.uiEffects = extra;
+    const cbg = bag(fp.ui), gone = [];
+    for (const [d, n] of bb) for (let i = 0; i < n - (cbg.get(d) || 0); i++) gone.push(d);
+    ap.uiEffectsRemoved = gone;
     ap.reasons.push({ reason, logic: changed, at: new Date().toISOString().slice(0, 10) });
     writeFileSync(APPROVED, JSON.stringify(ap, null, 1) + '\n');
-    console.log(`approved -> ${path.relative(process.cwd(), APPROVED)}\n  logic: ${changed.join(', ') || '-'}\n  statements: ${ap.statements.length}\n  ui data effects: ${extra.join(', ') || '-'}`);
+    console.log(`approved -> ${path.relative(process.cwd(), APPROVED)}\n  logic: ${changed.join(', ') || '-'}\n  statements: ${ap.statements.length}\n  ui data effects: ${extra.join(', ') || '-'}\n  removed ui data effects: ${gone.join(', ') || '-'}`);
   } else if (process.argv.includes('--write')) {
     writeFileSync(BASELINE, JSON.stringify(fp, null, 1) + '\n');
     console.log(`baseline written -> ${path.relative(process.cwd(), BASELINE)}\n${summary}\nlogicHash=${fp.logicHash} effectsHash=${fp.effectsHash}`);
@@ -297,8 +303,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     // Compare the effects summary after taking out approved new UI data effects.
     const ap = loadApproved(), mine = Object.values(fp.ui).flatMap(v => v.data);
     for (const d of ap.uiEffects) { const i = mine.indexOf(d); if (i >= 0) mine.splice(i, 1); }
+    const baseBag = base.ui ? Object.values(base.ui).flatMap(v => v.data || []) : [];
+    for (const d of ap.uiEffectsRemoved || []) if (baseBag.filter(x => x === d).length > mine.filter(x => x === d).length) mine.push(d);
     const effNet = h(mine.sort().join('|'));
-    console.log(`effectsHash ${base.effectsHash} -> ${effNet} ${base.effectsHash === effNet ? 'OK' : 'CHANGED'}${ap.uiEffects.length ? ` (excluding ${ap.uiEffects.length} approved new effects)` : ''}`);
+    console.log(`effectsHash ${base.effectsHash} -> ${effNet} ${base.effectsHash === effNet ? 'OK' : 'CHANGED'}${ap.uiEffects.length ? ` (excluding ${ap.uiEffects.length} approved new effects${(ap.uiEffectsRemoved || []).length ? `, ${ap.uiEffectsRemoved.length} approved removed` : ''})` : ''}`);
     if (reviews.length) console.log('\nREVIEW (allowed for a redesign, check intent):\n  ' + reviews.join('\n  '));
     if (fails.length) { console.log('\nFAIL:\n  ' + fails.join('\n  ')); process.exit(1); }
     console.log('\nFINGERPRINT OK');

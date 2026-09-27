@@ -489,7 +489,7 @@ test('8B CRUD: every create form saves exactly one record through the redesigned
       if (type === 'number') await h.fill('5'); else if (type === 'time') await h.fill('07:00'); else if (type === 'date') { trace.push(`${id}:date`); continue; } else await h.fill('QA ' + coll);
       trace.push(`${id}:filled->${await h.evaluate(n => n.value + '|' + (document.activeElement && document.activeElement.id) + '|' + n.isConnected)}`);
     }
-    if (coll === 'budgets') await page.selectOption('#b_cat', 'Transport'); // one budget per category is an app rule; Food already has one
+    if (coll === 'budgets') await page.selectOption('#b_cat', 'fcat_transport'); // one budget per category is an app rule; Food already has one (11B: categories are records)
     const save = page.locator('.sheet [id$="_save"]').first();
     if (!(await save.count())) { failures.push(`${open}: no save button`); continue; }
     await save.click();
