@@ -2513,7 +2513,7 @@ const UI_PHRASES_CS={
   'Attributes':'Atributy','Workouts':'Tréninky','Sets':'Série','Reps':'Opakování','Total volume':'Celkový objem','Total duration (min)':'Celková doba (min)','Personal records (all-time)':'Osobní rekordy (celkem)',
   'Workout volume':'Objem tréninků','Nutrition':'Výživa','Avg calories/day (logged)':'Prům. kalorie/den (zapsané)','Avg protein (g)':'Prům. bílkoviny (g)','Avg carbs (g)':'Prům. sacharidy (g)',
   'Avg fat (g)':'Prům. tuky (g)','Avg water (ml)':'Prům. voda (ml)','Days logged':'Zapsané dny','Calorie target adherence':'Plnění kalorického cíle','Calories (per day logged)':'Kalorie (za zapsaný den)',
-  'Income':'Příjmy','Expenses':'Výdaje','Balance':'Zůstatek','Savings (positive balance)':'Úspory (kladný zůstatek)','Savings':'Úspory','Investments':'Investice','Housing':'Bydlení','Education':'Vzdělání','Other income':'Ostatní příjmy','Finance categories':'Finanční kategorie','Recurring plans':'Opakované platby','Accounts':'Účty','Savings goals':'Spořicí cíle','Transactions':'Transakce','Expenses by category':'Výdaje podle kategorií',
+  'Income':'Příjmy','Expenses':'Výdaje','Balance':'Zůstatek','Savings (positive balance)':'Úspory (kladný zůstatek)','Savings':'Úspory','Investments':'Investice','Housing':'Bydlení','Uncategorized':'Bez kategorie','Education':'Vzdělání','Other income':'Ostatní příjmy','Finance categories':'Finanční kategorie','Recurring plans':'Opakované platby','Accounts':'Účty','Savings goals':'Spořicí cíle','Transactions':'Transakce','Expenses by category':'Výdaje podle kategorií',
   'Income vs Expenses (net balance)':'Příjmy vs. výdaje (čistý zůstatek)','Sleep / Health':'Spánek / zdraví','Avg sleep (period)':'Prům. spánek (období)','Sleep days logged':'Zapsané noci',
   'Avg steps/day (period)':'Prům. kroky/den (období)','Steps days logged':'Dny s kroky','Weight trend (period)':'Vývoj váhy (období)','Sleep duration':'Délka spánku','Journal':'Deník','Entries':'Zápisy',
   'Average rating':'Průměrné hodnocení','Days with an entry':'Dny se zápisem','Mood distribution':'Rozložení nálad','Streaks':'Streaky','Best habit streak (any habit, all-time)':'Nejlepší streak (celkem)',
@@ -3779,7 +3779,7 @@ function financeCategoryOf(x,kind,st){
   return all.find(c=>exerciseKey(c.name)===k&&(!kind||c.type===kind||c.type==='both'))||all.find(c=>exerciseKey(c.name)===k)||null;
 }
 function financeCategoryKey(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.id:'name:'+(exerciseKey(x&&x.category)||'other'); }
-function financeCategoryLabel(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.name:(String((x&&x.category)||'').trim()||'—'); }
+function financeCategoryLabel(x,kind,st){ const c=financeCategoryOf(x,kind,st); return c?c.name:(String((x&&x.category)||'').trim()||'Uncategorized'); }
 function financeCategoriesFor(kind,includeId,st){
   return ((st||S).financeCategories||[]).filter(c=>(c.active||c.id===includeId)&&(c.type===kind||c.type==='both')).sort((a,b)=>a.name.localeCompare(b.name,uiLocale()));
 }
