@@ -2728,7 +2728,7 @@ test('11A QA fix: a suggestion is never shown as applied unless its values are r
   const btn = entryCard(page, 'Plank').locator('.wkApplySug');
   assert.deepEqual([await btn.isDisabled(), (await btn.innerText()).trim()], [false, 'Použít doporučení']);
   await btn.click();
-  assert.deepEqual([await entryCard(page, 'Plank').locator('.wkApplySug').isDisabled(), (await entryCard(page, 'Plank').locator('.wkApplySug').innerText()).trim()], [true, '✓ Odpovídá']);
+  assert.deepEqual([await entryCard(page, 'Plank').locator('.wkApplySug').isDisabled(), (await entryCard(page, 'Plank').locator('.wkApplySug').innerText()).trim()], [true, 'Odpovídá']); // polish pass 2: ✓ is a check icon
 }, { state: fixtureState() });
 
 test('11A QA fix: history and Home "Naposledy" are newest-first by real time; Search opens the right editor for new and legacy workouts', async ({ page }) => {
@@ -3833,6 +3833,117 @@ test('B4 balancing: a simulated week follows behaviour - no attribute runs away,
   assert.deepEqual(r.top.study.sort(), ['FOC', 'INT'], 'study day -> INT/FOC');
   assert.equal(r.top.productive[0], 'FOC', 'work day -> FOC first');
   assert.equal(r.top.social[0], 'SOC', 'social day -> SOC');
+}, { state: fixtureState() });
+
+// ---------- Polish pass 2 (UI/UX only) ----------
+const GLYPH_RX = /[＋✓✗✕↻↑↓‹›]/;
+test('Q1 sheets: one chrome everywhere - grab strip, title, close button (works, keyboard reachable), hidden for onboarding; sticky Save stays in view', async ({ page }) => {
+  const forms = ['openForm("task")', 'openTaskEditForm(S.tasks[0])', 'openHabitForm(S.habits[0])', 'openGoalForm(S.goals[0])', 'openPlannerForm(null,{date:todayStr()})',
+    "openFinanceForm('expense')", 'openWorkoutForm()', 'openMealForm()', 'openAvatarPicker()', "openCategoryForm('life')", 'openSleepForm()', 'uiOpenDailyScore(todayStr())', 'openDayOverview(todayStr())'];
+  for (const f of forms) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f);
+    assert.equal(await page.locator('.sheet .sheet-grab').count(), 1, f + ' grab');
+    assert.equal(await page.locator('.sheet .sheet-x').count(), 1, f + ' close');
+    assert.ok((await page.locator('.sheet h2, .sheet h3').first().innerText()).trim().length > 2, f + ' title');
+    const save = page.locator('.sheet .btn[id$="_save"]');
+    if (await save.count()) { const b = await save.boundingBox(); assert.ok(b && b.y + b.height <= 845, `${f}: Save visible without scrolling (${b && Math.round(b.y + b.height)})`); }
+  }
+  await page.click('.sheet .sheet-x');
+  assert.equal(await page.locator('.sheet-bg').count(), 0, 'close button closes');
+  await page.evaluate(() => { openForm('task'); });
+  assert.notEqual(await page.evaluate(() => document.activeElement.className), 'sheet-x', 'focus never lands on the close button first');
+  await page.evaluate(() => { closeSheets(); showOnboarding(1); });
+  assert.equal(await page.locator('.sheet .sheet-x').count(), 0, 'onboarding cannot be closed');
+}, { state: fixtureState() });
+
+test('Q2 icons: no typographic glyphs or emoji as button icons on any screen or main sheet; delete buttons are a trash icon; user text untouched', async ({ page }) => {
+  const bad = [];
+  const scan = where => page.evaluate(({ where, g }) => { const rx = new RegExp(g), ex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2B50}]/u, out = [];
+    document.querySelectorAll('#app button, #app .btn, #app .chip, .sheet button, .sheet .chip').forEach(b => { [...b.childNodes].forEach(n => { if (n.nodeType === 3 && (rx.test(n.nodeValue) || ex.test(n.nodeValue)) && !b.closest('[data-user-text],.item-title')) out.push(`${where}: "${b.textContent.trim().slice(0, 24)}"`); }); });
+    return out; }, { where, g: GLYPH_RX.source });
+  await allViews(page, async v => bad.push(...await scan(v)));
+  for (const f of ['openQuickAdd()', 'openForm("task")', 'openHabitForm(S.habits[0])', 'openPlannerForm(S.plannerBlocks[0])', "openFinanceForm('expense')", 'openMealForm()']) {
+    await page.evaluate(f => { closeSheets(); eval(f); }, f); bad.push(...await scan(f));
+  }
+  assert.deepEqual(bad, []);
+  await page.evaluate(() => { closeSheets(); view = 'tasks'; render(); });
+  assert.ok(await page.locator('#tlist .delbtn svg').count() >= 1, 'delete = trash icon');
+  await page.evaluate(() => { view = 'home'; render(); });
+  assert.equal(await page.locator('#hTasks .delbtn:visible, #hHabits .delbtn:visible').count(), 0, 'no delete buttons on the dashboard');
+  // live-updated parts (search while typing, a redrawn workout card) get the same icons
+  await page.evaluate(() => { view = 'search'; render(); });
+  await page.fill('#gs', 'read');
+  const st = await page.locator('#gsRes').innerText();
+  assert.doesNotMatch(st, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}]|›/u, 'search results: icons, not emoji/glyphs');
+  assert.ok(await page.locator('#gsRes .icon-circle svg').count() >= 1);
+  // a user-typed emoji in a task title stays as typed
+  await page.evaluate(() => { S.tasks[1].title = 'Nákup 🍎'; view = 'tasks'; render(); });
+  assert.match(await page.locator('.item', { hasText: 'Nákup' }).locator('.item-title').innerText(), /🍎/);
+}, { state: fixtureState() });
+
+test('Q3 Home: quest board shows progress pips and XP still to earn from the real board; task rows are compact (priority dot, inline links)', async ({ page }) => {
+  await go(page, 'home');
+  const r = await page.evaluate(() => { const b = questBoardFor('daily'); const done = b.filter(x => questDone(x.q, 'daily')); return { n: b.length, done: done.length, left: b.filter(x => !questDone(x.q, 'daily')).reduce((a, x) => a + x.q.xp, 0) }; });
+  assert.equal(await page.locator('.quest-board .qb-pips i').count(), r.n);
+  assert.equal(await page.locator('.quest-board .qb-pips i.on').count(), r.done);
+  assert.match(await page.locator('.quest-board .qb-title').innerText(), new RegExp(`Splněno ${r.done} z ${r.n}[\\s\\S]*\\+${r.left} XP`));
+  const row = page.locator('#hTasks .task-item', { hasText: 'Write report' });
+  assert.equal(await row.locator('.prio[data-p="High"]').count(), 1);
+  assert.equal(await row.locator('.meta-link.linkGoal, .meta-link.planLink').count(), 2);
+  await row.locator('.planLink').click();
+  assert.equal(await page.evaluate(() => view), 'planner', 'inline link still navigates');
+  assert.equal(await page.locator('[data-ds="card"] .ds-counts').count(), 0, 'no duplicated counts under the score');
+}, { state: fixtureState() });
+
+test('Q4 Character + achievements + goals: attribute meanings, Czech achievement texts, Automatic mode sentence', async ({ page }) => {
+  await go(page, 'character');
+  assert.equal(await page.locator('.attr-row .attr-mean').count(), 7);
+  assert.match(await page.locator('.attr-row[data-attr="VIT"] .attr-mean').innerText(), /zdraví, spánek, jídlo/);
+  assert.match(await page.locator('.attr-row[data-attr="STR"] .attr-src').innerText(), /Roste z: Fitness/);
+  const t = await page.locator('.ach-grid').innerText();
+  assert.match(t, /První krok/); assert.doesNotMatch(t, /Complete your first task/);
+  await page.evaluate(() => openGoalForm(S.goals[0]));
+  assert.match(await page.innerText('#g_modeHelp'), /Progress se počítá automaticky podle dokončených propojených úkolů/);
+}, { state: fixtureState() });
+
+test('Q5 avatar picker: selected state with a check, current name under the preview, crop zoom buttons step the zoom', async ({ page }) => {
+  await page.evaluate(() => openAvatarPicker());
+  assert.equal(await page.locator('#avatarPicker .av-opt.is-selected .av-check').count(), 1);
+  assert.equal(await page.locator('#avatarPicker .av-opt .av-check').count(), 1, 'only one selected');
+  assert.equal((await page.locator('.av-cur-name').innerText()).trim(), 'Paladin');
+  const { PNG } = await import('pngjs'); const png = new PNG({ width: 300, height: 300 }); png.data.fill(180);
+  await page.setInputFiles('#avFile', { name: 'a.png', mimeType: 'image/png', buffer: PNG.sync.write(png) });
+  await page.waitForSelector('#photoCrop');
+  await page.click('#cropIn'); await page.click('#cropIn');
+  assert.equal(await page.inputValue('#cropZoom'), '1.5');
+  await page.click('#cropOut');
+  assert.equal(await page.inputValue('#cropZoom'), '1.25');
+  for (let i = 0; i < 6; i++) await page.click('#cropOut');
+  assert.equal(await page.inputValue('#cropZoom'), '1', 'never below 1');
+}, { state: fixtureState() });
+
+test('Q6 layout: required screens and sheets at 320-1440 px, dark + light: no overflow, no duplicate ids, no console errors', async ({ page }) => {
+  const bad = [];
+  const views = ['home', 'planner', 'tasks', 'habits', 'goals', 'character', 'quests', 'finance', 'fitness', 'nutrition', 'health', 'settings', 'more', 'statistics'];
+  const sheets = ['uiOpenDailyScore(todayStr())', 'openTaskEditForm(S.tasks[0])', 'openHabitForm(S.habits[0])', 'openGoalForm(S.goals[0])', 'openAvatarPicker()', "openFinanceForm('expense')", 'openMealForm()', 'openDayOverview(todayStr())'];
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate(t => { S.settings.theme = t; applyTheme(); }, theme);
+    for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const v of views) {
+        await page.evaluate(v => { closeSheets(); uiPlannerDay = todayStr(); view = v; render(); }, v);
+        const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth); if (o > 0) bad.push(`${v}@${width}/${theme}: ${o}px`);
+      }
+      for (const f of sheets) {
+        await page.evaluate(f => { closeSheets(); eval(f); }, f);
+        const o = await page.evaluate(() => { const vw = document.documentElement.clientWidth; return [...document.querySelectorAll('.sheet *')].filter(n => { const r = n.getBoundingClientRect(); return r.width && r.right > vw + 1; }).length; });
+        if (o) bad.push(`${f}@${width}/${theme}: ${o} el`);
+        const d = await page.evaluate(() => { const s = {}; document.querySelectorAll('[id]').forEach(n => { s[n.id] = (s[n.id] || 0) + 1; }); return Object.keys(s).filter(k => s[k] > 1); });
+        if (d.length) bad.push(`${f} dup ${d}`);
+      }
+    }
+  }
+  assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {

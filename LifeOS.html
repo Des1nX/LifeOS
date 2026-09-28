@@ -1122,6 +1122,86 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 @media(min-width:1440px){
   :root{--content-max:1080px;--sidebar-w:264px}
 }
+
+/* ===================================================================
+   Polish pass 2: one quiet, consistent surface language (presentation only)
+   =================================================================== */
+/* icons that replaced typographic glyphs inside buttons */
+.gi.gl{vertical-align:-.2em}
+.gl:not(:last-child){margin-right:.38em}
+.gl:last-child:not(:first-child){margin-left:.2em}
+.check .gl,.iconbtn .gl,.delbtn .gl{margin:0}
+.delbtn .gl svg,.iconbtn .gl svg{width:17px;height:17px}
+.check.done .gl svg{width:15px;height:15px;stroke-width:2.6}
+/* sheet chrome: grab strip + close button + title */
+.sheet-x{position:absolute;right:10px;top:10px;z-index:4;width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--sub);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color var(--dur-fast),border-color var(--dur-fast)}
+.sheet-x:hover{color:var(--text);border-color:color-mix(in srgb,var(--text) 25%,var(--line))}
+.sheet>div>h3:first-child,.sheet>div>h2:first-child{padding-right:48px}
+.sheet label{margin-top:2px}
+.sheet .btn:not(.sm):not(.ghost):last-of-type{margin-top:6px}
+@media(min-width:700px){.sheet-x{right:14px;top:12px}}
+/* the primary Save action of a form stays reachable at the bottom of a long sheet */
+.sheet .btn[id$="_save"]{position:sticky;bottom:0;z-index:2;box-shadow:0 -14px 18px 4px var(--bg2),var(--glow)}
+/* Home: calmer reminders, compact level badge, no destructive buttons on the dashboard */
+.reminder{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-subtle);font-weight:600}
+.reminder .gi{color:var(--accent)}
+.level-badge{min-width:56px;height:56px;border-radius:16px}
+.level-badge .lv-v{font-size:22px}
+.home .item .delbtn{display:none}
+.home .section-header{margin-top:var(--sp-5)}
+/* quest board (Home) + quest lists */
+.quest-board{padding:0;overflow:hidden;border-color:color-mix(in srgb,var(--gold) 26%,var(--line));
+  background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--gold) 9%,transparent),transparent 62%),var(--card)}
+.qb-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.qb-emblem{width:42px;height:42px;flex:none;border-radius:13px;display:flex;align-items:center;justify-content:center;color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,var(--card2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 32%,transparent)}
+.qb-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.qb-title b{font-size:var(--fs-body);font-weight:750}
+.qb-title small{color:var(--sub);font-size:var(--fs-caption);font-weight:600}
+.qb-pips{display:flex;gap:5px;flex:none}
+.qb-pips i{width:16px;height:6px;border-radius:6px;background:var(--line)}
+.qb-pips i.on{background:var(--gold)}
+.quest-board .quest-list{padding:2px 16px 6px}
+.card.quest-list{border-color:color-mix(in srgb,var(--gold) 20%,var(--line))}
+.quest-row .bar>i{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 70%,var(--accent)),var(--gold))}
+.quest-row.is-done .bar>i{background:var(--success-grad)}
+.quest-row .q-xp{padding:2px 7px;border-radius:999px;background:var(--gold-muted)}
+.quest-row.is-done .q-xp{background:var(--color-success-muted);color:var(--accent2)}
+/* task rows: priority as a dot, links as quiet inline links instead of filled chips */
+.prio{display:inline-flex;align-items:center;gap:5px;font-weight:650;color:var(--text)}
+.prio::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sub)}
+.prio[data-p="Medium"]::before{background:var(--info)}
+.prio[data-p="High"]::before{background:var(--warn)}
+.prio[data-p="Urgent"]::before{background:var(--danger)}
+.prio[data-p="Urgent"]{color:var(--danger)}
+.meta-link{display:inline-flex;align-items:center;gap:4px;min-width:36px;max-width:100%;min-height:36px;margin:-6px 0;padding:0 2px;border:none;background:none;color:var(--lk,var(--accent));font:inherit;font-weight:650;cursor:pointer;border-radius:6px}
+.meta-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.meta-link:hover{text-decoration:underline}
+.task-item .xp-tag{margin-left:auto}
+/* Character */
+.attr-row .attr-mean{font-size:var(--fs-caption);color:var(--text);opacity:.82;margin-top:6px;line-height:1.35}
+.attr-row .attr-src{margin-top:2px}
+.char-hero .xp-bar{height:10px}
+/* achievements */
+.ach.is-unlocked{border-color:color-mix(in srgb,var(--gold) 28%,var(--line))}
+.ach.is-unlocked .ach-ic{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 34%,transparent)}
+.ach.is-locked .ach-t{color:var(--sub)}
+/* avatar picker */
+.av-preview{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none}
+.av-cur-name{font-size:var(--fs-caption);font-weight:650;color:var(--sub)}
+.av-opt{position:relative;transition:border-color var(--dur-fast),background var(--dur-fast)}
+.av-opt:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.av-opt.is-selected{background:color-mix(in srgb,var(--accent) 9%,var(--card))}
+.av-check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--accent-strong);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg2)}
+.crop-zoom{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}
+.crop-zoom input{margin:0}
+.crop-zoom .iconbtn{width:44px;height:44px}
+/* planner: quieter timeline blocks and a clearer "now" */
+.pl-block:not(.is-event){box-shadow:none}
+.pl-now{height:2px}
+/* forms and filters everywhere */
+.period-selector .pill.on{box-shadow:var(--shadow-subtle)}
+.empty .e{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;background:var(--color-accent-muted);font-size:0}
+.empty .e .gi svg{width:26px;height:26px}
 </style>
 </head>
 <body>
@@ -2162,7 +2242,6 @@ function uiTodayCard(){
       <div class="today-rows">
         <div class="between"><span class="kicker">Daily Score</span>${r.score!=null?`<span class="chip ${uiDsTone(r.score)}">${uiDsLabel(r.label)}</span>`:''}</div>
         ${r.score==null?`<div class="sub">${uiDsT('nothing')}</div>`:uiDsAreaRows(r,true)}
-        <div class="sub ds-counts"><span>${uiIcon('check',13)} ${doneToday}/${todayTasks.length}</span><span>${uiIcon('flame',13)} ${doneHabits}/${activeHabits.length}</span></div>
       </div>
     </div>
   </section>`);
@@ -2836,6 +2915,8 @@ const UI_ICONS={
   mood2:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 16c2-1 4-1 6 0"/>',
   mood3:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 15h6"/>',
   mood4:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 14.5c1.7 1.5 4.3 1.5 6 0"/>',
+  down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
+  repeat:'<path d="M4 11.5a8 8 0 0 1 13.7-5.2L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12.5a8 8 0 0 1-13.7 5.2L4 15.5"/><path d="M4 20v-4.5h4.5"/>',
   mood5:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M8.5 14c2 3 5 3 7 0"/>',
 };
 UI_ICONS.flame=UI_ICONS.habits; UI_ICONS.shield=UI_ICONS.character; UI_ICONS.gear=UI_ICONS.settings;
@@ -2858,8 +2939,29 @@ function uiGlyph(g,size){ const k=UI_EMOJI_NORM[String(g).replace(/\uFE0F/g,'')]
 const UI_EMOJI_RX=(()=>{ const ks=Object.keys(UI_EMOJI_ICON).map(k=>k.replace(/\uFE0F/g,'')).filter((k,i,a)=>a.indexOf(k)===i).sort((a,b)=>b.length-a.length);
   return new RegExp('('+ks.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\uFE0F?','gu'); })();
 const UI_EMOJI_SKIP='input,textarea,script,style,svg,.note-body,.item-title,.goal-title,.hud-name,.q-title,.plan-t,.lk-main,.cat-main,h2,.av-name,[data-user-text]';
+// Polish pass 2: typographic glyphs used as button icons (＋ ✓ ✗ ✕ ↻ ↑ ↓ ‹ ›) become line icons too --
+// only inside buttons/chips/actions, never in text content. A delete ✕ is drawn as a trash can.
+const UI_GLYPH_ICON={'＋':'plus','✓':'check','✗':'x','✕':'x','↻':'repeat','↑':'up','↓':'down','‹':'back','›':'chevron'};
+const UI_GLYPH_RX=/[＋✓✗✕↻↑↓‹›]/g;
+function uiIconizeGlyphs(root){
+  root.querySelectorAll('button,.btn,.pill,.chip,.action,a[role="button"]').forEach(b=>{
+    [...b.childNodes].forEach(t=>{
+      if(t.nodeType!==3||!/[＋✓✗✕↻↑↓‹›]/.test(t.nodeValue)) return;
+      const v=t.nodeValue, frag=document.createDocumentFragment(); let last=0, m; UI_GLYPH_RX.lastIndex=0;
+      while((m=UI_GLYPH_RX.exec(v))){
+        if(m.index>last) frag.appendChild(document.createTextNode(v.slice(last,m.index)));
+        const name=b.classList.contains('delbtn')&&m[0]==='✕'?'trash':UI_GLYPH_ICON[m[0]];
+        const sp=document.createElement('span'); sp.className='gi gl'; sp.setAttribute('aria-hidden','true'); sp.innerHTML=uiIcon(name,16); frag.appendChild(sp);
+        last=m.index+1; if(v[last]===' '&&last-1===0) last++; // "＋ Úkol" -> [icon]Úkol (gap comes from CSS)
+      }
+      if(last<v.length) frag.appendChild(document.createTextNode(v.slice(last)));
+      t.replaceWith(frag);
+    });
+  });
+}
 function uiIconize(root){
   if(!root) return;
+  uiIconizeGlyphs(root);
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT), hits=[];
   let n; while((n=w.nextNode())){ UI_EMOJI_RX.lastIndex=0; if(UI_EMOJI_RX.test(n.nodeValue)) hits.push(n); }
   hits.forEach(t=>{
@@ -2975,7 +3077,14 @@ function renderHome(){
       const board=questBoardFor('daily');
       if(!board.length) return null;
       const doneN=board.filter(x=>questDone(x.q,'daily')).length;
-      const qc=el(`<section>${sectionHead(uiT('daily_quests'),`${doneN}/${board.length}`,'quests')}<div class="card quest-list" id="hQuests">${board.map(x=>uiQuestRow(x.q,x.p,'daily')).join('')}</div></section>`);
+      const left=board.filter(x=>!questDone(x.q,'daily')).reduce((a,x)=>a+x.q.xp,0), cs=uiLang()==='cs';
+      // Polish pass 2: a quest board (emblem, progress pips, XP still to earn), not a plain checklist
+      const qc=el(`<section>${sectionHead(uiT('daily_quests'),uiT('see_all'),'quests')}<div class="card quest-board">
+        <div class="qb-head"><span class="qb-emblem" aria-hidden="true">${uiIcon('quest',22)}</span>
+          <span class="qb-title"><b>${doneN===board.length?(cs?'Všechny výpravy splněny':'All quests complete'):(cs?`Splněno ${doneN} z ${board.length}`:`${doneN} of ${board.length} complete`)}</b>
+          <small>${left?(cs?`Zbývá získat +${left} XP`:`+${left} XP left to earn`):(cs?'Dnešní odměny získány':'Today\'s rewards earned')}</small></span>
+          <span class="qb-pips" aria-hidden="true">${board.map((x,i)=>`<i class="${i<doneN?'on':''}"></i>`).join('')}</span></div>
+        <div class="quest-list" id="hQuests">${board.map(x=>uiQuestRow(x.q,x.p,'daily')).join('')}</div></div></section>`);
       return qc;
     },
     tasks: ()=>{
@@ -3138,11 +3247,11 @@ function taskItem(t){
   const overdue=!t.done&&t.dueDate&&t.dueDate<todayStr();
   const planned=uiTaskNextBlock(t); // Phase 10: earliest planner block for this task from today on
   const meta=[
-    t.priority?`<span class="chip ${t.priority==='Urgent'?'is-danger':t.priority==='High'?'is-warn':'is-muted'}">${uiPrioLabel(t.priority)}</span>`:'',
+    t.priority?`<span class="prio" data-p="${escapeHtml(t.priority)}">${uiPrioLabel(t.priority)}</span>`:'',
     t.dueDate?`<span class="${overdue?'chip is-danger':''}">📅 ${uiDueLabel(t.dueDate)}</span>`:'',
     t.category?`<span class="cat-tag" style="--cc:${catColor(t.category,'life')}">${uiIcon(catIconName(t.category,'life'),13)}${escapeHtml(catLabel(t.category,'life'))}</span>`:'',
-    linkedGoal?`<button class="chip linkGoal">🎯 ${escapeHtml(linkedGoal.title)}</button>`:'',
-    planned?`<button class="chip planLink" aria-label="${uiPlT('scheduled')}: ${fmtDate(planned.date)} ${planned.startTime}">🗓️ ${planned.date===todayStr()?'':fmtDate(planned.date)+' '}${planned.startTime}</button>`:'',
+    linkedGoal?`<button class="meta-link linkGoal lk-goal">${uiIcon('target',13)}<span>${escapeHtml(linkedGoal.title)}</span></button>`:'',
+    planned?`<button class="meta-link planLink" aria-label="${uiPlT('scheduled')}: ${fmtDate(planned.date)} ${planned.startTime}">${uiIcon('clock',13)}<span>${planned.date===todayStr()?'':fmtDate(planned.date)+' '}${planned.startTime}</span></button>`:'',
     t.done?'':`<span class="xp-tag">+${shownXp} XP</span>`,
   ].filter(Boolean).join(' ');
   const it=el(`<div class="item task-item" data-prio="${t.done?'':escapeHtml(t.priority||'')}">
@@ -3661,7 +3770,7 @@ function openGoalForm(existing){
       :ms.length?(cs?`Teď: ${ms.filter(m=>m.completed).length} z ${ms.length} milníků splněno → ${goalProgress(g)} %.`:`Now: ${ms.filter(m=>m.completed).length} of ${ms.length} milestones done → ${goalProgress(g)} %.`)
       :lh.length?(cs?`Teď: plnění ${lh.length} propojených návyků za posledních 30 dní → ${goalProgress(g)} %.`:`Now: completion of ${lh.length} linked habits over the last 30 days → ${goalProgress(g)} %.`)
       :(cs?'Teď: cíl zatím nemá nic propojeného, drží se poslední ruční hodnota.':'Now: nothing is linked yet, the last manual value is kept.');
-    help.innerHTML=`${uiIcon('sparkle',15)}<span>${cs?'<b>Automaticky:</b> postup se počítá z hotových propojených úkolů (hotové / všechny). Když cíl nemá úkoly, použijí se jeho milníky, pak propojené návyky.':'<b>Automatic:</b> progress is calculated from the linked tasks that are done (done / all). A goal without tasks uses its milestones, then linked habits.'} <br><small>${now}</small></span>`;
+    help.innerHTML=`${uiIcon('sparkle',15)}<span>${cs?'<b>Automaticky:</b> Progress se počítá automaticky podle dokončených propojených úkolů (hotové / všechny). Když cíl nemá úkoly, použijí se jeho milníky, pak propojené návyky.':'<b>Automatic:</b> progress is calculated from the linked tasks that are done (done / all). A goal without tasks uses its milestones, then linked habits.'} <br><small>${now}</small></span>`;
   }
   modeSel.onchange=()=>{ syncManualVisibility(); syncModeHelp(); }; syncManualVisibility(); syncModeHelp();
   openSheet(inner);
@@ -3747,10 +3856,22 @@ function openMilestoneForm(goalId,existing){
 
 /* ---- Character view ---- */
 // Polish pass: achievements keep their rules; only the icon follows the line-icon style.
+// Czech texts of the achievements (display only; ids, rules and rewards unchanged).
+const UI_ACHV_CS={first_task:['První krok','Splň svůj první úkol'],seven_streak:['7denní streak','Udrž návyk 7 dní v řadě'],thirty_streak:['30denní streak','Udrž návyk 30 dní v řadě'],
+  ten_tasks:['Mistr úkolů','Splň 10 úkolů'],first_goal:['Dobyvatel cílů','Splň svůj první cíl'],level5:['Vycházející hrdina','Dosáhni levelu 5'],level10:['Nezastavitelný','Dosáhni levelu 10'],
+  five_habits:['Tvor zvyku','Sleduj 5 různých návyků'],money_tracker:['Hospodář','Zapiš první finanční záznam'],saver:['Spořivý měsíc','Měj za měsíc víc příjmů než výdajů'],
+  first_workout:['Beast Mode','Zapiš svůj první trénink'],fitness_beast:['Fitness bestie','Zapiš 10 tréninků'],first_meal:['Najedený','Zapiš první jídlo'],hydrated:['Hydratovaný','Splň denní cíl vody'],
+  first_note:['Hledač poznání','Vytvoř první poznámku'],first_journal:['Přemýšlivý','Napiš první zápis do deníku'],journal_week:['Pravidelná reflexe','Piš deník 7 dní'],
+  first_vehicle:['Správce garáže','Přidej první vozidlo'],first_sub:['Předplatitel','Sleduj první předplatné'],quest_5:['Dobrodruh','Splň 5 výprav']};
+function uiAchvText(a){ const c=uiLang()==='cs'&&UI_ACHV_CS[a.id]; return c?{t:c[0],d:c[1]}:{t:a.title,d:a.desc}; }
 const ACHV_ICON={first_task:'check',seven_streak:'flame',thirty_streak:'flame',ten_tasks:'check',first_goal:'target',level5:'star',level10:'star',
   five_habits:'flame',money_tracker:'wallet',saver:'wallet',first_workout:'dumbbell',fitness_beast:'dumbbell',first_meal:'apple',hydrated:'drop',
   first_note:'note',first_journal:'journal',journal_week:'journal',first_vehicle:'car',first_sub:'card',quest_5:'quest'};
 // Where each attribute comes from: the categories whose profile contains it + the fixed activities.
+// Polish pass 2: one line per attribute saying what it represents in real life (presentation only).
+const UI_ATTR_MEANING={STR:['Síla těla — trénink a pohyb','Physical strength — training and movement'],INT:['Učení a přemýšlení — studium a práce','Learning and thinking — study and work'],
+  DEX:['Disciplína — návyky, streaky, dotažené úkoly','Discipline — habits, streaks, finished tasks'],VIT:['Vitalita — zdraví, spánek, jídlo, pohyb','Vitality — health, sleep, food, movement'],
+  WIS:['Moudrost — finance, reflexe, cíle','Wisdom — finance, reflection, goals'],FOC:['Soustředění — práce, plán, dotažení','Focus — work, planning, follow-through'],SOC:['Společenskost — lidé a vztahy','Social — people and relationships']};
 function rpgAttrSources(k){
   const cs=uiLang()==='cs', out=[];
   catList('life').filter(c=>!c.archived&&ATTR_PROFILES[c.profile]&&ATTR_PROFILES[c.profile][k]).forEach(c=>out.push(catLabel(c.key,'life')));
@@ -3796,8 +3917,9 @@ function renderCharacter(){
     ac.appendChild(el(`<div class="attr attr-row" style="--ac:${ATTRS[k].c}" data-attr="${k}">
       <div class="dot">${k}</div>
       <div style="min-width:0"><div class="attr-name"><span>${uiL(ATTRS[k].label)}</span><span>Lv ${lvl} · ${val}</span></div>
+      <div class="attr-mean">${UI_ATTR_MEANING[k][cs?0:1]}</div>
       <div class="bar" role="progressbar" aria-label="${ATTRS[k].label}" aria-valuenow="${Math.round(into2/50*100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${into2/50*100}%"></i></div>
-      <div class="attr-src">${src.length?escapeHtml(src.join(' · ')):'—'}</div></div>
+      <div class="attr-src">${src.length?`${cs?'Roste z':'Grows from'}: ${escapeHtml(src.join(' · '))}`:'—'}</div></div>
     </div>`));
   });
   side.appendChild(ac);
@@ -3809,11 +3931,11 @@ function renderCharacter(){
   const al=achC.querySelector('#achl');
   unlockedA.forEach(a=>{
     const at=S.achievementUnlockedAt&&S.achievementUnlockedAt[a.id];
-    al.appendChild(el(`<div class="ach is-unlocked"><span class="ach-ic" aria-hidden="true">${uiIcon(ACHV_ICON[a.id]||'trophy',20)}</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="rarity r-${a.rarity}">${a.rarity}</span>${at?`<span class="sub" style="font-size:11px">${fmtDate(uiIsoDate(at))}</span>`:''}</div></div>`));
+    al.appendChild(el(`<div class="ach is-unlocked"><span class="ach-ic" aria-hidden="true">${uiIcon(ACHV_ICON[a.id]||'trophy',20)}</span><div class="ach-t">${escapeHtml(uiAchvText(a).t)}</div><div class="ach-d">${escapeHtml(uiAchvText(a).d)}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="rarity r-${a.rarity}">${a.rarity}</span>${at?`<span class="sub" style="font-size:11px">${fmtDate(uiIsoDate(at))}</span>`:''}</div></div>`));
   });
   lockedA.forEach(a=>{
     const p=a.progress?Math.max(0,Math.min(100,a.progress(S))):0;
-    al.appendChild(el(`<div class="ach is-locked"><span class="ach-ic" aria-hidden="true">${uiIcon('lock',18)}</span><div class="ach-t">${a.title}</div><div class="ach-d">${a.desc}</div><span class="rarity r-${a.rarity}">${a.rarity} · ${Math.round(p)}%</span><div class="bar"><i style="width:${p}%"></i></div></div>`));
+    al.appendChild(el(`<div class="ach is-locked"><span class="ach-ic" aria-hidden="true">${uiIcon('lock',18)}</span><div class="ach-t">${escapeHtml(uiAchvText(a).t)}</div><div class="ach-d">${escapeHtml(uiAchvText(a).d)}</div><span class="rarity r-${a.rarity}">${a.rarity} · ${Math.round(p)}%</span><div class="bar"><i style="width:${p}%"></i></div></div>`));
   });
   wrap.appendChild(achC);
 
@@ -3823,7 +3945,10 @@ function renderCharacter(){
   const recent=(S.rpg.activityLog||[]).slice(0,10);
   if(!recent.length) actl.appendChild(el(uiEmpty('✨',uiT('no_activity'),'','')));
   const ACTIVITY_ICON={levelup:'up',skill_unlock:'star',achievement:'trophy',quest_complete:'quest',xp:'bolt'};
-  recent.forEach(a=>actl.appendChild(el(`<div class="tl-item"><span class="tl-ic" aria-hidden="true">${uiIcon(ACTIVITY_ICON[a.type]||'sparkle',16)}</span><div style="min-width:0"><div class="item-title" style="font-size:14px">${escapeHtml(a.title)}</div><div class="item-meta">${escapeHtml(a.type==='levelup'?String(a.description||'').replace(/ — \+1 Skill Point, \+3 Attribute Points$/,''):(a.description||''))}</div></div></div>`)));
+  // stored log texts stay as they are; an achievement entry is shown with its localized text
+  const actText=a=>{ const ac=a.type==='achievement'&&ACHV.find(x=>x.title===a.title); if(ac){ const t=uiAchvText(ac); return [t.t,t.d]; }
+    return [a.title,a.type==='levelup'?String(a.description||'').replace(/ — \+1 Skill Point, \+3 Attribute Points$/,''):(a.description||'')]; };
+  recent.forEach(a=>{ const [t,d]=actText(a); actl.appendChild(el(`<div class="tl-item"><span class="tl-ic" aria-hidden="true">${uiIcon(ACTIVITY_ICON[a.type]||'sparkle',16)}</span><div style="min-width:0"><div class="item-title" style="font-size:14px">${escapeHtml(t)}</div><div class="item-meta">${escapeHtml(d)}</div></div></div>`)); });
   wrap.appendChild(actC);
   // Polish pass: no Settings shortcut here -- Settings stay in More (and the header button).
   return wrap;
@@ -3832,9 +3957,9 @@ function renderCharacter(){
 /* ---- Polish pass: avatar picker (portraits + own photo with a square crop, stored locally) ---- */
 function openAvatarPicker(){
   const cs=uiLang()==='cs', cur=avatarId(S.profile);
-  const opt=(id,label,inner)=>`<button class="av-opt${cur===id?' is-selected':''}" data-av="${id}" aria-pressed="${cur===id}" aria-label="Avatar: ${label}"><span class="avatar lg">${inner}</span><span class="av-name">${label}</span></button>`;
+  const opt=(id,label,inner)=>`<button class="av-opt${cur===id?' is-selected':''}" data-av="${id}" aria-pressed="${cur===id}" aria-label="Avatar: ${label}"><span class="avatar lg">${inner}</span><span class="av-name">${label}</span>${cur===id?`<span class="av-check" aria-hidden="true">${uiIcon('check',14)}</span>`:''}</button>`;
   const inner=el(`<div class="av-picker" id="avatarPicker"><h3>Avatar</h3>
-    <div class="av-current"><div class="avatar hero xl" id="avPreview">${uiAvatarInner()}</div>
+    <div class="av-current"><div class="av-preview"><div class="avatar hero xl" id="avPreview">${uiAvatarInner()}</div><span class="av-cur-name">${cur==='photo'?(cs?'Tvoje fotka':'Your photo'):AVATAR_LABELS[cur][cs?0:1]}</span></div>
       <div class="av-actions"><button class="btn sm" id="avUpload">${uiIcon('camera',18)} ${cs?'Nahrát fotku':'Upload photo'}</button>
         ${S.profile.photo?`<button class="btn ghost sm" id="avRemovePhoto">${uiIcon('trash',16)} ${cs?'Odebrat fotku':'Remove photo'}</button>`:''}
         <p class="helper-text">${cs?'Fotka se ořízne na čtverec a uloží jen v tomto zařízení.':'The photo is cropped to a square and stored on this device only.'}</p>
@@ -3862,7 +3987,8 @@ function openPhotoCrop(file){
     const inner=el(`<div class="crop" id="photoCrop"><h3>${cs?'Oříznout fotku':'Crop photo'}</h3>
       <div class="crop-box" id="cropBox"><canvas id="cropCanvas" width="${N}" height="${N}"></canvas><div class="crop-frame" aria-hidden="true"></div></div>
       <p class="helper-text" style="text-align:center">${cs?'Posuň fotku tažením, přibliž posuvníkem.':'Drag to move, use the slider to zoom.'}</p>
-      <label for="cropZoom">${cs?'Přiblížení':'Zoom'}</label><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1">
+      <label for="cropZoom">${cs?'Přiblížení':'Zoom'}</label>
+      <div class="crop-zoom"><button type="button" class="iconbtn" id="cropOut" aria-label="${cs?'Oddálit':'Zoom out'}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"><button type="button" class="iconbtn" id="cropIn" aria-label="${cs?'Přiblížit':'Zoom in'}">${uiIcon('plus',18)}</button></div>
       <div class="grid2" style="margin-top:12px"><button class="btn ghost" id="cropCancel">${cs?'Zrušit':'Cancel'}</button><button class="btn" id="cropSave">${cs?'Uložit avatar':'Save avatar'}</button></div>
     </div>`);
     const cv=inner.querySelector('#cropCanvas'), ctx=cv.getContext('2d'), box=inner.querySelector('#cropBox');
@@ -3870,7 +3996,10 @@ function openPhotoCrop(file){
     const clamp=()=>{ const h=side()/2; cx=Math.max(h,Math.min(W-h,cx)); cy=Math.max(h,Math.min(H-h,cy)); };
     const draw=(c,n)=>{ clamp(); const s=side(); c.clearRect(0,0,n,n); c.drawImage(img,cx-s/2,cy-s/2,s,s,0,0,n,n); };
     draw(ctx,N);
-    inner.querySelector('#cropZoom').oninput=e=>{ z=Number(e.target.value)||1; draw(ctx,N); };
+    const zoomIn=inner.querySelector('#cropZoom');
+    zoomIn.oninput=e=>{ z=Number(e.target.value)||1; draw(ctx,N); };
+    const step=d=>{ z=Math.max(1,Math.min(4,Math.round((z+d)*100)/100)); zoomIn.value=String(z); draw(ctx,N); };
+    inner.querySelector('#cropOut').onclick=()=>step(-.25); inner.querySelector('#cropIn').onclick=()=>step(.25);
     let drag=null;
     box.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; box.setPointerCapture&&box.setPointerCapture(e.pointerId); e.preventDefault(); });
     box.addEventListener('pointermove',e=>{ if(!drag) return; const k=side()/box.clientWidth; cx-=(e.clientX-drag.x)*k; cy-=(e.clientY-drag.y)*k; drag={x:e.clientX,y:e.clientY}; draw(ctx,N); });
@@ -5052,7 +5181,7 @@ function renderFinanceRecurring(){
     <div class="card fin-expected"><div class="kicker" style="margin-bottom:6px">${uiFinT('expected')} · ${escapeHtml(uiFinMonthLabel(ym))}</div><p class="helper-text" style="margin:0 0 8px">${uiFinT('expected_d')}</p>${uiFinExpectedList(ex)}</div>
     <div class="section-header"><h3>${uiFinT('s_recurring')}</h3></div><div class="list" id="finRecList"></div>
     <div class="section-header"><h3>${uiFin2T('subs_link')}</h3></div>
-    <button class="card is-link between" id="finSubsLink" style="width:100%;text-align:left;font:inherit;color:inherit"><span>💳 <b class="num">${uiMoney(Math.round(subsMonthly))}</b> <span class="sub">${uiFin2T('monthly_eq')}</span></span><span class="sub" aria-hidden="true">›</span></button></div>`);
+    <button class="card is-link between" id="finSubsLink" style="width:100%;text-align:left;font:inherit;color:inherit"><span>💳 <b class="num">${uiMoney(Math.round(subsMonthly))}</b> <span class="sub">${uiFin2T('monthly_eq')}</span></span><span class="sub" aria-hidden="true">${uiIcon('chevron',16)}</span></button></div>`);
   uiBindFinMonthBar(wrap); uiBindExpected(wrap);
   const list=wrap.querySelector('#finRecList');
   if(!plans.length){ const e=el(`<div class="card">${uiEmpty('🔁',uiFin2T('no_rec'),uiFin2T('no_rec_d'),'＋ '+uiFin2T('add_rec'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openRecurringForm(); list.appendChild(e); }
@@ -6225,7 +6354,7 @@ function uiRedrawEntry(w,en,focusSel,setId){
   const old=document.querySelector(`[data-entry="${en.id}"]`);
   const fresh=workoutFindById(w.id); const e2=fresh&&(fresh.entries||[]).find(x=>x.id===en.id);
   if(!old||!e2){ render(); return; }
-  const card=uiWorkoutEntryCard(fresh,e2); old.replaceWith(card);
+  const card=uiWorkoutEntryCard(fresh,e2); old.replaceWith(card); uiIconize(card); // same icon pass as a full render
   const f=focusSel&&(setId?card.querySelector(`[data-set="${setId}"] ${focusSel}`):card.querySelector(focusSel)); if(f) f.focus({preventScroll:true});
   const p=uiWkProgress(fresh), pe=document.getElementById('wkProg');
   if(pe){ pe.textContent=`${p.done}/${p.planned}`; const bar=document.getElementById('wkBar'); if(bar) bar.style.width=uiPct(p.done,p.planned||1)+'%'; }
@@ -6559,7 +6688,7 @@ function renderNutrition(){
   if(!meals.length){ const e=el(`<div class="card">${uiEmpty('🍎',L.none,L.none_d,'＋ '+L.meal)}</div>`); e.querySelector('.emptyCta').onclick=()=>openMealForm(); ml.appendChild(e); }
   meals.forEach(m=>{
     const q=Number(m.servings)||1;
-    const it=el(`<div class="item meal-item"><span class="icon-circle" aria-hidden="true">🍽️</span><div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(m.name)}</div><div class="item-meta meta-row"><span class="chip is-muted">${escapeHtml(m.type||'')}${q!==1?' · ×'+q:''}</span><b class="num" style="color:var(--text)">${Math.round((m.calories||0)*q)} kcal</b><span class="num">P ${Math.round((m.protein||0)*q)} · C ${Math.round((m.carbs||0)*q)} · F ${Math.round((m.fat||0)*q)}</span></div></div><div class="item-actions"><button class="iconbtn ghost-ic repeatBtn" aria-label="${L.repeat}: ${escapeHtml(m.name)}" title="${L.repeat}">↻</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(m.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.name)}">✕</button></div></div>`);
+    const it=el(`<div class="item meal-item"><span class="icon-circle" aria-hidden="true">🍽️</span><div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(m.name)}</div><div class="item-meta meta-row"><span class="chip is-muted">${escapeHtml(uiL(m.type||''))}${q!==1?' · ×'+q:''}</span><b class="num" style="color:var(--text)">${Math.round((m.calories||0)*q)} kcal</b><span class="num">P ${Math.round((m.protein||0)*q)} · C ${Math.round((m.carbs||0)*q)} · F ${Math.round((m.fat||0)*q)}</span></div></div><div class="item-actions"><button class="iconbtn ghost-ic repeatBtn" aria-label="${L.repeat}: ${escapeHtml(m.name)}" title="${L.repeat}">↻</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(m.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.name)}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openMealForm(m);
     it.querySelector('.repeatBtn').onclick=()=>{
       S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()});
@@ -6709,7 +6838,7 @@ function renderJournal(){
   const todaysEntry=S.journal.find(j=>j.date===today);
   const cs=uiLang()==='cs';
   const wrap=el(`<div>${uiPageHead(uiL('Journal'))}
-    <button class="card is-link journal-cta" id="addJ" style="width:100%;text-align:left;font:inherit;color:inherit"><span class="icon-circle" aria-hidden="true">${todaysEntry?'✏️':'📔'}</span><span style="flex:1;min-width:0"><b>${todaysEntry?(cs?'Upravit dnešní zápis':"Edit today's entry"):(cs?'Napsat dnešní zápis':"Write today's entry")}</b><span class="sub" style="display:block">${uiTodayLong()}</span></span><span class="sub" aria-hidden="true">›</span></button>
+    <button class="card is-link journal-cta" id="addJ" style="width:100%;text-align:left;font:inherit;color:inherit"><span class="icon-circle" aria-hidden="true">${todaysEntry?'✏️':'📔'}</span><span style="flex:1;min-width:0"><b>${todaysEntry?(cs?'Upravit dnešní zápis':"Edit today's entry"):(cs?'Napsat dnešní zápis':"Write today's entry")}</b><span class="sub" style="display:block">${uiTodayLong()}</span></span><span class="sub" aria-hidden="true">${uiIcon('chevron',16)}</span></button>
     ${monthEntries.length?`<div class="stat-grid"><div class="stat-card"><div class="stat-label">${uiL('This month')}</div><div class="stat-value">${monthEntries.length}</div></div><div class="stat-card"><div class="stat-label">${uiL('Average rating')}</div><div class="stat-value">${avgRating}<small>/10</small></div></div></div>`:''}
     <div class="list" id="jList"></div>
   </div>`);
@@ -7785,12 +7914,13 @@ function renderSearch(){
       items.forEach(r=>{
         const it=el(`<button class="item search-hit" style="cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit"><span class="icon-circle" aria-hidden="true">${icon}</span>
           <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(r.title)}</div><div class="item-meta truncate">${escapeHtml(r.meta||'')}</div></div>
-          <span class="sub" aria-hidden="true">›</span></button>`);
+          <span class="sub" aria-hidden="true">${uiIcon('chevron',16)}</span></button>`);
         it.onclick=()=>searchNavigate(type,r.obj);
         res.appendChild(it);
       });
     });
     if(!any) res.appendChild(el(`<div class="card">${uiEmpty('🤷',uiL('No results.'),'','')}</div>`));
+    uiIconize(res); // results are redrawn while typing: same icon pass as a full render
   }
   input.oninput=(e)=>run(e.target.value);
   run('');
@@ -8352,11 +8482,16 @@ function openSheet(contentEl){
   bg.onkeydown=(e)=>{ if(e.key==='Escape'&&bg.onclick) bg.remove(); };
   // Polish pass: every sheet can be pulled down to close -- by its grab strip or its title (never by the
   // content, so scrolling a long form can't dismiss it). Same close as a backdrop tap / Escape.
-  const grab=el(`<div class="sheet-grab" aria-hidden="true"><i></i></div>`);
+  // Polish pass 2: one sheet chrome for every sheet -- grab strip + a close button (hidden for sheets that
+  // must not be dismissed, e.g. onboarding, which clears bg.onclick).
+  const grab=el(`<div class="sheet-grab"><i aria-hidden="true"></i><button type="button" class="sheet-x" aria-label="${uiLang()==='cs'?'Zavřít':'Close'}">${uiIcon('x',18)}</button></div>`);
   sheet.insertBefore(grab,sheet.firstChild);
+  const sx=grab.querySelector('.sheet-x');
+  sx.addEventListener('pointerdown',e=>e.stopPropagation());
+  sx.onclick=()=>{ if(bg.onclick) bg.remove(); };
   uiSheetDrag(bg,sheet,[grab,h&&h.closest('.ob')?null:h]);
   document.body.appendChild(bg);
-  const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button');
+  const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button:not(.sheet-x)');
   // Never steal focus from a field the user already moved to (the timer can fire late on slow devices).
   setTimeout(()=>{ try{ if(sheet.contains(document.activeElement)) return; (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
   sheet.tabIndex=-1;
@@ -8680,6 +8815,7 @@ function showOnboarding(step,data){
   }
   const bg=openSheet(inner);
   bg.onclick=null; // force an explicit Next/Skip/Finish -- no dismiss-by-backdrop mid-wizard
+  const sx=bg.querySelector('.sheet-x'); if(sx) sx.remove();
 }
 // skipped=true: apply only what was actually filled in (name/avatar); never invent goals,
 // habits or targets the person never confirmed. Never leaves onboarded=false, so Skip can
