@@ -201,7 +201,7 @@ test('tasks: add, edit (same id), complete, delete through the UI', async ({ pag
   assert.ok(s.xpLog.some(x => x.key === `task:${t.id}:${TODAY}` && x.amount === 30));
   assert.ok(s.totalXp >= xp0 + 30);
   await page.click('#tf [data-f="Completed"]'); // done tasks leave the Today tab
-  await page.locator('.item', { hasText: 'QA task edited' }).locator('.delbtn').click();
+  await page.locator('.item', { hasText: 'QA task edited' }).locator('.delbtn').click(); await page.click('#cf_ok');
   assert.ok(!(await stateOf(page)).tasks.some(x => x.id === t.id), 'deleted');
 }, { state: fixtureState() });
 
@@ -321,7 +321,7 @@ test('export/import: backup JSON equals state; import restores it exactly', asyn
 
 test('reset: double confirm wipes data and restarts onboarding', async ({ page }) => {
   page.on('dialog', d => d.accept());
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.ok(await page.locator('.sheet h2').isVisible());
   const s = await stateOf(page);
   assert.equal(s.tasks.length, 0); assert.equal(s.totalXp, 0); assert.equal(s.schemaVersion, 8);
@@ -748,7 +748,7 @@ test('9 history: a pre-Phase-9 backup (no dailyScores keys) imports cleanly; res
   let s = await stateOf(page);
   assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, TODAY); assert.equal(s.schemaVersion, 8);
   page.on('dialog', d => d.accept());
-  await tick(page, DAY); await page.click('#settingsBtn'); await page.click('#st_reset');
+  await tick(page, DAY); await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   s = await stateOf(page);
   assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, null);
 }, { state: fixtureState() });
@@ -966,7 +966,7 @@ test('10 UI: edit and delete a block through the sheet; the timeline check toggl
   assert.equal(s.plannerBlocks.find(b => b.id === 'pb_math').completed, true);
   assert.equal(JSON.stringify(s.tasks.find(t => t.id === 't_open')), taskBefore, 'linked task untouched');
   page.on('dialog', d => d.accept());
-  await page.click('[data-block="pb_call"] .pl-open'); await page.click('#pb_delete');
+  await page.click('[data-block="pb_call"] .pl-open'); await page.click('#pb_delete'); await page.click('#cf_ok');
   assert.ok(!(await stateOf(page)).plannerBlocks.some(b => b.id === 'pb_call'));
   assert.equal(await page.locator('[data-block="pb_call"]').count(), 0);
 }, { state: fixtureState() });
@@ -1000,7 +1000,7 @@ test('10 UI: Task -> Naplánovat creates a linked block, the task itself stays u
 
 test('10 UI: deleting the linked task does not crash the planner', async ({ page }) => {
   await page.click('nav.bottom button[data-v="tasks"]');
-  await page.locator('.item', { hasText: 'Write report' }).locator('.delbtn').click();
+  await page.locator('.item', { hasText: 'Write report' }).locator('.delbtn').click(); await page.click('#cf_ok');
   assert.ok(!(await stateOf(page)).tasks.some(t => t.id === 't_open'));
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
   assert.match(await page.locator('[data-block="pb_math"]').innerText(), /smazáno/);
@@ -1069,7 +1069,7 @@ test('10 data: planner blocks survive reload + export/import; reset removes them
   assert.equal(await page.locator('#plTimeline [data-block]').count(), 0);
   page.on('dialog', d => d.accept());
   await page.evaluate(() => { S.plannerBlocks = [{ id: 'x', date: todayStr(), startTime: '10:00', endTime: '11:00', title: 'x' }]; });
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.deepEqual((await stateOf(page)).plannerBlocks, []);
 }, { state: fixtureState() });
 
@@ -1083,7 +1083,7 @@ test('10 invariants: a full planner session changes no XP/log/level/attributes/p
   await page.click(`[data-block="${id}"] .plCheck`); await page.click(`[data-block="pb_math"] .plCheck`); await page.click(`[data-block="pb_math"] .plCheck`);
   await page.click(`[data-block="${id}"] .pl-open`); await page.fill('#pb_title', 'Test 2'); await page.click('#pb_save');
   page.on('dialog', d => d.accept());
-  await page.click(`[data-block="${id}"] .pl-open`); await page.click('#pb_delete');
+  await page.click(`[data-block="${id}"] .pl-open`); await page.click('#pb_delete'); await page.click('#cf_ok');
   await page.click('#plNext'); await page.click('#plToday');
   assert.equal(await untouchable(page), u0, 'XP / RPG / Daily Score unchanged');
   assert.equal(await other(), o0, 'tasks, events, goals, workouts, habits unchanged');
@@ -1219,7 +1219,7 @@ test('11A UI: Fitness tabs, add exercise with muscles (normalized on save), vali
   assert.deepEqual([x.name, x.source, x.muscles], ['Deadlift', 'history', { Back: 40, Legs: 40, Glutes: 20 }]);
   // delete (unused -> really deleted)
   page.on('dialog', d => d.accept());
-  await page.click(`[data-ex="${dl.id}"] .ex-open`); await page.click('#ex_delete');
+  await page.click(`[data-ex="${dl.id}"] .ex-open`); await page.click('#ex_delete'); await page.click('#cf_ok');
   assert.equal((await stateOf(page)).exerciseLibrary.some(e => e.id === dl.id), false);
   await page.click('#fitTabs [data-k="workouts"]');
   assert.equal(await page.locator('#addW').count(), 1, 'workouts tab is back');
@@ -1262,7 +1262,7 @@ test('11A data: library survives reload + export/import; old backup is seeded; r
   await page.waitForFunction(() => S.exerciseLibrary.length === 3 && S.exerciseLibrary.every(x => x.source === 'history'));
   assert.equal((await stateOf(page)).schemaVersion, 8);
   page.on('dialog', d => d.accept());
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.deepEqual((await stateOf(page)).exerciseLibrary, []);
 }, { state: fixtureState() });
 
@@ -1349,7 +1349,7 @@ test('11A UI: create, validate, reorder, edit and delete a template; fields foll
   t = (await stateOf(page)).workoutTemplates[0];
   assert.deepEqual(t.exercises.map(te => te.exerciseId), [L['Bench press']]);
   page.on('dialog', d => d.accept());
-  await page.click(`[data-tpl="${t.id}"] .tpl-open`); await page.click('#tp_delete');
+  await page.click(`[data-tpl="${t.id}"] .tpl-open`); await page.click('#tp_delete'); await page.click('#cf_ok');
   assert.equal((await stateOf(page)).workoutTemplates.length, 0);
 }, { state: fixtureState() });
 
@@ -1399,7 +1399,7 @@ test('11A data: templates survive reload + export/import; old backup gets []; re
   await page.waitForFunction(() => Array.isArray(S.workoutTemplates) && S.workoutTemplates.length === 0);
   page.on('dialog', d => d.accept());
   await page.evaluate(() => templateSave({ name: 'x', exercises: [{ exerciseId: S.exerciseLibrary[0].id, sets: 1, repsMin: 1 }] }));
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.deepEqual((await stateOf(page)).workoutTemplates, []);
 }, { state: fixtureState() });
 
@@ -2805,7 +2805,7 @@ test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -
   await page.evaluate(id => { S.workouts = S.workouts.filter(x => x.id !== id); }, w.id);
   assert.deepEqual(await totals(page), mx, 'deleting the workout keeps its Muscle XP');
   page.on('dialog', d => d.accept());
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.deepEqual(await page.evaluate(() => [S.workouts, S.workoutTemplates, S.exerciseLibrary, S.muscleProgress, S.plannerBlocks]), [[], [], [], { log: [] }, []], 'reset empties every Fitness 2.0 collection');
   void tid;
 }, { state: fixtureState() });
@@ -3242,7 +3242,7 @@ test('11B data: reload, export/import of every Finance collection, old backup, r
   assert.ok(o.financeCategories.length >= 11);
   await finGo(page); assert.match((await appText(page)).replace(/[\u00a0\u202f]/g, ' '), /Září 2026/);
   page.on('dialog', d => d.accept());
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.deepEqual(await page.evaluate(K => K.map(k => S[k]), K), K.map(() => []), 'reset empties every Finance collection');
   await page.evaluate(() => { S.settings.onboarded = true; closeSheets(); view = 'finance'; render(); });
   assert.match((await appText(page)).replace(/[\u00a0\u202f]/g, ' '), /V tomto měsíci žádné transakce/);
@@ -3544,7 +3544,7 @@ test('P6 categories: reload, export/import, old backup and reset', async ({ page
   assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Učení');
   page.on('dialog', d => d.accept());
   await page.evaluate(() => { S.lifeCategories = [{ key: 'cat_x', scope: 'life', name: 'x', icon: 'tag' }]; S.profile.photo = 'data:image/jpeg;base64,xx'; });
-  await page.click('#settingsBtn'); await page.click('#st_reset');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   const s = await stateOf(page);
   assert.deepEqual([s.lifeCategories, s.profile.photo, s.settings.trainingDays, s.profile.avatar], [[], undefined, null, 'svg:mage']);
 }, { state: fixtureState() });
@@ -3664,7 +3664,7 @@ test('P9 avatar: SVG portraits (no emoji), own photo uploaded + cropped to a 256
   await persist(page); await reload(page);
   await go(page, 'character');
   assert.equal(await page.locator('.char-hero .avatar img').count(), 1, 'photo shown after reload');
-  await page.click('#charAvatar'); await page.click('#avRemovePhoto');
+  await page.click('#charAvatar'); await page.click('#avRemovePhoto'); await page.click('#cf_ok');
   const q = (await stateOf(page)).profile;
   assert.deepEqual([q.avatar, q.photo], ['svg:mage', undefined]);
 }, { state: fixtureState() });
@@ -3946,6 +3946,283 @@ test('Q6 layout: required screens and sheets at 320-1440 px, dark + light: no ov
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
+// ---------- Core reliability pass (A1 tabs, A3 deletes, A2 performance, B1 minute tick) ----------
+async function extraTab(page, errs) {
+  const p = await page.context().newPage();
+  p.on('pageerror', e => errs.push(`pageerror: ${e.message}`)); p.on('console', m => { if (m.type() === 'error') errs.push(`console.error: ${m.text()}`); });
+  p.on('dialog', d => { errs.push('native dialog: ' + d.message()); d.dismiss(); });
+  await p.clock.setFixedTime(NOW); await p.goto(URL_); await injectRawIdb(p);
+  return p;
+}
+const tabState = p => p.evaluate(() => ({ booted: !!S, active: tabActive, blocked: !!document.getElementById('tabLock') }));
+const ownerReady = p => p.waitForFunction(() => S && tabActive && !document.getElementById('tabLock'), null, { timeout: 8000 });
+
+test('R1 tabs: one active tab; the other says so, never loads or saves; takeover saves first; close hands over; nothing is lost', async ({ page }) => {
+  const errs = []; page.on('dialog', d => { errs.push('native dialog: ' + d.message()); d.dismiss(); });
+  const B = await extraTab(page, errs);
+  await B.waitForSelector('#tabLock');
+  assert.deepEqual(await tabState(B), { booted: false, active: false, blocked: true }, 'B is blocked and never loaded the data');
+  assert.match(await B.locator('#tabLock').innerText(), /otevřený v jiné záložce[\s\S]*Používat zde/);
+  assert.equal(await B.evaluate(() => [...document.querySelectorAll('body > :not(#tabLock):not(script)')].every(n => n.inert)), true, 'app behind the screen is inert');
+  assert.deepEqual(await tabState(page), { booted: true, active: true, blocked: false }, 'A stays the owner');
+  // change in A
+  await page.evaluate(() => { S.tasks.push({ id: 'tabA', title: 'from tab A', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); }); await settle(page);
+  // change in B: impossible (no data) and its save paths write nothing
+  await B.evaluate(() => { flushSave(); scheduleSave(); }); await settle(B);
+  assert.ok((await idbState(page)).tasks.some(t => t.id === 'tabA'), 'A saved');
+  await B.reload(); await B.waitForSelector('#tabLock');
+  assert.equal((await tabState(B)).blocked, true, 'reloaded B is still blocked');
+  // reload A: the waiting tab B gets the lock first and loads A's saved data
+  await page.reload(); await ownerReady(B); await page.waitForSelector('#tabLock'); await injectRawIdb(page);
+  assert.ok(await B.evaluate(() => S.tasks.some(t => t.id === 'tabA')), 'B took over with A\'s change');
+  assert.equal((await tabState(page)).blocked, true, 'reloaded A waits');
+  await B.evaluate(() => { S.notes.push({ id: 'tabB', title: 'from tab B', body: '', category: 'Personal', tags: [], createdAt: 1, updatedAt: 1 }); scheduleSave(); }); await settle(B);
+  await page.evaluate(() => { flushSave(); scheduleSave(); }); await settle(page); // a waiting tab never overwrites
+  const saved = await idbState(page);
+  assert.ok(saved.tasks.some(t => t.id === 'tabA') && saved.notes.some(n => n.id === 'tabB'), 'both changes saved once');
+  // "Use here" in A: B saves and steps down, A loads the latest state
+  await B.evaluate(() => { S.notes.push({ id: 'tabB2', title: 'unsaved in B', body: '', category: 'Personal', tags: [], createdAt: 1, updatedAt: 1 }); }); // not yet flushed
+  await page.click('#tabTakeover'); await ownerReady(page); await B.waitForSelector('#tabLock');
+  assert.ok(await page.evaluate(() => S.notes.some(n => n.id === 'tabB') && S.notes.some(n => n.id === 'tabB2') && S.tasks.some(t => t.id === 'tabA')), 'takeover: B saved first, nothing lost');
+  assert.equal((await tabState(B)).active, false, 'B stepped down');
+  // close A: B takes over automatically (reloads the latest data)
+  await page.evaluate(() => { S.tasks.push({ id: 'tabA2', title: 'last A change', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); }); await settle(page);
+  await page.close();
+  await B.waitForLoadState(); await ownerReady(B); await injectRawIdb(B);
+  assert.ok(await B.evaluate(() => ['tabA', 'tabA2'].every(id => S.tasks.some(t => t.id === id)) && ['tabB', 'tabB2'].every(id => S.notes.some(n => n.id === id))), 'B took over after A closed with every change');
+  await B.reload(); await ownerReady(B);
+  assert.ok(await B.evaluate(() => S.tasks.some(t => t.id === 'tabA2') && S.notes.some(n => n.id === 'tabB2')), 'persistence after reload');
+  assert.deepEqual(errs, []);
+}, { state: fixtureState() });
+
+test('R2 tabs: without Web Locks the app boots and saves exactly as before', async ({ page }) => {
+  const errs = [];
+  const p = await page.context().newPage();
+  p.on('pageerror', e => errs.push(e.message));
+  await p.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'locks', { get: () => undefined }); });
+  await p.clock.setFixedTime(NOW); await p.goto(URL_); await p.waitForFunction(() => S && S.tasks.length); await injectRawIdb(p);
+  assert.deepEqual(await tabState(p), { booted: true, active: true, blocked: false });
+  await p.evaluate(() => { S.tasks.push({ id: 'nl', title: 'no locks', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); }); await settle(p);
+  assert.ok((await idbState(p)).tasks.some(t => t.id === 'nl'));
+  assert.deepEqual(errs, []);
+}, { state: fixtureState() });
+
+test('R3 deletes: task, goal, milestone and goal-detail habit ask in an app sheet (what, history, links); cancel keeps, confirm deletes; links stay valid', async ({ page }) => {
+  const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); d.dismiss(); });
+  const sheet = async () => { await page.waitForSelector('.cf-sheet'); return page.locator('.cf-sheet').innerText(); };
+  // task (linked from a planner block)
+  await go(page, 'tasks'); await page.evaluate(() => { taskFilter = 'All'; render(); });
+  await page.evaluate(() => document.querySelector('#tlist .item .delbtn').click());
+  let txt = await sheet();
+  assert.match(txt, /Smazat úkol\?[\s\S]*trvale smazán[\s\S]*XP a postava zůstávají/);
+  assert.equal(await page.locator('#cf_ok.danger').count(), 1, 'red confirm button');
+  const tasks0 = await page.evaluate(() => S.tasks.length);
+  await page.click('#cf_cancel'); assert.equal(await page.evaluate(() => S.tasks.length), tasks0, 'cancel keeps the task');
+  await page.evaluate(() => document.querySelector('#tlist .item .delbtn').click());
+  await page.click('#cf_ok'); await settle(page);
+  assert.equal(await page.evaluate(() => S.tasks.length), tasks0 - 1, 'confirm deletes it');
+  // task t_open is linked from pb_math: delete it through its row and check the planner copes
+  await page.evaluate(() => { const t = S.tasks.find(t => t.id === 't_open'); if (t) { taskFilter = 'All'; view = 'tasks'; render(); } });
+  if (await page.evaluate(() => S.tasks.some(t => t.id === 't_open'))) {
+    const title = await page.evaluate(() => S.tasks.find(t => t.id === 't_open').title);
+    await page.locator('.item', { hasText: title }).first().locator('.delbtn').click();
+    assert.match(await sheet(), /Bloky v plánovači, které na něj odkazují \(1\), zůstanou/);
+    await page.click('#cf_ok');
+  }
+  await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
+  assert.ok(await page.evaluate(() => S.plannerBlocks.some(b => b.id === 'pb_math')), 'the planner block stays');
+  // goal-detail habit (history) and milestone
+  await page.evaluate(() => { currentGoalId = 'g_fit'; view = 'goalDetail'; render(); });
+  const hb = page.locator('#lhList .delbtn').first(); assert.ok(await hb.isVisible(), 'habit delete visible in goal detail');
+  await hb.click(); txt = await sheet();
+  assert.match(txt, /Smazat návyk\?[\s\S]*včetně celé historie plnění a série[\s\S]*Cíl „[^“]+“ zůstane/);
+  await page.click('#cf_cancel'); assert.ok(await page.evaluate(() => S.habits.some(h => h.id === 'h_water')));
+  await hb.click(); await page.click('#cf_ok');
+  assert.ok(await page.evaluate(() => !S.habits.some(h => h.id === 'h_water')), 'habit deleted');
+  await page.locator('#msList .delbtn').first().click(); txt = await sheet();
+  assert.match(txt, /Smazat milník\?[\s\S]*Cíl zůstane/);
+  await page.click('#cf_cancel'); assert.equal(await page.evaluate(() => S.milestones.length), 2);
+  await page.locator('#msList .delbtn').first().click(); await page.click('#cf_ok');
+  assert.equal(await page.evaluate(() => S.milestones.length), 1, 'milestone deleted');
+  // goal: cascade described and applied (milestones deleted, tasks + habits unlinked)
+  await page.evaluate(() => { S.tasks.push({ id: 'tg', title: 'goal task', priority: 'Low', goalId: 'g_fit', done: false, createdAt: 1 }); S.habits.find(h => h.id === 'h_read').goalId = 'g_fit'; view = 'goals'; render(); });
+  await page.evaluate(() => document.querySelector('.goal-card .delbtn').click());
+  txt = await sheet();
+  assert.match(txt, /Smazat cíl\?[\s\S]*Smaže se i jeho 1 milník[\s\S]*Propojený úkol \(1\) zůstane[\s\S]*Propojený návyk \(1\) zůstane/);
+  await page.click('#cf_cancel'); assert.equal(await page.evaluate(() => S.goals.length), 2, 'cancel keeps the goal');
+  await page.evaluate(() => document.querySelector('.goal-card .delbtn').click()); await page.click('#cf_ok'); await settle(page);
+  const s = await stateOf(page);
+  assert.ok(!s.goals.some(g => g.id === 'g_fit') && !s.milestones.some(m => m.goalId === 'g_fit'), 'goal + its milestones gone');
+  assert.equal(s.tasks.find(t => t.id === 'tg').goalId, '', 'task unlinked'); assert.equal(s.habits.find(h => h.id === 'h_read').goalId, '', 'habit unlinked');
+  assert.equal(s.totalXp, (await idbState(page)).totalXp, 'saved');
+  for (const v of VIEWS) await page.evaluate(v => { currentHabitId = 'h_read'; currentGoalId = S.goals[0].id; view = v; render(); }, v); // no view breaks on the removed links
+  // export/import keeps the result, reload keeps it
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const keep = JSON.stringify(await stateOf(page));
+  await page.evaluate(() => { S.tasks = []; S.goals = []; });
+  await page.setInputFiles('#st_impFile', await dl.path()); await page.waitForFunction(() => S.goals.length > 0);
+  assert.equal(JSON.stringify(await stateOf(page)), keep, 'export/import identical');
+  await settle(page); await reload(page); assert.equal(JSON.stringify(await stateOf(page)), keep, 'reload identical');
+  assert.deepEqual(dialogs, [], 'no native browser dialogs');
+}, { state: fixtureState() });
+
+test('R4 deletes: every other delete path and Reset use the app sheet (Czech, danger, cancel keeps), never confirm()', async ({ page }) => {
+  const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); d.dismiss(); });
+  await page.evaluate(() => { exerciseAddPreset('Plank'); exerciseAddPreset('Bench Press'); templateSave({ name: 'QA plan', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 2, repsMin: 5, weight: 50 }] }); S.profile.photo = 'data:image/png;base64,iVBORw0KGgo='; S.profile.avatar = 'photo'; });
+  const cases = [
+    ['habits list', "view='habits';render()", '#hlist .delbtn', 'S.habits.length', /Smazat návyk\?/],
+    ['workout', "fitnessTab='workouts';uiWorkoutView=null;view='fitness';render()", '#app .delbtn[aria-label^="Smazat: "]', 'S.workouts.length', /Smazat trénink\?[\s\S]*rekordy se přepočítají/],
+    ['meal', "view='nutrition';render()", '#app .meal-item .delbtn, #app .item .delbtn', 'S.meals.length', /Smazat jídlo\?/],
+    ['note', "view='notes';render()", '#app .delbtn', 'S.notes.length', /Smazat poznámku\?/],
+    ['journal', "view='journal';render()", '#app .delbtn', 'S.journal.length', /Smazat zápis\?/],
+    ['service', "view='car';render()", '[id^="svc-"] .delbtn', 'S.carServices.length', /Smazat servisní záznam\?/],
+    ['fuel', "view='car';render()", '[id^="fuel-"] .delbtn, [id^="fu-"] .delbtn', 'S.fuelEntries.length', /Smazat tankování\?/],
+    ['vehicle', "view='car';render()", '#app .delbtn[aria-label^="Smazat: "]', 'S.vehicles.length', /Smazat vozidlo\?[\s\S]*servis \(\d+\) a tankování \(\d+\)/],
+    ['subscription', "view='subscriptions';render()", '#app .item .delbtn', 'S.subscriptions.length', /Smazat předplatné\?/],
+    ['event', "view='calendar';render()", '#app .delbtn', 'S.events.length', /Smazat událost\?/],
+    ['sleep', "healthTab='sleep';view='health';render()", '#app .item .delbtn', 'S.sleepLog.length', /Záznam spánku z/],
+    ['weight', "healthTab='weight';view='health';render()", '#app .item .delbtn', 'S.weightLog.length', /Záznam hmotnosti z/],
+    ['steps', "healthTab='steps';view='health';render()", '#app .item .delbtn', 'S.stepsLog.length', /Záznam kroků z/],
+    ['heart', "healthTab='heartrate';view='health';render()", '#app .item .delbtn', 'S.heartRateLog.length', /Záznam tepu z/],
+    ['active', "healthTab='activecal';view='health';render()", '#app .item .delbtn', 'S.activeCaloriesLog.length', /Záznam aktivních kalorií z/],
+    ['planner block', "closeSheets();openPlannerForm(S.plannerBlocks.find(b=>b.id==='pb_call'))", '#pb_delete', 'S.plannerBlocks.length', /Smazat blok\?[\s\S]*se nesmažou/],
+    ['exercise', "closeSheets();openExerciseForm(exerciseFind('Plank'))", '#ex_delete', 'S.exerciseLibrary.filter(x=>!x.archived).length', /Smazat cvik\?[\s\S]*jen se archivuje/],
+    ['template', "closeSheets();openTemplateForm(S.workoutTemplates[0])", '#tp_delete', 'S.workoutTemplates.length', /Smazat šablonu\?/],
+    ['photo', "closeSheets();openAvatarPicker()", '#avRemovePhoto', "(S.profile.photo?1:0)", /Odebrat fotku\?/],
+  ];
+  const missing = [];
+  for (const [name, setup, sel, count, re] of cases) {
+    const open = async () => { await page.evaluate(setup => { closeSheets(); eval(setup); }, setup); const b = page.locator(sel).first(); if (!await b.count()) return false; await b.scrollIntoViewIfNeeded(); await b.click(); return true; };
+    const n0 = await page.evaluate(c => eval(c), count);
+    if (!await open()) { missing.push(name); continue; }
+    await page.waitForSelector('.cf-sheet');
+    assert.match(await page.locator('.cf-sheet').innerText(), re, name);
+    assert.equal(await page.locator('#cf_ok.danger').count(), 1, name + ': danger button');
+    await page.click('#cf_cancel');
+    assert.equal(await page.evaluate(c => eval(c), count), n0, name + ': cancel keeps');
+    await open(); await page.click('#cf_ok');
+    assert.equal(await page.evaluate(c => eval(c), count), n0 - 1, name + ': confirm deletes');
+  }
+  assert.deepEqual(missing, [], 'every delete control was found');
+  // Reset: the same two steps; cancelling either keeps everything
+  await page.evaluate(() => { closeSheets(); view = 'settings'; render(); });
+  await page.click('#st_reset'); assert.match(await page.locator('.cf-sheet').innerText(), /Smazat všechna data\?[\s\S]*zálohu/);
+  await page.click('#cf_cancel'); assert.ok(await page.evaluate(() => S.tasks.length > 0));
+  await page.click('#st_reset'); await page.click('#cf_ok'); assert.match(await page.locator('.cf-sheet').innerText(), /Opravdu smazat vše\?/);
+  await page.click('#cf_cancel'); assert.ok(await page.evaluate(() => S.tasks.length > 0 && S.settings.onboarded !== false), 'second step cancel keeps data');
+  await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); await settle(page);
+  assert.equal((await idbState(page)).tasks.length, 0, 'reset wiped and saved'); assert.ok(await page.locator('.sheet .ob').count() > 0, 'onboarding again');
+  assert.deepEqual(dialogs, [], 'no native browser dialogs');
+}, { state: fixtureState() });
+
+test('R5 performance: 1 500 tasks / 25 000 XP entries render fast with results identical to the full history scan; history is kept', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    for (let i = 0; i < 1500; i++) S.tasks.push({ id: 'bt' + i, title: 'T' + i, priority: 'Medium', dueDate: addDays(todayStr(), -(i % 365)), done: true, createdAt: 1 });
+    for (let i = 0; i < 25000; i++) S.xpLog.push({ id: 'x' + i, amount: 10, reason: 'Task: T', ts: Date.now() - i * 60000, key: `task:bt${i % 1500}:${addDays(todayStr(), -(i % 365))}` });
+    // reference: the pre-pass formula (linear xpLog scan per task)
+    const ref = D => { const due = S.tasks.filter(t => t.dueDate === D); const late = S.tasks.filter(t => t.done && t.dueDate && t.dueDate < D && S.xpLog.some(x => x.key === `task:${t.id}:${D}`));
+      const items = [...due, ...late]; const open = S.tasks.filter(t => !t.done && t.dueDate && t.dueDate < D).length; if (!items.length) return { score: null, reason: 'none_planned', openOverdue: open };
+      let wA = 0, wD = 0, d = 0; items.forEach(t => { const w = DAILY_SCORE_PRIORITY_WEIGHT[t.priority] || 1; wA += w; if (t.done) { wD += w; d++; } }); return { score: Math.round(wD / wA * 100), done: d, total: items.length, lateDone: late.length, openOverdue: open }; };
+    const days = [0, 1, 2, 7, 30, 100, 364].map(k => addDays(todayStr(), -k));
+    const same = days.every(D => JSON.stringify(dailyScoreTasks(D)) === JSON.stringify(ref(D)));
+    // the index follows appends (grantXp), replacement (import/reset) and stays exact
+    grantXp(5, 'late', null, `task:bt3:${todayStr()}`); const afterAppend = JSON.stringify(dailyScoreTasks(todayStr())) === JSON.stringify(ref(todayStr()));
+    const dup = grantXp(5, 'late', null, `task:bt3:${todayStr()}`) === false;
+    const t0 = performance.now(); for (let i = 0; i < 3; i++) { view = 'home'; render(); } const home = (performance.now() - t0) / 3;
+    const t1 = performance.now(); view = 'statistics'; render(); const stats = performance.now() - t1;
+    const xs = S.xpLog.length;
+    return { same, afterAppend, dup, home, stats, xs };
+  });
+  assert.ok(r.same && r.afterAppend, 'dailyScoreTasks identical to the full scan'); assert.ok(r.dup, 'grantXp stays idempotent');
+  console.log(`      R5: Home ${r.home.toFixed(1)} ms, Statistics ${r.stats.toFixed(1)} ms`);
+  assert.ok(r.home < 250, `Home render ${r.home.toFixed(0)} ms (was ~2 400 ms)`); assert.ok(r.stats < 800, `Statistics render ${r.stats.toFixed(0)} ms (was ~4 900 ms)`);
+  // export/import keeps the whole XP history; the index is rebuilt for the imported log
+  await persist(page); await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.equal(exported.xpLog.length, r.xs, 'export keeps every XP entry');
+  await page.evaluate(() => { S.xpLog = []; });
+  await page.setInputFiles('#st_impFile', await dl.path()); await page.waitForFunction(n => S.xpLog.length === n, r.xs);
+  assert.ok(await page.evaluate(() => xpKeyIndex().has(`task:bt3:${todayStr()}`) && xpKeyIndex().size === new Set(S.xpLog.map(x => x.key)).size), 'index follows the imported log');
+  await page.evaluate(() => { S = defaultState(); }); assert.equal(await page.evaluate(() => xpKeyIndex().size), 0, 'index follows reset');
+}, { state: fixtureState() });
+
+test('R6 minute tick: no full render; search, focus, typing, workout, sheet, scroll survive; clock parts update; a new day re-renders once when idle', async ({ page }) => {
+  const mark = () => page.evaluate(() => { window.__root = document.querySelector('#app').firstElementChild; });
+  const same = () => page.evaluate(() => document.querySelector('#app').firstElementChild === window.__root);
+  const runTick = async ms => { if (ms != null) await page.clock.setFixedTime(NOW + ms); await page.evaluate(() => { uiMinuteTick(); checkBrowserNotifications(); }); };
+  // Search: query + results + focus
+  await go(page, 'search'); await page.fill('#gs', 'read'); const hits = await page.locator('#gsRes .search-hit').count(); await mark();
+  await runTick(60000);
+  assert.ok(await same(), 'search: no re-render'); assert.equal(await page.inputValue('#gs'), 'read'); assert.equal(await page.locator('#gsRes .search-hit').count(), hits);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'gs', 'search keeps focus');
+  // Settings: typing in the name field keeps focus and the unsaved text
+  await page.evaluate(() => { view = 'settings'; render(); }); await page.click('#st_name'); await page.keyboard.type('XY'); await mark();
+  const typed = await page.inputValue('#st_name'); await runTick(120000);
+  assert.ok(await same()); assert.equal(await page.evaluate(() => document.activeElement.id), 'st_name'); assert.equal(await page.inputValue('#st_name'), typed);
+  // Workout in progress: a half-typed weight survives
+  await page.evaluate(() => { exerciseAddPreset('Bench Press'); const t = templateSave({ name: 'P', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 2, repsMin: 5, weight: 50 }] }).template.id; workoutStart({ templateId: t }); uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  const inp = page.locator('.ws-list .ws-row [data-f="weight"]').first(); await inp.click(); await inp.press('Control+a'); await page.keyboard.type('77.5'); await mark();
+  await runTick(180000);
+  assert.ok(await same()); assert.equal(await inp.inputValue(), '77.5'); assert.equal(await page.evaluate(() => document.activeElement.dataset.f), 'weight');
+  await inp.press('Tab'); assert.equal(await page.evaluate(() => activeWorkout().entries[0].sets[0].weight), 77.5, 'value saved normally on change');
+  // Notes form sheet: typing survives
+  await page.evaluate(() => { view = 'notes'; render(); openNoteForm(); }); const nf = page.locator('.sheet input, .sheet textarea').first(); await nf.click(); await page.keyboard.type('draft'); await mark();
+  await runTick(240000); assert.ok(await same()); assert.equal(await nf.inputValue(), 'draft'); assert.equal(await page.locator('.sheet').count(), 1, 'sheet stays open');
+  await page.evaluate(() => closeSheets());
+  // Planner: scroll position kept, now-line moves with the clock (10:00 -> 10:30)
+  await page.setViewportSize({ width: 390, height: 500 });
+  await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); }); await runTick(0);
+  await page.evaluate(() => window.scrollTo(0, 300)); const top0 = await page.evaluate(() => parseInt(document.querySelector('#plTimeline .pl-now').style.top)); await mark();
+  await runTick(30 * 60000);
+  assert.ok(await same()); assert.equal(await page.evaluate(() => window.scrollY), 300, 'scroll kept');
+  assert.equal(await page.evaluate(() => parseInt(document.querySelector('#plTimeline .pl-now').style.top)) - top0, Math.round(30 * 1.1), 'now-line moved 30 min');
+  // Home: greeting follows the hour, Today's plan card follows the clock; the rest of Home is the same nodes
+  await page.evaluate(() => { view = 'home'; render(); }); await runTick(0); await mark();
+  const g0 = await page.locator('.hud-greet').innerText();
+  await runTick(7 * 3600000); // +7 h: evening (Europe/Prague)
+  assert.ok(await same(), 'home: no re-render'); assert.notEqual(await page.locator('.hud-greet').innerText(), g0); assert.match(await page.locator('.hud-greet').innerText(), /Dobrý večer/);
+  assert.equal(await page.locator('.plan-card.is-home').count(), 1, 'plan card still there (replaced in place)');
+  const planNow = await page.evaluate(() => { const r = [...document.querySelectorAll('.plan-card.is-home .plan-row')].map(n => n.className); return r; });
+  assert.ok(Array.isArray(planNow));
+  // New day while the user types: deferred; once idle, one full render keeps the scroll position
+  await page.evaluate(() => { view = 'search'; render(); }); await page.fill('#gs', 'water'); await mark();
+  await runTick(15 * 3600000); // next day 01:00
+  assert.ok(await same(), 'day change deferred while a search is typed'); assert.equal(await page.inputValue('#gs'), 'water');
+  await page.fill('#gs', ''); await page.evaluate(() => { document.activeElement.blur(); view = 'home'; render(); window.scrollTo(0, 200); }); await mark();
+  await runTick(15 * 3600000 + 60000);
+  assert.ok(!(await same()), 'day change: one full render when idle'); assert.equal(await page.evaluate(() => window.scrollY), 200, 'scroll kept');
+  await mark(); await runTick(15 * 3600000 + 120000); assert.ok(await same(), 'then partial updates again');
+  // The real interval body is guarded and calls the partial tick only
+  const src = await page.evaluate(() => [...document.scripts].map(s => s.textContent).join('\n'));
+  assert.match(src, /setInterval\(\(\)=>\{ if\(!S\|\|!tabActive\) return; uiMinuteTick\(\); checkBrowserNotifications\(\); \}, 60000\);/);
+  assert.doesNotMatch(src, /setInterval\(\(\)=>\{ render\(\); checkBrowserNotifications\(\); \}, 60000\)/);
+}, { state: fixtureState() });
+
+test('R7 layout: the "open elsewhere" screen and delete sheets at 320-1440 px, dark + light: no overflow, 44 px buttons, no duplicate ids', async ({ page }) => {
+  const bad = [];
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate(t => { S.settings.theme = t; applyTheme(); }, theme);
+    for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      for (const f of ["uiTabBlocked(S)", "uiDelConfirm('goal',{name:'Get in shape and stay there for the whole year',n:{milestones:2,tasks:3,habits:1}},()=>{})", "uiDelConfirm('vehicle',{name:'Car',n:{services:1,fuel:2}},()=>{})", 'doReset()']) {
+        await page.evaluate(f => { closeSheets(); uiTabUnblocked(); eval(f); }, f);
+        const r = await page.evaluate(() => { const vw = document.documentElement.clientWidth; const root = document.getElementById('tabLock') || document.querySelector('.sheet');
+          const over = [...root.querySelectorAll('*')].filter(n => { const b = n.getBoundingClientRect(); return b.width && (b.right > vw + 1 || b.left < -1); }).length;
+          const small = [...root.querySelectorAll('button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 44 && !b.classList.contains('sheet-x')).map(b => b.id || b.className);
+          const ids = {}; document.querySelectorAll('[id]').forEach(n => { ids[n.id] = (ids[n.id] || 0) + 1; });
+          return { over, small, dup: Object.keys(ids).filter(k => ids[k] > 1), page: document.documentElement.scrollWidth - vw }; });
+        if (r.over || r.page > 0) bad.push(`${f.slice(0, 20)}@${width}/${theme}: overflow ${r.over}/${r.page}`);
+        if (r.small.length) bad.push(`${f.slice(0, 20)}@${width}/${theme}: small ${r.small}`);
+        if (r.dup.length) bad.push(`${f.slice(0, 20)}@${width}/${theme}: dup ${r.dup}`);
+      }
+    }
+  }
+  await page.evaluate(() => { closeSheets(); uiTabUnblocked(); });
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }
@@ -4066,7 +4343,7 @@ if (args.includes('--screens')) {
       const o = await openApp({ state: t.opts?.state ?? null, errors });
       context = o.context;
       await t.fn({ page: o.page }, { note: m => tnotes.push(m) });
-      await o.page.waitForTimeout(50);
+      if (!o.page.isClosed()) await o.page.waitForTimeout(50); // R1 closes its first tab on purpose
       if (errors.length) throw new Error('console/page errors:\n      ' + errors.join('\n      '));
       console.log(`  ✓ ${t.name} (${Date.now() - started} ms)`);
     } catch (e) {
