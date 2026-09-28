@@ -317,6 +317,13 @@ label:has(input[type="checkbox"]){display:flex;align-items:center;min-height:var
 .attr .dot,.dot{width:36px;height:36px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;letter-spacing:.03em;color:#0a0b0f;flex:none}
 
 /* Toasts: queued + grouped by uiToast (see toast()) */
+.cf-list{margin:-6px 0 16px;padding-left:20px;color:var(--sub);font-size:var(--fs-sm,14px);line-height:1.45}
+.cf-list li+li{margin-top:4px}
+.tab-lock{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:calc(16px + var(--pad-t,0px)) 16px 16px;overflow:auto}
+.tab-lock-card{width:100%;max-width:440px;margin:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.tab-lock-card h2{margin:0;font-size:var(--fs-h2,20px);line-height:1.25}
+.tab-lock-card .sub,.tab-lock-card .helper-text{margin:0}
+.tab-lock-card .btn{width:100%;min-height:44px}
 .toastwrap{position:fixed;top:calc(10px + var(--pad-t));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:50;pointer-events:none;padding:0 16px}
 .toast{max-width:min(420px,100%);background:var(--glass);border:1px solid var(--line);color:var(--text);padding:10px 16px;border-radius:16px;font-size:14px;font-weight:650;
   box-shadow:var(--shadow-elevated);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);display:flex;align-items:center;gap:10px;
@@ -1226,13 +1233,22 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 <script>
 /* ---------- STORAGE (IndexedDB via minimal wrapper, single "state" doc) ---------- */
 const DB_NAME='lifeos', STORE='kv';
-function openDB(){return new Promise((res,rej)=>{
-  const r=indexedDB.open(DB_NAME,1);
-  r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
-  r.onsuccess=()=>res(r.result);
-  r.onerror=()=>rej(r.error);
-  r.onblocked=()=>rej(new Error('IndexedDB open blocked (another tab holding an older connection)'));
-});}
+// Core reliability (A1): one connection is opened once and reused. A save started while the page is being
+// closed (pagehide/freeze flushSave) then issues its write immediately, in that same event -- it no longer
+// waits for a fresh asynchronous open that an unloading page may never finish, so the write is queued in
+// IndexedDB before the tab lock is released and a waiting tab can read.
+let dbConn=null, dbReady=null;
+function openDB(){
+  if(dbConn) return dbConn;
+  dbConn=new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
+    r.onsuccess=()=>{ const db=r.result; db.onclose=()=>{ dbConn=dbReady=null; }; db.onversionchange=()=>{ db.close(); dbConn=dbReady=null; }; dbReady=db; res(db); };
+    r.onerror=()=>{ dbConn=null; rej(r.error); };
+    r.onblocked=()=>{ dbConn=null; rej(new Error('IndexedDB open blocked (another tab holding an older connection)')); };
+  });
+  return dbConn;
+}
 async function idbGet(k){
   const db=await openDB(); // let failures here propagate to the caller (boot() retries on this)
   return new Promise((res,rej)=>{
@@ -1242,10 +1258,14 @@ async function idbGet(k){
 }
 async function idbSet(k,v){
   try{
-    const db=await openDB();
+    // Core reliability (A1): synchronous when the connection is open; the write is committed explicitly
+    // and only counts as saved once its transaction is complete (durable before a tab hand-over).
+    let db=dbReady||await openDB(), tr;
+    try{ tr=db.transaction(STORE,'readwrite'); }catch(e){ dbConn=dbReady=null; db=await openDB(); tr=db.transaction(STORE,'readwrite'); }
     await new Promise((res,rej)=>{
-      const tx=db.transaction(STORE,'readwrite').objectStore(STORE).put(v,k);
-      tx.onsuccess=()=>res(true); tx.onerror=()=>rej(tx.error);
+      tr.oncomplete=()=>res(true); tr.onabort=()=>rej(tr.error||new Error('save aborted'));
+      tr.objectStore(STORE).put(v,k);
+      if(tr.commit) tr.commit();
     });
     return true;
   }catch(e){
@@ -1891,8 +1911,8 @@ function seedData(){
 
 let S = null;
 let saveTimer=null;
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{idbSet('state',S);},250);}
-function flushSave(){ if(!S) return; clearTimeout(saveTimer); idbSet('state',S); }
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{ if(tabActive) idbSet('state',S); },250);}
+function flushSave(){ if(!S||!tabActive) return; clearTimeout(saveTimer); idbSet('state',S); }
 // Safety net: iOS suspends page JS almost immediately on backgrounding/closing, so a pending
 // debounced setTimeout can be lost entirely if the app is closed shortly after an edit.
 // Force an immediate (non-debounced) write the moment the page is hidden or torn down.
@@ -1900,6 +1920,66 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSave
 window.addEventListener('pagehide',flushSave);
 window.addEventListener('beforeunload',flushSave);
 window.addEventListener('freeze',flushSave); // Android/Chrome bfcache lifecycle
+
+/* ---- Core reliability (A1): one active tab ----
+   The whole state is one IndexedDB record, so two tabs saving independently silently overwrite each
+   other. A Web Lock ("lifeos-active-tab") makes exactly one tab/window the owner: only the owner boots
+   from IndexedDB and saves. Any other tab shows a clear "open elsewhere" screen, never loads or writes
+   data, and waits in the lock queue: when the owner closes, it takes over automatically and reads the
+   latest saved state. "Use here" asks the owner over a BroadcastChannel to save and step down first.
+   A lock (not only messages) because the browser releases it by itself when a tab closes, crashes or
+   is discarded -- no heartbeat or stale "active" flag. Without Web Locks the app behaves as before. */
+const TAB_LOCK='lifeos-active-tab';
+let tabActive=true, tabRelease=null, tabChannel=null;
+try{ tabChannel=new BroadcastChannel('lifeos-tabs'); }catch(e){}
+function tabHold(){ return new Promise(r=>{ tabRelease=r; }); }
+function tabGuardAcquire(){
+  if(!(navigator.locks&&navigator.locks.request)) return Promise.resolve(true);
+  return new Promise(resolve=>{
+    try{
+      navigator.locks.request(TAB_LOCK,{ifAvailable:true},lock=>{
+        if(lock){ resolve(true); return tabHold(); }
+        tabActive=false; uiTabBlocked(null);
+        navigator.locks.request(TAB_LOCK,()=>{ tabActive=true; uiTabUnblocked(); resolve(true); return tabHold(); });
+        return null;
+      }).catch(()=>{ tabActive=true; resolve(true); });
+    }catch(e){ tabActive=true; resolve(true); }
+  });
+}
+// Owner side of "Use here": save everything first, then hand the lock over and wait to get it back.
+async function tabStepDown(){
+  if(!tabActive||!tabRelease) return;
+  clearTimeout(saveTimer);
+  if(S) await idbSet('state',S);
+  tabActive=false; closeSheets(); uiTabBlocked(S);
+  const release=tabRelease; tabRelease=null;
+  navigator.locks.request(TAB_LOCK,()=>{ location.reload(); return tabHold(); }); // back to owner: reload the latest data
+  release();
+}
+if(tabChannel) tabChannel.onmessage=e=>{ if(e.data&&e.data.type==='takeover') tabStepDown(); };
+function uiTabBlocked(state){
+  const show=st=>{
+    const en=!!(st&&st.settings&&st.settings.language==='en');
+    if(!S&&st&&st.settings){ const th=st.settings.theme; document.documentElement.setAttribute('data-theme',th==='light'||th==='dark'?th:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')); }
+    document.getElementById('tabLock')?.remove();
+    const box=el(`<div id="tabLock" class="tab-lock" role="alertdialog" aria-modal="true" aria-labelledby="tabLockT" aria-describedby="tabLockD"><div class="card tab-lock-card">
+      <span class="icon-circle" aria-hidden="true">${uiIcon('lock',22)}</span>
+      <h2 id="tabLockT">${en?'LifeOS is open in another tab':'LifeOS je otevřený v jiné záložce'}</h2>
+      <p class="sub" id="tabLockD">${en?'To keep your data from being overwritten, only one tab or window can use LifeOS at a time. Continue there, or use it here -- the other tab saves its data first.':'Aby se data navzájem nepřepsala, může LifeOS v jednu chvíli používat jen jedna záložka nebo okno. Pokračujte tam, nebo ho používejte zde – druhá záložka svá data nejdřív uloží.'}</p>
+      <button class="btn" id="tabTakeover">${en?'Use here':'Používat zde'}</button>
+      <p class="helper-text">${en?'When the other tab closes, LifeOS opens here automatically.':'Po zavření druhé záložky se LifeOS otevře tady sám.'}</p>
+    </div></div>`);
+    box.querySelector('#tabTakeover').onclick=()=>{ const b=box.querySelector('#tabTakeover'); b.disabled=true; b.textContent=en?'Taking over…':'Přebírám…'; if(tabChannel) tabChannel.postMessage({type:'takeover'}); setTimeout(()=>{ if(!tabActive){ b.disabled=false; b.textContent=en?'Use here':'Používat zde'; } },4000); };
+    document.querySelectorAll('body > :not(#tabLock):not(script)').forEach(n=>{ n.inert=true; });
+    document.body.appendChild(box);
+    box.querySelector('#tabTakeover').focus({preventScroll:true});
+  };
+  if(state) show(state); else { show(null); idbGet('state').then(st=>{ if(!tabActive&&st) show(st); }).catch(()=>{}); }
+}
+function uiTabUnblocked(){
+  document.getElementById('tabLock')?.remove();
+  document.querySelectorAll('body > *').forEach(n=>{ n.inert=false; });
+}
 
 function addDays(dstr,n){const d=new Date(dstr+'T00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
@@ -2073,7 +2153,7 @@ function checkAchievements(){
   });
 }
 
-function xpToday(){const d=todayStr();return S.xpLog.filter(x=>new Date(x.ts).toDateString()===new Date().toDateString()).reduce((a,b)=>a+b.amount,0);}
+function xpToday(){const d=todayStr(),day=new Date().toDateString();return S.xpLog.filter(x=>new Date(x.ts).toDateString()===day).reduce((a,b)=>a+b.amount,0);}
 
 /* ---------- TOASTS ---------- */
 /* ---------- TOASTS (Phase 8B: queued, grouped, localized presentation) ----------
@@ -2379,7 +2459,7 @@ function renderPlanner(){
   let from=6*60, to=22*60;
   items.forEach(it=>{ from=Math.min(from,Math.floor(it.start/60)*60); to=Math.max(to,Math.ceil(it.end/60)*60); });
   const PX=1.1, lay=plannerLayout(items);
-  const tl=el(`<section class="card pl-timeline" aria-label="${dayLabel}"><div class="pl-grid" id="plTimeline" style="height:${Math.round((to-from)*PX)}px"></div></section>`);
+  const tl=el(`<section class="card pl-timeline" aria-label="${dayLabel}"><div class="pl-grid" id="plTimeline" data-day="${D}" data-from="${from}" data-to="${to}" data-px="${PX}" style="height:${Math.round((to-from)*PX)}px"></div></section>`);
   const grid=tl.querySelector('#plTimeline');
   for(let h=from;h<=to;h+=60) grid.appendChild(el(`<div class="pl-hour" style="top:${Math.round((h-from)*PX)}px"><span>${plannerMinToTime(Math.min(h,1439)).replace('23:59','24:00')}</span></div>`));
   if(D===today){ const n=new Date(), nm=n.getHours()*60+n.getMinutes(); if(nm>=from&&nm<=to) grid.appendChild(el(`<div class="pl-now" style="top:${Math.round((nm-from)*PX)}px" aria-hidden="true"></div>`)); }
@@ -2505,7 +2585,7 @@ function openPlannerForm(existing,preset){
     closeSheets(); uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved'));
   };
   const del=inner.querySelector('#pb_delete');
-  if(del) del.onclick=()=>{ if(!confirm(uiPlT('confirm_del'))) return; plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); };
+  if(del) del.onclick=()=>uiDelConfirm('block',{name:b.title},()=>{ plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); });
   openSheet(inner);
 }
 // ---- Phase 9: Daily Score presentation (reads dailyScore()/S.dailyScores only) ----
@@ -3281,7 +3361,7 @@ function taskItem(t){
   it.querySelector('.editBtn').onclick=()=>openTaskEditForm(t);
   const lg=it.querySelector('.linkGoal'); if(lg) lg.onclick=(ev)=>{ev.stopPropagation();searchNavigate('goal',linkedGoal);};
   const pl=it.querySelector('.planLink'); if(pl) pl.onclick=(ev)=>{ ev.stopPropagation(); uiOpenPlanner(planned.date); };
-  it.querySelector('.delbtn').onclick=()=>{S.tasks=S.tasks.filter(x=>x.id!==t.id);scheduleSave();render();};
+  it.querySelector('.delbtn').onclick=()=>uiDelConfirm('task',{name:t.title,n:{blocks:(S.plannerBlocks||[]).filter(b=>b.taskId===t.id).length}},()=>{S.tasks=S.tasks.filter(x=>x.id!==t.id);scheduleSave();render();});
   return it;
 }
 function uiShowTaskDone(it){
@@ -3405,7 +3485,7 @@ function habitItem(h){
   }
   it.querySelector('.habitTitle').onclick=()=>{currentHabitId=h.id;view='habitDetail';render();};
   const lg=it.querySelector('.linkGoal'); if(lg) lg.onclick=(ev)=>{ev.stopPropagation();searchNavigate('goal',linkedGoal);};
-  it.querySelector('.delbtn').onclick=()=>{S.habits=S.habits.filter(x=>x.id!==h.id);scheduleSave();render();};
+  it.querySelector('.delbtn').onclick=()=>uiDelConfirm('habit',{name:h.name,goal:(S.goals.find(g=>g.id===h.goalId)||{}).title},()=>{S.habits=S.habits.filter(x=>x.id!==h.id);scheduleSave();render();});
   return it;
 }
 function goalMini(g){
@@ -3552,10 +3632,9 @@ function renderHabits(){
       card.querySelector('.check').onclick=()=>toggleHabitDay(h);
     }
     card.querySelector('.editBtn').onclick=()=>openHabitForm(h);
-    card.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete habit "${h.name}"? This removes its history permanently.`)) return;
+    card.querySelector('.delbtn').onclick=()=>uiDelConfirm('habit',{name:h.name,goal:(S.goals.find(g=>g.id===h.goalId)||{}).title},()=>{
       S.habits=S.habits.filter(x=>x.id!==h.id);scheduleSave();render();
-    };
+    });
     list.appendChild(card);
   });
   return wrap;
@@ -3712,11 +3791,15 @@ function renderGoals(){
     if(mc) mc.onclick=(e)=>{e.stopPropagation();completeGoal(g);render();};
     card.querySelector('.delbtn').onclick=(e)=>{
       e.stopPropagation();
-      // cascade: unlink tasks and remove milestones that belonged only to this goal
-      S.tasks.forEach(t=>{ if(t.goalId===g.id) t.goalId=''; });
-      S.milestones=S.milestones.filter(m=>m.goalId!==g.id);
-      S.goals=S.goals.filter(x=>x.id!==g.id);
-      scheduleSave();render();
+      const n={milestones:S.milestones.filter(m=>m.goalId===g.id).length,tasks:S.tasks.filter(t=>t.goalId===g.id).length,habits:S.habits.filter(h=>h.goalId===g.id).length};
+      uiDelConfirm('goal',{name:g.title,n},()=>{
+        // cascade: unlink tasks and habits, remove milestones that belonged only to this goal
+        S.tasks.forEach(t=>{ if(t.goalId===g.id) t.goalId=''; });
+        S.habits.forEach(h=>{ if(h.goalId===g.id) h.goalId=''; });
+        S.milestones=S.milestones.filter(m=>m.goalId!==g.id);
+        S.goals=S.goals.filter(x=>x.id!==g.id);
+        scheduleSave();render();
+      });
     };
     list.appendChild(card);
   });
@@ -3826,7 +3909,7 @@ function renderGoalDetail(){
     </div>`);
     it.querySelector('.check').onclick=()=>{toggleMilestone(m);render();};
     it.querySelector('.editMs').onclick=()=>openMilestoneForm(g.id,m);
-    it.querySelector('.delbtn').onclick=()=>{S.milestones=S.milestones.filter(x=>x.id!==m.id);scheduleSave();render();};
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('milestone',{name:m.title},()=>{S.milestones=S.milestones.filter(x=>x.id!==m.id);scheduleSave();render();});
     msList.appendChild(it);
   });
   wrap.querySelector('#addMs').onclick=()=>openMilestoneForm(g.id);
@@ -3975,7 +4058,7 @@ function openAvatarPicker(){
   inner.querySelector('#avUpload').onclick=()=>file.click();
   file.onchange=()=>{ const f=file.files&&file.files[0]; if(f){ bg.remove(); openPhotoCrop(f); } };
   const rm=inner.querySelector('#avRemovePhoto');
-  if(rm) rm.onclick=()=>{ delete S.profile.photo; if(S.profile.avatar==='photo') S.profile.avatar='svg:mage'; scheduleSave(); bg.remove(); render(); };
+  if(rm) rm.onclick=()=>uiDelConfirm('photo',{},()=>{ delete S.profile.photo; if(S.profile.avatar==='photo') S.profile.avatar='svg:mage'; scheduleSave(); bg.remove(); render(); });
 }
 function openPhotoCrop(file){
   const cs=uiLang()==='cs';
@@ -6031,10 +6114,9 @@ function openExerciseForm(existing){
     if(!r.ok) return;
     scheduleSave(); closeSheets(); render(); toast(uiFitT('saved'));
   };
-  if(x) inner.querySelector('#ex_delete').onclick=()=>{
-    if(!confirm(`${uiFitT('del')}: "${x.name}"?`)) return;
+  if(x) inner.querySelector('#ex_delete').onclick=()=>uiDelConfirm('exercise',{name:x.name},()=>{
     const res=exerciseDelete(x.id); scheduleSave(); closeSheets(); render(); toast(uiFitT(res==='archived'?'archived_t':'deleted'));
-  };
+  });
   openSheet(inner);
 }
 function openExerciseCatalog(){
@@ -6150,10 +6232,9 @@ function openTemplateForm(existing){
       const inp=m[2]==='exerciseId'?row.querySelector('.tp-ex'):row.querySelector(`[data-f="${m[2]}"]`); if(inp) inp.setAttribute('aria-invalid','true');
     });
   };
-  if(t) inner.querySelector('#tp_delete').onclick=()=>{
-    if(!confirm(`${uiTplT('del')}: "${t.name}"?`)) return;
+  if(t) inner.querySelector('#tp_delete').onclick=()=>uiDelConfirm('template',{name:t.name},()=>{
     templateDelete(t.id); scheduleSave(); closeSheets(); render(); toast(uiTplT('deleted'));
-  };
+  });
   openSheet(inner);
 }
 /* ---- Phase 11A step 4: active workout UI. Presentation only -- every change goes through the
@@ -6220,8 +6301,47 @@ function uiEnsureWkTimer(){
     els.forEach(e=>{ e.textContent=uiFmtSec((Date.now()-Number(e.dataset.elapsed))/1000); });
   },1000);
 }
+// Core reliability (A3): every irreversible delete asks first in the app's own sheet (never the browser's
+// English confirm()) and says what goes, whether its history goes and what happens to linked data.
+function uiDelConfirm(kind,o,onOk){
+  const cs=uiLang()==='cs', q=o.name?(cs?`„${o.name}“`:`"${o.name}"`):'', n=o.n||{};
+  const pl=(k,a,b,c)=>k===1?a:k>=2&&k<=4?b:c; // Czech plural forms
+  const xp=cs?'Už získané XP a postava zůstávají beze změny.':'XP already earned and your character stay unchanged.';
+  const T={
+    task:[cs?'Smazat úkol?':'Delete task?',cs?`Úkol ${q} bude trvale smazán.`:`The task ${q} will be permanently deleted.`,
+      [xp,n.blocks?(cs?`Bloky v plánovači, které na něj odkazují (${n.blocks}), zůstanou – jen bez propojení.`:`Planner blocks linking to it (${n.blocks}) stay, just without the link.`):'']],
+    habit:[cs?'Smazat návyk?':'Delete habit?',cs?`Návyk ${q} bude trvale smazán včetně celé historie plnění a série.`:`The habit ${q} will be permanently deleted, including its whole completion history and streak.`,
+      [xp,o.goal?(cs?`Cíl „${o.goal}“ zůstane, jen bez tohoto návyku.`:`The goal "${o.goal}" stays, just without this habit.`):'']],
+    goal:[cs?'Smazat cíl?':'Delete goal?',cs?`Cíl ${q} bude trvale smazán.`:`The goal ${q} will be permanently deleted.`,
+      [n.milestones?(cs?`${n.milestones===1?'Smaže':'Smažou'} se i jeho ${n.milestones} ${pl(n.milestones,'milník','milníky','milníků')}.`:`Its ${n.milestones} milestone${n.milestones===1?'':'s'} will be deleted too.`):'',
+       n.tasks?(cs?`${pl(n.tasks,'Propojený úkol','Propojené úkoly','Propojených úkolů')} (${n.tasks}) zůstane – jen bez vazby na cíl.`.replace('zůstane',n.tasks===1?'zůstane':'zůstanou'):`Linked tasks (${n.tasks}) stay, just without the goal.`):'',
+       n.habits?(cs?`${pl(n.habits,'Propojený návyk','Propojené návyky','Propojených návyků')} (${n.habits}) ${n.habits===1?'zůstane':'zůstanou'} – jen bez vazby na cíl.`:`Linked habits (${n.habits}) stay, just without the goal.`):'',xp]],
+    milestone:[cs?'Smazat milník?':'Delete milestone?',cs?`Milník ${q} bude trvale smazán.`:`The milestone ${q} will be permanently deleted.`,[cs?'Cíl zůstane, jen bez tohoto milníku.':'The goal stays, just without this milestone.',xp]],
+    block:[cs?'Smazat blok?':'Delete block?',cs?`Blok ${q} bude z plánovače trvale smazán.`:`The block ${q} will be permanently removed from the planner.`,[cs?'Propojený úkol, cíl ani trénink se nesmažou.':'A linked task, goal or workout is not deleted.']],
+    workout:[cs?'Smazat trénink?':'Delete workout?',cs?`Trénink ${q} bude trvale smazán i se všemi sériemi.`:`The workout ${q} will be permanently deleted with all its sets.`,[cs?'Osobní rekordy se přepočítají ze zbývajících tréninků.':'Personal records are recalculated from the remaining workouts.',xp]],
+    exercise:[cs?'Smazat cvik?':'Delete exercise?',cs?`Cvik ${q} bude smazán z knihovny.`:`The exercise ${q} will be removed from the library.`,[cs?'Pokud ho používá trénink nebo šablona, jen se archivuje a jeho historie zůstane.':'If a workout or template uses it, it is only archived and its history stays.']],
+    template:[cs?'Smazat šablonu?':'Delete template?',cs?`Šablona ${q} bude trvale smazána.`:`The template ${q} will be permanently deleted.`,[cs?'Tréninky podle ní už odcvičené zůstanou beze změny.':'Workouts already done from it stay unchanged.']],
+    meal:[cs?'Smazat jídlo?':'Delete meal?',cs?`Jídlo ${q} bude trvale smazáno ze záznamu.`:`The meal ${q} will be permanently deleted from your log.`,[xp]],
+    note:[cs?'Smazat poznámku?':'Delete note?',cs?`Poznámka ${q} bude trvale smazána.`:`The note ${q} will be permanently deleted.`,[]],
+    journal:[cs?'Smazat zápis?':'Delete entry?',cs?`Zápis z ${o.name} bude trvale smazán.`:`The journal entry for ${o.name} will be permanently deleted.`,[]],
+    vehicle:[cs?'Smazat vozidlo?':'Delete vehicle?',cs?`Vozidlo ${q} bude trvale smazáno.`:`The vehicle ${q} will be permanently deleted.`,
+      [cs?`Smaže se i jeho historie: servis (${n.services||0}) a tankování (${n.fuel||0}).`:`Its history is deleted too: services (${n.services||0}) and fuel entries (${n.fuel||0}).`]],
+    service:[cs?'Smazat servisní záznam?':'Delete service record?',cs?`Servisní záznam${q?' '+q:''} bude trvale smazán.`:`The service record${q?' '+q:''} will be permanently deleted.`,[]],
+    fuel:[cs?'Smazat tankování?':'Delete fuel entry?',cs?'Záznam tankování bude trvale smazán a statistiky spotřeby se přepočítají.':'The fuel entry will be permanently deleted and consumption stats recalculated.',[]],
+    subscription:[cs?'Smazat předplatné?':'Delete subscription?',cs?`Předplatné ${q} bude trvale smazáno.`:`The subscription ${q} will be permanently deleted.`,[cs?'Už zapsané platby ve Financích zůstanou.':'Payments already recorded in Finance stay.']],
+    event:[cs?'Smazat událost?':'Delete event?',cs?`Událost ${q} bude trvale smazána z kalendáře.`:`The event ${q} will be permanently deleted from the calendar.`,[]],
+    health:[cs?'Smazat záznam?':'Delete entry?',cs?`Záznam ${o.name} bude trvale smazán.`:`The ${o.name} will be permanently deleted.`,[]],
+    photo:[cs?'Odebrat fotku?':'Remove photo?',cs?'Profilová fotka bude z tohoto zařízení smazána a avatar se vrátí na výchozí.':'The profile photo will be deleted from this device and the avatar goes back to the default.',[]],
+  }[kind];
+  closeSheets();
+  return uiConfirmSheet({title:T[0],text:T[1],details:T[2].filter(Boolean),ok:o.ok||(kind==='photo'?(cs?'Odebrat':'Remove'):(cs?'Smazat':'Delete')),danger:true},onOk);
+}
+function uiHealthDelName(kind,e){
+  const cs=uiLang()==='cs', L={sleep:['spánku','sleep entry'],weight:['hmotnosti','weight entry'],steps:['kroků','steps entry'],heart:['tepu','heart rate entry'],active:['aktivních kalorií','active calories entry']}[kind];
+  return cs?`${L[0]} z ${fmtDate(e.date)}`:`${L[1]} from ${fmtDate(e.date)}`;
+}
 function uiConfirmSheet(o,onOk){
-  const inner=el(`<div class="cf-sheet"><h3>${escapeHtml(o.title)}</h3><p class="sub">${escapeHtml(o.text)}</p>
+  const inner=el(`<div class="cf-sheet"><h3>${escapeHtml(o.title)}</h3><p class="sub">${escapeHtml(o.text)}</p>${o.details&&o.details.length?`<ul class="cf-list">${o.details.map(d=>`<li>${escapeHtml(d)}</li>`).join('')}</ul>`:''}
     <div class="btn-row"><button class="btn ghost" id="cf_cancel">${escapeHtml(o.cancel||uiWkT('cancel'))}</button><button class="btn${o.danger?' danger':''}" id="cf_ok">${escapeHtml(o.ok)}</button></div></div>`);
   inner.querySelector('#cf_cancel').onclick=()=>closeSheets();
   inner.querySelector('#cf_ok').onclick=()=>{ closeSheets(); onOk(); };
@@ -6574,10 +6694,9 @@ function renderFitness(){
       ${w.notes?`<div class="sub" style="margin-top:8px">${escapeHtml(w.notes)}</div>`:''}
     </div>`);
     it.querySelector('.editBtn').onclick=()=>{ if(Array.isArray(w.entries)){ uiWorkoutView={mode:'edit',id:w.id}; render(); window.scrollTo(0,0); } else openWorkoutForm(w); };
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete workout "${w.name}"? PRs will be recalculated from remaining workouts.`)) return;
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('workout',{name:w.name},()=>{
       S.workouts=S.workouts.filter(x=>x.id!==w.id);scheduleSave();render();toast('Workout deleted');
-    };
+    });
     list.appendChild(it);
   });
   wrap.querySelector('#addW').onclick=()=>openWorkoutForm();
@@ -6694,10 +6813,9 @@ function renderNutrition(){
       S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()});
       grantXp(10,'Meal logged',mealAttrProfile()); checkAchievements(); scheduleSave();render();toast('Meal repeated');
     };
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete "${m.name}"?`)) return;
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('meal',{name:m.name},()=>{
       S.meals=S.meals.filter(x=>x.id!==m.id);scheduleSave();render();toast('Meal deleted');
-    };
+    });
     ml.appendChild(it);
   });
   wrap.querySelector('#addMeal').onclick=()=>openMealForm();
@@ -6789,10 +6907,9 @@ function renderNotes(){
     it.querySelector('.pinB').onclick=()=>{n.pinned=!n.pinned;scheduleSave();render();};
     it.querySelector('.favB').onclick=()=>{n.favorite=!n.favorite;scheduleSave();render();};
     it.querySelector('.editBtn').onclick=()=>openNoteForm(n);
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete note "${n.title||'Untitled'}"?`)) return;
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('note',{name:n.title||(uiLang()==='cs'?'Bez názvu':'Untitled')},()=>{
       S.notes=S.notes.filter(x=>x.id!==n.id);scheduleSave();render();toast('Note deleted');
-    };
+    });
     list.appendChild(it);
   });
   wrap.querySelector('#addNote').onclick=()=>openNoteForm();
@@ -6854,10 +6971,9 @@ function renderJournal(){
       <div class="note-foot"><span></span><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${fmtDate(j.date)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${fmtDate(j.date)}">✕</button></div></div>
     </div>`);
     it.querySelector('.editBtn').onclick=()=>openJournalForm(j);
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete journal entry for ${fmtDate(j.date)}?`)) return;
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('journal',{name:fmtDate(j.date)},()=>{
       S.journal=S.journal.filter(x=>x.id!==j.id);scheduleSave();render();toast('Entry deleted');
-    };
+    });
     list.appendChild(it);
   });
   wrap.querySelector('#addJ').onclick=()=>openJournalForm(todaysEntry);
@@ -6968,13 +7084,12 @@ function renderCar(){
       <div class="section-header"><h3>${uiL('Fuel')}</h3></div><div class="list" id="fuel-${v.id}"></div>
     </div>`);
     card.querySelector('.editBtn').onclick=()=>openVehicleForm(v);
-    card.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete vehicle "${v.name}"? This also removes its services and fuel history.`)) return;
+    card.querySelector('.delbtn').onclick=()=>uiDelConfirm('vehicle',{name:v.name,n:{services:S.carServices.filter(x=>x.vehicleId===v.id).length,fuel:S.fuelEntries.filter(x=>x.vehicleId===v.id).length}},()=>{
       S.vehicles=S.vehicles.filter(x=>x.id!==v.id);
       S.carServices=S.carServices.filter(x=>x.vehicleId!==v.id);
       S.fuelEntries=S.fuelEntries.filter(x=>x.vehicleId!==v.id);
       scheduleSave();render();toast('Vehicle deleted');
-    };
+    });
     card.querySelector('.addS').onclick=()=>openServiceForm(v.id);
     card.querySelector('.addF').onclick=()=>openFuelForm(v.id);
     const sc=card.querySelector('#svc-'+v.id);
@@ -6982,10 +7097,9 @@ function renderCar(){
     services.slice(0,5).forEach(s=>{
       const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">🔧</span><div style="flex:1;min-width:0"><div class="item-title">${escapeHtml(uiL(s.type))}</div><div class="item-meta">${fmtDate(s.date)} · ${uiNum(s.mileage||0)} km · ${uiNum(s.cost||0)}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
       it.querySelector('.editBtn').onclick=()=>openServiceForm(v.id,s);
-      it.querySelector('.delbtn').onclick=()=>{
-        if(!confirm('Delete this service record?')) return;
+      it.querySelector('.delbtn').onclick=()=>uiDelConfirm('service',{name:uiL(s.type||'')},()=>{
         S.carServices=S.carServices.filter(x=>x.id!==s.id);scheduleSave();render();toast('Service deleted');
-      };
+      });
       sc.appendChild(it);
     });
     const fc=card.querySelector('#fuel-'+v.id);
@@ -6993,10 +7107,9 @@ function renderCar(){
     fuels.slice(0,5).forEach(f=>{
       const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">⛽</span><div style="flex:1;min-width:0"><div class="item-title">${f.liters||0} L · ${uiNum(f.total||0)}</div><div class="item-meta">${fmtDate(f.date)} · ${uiNum(f.mileage||0)} km${f.station?' · '+escapeHtml(f.station):''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
       it.querySelector('.editBtn').onclick=()=>openFuelForm(v.id,f);
-      it.querySelector('.delbtn').onclick=()=>{
-        if(!confirm('Delete this fuel entry?')) return;
+      it.querySelector('.delbtn').onclick=()=>uiDelConfirm('fuel',{},()=>{
         S.fuelEntries=S.fuelEntries.filter(x=>x.id!==f.id);scheduleSave();render();toast('Fuel entry deleted');
-      };
+      });
       fc.appendChild(it);
     });
     vl.appendChild(card);
@@ -7109,10 +7222,9 @@ function renderSubs(){
       <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(s.name)}">✕</button></div></div></div>`);
     it.querySelector('.activeBtn').onclick=()=>{s.active=(s.active===false); scheduleSave();render();};
     it.querySelector('.editBtn').onclick=()=>openSubForm(s);
-    it.querySelector('.delbtn').onclick=()=>{
-      if(!confirm(`Delete subscription "${s.name}"?`)) return;
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('subscription',{name:s.name},()=>{
       S.subscriptions=S.subscriptions.filter(x=>x.id!==s.id);scheduleSave();render();toast('Subscription deleted');
-    };
+    });
     sl.appendChild(it);
   });
   wrap.querySelector('#addSub').onclick=()=>openSubForm();
@@ -7167,7 +7279,9 @@ function weeklyHabitTarget(s){return habitsActiveList(s).length;}
    than 3 quests. Rewards go through grantXp() once, under the unchanged questKey() ledger key. ---- */
 const QUEST_BOARD_SIZE=3;
 function questDayIndex(D){ return Math.round(new Date(D+'T00:00').getTime()/86400000); }
-function taskDoneOn(t,D){ return !!t.done&&S.xpLog.some(x=>x.key===`task:${t.id}:${D}`); }
+// Core reliability (A2): the same test as S.xpLog.some(x=>x.key===key) through the cached xpLog key index
+// (xpKeyIndex, next to dailyScoreTasks) -- quests call this for every task on every render.
+function taskDoneOn(t,D){ return !!t.done&&xpKeyIndex().has(`task:${t.id}:${D}`); }
 function tasksDoneBetween(from,to){
   const ids=new Set(); S.xpLog.forEach(x=>{ const m=/^task:(.+):(\d{4}-\d{2}-\d{2})$/.exec(x.key||''); if(m&&m[2]>=from&&m[2]<=to) ids.add(m[1]); });
   return S.tasks.filter(t=>t.done&&ids.has(t.id));
@@ -7387,10 +7501,9 @@ function uiEventRow(e,next){
   if(linkedHabit){ const b=el(`<button class="chip linkBtn">🔥 ${escapeHtml(linkedHabit.name)}</button>`); b.onclick=()=>searchNavigate('habit',linkedHabit); linkRow.appendChild(b); }
   if(!linkRow.children.length) linkRow.remove();
   it.querySelector('.editBtn').onclick=()=>openEventForm(e);
-  it.querySelector('.delbtn').onclick=()=>{
-    if(!confirm(`Delete event "${e.title}"?`)) return;
+  it.querySelector('.delbtn').onclick=()=>uiDelConfirm('event',{name:e.title},()=>{
     S.events=S.events.filter(x=>x.id!==e.id);scheduleSave();render();toast('Event deleted');
-  };
+  });
   return it;
 }
 function uiDayAgenda(ds,host){
@@ -7637,8 +7750,9 @@ function computeStats(period){
   // XP / RPG
   const xpEarned=S.xpLog.filter(x=>new Date(x.ts).toISOString().slice(0,10)>=since).reduce((a,b)=>a+b.amount,0);
   const xpTodayVal=xpToday();
-  const xpThisWeek=S.xpLog.filter(x=>new Date(x.ts).toISOString().slice(0,10)>=periodStart('week')).reduce((a,b)=>a+b.amount,0);
-  const xpThisMonth=S.xpLog.filter(x=>new Date(x.ts).toISOString().slice(0,10)>=periodStart('month')).reduce((a,b)=>a+b.amount,0);
+  const weekFrom=periodStart('week'), monthFrom=periodStart('month'); // A2: once per call, not once per xpLog entry
+  const xpThisWeek=S.xpLog.filter(x=>new Date(x.ts).toISOString().slice(0,10)>=weekFrom).reduce((a,b)=>a+b.amount,0);
+  const xpThisMonth=S.xpLog.filter(x=>new Date(x.ts).toISOString().slice(0,10)>=monthFrom).reduce((a,b)=>a+b.amount,0);
   const {level,into,need}=levelFromXp(S.totalXp);
 
   // Fitness
@@ -8034,9 +8148,22 @@ function dailyScoreLabelKey(score){
 }
 // Tasks: due on D (done or not) + overdue tasks completed on D (xpLog key task:<id>:<D>, the only
 // completion-date record the model has). Open overdue tasks are informational only (no snowball).
+// Core reliability (A2): xpLog key lookups go through a cached Set of every entry's key -- the same answer
+// as S.xpLog.some(x=>x.key===k), without scanning the whole history once per task. The index follows
+// the live array: a replaced log (load, import, reset) is rebuilt, in-place appends (grantXp) are added.
+let xpKeyCache={log:null,len:0,last:null,set:null};
+function xpKeyIndex(){
+  const log=S.xpLog, c=xpKeyCache, n=log.length;
+  if(c.log===log && c.len===n && log[n-1]===c.last) return c.set;
+  if(!(c.log===log && c.len<n && (c.len===0||log[c.len-1]===c.last))){ c.set=new Set(); c.len=0; }
+  for(let i=c.len;i<n;i++) c.set.add(log[i].key);
+  c.log=log; c.len=n; c.last=log[n-1];
+  return c.set;
+}
 function dailyScoreTasks(D){
   const due=S.tasks.filter(t=>t.dueDate===D);
-  const lateDone=S.tasks.filter(t=>t.done && t.dueDate && t.dueDate<D && S.xpLog.some(x=>x.key===`task:${t.id}:${D}`));
+  const xpKeys=xpKeyIndex();
+  const lateDone=S.tasks.filter(t=>t.done && t.dueDate && t.dueDate<D && xpKeys.has(`task:${t.id}:${D}`));
   const openOverdue=S.tasks.filter(t=>!t.done && t.dueDate && t.dueDate<D).length;
   const items=[...due,...lateDone];
   if(!items.length) return {score:null,reason:'none_planned',openOverdue};
@@ -8254,7 +8381,7 @@ function renderHealthSleepTab(data){
   sorted.slice(0,30).forEach(s=>{
     const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">😴</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(s.date)}</div><div class="item-meta">${sleepDuration(s)}h · ${formatTimeDisplay(s.bedtime)}–${formatTimeDisplay(s.wake)}${s.quality?' · '+uiL('quality')+' '+s.quality+'/5':''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openSleepForm(s);
-    it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this sleep entry?'))return; S.sleepLog=S.sleepLog.filter(x=>x.id!==s.id);scheduleSave();render(); };
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('sleep',s)},()=>{ S.sleepLog=S.sleepLog.filter(x=>x.id!==s.id);scheduleSave();render(); });
     sl.appendChild(it);
   });
   wrap.appendChild(sl);
@@ -8275,7 +8402,7 @@ function renderHealthWeightTab(data){
   sorted.slice(0,30).forEach(w=>{
     const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">⚖️</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(w.date)}</div><div class="item-meta">${w.weight} ${w.unit||'kg'}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openWeightForm(w);
-    it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this weight entry?'))return; S.weightLog=S.weightLog.filter(x=>x.id!==w.id);scheduleSave();render(); };
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('weight',w)},()=>{ S.weightLog=S.weightLog.filter(x=>x.id!==w.id);scheduleSave();render(); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
@@ -8296,7 +8423,7 @@ function renderHealthStepsTab(data){
   sorted.slice(0,30).forEach(x=>{
     const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">👟</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${uiNum(x.steps)} ${uiL('steps')}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openStepsForm(x);
-    it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this steps entry?'))return; S.stepsLog=S.stepsLog.filter(y=>y.id!==x.id);scheduleSave();render(); };
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('steps',x)},()=>{ S.stepsLog=S.stepsLog.filter(y=>y.id!==x.id);scheduleSave();render(); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
@@ -8317,7 +8444,7 @@ function renderHealthHeartRateTab(data){
   sorted.slice(0,30).forEach(x=>{
     const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">❤️</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${x.value} bpm${x.type?' · '+uiL(x.type):''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openHeartRateForm(x);
-    it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this heart rate entry?'))return; S.heartRateLog=S.heartRateLog.filter(y=>y.id!==x.id);scheduleSave();render(); };
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('heart',x)},()=>{ S.heartRateLog=S.heartRateLog.filter(y=>y.id!==x.id);scheduleSave();render(); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
@@ -8338,7 +8465,7 @@ function renderHealthActiveCalTab(data){
   sorted.slice(0,30).forEach(x=>{
     const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">🔥</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${Number(x.calories).toLocaleString()} kcal</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openActiveCaloriesForm(x);
-    it.querySelector('.delbtn').onclick=()=>{ if(!confirm('Delete this entry?'))return; S.activeCaloriesLog=S.activeCaloriesLog.filter(y=>y.id!==x.id);scheduleSave();render(); };
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('active',x)},()=>{ S.activeCaloriesLog=S.activeCaloriesLog.filter(y=>y.id!==x.id);scheduleSave();render(); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
@@ -8461,10 +8588,16 @@ function doImport(e){
   r.readAsText(f);
 }
 function doReset(){
-  if(!confirm('This will permanently delete all LifeOS data on this device. Continue?')) return;
-  if(!confirm('Are you absolutely sure? This cannot be undone.')) return;
-  S=defaultState(); scheduleSave(); applyTheme();
-  showOnboarding();
+  // Core reliability (A3): the same two steps as before, in the app's own sheets instead of confirm().
+  const cs=uiLang()==='cs';
+  uiConfirmSheet({title:cs?'Smazat všechna data?':'Delete all data?',
+    text:cs?'Všechna data LifeOS v tomto zařízení budou trvale smazána – úkoly, návyky, cíle, plán, finance, trénink, jídlo, poznámky, historie i postava s XP.':'All LifeOS data on this device will be permanently deleted -- tasks, habits, goals, plan, finance, training, meals, notes, history and your character with its XP.',
+    details:[cs?'Pokud si je chcete ponechat, nejdřív si stáhněte zálohu (Exportovat zálohu).':'To keep them, download a backup first (Export backup).'],ok:cs?'Pokračovat':'Continue',danger:true},()=>{
+    uiConfirmSheet({title:cs?'Opravdu smazat vše?':'Really delete everything?',text:cs?'Tuto akci nelze vrátit.':'This cannot be undone.',ok:cs?'Smazat vše':'Delete everything',danger:true},()=>{
+      S=defaultState(); scheduleSave(); applyTheme();
+      showOnboarding();
+    });
+  });
 }
 
 /* ---- Quick Add ---- */
@@ -8692,6 +8825,7 @@ try{
 
 /* ---- boot ---- */
 (async function boot(){
+  await tabGuardAcquire(); // A1: only the tab that owns the data loads it (another tab waits here)
   let saved=null, readError=null;
   for(let attempt=0;attempt<3;attempt++){
     try{ saved=await idbGet('state'); readError=null; break; }
@@ -8841,8 +8975,38 @@ function finishOnboardingWizard(data,skipped,withSeed){
   toast('Welcome to LifeOS!');
 }
 
-/* ---- daily reset touch (keeps app aware of new day without losing data) ---- */
-setInterval(()=>{ render(); checkBrowserNotifications(); }, 60000);
+/* ---- daily reset touch (keeps app aware of new day without losing data) ----
+   Core reliability (B1): the minute tick no longer rebuilds the whole screen. Within a day it only
+   refreshes what depends on the clock (greeting, Home "Today's plan" card with its Now state, the
+   Planner now-line); inputs, focus, search query, a running workout and the scroll position are left
+   alone. When the date changes, one full render happens -- deferred while the user is typing, has a
+   sheet open or a search query entered, and keeping the scroll position. */
+let uiTickDay=todayStr();
+function uiTickBusy(){
+  const a=document.activeElement;
+  if(a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return true;
+  if(document.querySelector('.sheet-bg')) return true;
+  const q=document.getElementById('gs');
+  return !!(q&&q.value);
+}
+function uiMinuteTick(){
+  const app=document.getElementById('app'), D=todayStr();
+  if(D!==uiTickDay){
+    if(uiTickBusy()) return; // retried on the next tick
+    uiTickDay=D; const y=window.scrollY; render(); window.scrollTo(0,y); return;
+  }
+  const g=app.querySelector('.hud-greet'); if(g){ const t=uiGreeting()+','; if(g.textContent!==t) g.textContent=t; }
+  const pc=app.querySelector('.plan-card.is-home');
+  if(pc){ const had=document.activeElement===pc, n=uiTodaysPlanCard(); uiIconize(n); pc.replaceWith(n); if(had) n.focus({preventScroll:true}); }
+  const grid=app.querySelector('#plTimeline');
+  if(grid&&grid.dataset.day===D){
+    const from=+grid.dataset.from, to=+grid.dataset.to, PX=+grid.dataset.px, n=new Date(), nm=n.getHours()*60+n.getMinutes();
+    let line=grid.querySelector('.pl-now');
+    if(nm>=from&&nm<=to){ if(!line){ line=el(`<div class="pl-now" aria-hidden="true"></div>`); grid.insertBefore(line,grid.querySelector('.pl-block')); } line.style.top=Math.round((nm-from)*PX)+'px'; }
+    else if(line) line.remove();
+  }
+}
+setInterval(()=>{ if(!S||!tabActive) return; uiMinuteTick(); checkBrowserNotifications(); }, 60000);
 </script>
 </body>
 </html>

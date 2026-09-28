@@ -241,7 +241,9 @@ function compare(base, cur, approved = loadApproved()) {
     if (msg) (okLogic(k) ? reviews : fails).push(okLogic(k) ? `APPROVED ${msg}` : msg);
   }
   const bs = base.statements.map(s => s.hash), cs = cur.statements.map(s => s.hash);
-  base.statements.filter(s => !cs.includes(s.hash)).forEach(s => fails.push(`top-level statement changed/removed: ${s.src}`));
+  // A baseline statement may only disappear when its hash was approved (--approve pins it in statementsRemoved).
+  const apRm = approved.statementsRemoved || [];
+  base.statements.filter(s => !cs.includes(s.hash)).forEach(s => (apRm.includes(s.hash) ? reviews : fails).push(`${apRm.includes(s.hash) ? 'APPROVED ' : ''}top-level statement changed/removed: ${s.src}`));
   cur.statements.filter(s => !bs.includes(s.hash)).forEach(s => (approved.statements.includes(s.hash) ? reviews : fails).push(`${approved.statements.includes(s.hash) ? 'APPROVED ' : ''}top-level statement added: ${s.src}`));
   // Data effects may move between UI functions (e.g. a row builder extracted into a ui* helper):
   // that is only REVIEW when the multiset of data effects over all UI functions is unchanged.
@@ -282,6 +284,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     changed.forEach(k => { ap.logic[k] = fp.logic[k] ?? null; });
     const bs = base.statements.map(s => s.hash);
     ap.statements = [...new Set([...ap.statements, ...fp.statements.filter(s => !bs.includes(s.hash)).map(s => s.hash)])];
+    const cs = fp.statements.map(s => s.hash);
+    ap.statementsRemoved = [...new Set([...(ap.statementsRemoved || []), ...base.statements.filter(s => !cs.includes(s.hash)).map(s => s.hash)])];
     const bag = ui => { const m = new Map(); for (const v of Object.values(ui)) for (const d of v.data || []) m.set(d, (m.get(d) || 0) + 1); return m; };
     const bb = bag(base.ui), extra = [];
     for (const [d, n] of bag(fp.ui)) for (let i = 0; i < n - (bb.get(d) || 0); i++) extra.push(d);
@@ -291,7 +295,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ap.uiEffectsRemoved = gone;
     ap.reasons.push({ reason, logic: changed, at: new Date().toISOString().slice(0, 10) });
     writeFileSync(APPROVED, JSON.stringify(ap, null, 1) + '\n');
-    console.log(`approved -> ${path.relative(process.cwd(), APPROVED)}\n  logic: ${changed.join(', ') || '-'}\n  statements: ${ap.statements.length}\n  ui data effects: ${extra.join(', ') || '-'}\n  removed ui data effects: ${gone.join(', ') || '-'}`);
+    console.log(`approved -> ${path.relative(process.cwd(), APPROVED)}\n  logic: ${changed.join(', ') || '-'}\n  statements: ${ap.statements.length} (removed/replaced baseline statements: ${ap.statementsRemoved.length})\n  ui data effects: ${extra.join(', ') || '-'}\n  removed ui data effects: ${gone.join(', ') || '-'}`);
   } else if (process.argv.includes('--write')) {
     writeFileSync(BASELINE, JSON.stringify(fp, null, 1) + '\n');
     console.log(`baseline written -> ${path.relative(process.cwd(), BASELINE)}\n${summary}\nlogicHash=${fp.logicHash} effectsHash=${fp.effectsHash}`);
