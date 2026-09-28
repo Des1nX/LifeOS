@@ -4223,6 +4223,179 @@ test('R7 layout: the "open elsewhere" screen and delete sheets at 320-1440 px, d
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 
+// ---------- Core reliability fix pass (BUG-1 taskDoneOn index, BUG-2 save before tab hand-over) ----------
+// Realistic-year synthetic history (deterministic): tasks due over a whole year, XP spread over 365 days with
+// task keys on due and other dates, duplicates, habit/quest/workout keys, key-less and null-key entries and
+// older "task:<id>" keys without a date. Installed in the page as window.__gen(N, X, seed).
+const GEN_YEAR = `window.__gen = function (N, X, seed) {
+  let s = seed >>> 0; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const T = todayStr(), cats = ['Work', 'Health', 'Learning', 'Personal', 'Finance', ''], pr = ['Low', 'Medium', 'High', 'Urgent'];
+  const tasks = [];
+  for (let i = 0; i < N; i++) {
+    const due = addDays(T, -Math.floor(rnd() * 365)); const done = rnd() < 0.8;
+    tasks.push({ id: 'rt' + i + (i % 97 === 0 ? ':x' : ''), title: 'Úkol ' + i, category: cats[i % cats.length], priority: pr[i % 4], dueDate: i % 50 === 0 ? '' : due, done, createdAt: 1 });
+  }
+  for (let i = 0; i < 30; i++) tasks.push({ id: 'td' + i, title: 'Dnes ' + i, category: cats[i % 5], priority: pr[i % 4], dueDate: T, done: i < 8, createdAt: 1 });
+  const log = []; const now = Date.now();
+  for (let i = 0; i < X; i++) {
+    const ageDays = Math.floor(rnd() * 365); const ts = now - ageDays * 86400000 - Math.floor(rnd() * 80000000); const d = addDays(T, -ageDays);
+    const r = rnd(); let key, reason = 'Task: x', amount = 10 + Math.floor(rnd() * 30);
+    if (r < 0.55) { const t = tasks[Math.floor(rnd() * N)]; key = \`task:\${t.id}:\${rnd() < 0.7 && t.dueDate ? t.dueDate : d}\`; }
+    else if (r < 0.7) { key = \`habit:h\${Math.floor(rnd() * 8)}:\${d}\`; reason = 'Habit'; }
+    else if (r < 0.78) { key = \`quest:daily:dq_tasks:\${d}\`; reason = 'Quest'; }
+    else if (r < 0.85) { key = undefined; reason = 'Meal logged'; }
+    else if (r < 0.9) { key = \`workout:w\${i}\`; reason = 'Workout'; }
+    else if (r < 0.93) { key = null; reason = 'Achievement'; }
+    else if (r < 0.96) { key = \`task:rt\${Math.floor(rnd() * N)}\`; } // malformed/older: no date part
+    else { const t = tasks[Math.floor(rnd() * N)]; key = \`task:\${t.id}:\${d}\`; } // duplicates / other dates
+    const e = { id: 'x' + i, amount, reason, ts }; if (key !== undefined) e.key = key; log.push(e);
+  }
+  // today completions for today tasks + one late completion today of a historic task
+  tasks.filter(t => t.id.startsWith('td') && t.done).forEach(t => log.push({ id: 'k' + t.id, amount: 15, reason: 'Task', ts: now - 3600000, key: \`task:\${t.id}:\${T}\` }));
+  log.push({ id: 'late', amount: 15, reason: 'Task', ts: now - 1000, key: \`task:rt3:\${T}\` });
+  log.sort((a, b) => a.ts - b.ts);
+  return { tasks, xpLog: log };
+};
+`;
+const withGen = page => page.addScriptTag({ content: GEN_YEAR });
+const REF_TASK_DONE_ON = (t, D) => !!t.done && S.xpLog.some(x => x.key === `task:${t.id}:${D}`); // the pre-index implementation
+
+test('R9 taskDoneOn: the xpLog index gives exactly the full-scan result (year data, duplicates, old/key-less entries, append, import, reset, migration) and quests are unchanged', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(refSrc => {
+    const ref = eval(refSrc), T = todayStr(), bad = []; let checks = 0, trues = 0;
+    const cmp = name => { const dates = [T, addDays(T, -1), addDays(T, -7), addDays(T, -100), addDays(T, -364), addDays(T, 1), '', undefined];
+      const extra = [{ id: 'nd', done: false }, { id: 'rt3', done: true }, { done: true }, { id: 'rt1:x', done: true }, { id: '', done: true }];
+      [...S.tasks, ...extra].forEach(t => [...dates, t.dueDate].forEach(D => { const a = taskDoneOn(t, D), b = ref(t, D); checks++; if (b) trues++; if (a !== b) bad.push(`${name}: ${t.id} ${D}`); })); };
+    const fresh = () => { S = defaultState(); S.settings.onboarded = true; };
+    for (const [N, X, seed] of [[100, 2000, 1], [500, 7000, 2], [1500, 25000, 3]]) { fresh(); Object.assign(S, window.__gen(N, X, seed)); cmp(`year ${N}/${X}`); }
+    fresh(); Object.assign(S, window.__gen(200, 3000, 5)); cmp('built'); S.xpLog.push({ id: 'ap', amount: 5, reason: 'x', ts: Date.now(), key: `task:${S.tasks[1].id}:${T}` }); S.tasks[1].done = true; cmp('append');
+    grantXp(5, 'r9', null, `task:${S.tasks[2].id}:${T}`); S.tasks[2].done = true; cmp('grantXp');
+    const d = JSON.parse(JSON.stringify(S)); d.xpLog.push({ id: 'im', amount: 5, reason: 'x', ts: Date.now(), key: `task:${d.tasks[3].id}:${T}` }); d.tasks[3].done = true; S = migrate(d); cmp('import');
+    const keep = S.tasks; S = defaultState(); S.tasks = keep; cmp('reset');
+    const g = window.__gen(150, 1500, 8); g.xpLog.forEach((x, i) => { if (i % 3 === 0) delete x.key; }); S = migrate({ tasks: g.tasks, xpLog: g.xpLog, totalXp: 0, schemaVersion: 4 }); cmp('old backup migrated');
+    fresh(); Object.assign(S, window.__gen(100, 1000, 9)); cmp('built2'); S.xpLog[S.xpLog.length - 1] = { id: 'rp', amount: 1, reason: 'x', ts: Date.now(), key: `task:${S.tasks[4].id}:${T}` }; S.tasks[4].done = true; cmp('last entry replaced');
+    S.xpLog.splice(5, 1); S.xpLog.push({ id: 'sp', amount: 1, reason: 'x', ts: Date.now(), key: `task:${S.tasks[6].id}:${T}` }); S.tasks[6].done = true; cmp('splice + push, same length');
+    // quest outputs through the real quest code, with the index and with the reference implementation
+    fresh(); Object.assign(S, window.__gen(1500, 25000, 3));
+    const quests = () => JSON.stringify(['daily', 'weekly'].map(pp => questCandidates(pp, T).map(x => [x.q.id, x.p, x.q.val ? x.q.val(S, x.p, T) : null, typeof x.q.attr === 'function' ? x.q.attr(S, x.p, T) : x.q.attr])));
+    const withIndex = quests(); const cur = window.taskDoneOn; window.taskDoneOn = ref; const withRef = quests(); window.taskDoneOn = cur;
+    return { bad: bad.slice(0, 10), nBad: bad.length, checks, trues, questsSame: withIndex === withRef, questsLen: withIndex.length };
+  }, REF_TASK_DONE_ON.toString());
+  assert.equal(r.nBad, 0, 'mismatches: ' + r.bad.join('; '));
+  assert.ok(r.checks > 30000 && r.trues > 1500, `enough coverage (${r.checks} checks, ${r.trues} true)`);
+  assert.ok(r.questsSame && r.questsLen > 20, 'quest candidates, progress and attributes identical');
+}, { state: fixtureState() });
+
+test('R10 performance, realistic year: 100/2 000, 500/7 000, 1 500/25 000 with XP over 365 days - no tasks x xpLog work in Home, Tasks, Statistics or quests', async ({ page }) => {
+  await withGen(page);
+  const rows = [];
+  for (const [N, X] of [[100, 2000], [500, 7000], [1500, 25000]]) {
+    const r = await page.evaluate(([N, X]) => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(N, X, 3));
+      const m = (f, n = 3) => { f(); const t = performance.now(); for (let i = 0; i < n; i++) f(); return (performance.now() - t) / n; };
+      return { home: m(() => { view = 'home'; render(); }), tasks: m(() => { view = 'tasks'; render(); }), statistics: m(() => { view = 'statistics'; render(); }, 2),
+        quests: m(() => { questCandidates('daily', todayStr()); questCandidates('weekly', todayStr()); checkQuests(); }) }; }, [N, X]);
+    rows.push([N, X, r]); console.log(`      R10 ${N}/${X}: ` + Object.entries(r).map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', '));
+  }
+  const big = rows[2][2];
+  assert.ok(big.home < 300 && big.tasks < 300 && big.statistics < 800 && big.quests < 60, 'fast at 1 500 / 25 000 (was Home ~2 500 ms, quests ~2 100 ms)');
+  assert.ok(big.quests < rows[0][2].quests * 40 + 20, 'quest cost grows ~linearly, not with tasks x xpLog');
+  await page.evaluate(() => { view = 'home'; render(); });
+}, { state: fixtureState() });
+
+// Two tabs in a fresh context: A owns the data, B waits; A changes, then closes after `delay` ms.
+async function closeHandover(browserRef, delay) {
+  const ctx = await browserRef.newContext(); const errs = [];
+  const open = async () => { const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); await p.goto(URL_); return p; };
+  const A = await open(); await A.waitForFunction(() => S);
+  await A.evaluate(async () => { S.settings.onboarded = true; closeSheets(); await idbSet('state', S); });
+  const B = await open(); await B.waitForSelector('#tabLock');
+  await A.evaluate(() => { S.tasks.push({ id: 'last', title: 'last change', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); render(); });
+  if (delay) await A.waitForTimeout(delay);
+  await A.close({ runBeforeUnload: true });
+  await B.waitForFunction(() => typeof S !== 'undefined' && S && tabActive && !document.getElementById('tabLock'), null, { timeout: 10000 });
+  const kept = await B.evaluate(() => S.tasks.some(t => t.id === 'last'));
+  await ctx.close(); return { kept, errs };
+}
+
+test('R11 tabs: closing the active tab 0-250 ms after a change never loses it - the waiting tab takes over with the change (5 delays x 4 runs)', async ({ page }) => {
+  const res = [];
+  for (const delay of [0, 50, 100, 200, 240]) for (let i = 0; i < 4; i++) { const r = await closeHandover(page.context().browser(), delay); res.push(`${delay}:${r.kept ? 1 : 0}`); assert.deepEqual(r.errs, []); }
+  console.log('      R11 ' + res.join(' '));
+  assert.ok(res.every(x => x.endsWith(':1')), 'every close kept the last change: ' + res.join(' '));
+}, { state: fixtureState() });
+
+test('R12 tabs: a pending save is written before the lock is handed over - flushSave issues the write in the same event, "Use here" waits for the committed write', async ({ page }) => {
+  // flushSave (pagehide/freeze) starts the IndexedDB write synchronously once the connection is open
+  const sync = await page.evaluate(() => { let n = 0; const orig = IDBDatabase.prototype.transaction; IDBDatabase.prototype.transaction = function () { n++; return orig.apply(this, arguments); };
+    S.tasks.push({ id: 'pend', title: 'pending', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); const before = n; flushSave(); const after = n; IDBDatabase.prototype.transaction = orig; return { before, after }; });
+  assert.equal(sync.after - sync.before, 1, 'write transaction created synchronously inside flushSave');
+  await settle(page); assert.ok((await idbState(page)).tasks.some(t => t.id === 'pend'), 'committed');
+  // idbSet resolves only after its transaction is complete: a separate connection reads it right away
+  assert.ok(await page.evaluate(async () => { S.notes.push({ id: 'dur', title: 'd', body: '', category: 'Personal', tags: [], createdAt: 1, updatedAt: 1 }); await idbSet('state', S); return (await rawIdbGet()).notes.some(n => n.id === 'dur'); }), 'durable when idbSet resolves');
+  // "Use here": the owner's unsaved (debounced) change is in the new owner's data
+  const B = await page.context().newPage(); await B.goto(URL_); await B.waitForSelector('#tabLock');
+  await page.evaluate(() => { S.tasks.push({ id: 'deb', title: 'debounced', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); });
+  await B.click('#tabTakeover'); await B.waitForFunction(() => S && tabActive, null, { timeout: 8000 });
+  assert.ok(await B.evaluate(() => S.tasks.some(t => t.id === 'deb') && S.tasks.some(t => t.id === 'pend')), 'takeover after the pending save');
+  await page.waitForSelector('#tabLock'); await B.close();
+}, { state: fixtureState() });
+
+test('R13 tabs: A1 still works - blocked screen, Use here, close hand-over, reload, single-tab close + reopen, crashed owner', async ({ page }) => {
+  const ctx = page.context(), errs = [];
+  const open = async () => { const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); await p.goto(URL_); await injectRawIdb(p); return p; };
+  const ready = p => p.waitForFunction(() => typeof S !== 'undefined' && S && tabActive && !document.getElementById('tabLock'), null, { timeout: 10000 });
+  const B = await open(); await B.waitForSelector('#tabLock');
+  await page.evaluate(() => { S.tasks.push({ id: 'a1', title: 'a1', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); });
+  await B.click('#tabTakeover'); await ready(B); await page.waitForSelector('#tabLock');
+  assert.ok(await B.evaluate(() => S.tasks.some(t => t.id === 'a1')), 'Use here');
+  await B.evaluate(() => { S.tasks.push({ id: 'b1', title: 'b1', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); });
+  await B.close(); await ready(page); await injectRawIdb(page);
+  assert.ok(await page.evaluate(() => S.tasks.some(t => t.id === 'b1')), 'close hands over');
+  await page.reload(); await ready(page); await injectRawIdb(page); assert.ok(await page.evaluate(() => S.tasks.some(t => t.id === 'b1')), 'reload');
+  // crashed owner (separate profile): what it saved survives, the waiting tab takes over
+  const ctx2 = await ctx.browser().newContext();
+  const open2 = async () => { const p = await ctx2.newPage(); p.on('pageerror', e => errs.push(e.message)); await p.goto(URL_); return p; };
+  const X = await open2(); await X.waitForFunction(() => S);
+  await X.evaluate(async () => { S.settings.onboarded = true; closeSheets(); S.tasks.push({ id: 'x1', title: 'x1', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); await idbSet('state', S); });
+  const Y = await open2(); await Y.waitForSelector('#tabLock');
+  const cdp = await ctx2.newCDPSession(X); cdp.send('Page.crash').catch(() => {}); // never answers; the crash event does
+  await X.waitForEvent('crash');
+  await ready(Y);
+  assert.ok(await Y.evaluate(() => S.tasks.some(t => t.id === 'x1')), 'takeover after a crash keeps the saved data');
+  // single tab: change, close at once, reopen
+  await Y.evaluate(() => { S.tasks.push({ id: 'y1', title: 'y1', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); });
+  await Y.close({ runBeforeUnload: true });
+  const Z = await open2(); await ready(Z);
+  assert.ok(await Z.evaluate(() => S.tasks.some(t => t.id === 'y1')), 'single tab: close right after a change, reopen keeps it');
+  await ctx2.close();
+  assert.deepEqual(errs, []);
+}, { state: fixtureState() });
+
+test('R14 minute tick: B1 still works - no full render, typing/focus/caret/search kept', async ({ page }) => {
+  await go(page, 'search'); await page.fill('#gs', 'read'); await page.keyboard.press('ArrowLeft');
+  await page.evaluate(() => { window.__root = document.querySelector('#app').firstElementChild; });
+  const before = await page.evaluate(() => [document.activeElement.id, document.activeElement.selectionStart, document.querySelectorAll('#gsRes .search-hit').length]);
+  await page.clock.setFixedTime(NOW + 60000); await page.evaluate(() => { uiMinuteTick(); checkBrowserNotifications(); });
+  assert.deepEqual(await page.evaluate(() => [document.activeElement.id, document.activeElement.selectionStart, document.querySelectorAll('#gsRes .search-hit').length]), before);
+  assert.ok(await page.evaluate(() => document.querySelector('#app').firstElementChild === window.__root), 'no re-render');
+  await page.evaluate(() => { view = 'settings'; render(); }); await page.click('#st_name'); await page.keyboard.type('Z');
+  const v = await page.inputValue('#st_name'); await page.clock.setFixedTime(NOW + 120000); await page.evaluate(() => uiMinuteTick());
+  assert.equal(await page.inputValue('#st_name'), v); assert.equal(await page.evaluate(() => document.activeElement.id), 'st_name');
+}, { state: fixtureState() });
+
+test('R15 deletes: A3 still works - task sheet cancel/confirm, goal cascade text, reset two steps, no native dialog', async ({ page }) => {
+  const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); d.dismiss(); });
+  await go(page, 'tasks'); const n0 = await page.evaluate(() => S.tasks.length);
+  await page.locator('#tlist .item .delbtn').first().click(); assert.match(await page.locator('.cf-sheet').innerText(), /Smazat úkol\?/);
+  await page.click('#cf_cancel'); assert.equal(await page.evaluate(() => S.tasks.length), n0);
+  await page.locator('#tlist .item .delbtn').first().click(); await page.click('#cf_ok'); assert.equal(await page.evaluate(() => S.tasks.length), n0 - 1);
+  await page.evaluate(() => { view = 'goals'; render(); document.querySelector('.goal-card .delbtn').click(); });
+  assert.match(await page.locator('.cf-sheet').innerText(), /Smazat cíl\?[\s\S]*milník/); await page.click('#cf_cancel');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); assert.match(await page.locator('.cf-sheet').innerText(), /Opravdu smazat vše\?/); await page.click('#cf_ok'); await settle(page);
+  assert.equal((await idbState(page)).tasks.length, 0); assert.deepEqual(dialogs, []);
+}, { state: fixtureState() });
+
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
   if (args.includes('--write-golden') || !existsSync(GOLDEN)) { writeFileSync(GOLDEN, JSON.stringify(g, null, 1) + '\n'); notes.push('golden.json written'); return; }

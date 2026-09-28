@@ -1233,13 +1233,22 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 <script>
 /* ---------- STORAGE (IndexedDB via minimal wrapper, single "state" doc) ---------- */
 const DB_NAME='lifeos', STORE='kv';
-function openDB(){return new Promise((res,rej)=>{
-  const r=indexedDB.open(DB_NAME,1);
-  r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
-  r.onsuccess=()=>res(r.result);
-  r.onerror=()=>rej(r.error);
-  r.onblocked=()=>rej(new Error('IndexedDB open blocked (another tab holding an older connection)'));
-});}
+// Core reliability (A1): one connection is opened once and reused. A save started while the page is being
+// closed (pagehide/freeze flushSave) then issues its write immediately, in that same event -- it no longer
+// waits for a fresh asynchronous open that an unloading page may never finish, so the write is queued in
+// IndexedDB before the tab lock is released and a waiting tab can read.
+let dbConn=null, dbReady=null;
+function openDB(){
+  if(dbConn) return dbConn;
+  dbConn=new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
+    r.onsuccess=()=>{ const db=r.result; db.onclose=()=>{ dbConn=dbReady=null; }; db.onversionchange=()=>{ db.close(); dbConn=dbReady=null; }; dbReady=db; res(db); };
+    r.onerror=()=>{ dbConn=null; rej(r.error); };
+    r.onblocked=()=>{ dbConn=null; rej(new Error('IndexedDB open blocked (another tab holding an older connection)')); };
+  });
+  return dbConn;
+}
 async function idbGet(k){
   const db=await openDB(); // let failures here propagate to the caller (boot() retries on this)
   return new Promise((res,rej)=>{
@@ -1249,10 +1258,14 @@ async function idbGet(k){
 }
 async function idbSet(k,v){
   try{
-    const db=await openDB();
+    // Core reliability (A1): synchronous when the connection is open; the write is committed explicitly
+    // and only counts as saved once its transaction is complete (durable before a tab hand-over).
+    let db=dbReady||await openDB(), tr;
+    try{ tr=db.transaction(STORE,'readwrite'); }catch(e){ dbConn=dbReady=null; db=await openDB(); tr=db.transaction(STORE,'readwrite'); }
     await new Promise((res,rej)=>{
-      const tx=db.transaction(STORE,'readwrite').objectStore(STORE).put(v,k);
-      tx.onsuccess=()=>res(true); tx.onerror=()=>rej(tx.error);
+      tr.oncomplete=()=>res(true); tr.onabort=()=>rej(tr.error||new Error('save aborted'));
+      tr.objectStore(STORE).put(v,k);
+      if(tr.commit) tr.commit();
     });
     return true;
   }catch(e){
@@ -7266,7 +7279,9 @@ function weeklyHabitTarget(s){return habitsActiveList(s).length;}
    than 3 quests. Rewards go through grantXp() once, under the unchanged questKey() ledger key. ---- */
 const QUEST_BOARD_SIZE=3;
 function questDayIndex(D){ return Math.round(new Date(D+'T00:00').getTime()/86400000); }
-function taskDoneOn(t,D){ return !!t.done&&S.xpLog.some(x=>x.key===`task:${t.id}:${D}`); }
+// Core reliability (A2): the same test as S.xpLog.some(x=>x.key===key) through the cached xpLog key index
+// (xpKeyIndex, next to dailyScoreTasks) -- quests call this for every task on every render.
+function taskDoneOn(t,D){ return !!t.done&&xpKeyIndex().has(`task:${t.id}:${D}`); }
 function tasksDoneBetween(from,to){
   const ids=new Set(); S.xpLog.forEach(x=>{ const m=/^task:(.+):(\d{4}-\d{2}-\d{2})$/.exec(x.key||''); if(m&&m[2]>=from&&m[2]<=to) ids.add(m[1]); });
   return S.tasks.filter(t=>t.done&&ids.has(t.id));

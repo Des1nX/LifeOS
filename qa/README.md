@@ -7,7 +7,7 @@ everything here is test tooling only (acorn, playwright, pngjs, pixelmatch as de
 cd qa && npm install          # uses the preinstalled Chromium
 npm test                      # fingerprint check + smoke suite
 npm run fingerprint           # business-logic fingerprint vs baseline/fingerprint.json
-npm run smoke                 # Playwright suite (198 tests)
+npm run smoke                 # Playwright suite (205 tests)
 npm run screens:compare       # pixel-compare fresh screenshots with baseline/screens-8b
 npm run screens               # re-record baseline/screens-8b (only after an intended UI change)
 node shot.mjs <dir> <width> <theme> view[:action],...   # dev helper for quick screenshots
@@ -24,6 +24,7 @@ node shot.mjs <dir> <width> <theme> view[:action],...   # dev helper for quick s
 | Balancing tests (B1–B4) | Approved attribute rewards: workout 80 XP = 48 points (STR 24 / VIT 14 / DEX 10, no flat bonus), meal XP every time but attributes only for the day's first meal, quest XP unchanged with attributes at 30 % by activity profile, and a simulated week where no attribute runs away and WIS stays slow. |
 | Polish pass 2 tests (Q1–Q6) | One sheet chrome (grab, title, close button, sticky Save, onboarding not closable), no typographic glyphs/emoji as button icons incl. live-updated parts (search, workout card), quest board pips/XP from the real board, compact task rows, attribute meanings + Czech achievements + Automatic sentence, avatar selected state + crop zoom buttons, required screens/sheets at 320–1440 px dark/light. |
 | Core reliability tests (R1–R7) | One active tab (Web Lock): a second tab shows "open elsewhere", never loads or saves; reload/"Use here"/close hand over without losing a change; no-Web-Locks fallback boots as before. Every delete asks in the app sheet (what, history, links; cancel keeps, confirm deletes; goal cascade unlinks tasks + habits; export/import/reload/reset) and no native `confirm()` is left. 1 500 tasks / 25 000 XP: Home and Statistics stay fast with results identical to the full history scan; export/import keeps the whole XP history. The 60 s tick never re-renders the screen (search, focus, typing, workout, sheets, scroll survive; greeting, Today's plan and the Planner now-line follow the clock; a new day re-renders once when idle). New screens at 320–1440 px dark/light. |
+| Core reliability fix tests (R9–R15) | `taskDoneOn` through the xpLog index returns exactly the full-scan result on realistic-year data (duplicates, old/key-less entries, append, import, reset, migration) and quests are unchanged; realistic-year benchmark 100/2k, 500/7k, 1 500/25k XP; closing the active tab 0–240 ms after a change never loses it; pending save is written before the lock hand-over; A1, B1 and A3 still work. |
 | `baseline/golden.json` | Deterministic outputs of rule tables and calculators on `fixture.mjs` with a frozen clock (2026-09-23). |
 | `baseline/screens/` | Pre-8B screenshots (mobile dark/light 390 px, desktop dark 1280 px). |
 | `baseline/screens-8b/` | Phase 8B screenshots: 375/390/430/1280/1440 px × dark/light, 24 screens each. |
