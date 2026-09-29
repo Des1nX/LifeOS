@@ -1,0 +1,20 @@
+{
+  "name": "LifeOS",
+  "short_name": "LifeOS",
+  "description": "Osobní systém pro úkoly, návyky, cíle, plán dne, finance, trénink a zdraví — data zůstávají v zařízení.",
+  "lang": "cs",
+  "dir": "ltr",
+  "id": "./LifeOS.html",
+  "start_url": "./LifeOS.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "categories": ["productivity", "lifestyle", "health"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

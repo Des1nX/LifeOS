@@ -6,11 +6,11 @@
 <title>LifeOS</title>
 <link rel="icon" href="data:,">
 <meta name="theme-color" content="#0b0d12">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%237c5cff'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LifeOS">
-<link id="manifestLink" rel="manifest" href="">
+<link id="manifestLink" rel="manifest">
 <style>
 /* ===================================================================
    LifeOS DESIGN SYSTEM — Phase 8A tokens/components, redesigned in Phase 8B.
@@ -51,7 +51,7 @@
   --color-text-primary:var(--text);
   --color-text-secondary:var(--sub);
   --color-text-muted:#7a8298;
-  --color-accent:var(--accent);
+  --color-accent:#a48bff; /* polish pass 3: accent TEXT on dark surfaces reaches WCAG AA (fills keep --accent) */
   --color-accent-muted:rgba(139,108,255,.15);
   --color-success:var(--accent2);
   --color-success-muted:rgba(47,211,160,.14);
@@ -95,9 +95,9 @@
   color-scheme:light;
   --bg:#f3f2f7; --bg2:#fbfbfd; --card:#ffffff; --card2:#f3f2f8;
   --text:#17161f; --sub:#5f5d74; --line:#e2e0ea;
-  --accent:#6a4bef; --accent2:#0a7f59; --warn:#9a5f0c; --danger:#d23450; --info:#2b6de0;
+  --accent:#6a4bef; --accent2:#0a7f59; --warn:#9a5f0c; --danger:#c42a47; --info:#2b6de0;
   --str:#e5484d;--int:#3b78ee;--dex:#10a276;--vit:#d69a06;--wis:#8a4be6;--foc:#0b9fc2;--soc:#d4459a;
-  --gold:#8a6208; --gold-muted:rgba(185,131,9,.13);
+  --gold:#7a5606; --gold-muted:rgba(185,131,9,.13);
   --xp-grad:linear-gradient(90deg,#6a4bef 0%,#8f63f5 55%,#b77cf7 100%);
   --success-grad:linear-gradient(90deg,#0a7f59,#12a676);
   --accent-grad:linear-gradient(135deg,#6a4bef 0%,#5232d6 100%);
@@ -107,7 +107,7 @@
   --glass:rgba(250,250,253,.8);
   --scrim:rgba(20,18,35,.38);
   --color-surface-muted:#ecebf2;
-  --color-text-muted:#6f6d84;
+  --color-text-muted:#636178; --color-accent:var(--accent);
   --color-accent-muted:rgba(106,75,239,.1);
   --color-success-muted:rgba(12,154,108,.1);
   --color-warning-muted:rgba(178,111,18,.1);
@@ -122,7 +122,7 @@
     color-scheme:light;
     --bg:#f3f2f7; --bg2:#fbfbfd; --card:#ffffff; --card2:#f3f2f8;
     --text:#17161f; --sub:#5f5d74; --line:#e2e0ea;
-    --color-surface-muted:#ecebf2; --color-text-muted:#6f6d84;
+    --color-surface-muted:#ecebf2; --color-text-muted:#636178; --color-accent:var(--accent);
   }
 }
 
@@ -333,6 +333,10 @@ label:has(input[type="checkbox"]){display:flex;align-items:center;min-height:var
 .toast.is-achievement{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
 .toast.is-error{border-color:color-mix(in srgb,var(--danger) 60%,var(--line))}
 .toast.is-leaving{animation:tout var(--dur-normal) var(--ease-standard) forwards}
+/* polish pass 3: on a phone toasts sit just under the header (never over its buttons), stay compact and can be
+   tapped away; the level-up toast is shown a bit shorter (see uiPumpToasts) */
+@media(max-width:699px){.toastwrap{top:calc(var(--pad-t) + 66px);gap:6px}.toast{padding:8px 14px;font-size:13.5px;border-radius:14px}}
+.toast{pointer-events:auto;cursor:default}
 @keyframes tin{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes tout{to{opacity:0;transform:translateY(-8px) scale(.98)}}
 
@@ -454,7 +458,7 @@ button.avatar{cursor:pointer;color:inherit;font:inherit}
 .cat-ic{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--cc);background:color-mix(in srgb,var(--cc) 16%,var(--card2))}
 .cat-main{display:flex;flex-direction:column;min-width:0}
 .cat-main b{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cat-main small{color:var(--sub);font-size:var(--fs-caption);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-main small{color:var(--sub);font-size:var(--fs-caption);overflow-wrap:anywhere} /* polish pass 3: wraps instead of cutting the profile/count */
 .cf-icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-bottom:14px}
 .cf-ic{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cf-ic[aria-checked="true"]{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
@@ -499,6 +503,9 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .page-head .btn.sm{flex:none}
 .back-row{display:flex;align-items:center;gap:10px;margin:var(--sp-1) 0 var(--sp-3)}
 .back-row .sub{font-weight:650}
+.task-group{margin:14px 2px 4px}
+.task-nodate{margin:10px 2px 0}
+.task-more{margin:10px 0 0;min-height:44px}
 .kicker{font-size:var(--fs-micro);font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)}
 .muted{color:var(--sub)}
 .stack>*+*{margin-top:var(--sp-2)}
@@ -557,7 +564,7 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .item.is-completing{background:var(--color-success-muted);border-color:color-mix(in srgb,var(--accent2) 35%,transparent)}
 .item.is-completing .check{animation:checkPop var(--dur-normal) var(--ease-spring)}
 .item.is-completing .item-title{text-decoration:line-through;color:var(--sub)}
-.item .xp-tag{font-size:var(--fs-micro);font-weight:750;color:var(--accent);background:var(--color-accent-muted);padding:2px 7px;border-radius:var(--radius-pill);white-space:nowrap}
+.item .xp-tag{font-size:var(--fs-micro);font-weight:750;color:var(--color-accent);background:var(--color-accent-muted);padding:2px 7px;border-radius:var(--radius-pill);white-space:nowrap}
 .item.is-completing .xp-tag{color:var(--accent2);background:var(--color-success-muted)}
 @keyframes checkPop{0%{transform:scale(.7)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 .item-actions{display:flex;align-items:center;gap:0;flex:none;margin-right:-6px}
@@ -636,6 +643,9 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .ach.is-unlocked{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));background:linear-gradient(160deg,var(--gold-muted),var(--card2))}
 .ach.is-locked .ach-ic{background:var(--card2);color:var(--sub)}
 .rarity{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+:root[data-theme="light"] .attr-mini .k{color:color-mix(in srgb,var(--ac) 58%,#000)} /* polish pass 3: AA for 10 px labels */
+:root[data-theme="light"] .attr-row .dot{background:color-mix(in srgb,var(--ac) 72%,#fff)}
+:root[data-theme="light"] .rarity.r-Uncommon{color:#08694a}:root[data-theme="light"] .rarity.r-Rare{color:#1f58c0}:root[data-theme="light"] .rarity.r-Epic{color:#6d33c9}
 .rarity.r-Common{color:var(--sub)}.rarity.r-Uncommon{color:var(--accent2)}.rarity.r-Rare{color:var(--info)}.rarity.r-Epic{color:var(--wis)}.rarity.r-Legendary{color:var(--gold)}
 .timeline{display:flex;flex-direction:column}
 .tl-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:8px 0;position:relative}
@@ -986,6 +996,17 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .pl-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
 .pl-day b{font-size:16px}
 .pl-todaybtn{margin:-4px 0 12px}
+.pl-tools{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 12px}
+.pl-tools .btn{min-height:44px}
+/* polish pass 3: blocks sharing their time on a phone stack the title (2 lines) above the check */
+@media(max-width:600px){
+  .pl-block.is-multi{flex-direction:column-reverse;justify-content:flex-end;gap:4px;padding:5px 5px 5px 8px}
+  .pl-block.is-multi .pl-open{flex-direction:column;align-items:stretch;min-height:36px;gap:1px}
+  .pl-block.is-multi .pl-t{flex:none;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;font-size:13px;line-height:1.2}
+  .pl-block.is-multi .check{width:24px;height:24px}
+  .pl-block.is-multi .pl-m,.pl-block.is-multi .pl-chips{display:none}
+  .pl-block.is-narrow .pl-t{font-size:12px}.pl-block.is-narrow .pl-t .gi,.pl-block.is-narrow .pl-t svg{display:none}}
+.pl-block .pl-t{flex:none}
 .pl-allday{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .pl-timeline{padding:12px 10px 16px 6px;--pl-gutter:52px}
 .pl-grid{position:relative}
@@ -1002,7 +1023,8 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .pl-open{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;background:none;border:none;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;min-height:32px}
 .pl-t{font-weight:700;font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block}
 .pl-m{font-size:var(--fs-caption);color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.pl-chips{display:flex;flex-wrap:nowrap;gap:4px;margin-top:3px;min-width:0;overflow:hidden} /* review: one line, never cut at the block's bottom */
+.pl-chips .chip{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pl-chips .chip{font-size:10.5px;padding:2px 7px}
 .pl-block.is-compact .pl-open{flex-direction:row;align-items:baseline;gap:6px}
 .plan-list{display:flex;flex-direction:column;gap:2px}
@@ -1173,6 +1195,7 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .quest-row.is-done .bar>i{background:var(--success-grad)}
 .quest-row .q-xp{padding:2px 7px;border-radius:999px;background:var(--gold-muted)}
 .quest-row.is-done .q-xp{background:var(--color-success-muted);color:var(--accent2)}
+:root[data-theme="light"] .quest-row.is-done .q-xp{color:#08694a}
 /* task rows: priority as a dot, links as quiet inline links instead of filled chips */
 .prio{display:inline-flex;align-items:center;gap:5px;font-weight:650;color:var(--text)}
 .prio::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--sub)}
@@ -1207,6 +1230,10 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .pl-now{height:2px}
 /* forms and filters everywhere */
 .period-selector .pill.on{box-shadow:var(--shadow-subtle)}
+/* polish pass 3: on a phone a filter bar wraps instead of hiding options off-screen; every option stays a 44 px target */
+@media(max-width:480px){.period-selector{flex-wrap:wrap;overflow-x:visible;border-radius:18px}.period-selector .pill{flex:1 1 auto;min-height:44px;justify-content:center}
+  #fitTabs{flex-wrap:nowrap}}
+.set-group .chip{white-space:normal;text-align:left}
 .empty .e{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;background:var(--color-accent-muted);font-size:0}
 .empty .e .gi svg{width:26px;height:26px}
 </style>
@@ -1311,6 +1338,17 @@ function rpgMixProfiles(list){
   return out;
 }
 // Meals keep their XP for every meal; attribute points only for the first meal logged that day.
+// Polish pass 3: meal XP is paid once per meal type per day (breakfast, lunch, dinner, snack -- at most 4 x 10 XP),
+// under the ledger key meal:<date>:<type>. Logging more meals still works, it just doesn't pay again.
+function mealXpKey(m){ return `meal:${m.date||todayStr()}:${m.type||'Other'}`; }
+// Review: a night already paid -- under the new key, by a still existing older record (sleep:<record id>), or by an
+// older entry logged on that very day (older records were keyed by id, so a deleted one is matched by its day).
+function sleepNightRewarded(date){
+  if(xpKeyIndex().has(`sleep:day:${date}`)) return true;
+  const keys=xpKeyIndex();
+  if(S.sleepLog.some(r=>r.date===date&&keys.has(`sleep:${r.id}`))) return true;
+  return S.xpLog.some(x=>typeof x.key==='string'&&/^sleep:(?!day:)/.test(x.key)&&uiIsoDate(x.ts)===date);
+}
 function mealAttrProfile(){
   const d=todayStr();
   return S.xpLog.some(x=>x.reason==='Meal logged'&&x.attrs&&uiIsoDate(x.ts)===d)?null:'nutrition';
@@ -1338,6 +1376,42 @@ function rpgAttrGains(total,profile){
    (Low/Medium/High); an older habit without one is read from its old xpReward (record not rewritten). ---- */
 const TASK_XP={Low:10,Medium:20,High:30,Urgent:40};
 function taskXp(t){ return TASK_XP[t&&t.priority]||TASK_XP.Medium; }
+// Review (anti-farming): the amounts never change -- only how often a source can pay. Limits count rewards by the
+// REAL day they were granted (entry timestamp), so an editable record date (backfilled sleep, backdated workouts)
+// cannot open new ones. Same-name repeats (delete + add the same task/habit again) pay once a day.
+const XP_DAILY_LIMIT={workout:2, goal:2, milestone:10, sleep:1};
+function xpTodayEntries(test){
+  const d=new Date(), from=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(), to=from+86400000; let n=0;
+  for(const x of S.xpLog) if(x&&x.ts>=from&&x.ts<to&&test(x)) n++;
+  return n;
+}
+function xpUnderDailyLimit(kind){ return xpTodayEntries(x=>typeof x.key==='string'&&x.key.startsWith(kind+':'))<XP_DAILY_LIMIT[kind]; }
+function xpSameNameToday(prefix,reason){ return xpTodayEntries(x=>x.reason===reason&&typeof x.key==='string'&&x.key.startsWith(prefix))>0; }
+function xpLimitNote(){ toast(uiLang()==='cs'?'Uloženo · dnešní limit XP pro tento typ je vyčerpaný':'Saved · today\'s XP limit for this kind is used up'); }
+// Polish pass 3: a task pays its XP once in its lifetime. The ledger key keeps the completion day (task:<id>:<date>,
+// which Daily Score and quests read); reopening and completing again -- the same day or any later day -- pays
+// nothing. LifeOS has no recurring tasks (repeating things are habits), so no task needs a second reward.
+function taskRewarded(t){ const p=`task:${t.id}:`; for(const k of xpKeyIndex()) if(typeof k==='string'&&k.length===p.length+10&&k.startsWith(p)&&/^\d{4}-\d\d-\d\d$/.test(k.slice(p.length))) return true; return false; }
+// Polish pass 3: the one definition of "Dnes" for tasks, used by Home (counters + Today's tasks) and Tasks -> Dnes:
+// open tasks due today, then open overdue tasks (still waiting, oldest first). A task without a due date is
+// "Bez termínu" and lives in Tasks -> Otevřené. Daily Score keeps its own rule (due that day + overdue completed
+// that day; open overdue is informational) and reminders list overdue tasks -- both agree with this split.
+function tasksToday(D){
+  D=D||todayStr();
+  return {due:S.tasks.filter(t=>!t.done&&t.dueDate===D),
+    overdue:S.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<D).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)),
+    doneToday:S.tasks.filter(t=>t.done&&t.dueDate===D)};
+}
+function taskGrantCompletion(t){
+  if(taskRewarded(t)||xpSameNameToday('task:','Task: '+t.title)) return false; // review: delete + add the same task again
+  return grantXp(taskXp(t),'Task: '+t.title,catProfile(t.category)||'discipline',`task:${t.id}:${todayStr()}`);
+}
+// Polish pass 3: like tasks (priority table), habits and workouts, goals and milestones pay a fixed reward set by
+// the app -- the former defaults -- never a number typed by the user. An old record's stored xpReward stays in the
+// data untouched but is no longer read, so no value (0, negative, decimal, 99 999) can change a reward.
+const GOAL_XP=200, MILESTONE_XP=25;
+function goalXp(g){ return GOAL_XP; }
+function milestoneXp(m){ return MILESTONE_XP; }
 const HABIT_XP={Low:10,Medium:15,High:25};
 function habitPriority(h){
   if(h&&HABIT_XP[h.priority]) return h.priority;
@@ -2206,7 +2280,9 @@ function uiPumpToasts(){
     n.setAttribute('role',t.kind==='error'?'alert':'status');
     n.textContent=t.msg; uiIconize(n);
     wrap.appendChild(n);
-    setTimeout(()=>{ n.classList.add('is-leaving'); setTimeout(()=>{ n.remove(); uiToastLive--; uiPumpToasts(); },220); }, t.kind==='level'?4200:2900);
+    let gone=false; const leave=()=>{ if(gone) return; gone=true; n.classList.add('is-leaving'); setTimeout(()=>{ n.remove(); uiToastLive--; uiPumpToasts(); },220); };
+    n.onclick=leave; // polish pass 3: tap to dismiss
+    setTimeout(leave, t.kind==='level'?3000:2600);
   }
 }
 // Czech rendering of the app's (English) toast strings. Unknown strings pass through unchanged.
@@ -2286,8 +2362,8 @@ function progressCard(){
   // undated-and-open, habits = active habits complete today (isDayComplete), XP today = xpToday().
   const {level,into,need}=levelFromXp(S.totalXp);
   const pct=Math.min(100,Math.round(into/need*100));
-  const todayTasks=S.tasks.filter(t=>t.dueDate===todayStr()||(!t.dueDate&&!t.done));
-  const doneToday=todayTasks.filter(t=>t.done).length;
+  const tt=tasksToday(), todayTasks=[...tt.due,...tt.doneToday]; // polish pass 3: same "Dnes" as Tasks
+  const doneToday=tt.doneToday.length;
   const activeHabits=S.habits.filter(h=>h.active!==false);
   const doneHabits=activeHabits.filter(h=>isDayComplete(h,todayStr())).length;
   const totalToday=todayTasks.length+activeHabits.length;
@@ -2311,17 +2387,13 @@ function progressCard(){
 // "Today" block of the HUD: daily progress ring + tasks/habits/XP rows (same counts as above).
 function uiTodayCard(){
   // Phase 9: the Today card shows the live Daily Score (dailyScore(todayStr())) -- never XP.
-  const todayTasks=S.tasks.filter(t=>t.dueDate===todayStr()||(!t.dueDate&&!t.done));
-  const doneToday=todayTasks.filter(t=>t.done).length;
-  const activeHabits=S.habits.filter(h=>h.active!==false);
-  const doneHabits=activeHabits.filter(h=>isDayComplete(h,todayStr())).length;
-  const r=dailyScore(todayStr());
-  const card=el(`<section class="card ds-card" data-ds="card" role="button" tabindex="0" aria-label="Daily Score ${r.score==null?'—':r.score}">
+  const r=dailyScore(todayStr()), st=uiDsLiveState(r);
+  const card=el(`<section class="card ds-card" data-ds="card" data-state="${st||'none'}" role="button" tabindex="0" aria-label="Daily Score ${r.score==null?'—':r.score}">
     <div class="today-grid">
-      ${uiDsRing(r.score,'')}
+      ${uiDsRing(r.score,'',true)}
       <div class="today-rows">
-        <div class="between"><span class="kicker">Daily Score</span>${r.score!=null?`<span class="chip ${uiDsTone(r.score)}">${uiDsLabel(r.label)}</span>`:''}</div>
-        ${r.score==null?`<div class="sub">${uiDsT('nothing')}</div>`:uiDsAreaRows(r,true)}
+        <div class="between"><span class="kicker">Daily Score</span>${r.score!=null?`<span class="chip ${uiDsLiveTone(st,r.score)}">${uiDsLabel(st)}</span>`:''}</div>
+        ${r.score==null?`<div class="sub">${uiDsT('nothing')}</div>`:uiDsAreaRows(r,true,true)}
       </div>
     </div>
   </section>`);
@@ -2333,7 +2405,7 @@ function uiTodayCard(){
 // ---- Phase 10: Daily Planner presentation ----
 let uiPlannerDay=null;
 const UI_PL={
-  cs:{title:'Plánovač',add:'Blok',new:'Nový blok',edit:'Upravit blok',today:'Dnes',prev:'Předchozí den',next:'Další den',
+  cs:{now:'Teď',purpose:'Časový plán dne — bloky, úkoly a tréninky v konkrétní čas.',open_cal:'Kalendář',title:'Plánovač',add:'Blok',new:'Nový blok',edit:'Upravit blok',today:'Dnes',prev:'Předchozí den',next:'Další den',
     blocks:'bloků',planned:'naplánováno',done:'hotovo',empty_t:'Den je zatím prázdný',empty_d:'Naplánuj si, kdy co uděláš — úkol, trénink nebo učení.',
     from_cal:'Z kalendáře',allday:'celý den',task:'Úkol',goal:'Cíl',workout:'Trénink',none:'Žádný',complete:'Označit blok jako splněný',uncomplete:'Zrušit splnění bloku',
     f_title:'Název',f_date:'Datum',f_start:'Začátek',f_end:'Konec',f_cat:'Kategorie',f_task:'Propojený úkol',f_goal:'Propojený cíl',f_workout:'Propojený trénink',
@@ -2343,7 +2415,7 @@ const UI_PL={
     calendar_hint:'Události z kalendáře jsou jen pro kontext a nekopírují se.',block_done:'splněno',
     f_type:'Typ',type_general:'Blok',type_workout:'Trénink',f_tpl:'Šablona tréninku',tpl_pick:'Vyber šablonu',tpl_missing:'Šablona není dostupná',no_tpls:'Zatím nemáš žádnou šablonu — vytvoř ji ve Fitness → Šablony.',e_tpl:'Vyber šablonu',
     start_wk:'Spustit trénink',continue_wk:'Pokračovat',wk_active:'Probíhá',wk_done:'Trénink dokončen',wk_active_t:'Trénink už probíhá',wk_active_q:'Máš rozpracovaný trénink',scheduled_for:'Naplánováno na',wk_hint:'Blok a trénink se dokončují zvlášť.'},
-  en:{title:'Planner',add:'Block',new:'New block',edit:'Edit block',today:'Today',prev:'Previous day',next:'Next day',
+  en:{now:'Now',purpose:'Your day by the hour — blocks, tasks and workouts at a set time.',open_cal:'Calendar',title:'Planner',add:'Block',new:'New block',edit:'Edit block',today:'Today',prev:'Previous day',next:'Next day',
     blocks:'blocks',planned:'planned',done:'done',empty_t:'Nothing planned yet',empty_d:'Plan when you will do things — a task, a workout or study time.',
     from_cal:'From calendar',allday:'all day',task:'Task',goal:'Goal',workout:'Workout',none:'None',complete:'Mark block as done',uncomplete:'Mark block as not done',
     f_title:'Title',f_date:'Date',f_start:'Start',f_end:'End',f_cat:'Category',f_task:'Linked task',f_goal:'Linked goal',f_workout:'Linked workout',
@@ -2432,13 +2504,13 @@ function renderPlanner(){
   const blocks=plannerBlocksOn(D), sum=plannerDaySummary(D);
   const evs=uiEventsOn(D), timedEvs=evs.filter(e=>plannerTimeToMin(e.start)!=null), allDay=evs.filter(e=>plannerTimeToMin(e.start)==null);
   const dayLabel=(()=>{ try{ const s=new Date(D+'T00:00').toLocaleDateString(uiLocale(),{weekday:'long',day:'numeric',month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return fmtDate(D); } })();
-  const wrap=el(`<div class="planner">${uiPageHead(uiPlT('title'),'',`<button class="btn sm" id="uiAddBlock">＋ ${uiPlT('add')}</button>`)}
+  const wrap=el(`<div class="planner">${uiPageHead(uiPlT('title'),uiPlT('purpose'),`<button class="btn sm" id="uiAddBlock">＋ ${uiPlT('add')}</button>`)}
     <section class="card pl-daybar">
       <button class="iconbtn" id="plPrev" aria-label="${uiPlT('prev')}">‹</button>
       <div class="pl-day"><b>${dayLabel}</b><span class="sub">${sum.planned} ${uiPlT('blocks')} · ${uiPlDur(sum.plannedMin)} ${uiPlT('planned')} · ${sum.completed} ${uiPlT('done')}</span></div>
       <button class="iconbtn" id="plNext" aria-label="${uiPlT('next')}">›</button>
     </section>
-    ${D!==today?`<button class="btn ghost sm pl-todaybtn" id="plToday">${uiPlT('today')}</button>`:''}
+    <div class="pl-tools">${D!==today?`<button class="btn ghost sm" id="plToday">${uiPlT('today')}</button>`:`<button class="btn ghost sm" id="plNow">${uiIcon('clock',15)} ${uiPlT('now')}</button>`}<button class="btn ghost sm" id="plCal">${uiIcon('calendar',15)} ${uiPlT('open_cal')}</button></div>
     ${allDay.length?`<div class="pl-allday">${allDay.map(e=>`<span class="chip is-muted">📅 ${escapeHtml(e.title)} · ${uiPlT('allday')}</span>`).join('')}</div>`:''}
     <div id="plBody"></div>
     ${evs.length?`<p class="helper-text" style="margin-top:10px">${uiPlT('calendar_hint')}</p>`:''}
@@ -2447,6 +2519,9 @@ function renderPlanner(){
   wrap.querySelector('#plPrev').onclick=()=>uiOpenPlanner(addDays(D,-1));
   wrap.querySelector('#plNext').onclick=()=>uiOpenPlanner(addDays(D,1));
   const tb=wrap.querySelector('#plToday'); if(tb) tb.onclick=()=>uiOpenPlanner(today);
+  // Polish pass 3: "Teď" brings the current time into view (a third from the top); Calendar is the month overview.
+  const nb=wrap.querySelector('#plNow'); if(nb) nb.onclick=()=>{ const t=document.querySelector('#plTimeline .pl-now')||document.getElementById('plTimeline')||document.getElementById('plBody'); if(t) window.scrollTo({top:Math.max(0,t.getBoundingClientRect().top+window.scrollY-Math.round(window.innerHeight*0.33)),behavior:animationsOn()?'smooth':'auto'}); };
+  wrap.querySelector('#plCal').onclick=()=>{ uiCalDay=D; uiCalMode='month'; calOffset=0; view='calendar'; render(); window.scrollTo(0,0); };
   const body=wrap.querySelector('#plBody');
   if(!blocks.length&&!timedEvs.length){
     const e=el(`<div class="card">${uiEmpty('🗓️',uiPlT('empty_t'),uiPlT('empty_d'),'＋ '+uiPlT('add'))}</div>`);
@@ -2458,13 +2533,20 @@ function renderPlanner(){
     ...timedEvs.map(e=>{ const s0=plannerTimeToMin(e.start), e0=plannerTimeToMin(e.end); return {id:'ev_'+e.id,start:s0,end:e0!=null&&e0>s0?e0:Math.min(1440,s0+60),ev:e}; })];
   let from=6*60, to=22*60;
   items.forEach(it=>{ from=Math.min(from,Math.floor(it.start/60)*60); to=Math.max(to,Math.ceil(it.end/60)*60); });
-  const PX=1.1, lay=plannerLayout(items);
+  // Polish pass 3: columns follow the DRAWN size -- a block is at least 44 px tall, 76 px when three or more share their time
+  // (on a phone the title then stacks above the check) -- so short neighbours never cover each other and a tap opens its own block.
+  const PX=1.1, drawn=(its,minFor)=>its.map(it=>Object.assign({},it,{end:Math.max(it.end,it.start+Math.ceil(minFor(it)/PX))}));
+  // review: a block that shows link chips (task / goal / workout) needs 80 px for title + time + chips
+  const hasChips=it=>!!(it.b&&(it.b.taskId||it.b.goalId||it.b.workoutId||it.b.workoutTemplateId));
+  const minH=(it,cols)=>cols>2?76:hasChips(it)?80:44;
+  let lay=plannerLayout(drawn(items,it=>minH(it,1)));
+  for(let pass=0;pass<3;pass++){ const prev=lay; lay=plannerLayout(drawn(items,it=>minH(it,prev[it.id].cols))); if(items.every(it=>(lay[it.id].cols>2)===(prev[it.id].cols>2))) break; }
   const tl=el(`<section class="card pl-timeline" aria-label="${dayLabel}"><div class="pl-grid" id="plTimeline" data-day="${D}" data-from="${from}" data-to="${to}" data-px="${PX}" style="height:${Math.round((to-from)*PX)}px"></div></section>`);
   const grid=tl.querySelector('#plTimeline');
   for(let h=from;h<=to;h+=60) grid.appendChild(el(`<div class="pl-hour" style="top:${Math.round((h-from)*PX)}px"><span>${plannerMinToTime(Math.min(h,1439)).replace('23:59','24:00')}</span></div>`));
   if(D===today){ const n=new Date(), nm=n.getHours()*60+n.getMinutes(); if(nm>=from&&nm<=to) grid.appendChild(el(`<div class="pl-now" style="top:${Math.round((nm-from)*PX)}px" aria-hidden="true"></div>`)); }
   items.forEach(it=>{
-    const L=lay[it.id], top=Math.round((it.start-from)*PX), h=Math.max(44,Math.round((it.end-it.start)*PX));
+    const L=lay[it.id], top=Math.round((it.start-from)*PX), h=Math.max(minH(it,L.cols),Math.round((it.end-it.start)*PX));
     const pos=`top:${top}px;height:${h}px;left:calc(var(--pl-gutter) + (100% - var(--pl-gutter)) * ${L.col} / ${L.cols});width:calc((100% - var(--pl-gutter)) / ${L.cols} - 4px)`;
     if(it.ev){
       const e=it.ev;
@@ -2477,7 +2559,7 @@ function renderPlanner(){
     const chips=[lk.task?`<span class="chip ${lk.task.done?'is-success':''}">✅ ${escapeHtml(lk.task.title)}${lk.task.done?' · '+uiPlT('task_done'):''}</span>`:(b.taskId?`<span class="chip is-muted">✅ ${uiPlT('missing')}</span>`:''),
       lk.goal?`<span class="chip">🎯 ${escapeHtml(lk.goal.title)}</span>`:'', lk.workout?`<span class="chip">🏋️ ${escapeHtml(lk.workout.name)}</span>`:''].filter(Boolean).join('');
     const wi=b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
-    const n=el(`<div class="pl-block${b.completed?' is-done':''}${compact?' is-compact':''}${wi?' is-workout':''}" style="${pos};--pl-c:${uiPlColor(b.category)}" data-block="${b.id}">
+    const n=el(`<div class="pl-block${b.completed?' is-done':''}${compact?' is-compact':''}${wi?' is-workout':''}${L.cols>2?' is-multi is-narrow':''}" style="${pos};--pl-c:${uiPlColor(b.category)}" data-block="${b.id}">
       <button class="check plCheck ${b.completed?'done':''}" aria-pressed="${b.completed}" aria-label="${uiPlT(b.completed?'uncomplete':'complete')}: ${escapeHtml(b.title)}">${b.completed?'✓':''}</button>
       <button class="pl-open" aria-label="${uiPlT('edit')}: ${escapeHtml(b.title)}${linkTxt}"><span class="pl-t">${uiPlIcon(b)} ${escapeHtml(b.title)}${compact&&lk.task&&lk.task.done?' <span title="'+uiPlT('task_done')+'">✅</span>':''}</span><span class="pl-m">${b.startTime}–${b.endTime}${compact?'':' · '+uiPlDur(plannerDuration(b))}</span>${!compact&&(chips||wi)?`<span class="pl-chips">${wi?wi.tplChip+wi.stChip:''}${chips}</span>`:''}</button>
       ${wi&&wi.action?`<button class="iconbtn plWkStart" aria-label="${wi.action}: ${escapeHtml(b.title)}">▶</button>`:''}
@@ -2590,12 +2672,12 @@ function openPlannerForm(existing,preset){
 }
 // ---- Phase 9: Daily Score presentation (reads dailyScore()/S.dailyScores only) ----
 const UI_DS={
-  cs:{nothing:'Dnes zatím není co hodnotit',live:'průběžné',excellent:'Výborný den',good:'Dobrý den',solid:'Solidní den',weaker:'Slabší den',tough:'Náročný den',
+  cs:{nothing:'Dnes zatím není co hodnotit',live:'průběžné',early:'Den teprve začíná',progress:'Rozpracovaný den',live_note:'Dokud den neskončí, skóre průběžně roste — hodnocení dne se uloží po jeho konci.',excellent:'Výborný den',good:'Dobrý den',solid:'Solidní den',weaker:'Slabší den',tough:'Náročný den',
     tasks:'Úkoly',habits:'Návyky',nutrition:'Stravování',sleep:'Spánek',fitness:'Fitness',goals:'Cíle',na:'nezapočítáno',rest:'Den volna',
     why:'Proč toto skóre',weights:'Váhy: Úkoly 30 · Návyky 30 · Stravování 15 · Spánek 15 · Fitness 10. Oblasti bez dat a dny volna se nezapočítávají.',
     separate:'Daily Score je oddělené od XP — nemění level, atributy ani odměny.',nothing_d:'Skóre vznikne, jakmile bude pro den něco relevantního: naplánovaný úkol, návyk na dnešek, zapsané jídlo, spánek nebo naplánovaný trénink.',
     snap:'uložený snímek dne'},
-  en:{nothing:'Nothing to score yet today',live:'live',excellent:'Excellent day',good:'Good day',solid:'Solid day',weaker:'Weaker day',tough:'Tough day',
+  en:{nothing:'Nothing to score yet today',live:'live',early:'The day is just starting',progress:'Day in progress',live_note:'Until the day ends the score keeps growing — the day is rated once it is over.',excellent:'Excellent day',good:'Good day',solid:'Solid day',weaker:'Weaker day',tough:'Tough day',
     tasks:'Tasks',habits:'Habits',nutrition:'Nutrition',sleep:'Sleep',fitness:'Fitness',goals:'Goals',na:'not counted',rest:'Rest Day',
     why:'Why this score',weights:'Weights: Tasks 30 · Habits 30 · Nutrition 15 · Sleep 15 · Fitness 10. Areas without data and rest days are not counted.',
     separate:'Daily Score is separate from XP — it never changes level, attributes or rewards.',nothing_d:'A score appears as soon as something is relevant for the day: a planned task, a habit due today, a logged meal, sleep or a planned workout.',
@@ -2603,9 +2685,19 @@ const UI_DS={
 };
 function uiDsT(k){ return (UI_DS[uiLang()]||UI_DS.cs)[k]; }
 function uiDsLabel(key){ return key?uiDsT(key):''; }
+// Polish pass 3: how the LIVE day is described -- the score itself is unchanged. A finished day keeps its rating;
+// today is never called "Náročný/Slabší den" just because it isn't over: nothing done yet = early, below 75 =
+// in progress (neutral), 75+ = the usual good/excellent label.
+function uiDsLiveState(r){
+  if(!r||r.score==null) return null;
+  const started=Object.keys(r.areas||{}).some(k=>{ const a=r.areas[k]; return a&&a.score!=null&&a.score>0; });
+  if(!started) return 'early';
+  return r.score>=75?r.label:'progress';
+}
+function uiDsLiveTone(st,score){ return st==='early'||st==='progress'?'is-muted':uiDsTone(score); }
 function uiDsTone(score){ return score==null?'is-muted':score>=75?'is-success':score>=50?'':'is-warn'; }
-function uiDsRing(score,cls){
-  const c=score==null?'var(--line)':score>=75?'var(--accent2)':score>=50?'var(--accent)':'var(--warn)';
+function uiDsRing(score,cls,live){
+  const c=score==null?'var(--line)':score>=75?'var(--accent2)':score>=50||live?'var(--accent)':'var(--warn)';
   return `<div class="ring ${cls||''}" style="--p:${score==null?0:score};--c:${c}" role="img" aria-label="Daily Score ${score==null?'—':score+' / 100'}"><span>${score==null?'—':score}</span></div>`;
 }
 const UI_DS_AREAS=['tasks','habits','nutrition','sleep','fitness'];
@@ -2621,9 +2713,10 @@ function uiDsValue(k,a){
   if(k==='fitness') return a.rest?uiDsT('rest'):`${Math.min(1,a.workouts||0)}/1`;
   return na?'0':a.score+' %';
 }
-function uiDsAreaRows(r,compact){
+function uiDsAreaRows(r,compact,live){
+  // polish pass 3: on the live day a low area is still "in progress" -- neutral bar, never the warning colour
   return UI_DS_AREAS.map(k=>{ const a=r.areas[k]; const na=a.score==null;
-    return `<div class="ds-row${na?' is-na':''}${a.rest?' is-rest':''}" data-area="${k}"><span>${uiDsT(k)}</span><b>${uiDsValue(k,a)}</b><div class="bar${na?'':' '+(a.score>=75?'is-success':a.score>=50?'':'is-warn')}"><i style="width:${na?0:a.score}%"></i></div></div>`;
+    return `<div class="ds-row${na?' is-na':''}${a.rest?' is-rest':''}" data-area="${k}"><span>${uiDsT(k)}</span><b>${uiDsValue(k,a)}</b><div class="bar${na?'':' '+(a.score>=75?'is-success':a.score>=50||live?'':'is-warn')}"><i style="width:${na?0:a.score}%"></i></div></div>`;
   }).join('');
 }
 // One plain-language reason per area -- always shown in the detail, including for N/A.
@@ -2677,7 +2770,7 @@ function uiDsStatsCard(){
   const hist=uiDsHistory(7);
   const card=el(`<section class="card ds-stats" data-ds="stats">
     <div class="section-header" style="margin-top:0"><h3>Daily Score</h3><span class="sub">${cs?'odděleno od XP':'separate from XP'}</span></div>
-    <div class="today-grid" style="margin-bottom:12px">${uiDsRing(today.score,'sm')}<div><div class="kicker">${cs?'Dnes':'Today'} · ${uiDsT('live')}</div><div class="hud-name" style="font-size:17px">${today.score==null?uiDsT('nothing'):uiDsLabel(today.label)}</div></div></div>
+    <div class="today-grid" style="margin-bottom:12px">${uiDsRing(today.score,'sm',true)}<div><div class="kicker">${cs?'Dnes':'Today'} · ${uiDsT('live')}</div><div class="hud-name" style="font-size:17px">${today.score==null?uiDsT('nothing'):uiDsLabel(uiDsLiveState(today))}</div></div></div>
     <div class="stat-grid cols-3">
       <div class="stat-card"><div class="stat-label">${cs?'Průměr 7 dní':'7-day avg'}</div><div class="stat-value">${avgOf(7)??'—'}</div></div>
       <div class="stat-card"><div class="stat-label">${cs?'Průměr 30 dní':'30-day avg'}</div><div class="stat-value">${avgOf(30)??'—'}</div></div>
@@ -2698,11 +2791,11 @@ function uiOpenDailyScore(D){
   const content=el(`<div class="ds-detail" data-ds="detail">
     <h3>Daily Score</h3>
     <div class="sub" style="margin:-8px 0 14px">${fmtDate(D)}${isToday?' · '+uiDsT('live'):snap?' · '+uiDsT('snap'):''}</div>
-    <div class="today-grid" style="margin-bottom:14px">${uiDsRing(r.score,'lg')}
-      <div>${r.score==null?`<div class="hud-name" style="font-size:18px">${uiDsT('nothing')}</div><p class="sub" style="margin-top:6px">${uiDsT('nothing_d')}</p>`:`<div class="hud-name" style="font-size:20px">${uiDsLabel(r.label)}</div><div class="sub num" style="margin-top:2px">${r.score} / 100</div>`}</div>
+    <div class="today-grid" style="margin-bottom:14px">${uiDsRing(r.score,'lg',isToday)}
+      <div>${r.score==null?`<div class="hud-name" style="font-size:18px">${uiDsT('nothing')}</div><p class="sub" style="margin-top:6px">${uiDsT('nothing_d')}</p>`:`<div class="hud-name" style="font-size:20px">${uiDsLabel(isToday?uiDsLiveState(r):r.label)}</div><div class="sub num" style="margin-top:2px">${r.score} / 100</div>${isToday&&uiDsLiveState(r)!==r.label?`<p class="sub" style="margin-top:6px" data-ds="live-note">${uiDsT('live_note')}</p>`:''}`}</div>
     </div>
     <div class="section-header" style="margin-top:4px"><h3>${uiDsT('why')}</h3></div>
-    <div class="ds-areas">${UI_DS_AREAS.map(k=>{ const a=r.areas[k]||{score:null}; return `<div class="ds-area${a.score==null?' is-na':''}" data-area="${k}"><div class="between"><b>${uiDsT(k)}</b><span class="ds-chips"><span class="chip ${uiDsTone(a.score)}">${uiDsValue(k,a)}</span>${a.score==null?`<span class="chip is-muted">${uiDsT('na')}</span>`:k==='tasks'?'':`<span class="chip ${uiDsTone(a.score)}">${a.score} %</span>`}</span></div>${a.score!=null?`<div class="bar${a.score>=75?' is-success':a.score>=50?'':' is-warn'}" style="margin:8px 0 6px"><i style="width:${a.score}%"></i></div>`:''}<div class="sub">${uiDsReason(k,a)}</div></div>`; }).join('')}
+    <div class="ds-areas">${UI_DS_AREAS.map(k=>{ const a=r.areas[k]||{score:null}; return `<div class="ds-area${a.score==null?' is-na':''}" data-area="${k}"><div class="between"><b>${uiDsT(k)}</b><span class="ds-chips"><span class="chip ${isToday&&a.score!=null&&a.score<75?'is-muted':uiDsTone(a.score)}">${uiDsValue(k,a)}</span>${a.score==null?`<span class="chip is-muted">${uiDsT('na')}</span>`:k==='tasks'?'':`<span class="chip ${isToday&&a.score!=null&&a.score<75?'is-muted':uiDsTone(a.score)}">${a.score} %</span>`}</span></div>${a.score!=null?`<div class="bar${a.score>=75?' is-success':a.score>=50?'':' is-warn'}" style="margin:8px 0 6px"><i style="width:${a.score}%"></i></div>`:''}<div class="sub">${uiDsReason(k,a)}</div></div>`; }).join('')}
       ${ms.length?`<div class="ds-area is-na" data-area="goals"><div class="between"><b>${uiDsT('goals')}</b><span class="chip is-muted">${uiDsT('na')}</span></div><div class="sub">${uiIcon('flag',14)} ${ms.map(escapeHtml).join(', ')}</div></div>`:''}
     </div>
     <p class="helper-text" style="margin:12px 0 0">${uiDsT('weights')}</p>
@@ -3169,7 +3262,7 @@ function renderHome(){
     },
     tasks: ()=>{
       if(W.tasks===false) return null;
-      const todayTasks=S.tasks.filter(t=>!t.done && (t.dueDate===todayStr()||!t.dueDate)).slice(0,5);
+      const tt=tasksToday(), todayTasks=[...tt.due,...tt.overdue].slice(0,5); // polish pass 3: same list as Tasks -> Dnes
       const tc=el(`<section>${sectionHead(uiT('todays_tasks'),uiT('see_all'),'tasks')}<div class="list" id="hTasks"></div></section>`);
       const tl=tc.querySelector('#hTasks');
       if(!todayTasks.length){ const e=el(`<div class="card">${uiEmpty('🌤️',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openForm('task'); tl.appendChild(e); }
@@ -3349,8 +3442,7 @@ function taskItem(t){
     t.done=!t.done;
     if(t.done){
       // Polish pass: XP from priority, attributes from the category's profile (uncategorized = discipline).
-      const taskKey=`task:${t.id}:${todayStr()}`;
-      grantXp(taskXp(t),'Task: '+t.title,catProfile(t.category)||'discipline',taskKey);
+      taskGrantCompletion(t);
     }
     scheduleSave();
     // Phase 8B: a just-completed task stays on screen in its completed state for a moment
@@ -3419,7 +3511,7 @@ function toggleHabitDay(h){
   else {
     h.completions.push(date);
     const key=`habit:${h.id}:${date}`;
-    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
+    if(!xpSameNameToday('habit:','Habit: '+h.name)) grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key); // review: a re-created habit of the same name pays once a day
   }
   scheduleSave();render();
 }
@@ -3432,7 +3524,7 @@ function incrementHabitToday(h){
   h.completions.push(date);
   if(count+1>=(h.target||1)){
     const key=`habit:${h.id}:${date}`;
-    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
+    if(!xpSameNameToday('habit:','Habit: '+h.name)) grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key); // review: a re-created habit of the same name pays once a day
   }
   scheduleSave();render();
 }
@@ -3450,7 +3542,7 @@ function markHabitClean(h,dateStr){
   if(!h.completions.includes(dateStr)){
     h.completions.push(dateStr);
     const key=`habit:${h.id}:${dateStr}`;
-    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
+    if(!xpSameNameToday('habit:','Habit: '+h.name)) grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key); // review: a re-created habit of the same name pays once a day
   }
   scheduleSave();render();
 }
@@ -3488,6 +3580,15 @@ function habitItem(h){
   it.querySelector('.delbtn').onclick=()=>uiDelConfirm('habit',{name:h.name,goal:(S.goals.find(g=>g.id===h.goalId)||{}).title},()=>{S.habits=S.habits.filter(x=>x.id!==h.id);scheduleSave();render();});
   return it;
 }
+// Polish pass 3: an active goal whose progress reached 100 % reads "Dokončeno" (never "Aktivní 100 %") and offers
+// "Uzavřít cíl" -- the same completeGoal() as before (status Completed, reward once under goal:<id>:complete).
+function uiGoalReady(g){ return g.status==='Active'&&goalProgress(g)>=100; }
+function uiGoalStatusChip(g){
+  const cs=uiLang()==='cs';
+  if(uiGoalReady(g)) return `<span class="chip is-success" data-goal-state="ready">${uiIcon('check',13)} ${cs?'Dokončeno':'Done'}</span>`;
+  return `<span class="chip ${g.status==='Completed'?'is-success':g.status==='Active'?'':'is-muted'}" data-goal-state="${escapeHtml(g.status)}">${uiT('g_'+g.status)}</span>`;
+}
+function uiGoalCloseLabel(g){ return uiLang()==='cs'?`Uzavřít cíl · +${goalXp(g)} XP`:`Close goal · +${goalXp(g)} XP`; }
 function goalMini(g){
   // Uses the one real goalProgress() function — no second/parallel progress calculation.
   const pct=goalProgress(g);
@@ -3496,7 +3597,7 @@ function goalMini(g){
   const it=el(`<div class="goalMiniTap goal-mini" role="button" tabindex="0" style="cursor:pointer">
     <div class="between"><span class="item-title truncate goal-mini-t">${uiIcon('target',16)} ${escapeHtml(g.title)}</span><span class="goal-pct" style="font-size:18px">${pct}<small>%</small></span></div>
     <div class="bar" style="margin-top:8px;height:8px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
-    ${metaBits?`<div class="item-meta" style="margin-top:6px">${metaBits}</div>`:''}
+    ${uiGoalReady(g)?`<div class="item-meta" style="margin-top:6px">${uiGoalStatusChip(g)}</div>`:metaBits?`<div class="item-meta" style="margin-top:6px">${metaBits}</div>`:''}
   </div>`);
   it.onclick=()=>{currentGoalId=g.id;view='goalDetail';render();};
   it.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); it.onclick(); } };
@@ -3530,7 +3631,9 @@ function completeGoal(g){
   // Idempotent: a goal's completion XP is granted at most once ever (not per-day, since
   // goal completion is not a recurring daily event like a task/habit).
   g.status='Completed';
-  grantXp(g.xpReward||200,'Goal: '+g.title,catProfile(g.category)||'WIS',`goal:${g.id}:complete`);
+  // review: at most XP_DAILY_LIMIT.goal goal rewards a day (goals are long-term; creating + closing on the spot is farming)
+  if(!S.xpLog.some(x=>x.key===`goal:${g.id}:complete`)&&!xpUnderDailyLimit('goal')){ xpLimitNote(); scheduleSave(); return; }
+  grantXp(goalXp(g),'Goal: '+g.title,catProfile(g.category)||'WIS',`goal:${g.id}:complete`);
   scheduleSave();
 }
 function toggleMilestone(m){
@@ -3538,7 +3641,8 @@ function toggleMilestone(m){
   if(m.completed){
     m.completedAt=Date.now();
     const g=S.goals.find(x=>x.id===m.goalId);
-    grantXp(m.xpReward||25,'Milestone: '+m.title,(g&&catProfile(g.category))||'WIS',`milestone:${m.id}`);
+    if(!S.xpLog.some(x=>x.key===`milestone:${m.id}`)&&!xpUnderDailyLimit('milestone')) xpLimitNote(); else
+    grantXp(milestoneXp(m),'Milestone: '+m.title,(g&&catProfile(g.category))||'WIS',`milestone:${m.id}`);
     checkAchievements();
   } else {
     m.completedAt=null; // unchecking never removes already-granted XP
@@ -3561,19 +3665,28 @@ function renderTasks(){
   const list=wrap.querySelector('#tlist');
   const today=todayStr();
   let items=[...S.tasks];
-  if(taskFilter==='Today') items=items.filter(t=>t.dueDate===today && !t.done);
+  const tt=tasksToday(today);
+  // Dnes lists today's tasks, then the oldest overdue ones (at most 10 -- the rest is one tap away in Po termínu)
+  const OVERDUE_IN_TODAY=10;
+  if(taskFilter==='Today') items=[...tt.due,...tt.overdue.slice(0,OVERDUE_IN_TODAY)];
   else if(taskFilter==='Upcoming') items=items.filter(t=>t.dueDate>today && !t.done);
   else if(taskFilter==='Overdue') items=items.filter(t=>t.dueDate && t.dueDate<today && !t.done);
   else if(taskFilter==='Completed') items=items.filter(t=>t.done);
   else items=items.filter(t=>!t.done);
-  items.sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+  if(taskFilter!=='Today') items.sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
   if(!items.length){
     const doneTodayN=S.tasks.filter(t=>t.done&&t.dueDate===today).length;
     const e=el(`<div class="card">${taskFilter==='Today'&&doneTodayN?uiEmpty('🎉',uiT('all_done'),uiT('done_today')+': '+doneTodayN,uiT('add_task')):uiEmpty('✅',uiT('empty_tasks_t'),uiT('empty_tasks_d'),uiT('add_task'))}</div>`);
     e.querySelector('.emptyCta').onclick=()=>openForm('task');
     list.appendChild(e);
   }
-  items.forEach(t=>list.appendChild(taskItem(t)));
+  items.forEach((t,i)=>{
+    // Dnes: overdue tasks follow today's under their own heading (same list as Home's Today's tasks)
+    if(taskFilter==='Today'&&tt.overdue.length&&i===tt.due.length) list.appendChild(el(`<div class="kicker task-group" data-group="overdue">${uiLang()==='cs'?'Po termínu':'Overdue'} · ${tt.overdue.length}</div>`));
+    list.appendChild(taskItem(t));
+  });
+  if(taskFilter==='Today'&&tt.overdue.length>OVERDUE_IN_TODAY){ const more=el(`<button class="btn ghost sm task-more" data-more="overdue">${uiLang()==='cs'?`Všechny po termínu (${tt.overdue.length}) ›`:`All overdue (${tt.overdue.length}) ›`}</button>`); more.onclick=()=>{ taskFilter='Overdue'; render(); window.scrollTo(0,0); }; list.appendChild(more); }
+  if(taskFilter==='Today'){ const nd=S.tasks.filter(t=>!t.done&&!t.dueDate).length; if(nd) list.appendChild(el(`<p class="helper-text task-nodate">${uiLang()==='cs'?`Bez termínu: ${nd} — najdeš je v záložce Otevřené.`:`No due date: ${nd} — see the Open tab.`}</p>`)); }
   return wrap;
 }
 /* ---- Habits view ---- */
@@ -3774,14 +3887,14 @@ function renderGoals(){
       </div>
       <div class="bar gTap${pct>=100?' is-success':''}" style="cursor:pointer" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
       <div class="goal-meta">
-        <span class="chip ${g.status==='Completed'?'is-success':g.status==='Active'?'':'is-muted'}">${uiT('g_'+g.status)}</span>
+        ${uiGoalStatusChip(g)}
         ${g.targetDate?`<span class="chip ${overdue?'is-danger':'is-muted'}">⏳ ${fmtDate(g.targetDate)}</span>`:''}
         ${msAll.length?`<span class="chip is-muted">🚩 ${msDone}/${msAll.length}</span>`:''}
-        <span class="chip is-gold">+${g.xpReward||200} XP</span>
+        <span class="chip is-gold">+${goalXp(g)} XP</span>
         <span class="sub">${g.mode==='manual'?uiT('progress_manual'):(uiLang()==='cs'?'automaticky z propojených úkolů':'automatic from linked tasks')}</span>
       </div>
       <div class="goal-actions">
-        ${g.status!=='Completed'?`<button class="pill sm sm-done">✓ ${uiT('mark_complete')}</button>`:''}
+        ${uiGoalReady(g)?`<button class="btn sm sm-done">${uiIcon('check',15)} ${uiGoalCloseLabel(g)}</button>`:g.status!=='Completed'?`<button class="pill sm sm-done">✓ ${uiT('mark_complete')}</button>`:''}
         <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(g.title)}">✕</button>
       </div>
     </div>`);
@@ -3816,7 +3929,7 @@ function openGoalForm(existing){
     <label>Progress mode</label><select id="g_mode"><option value="auto">Automatic</option><option value="manual">Manual</option></select>
     <div class="mode-help" id="g_modeHelp" aria-live="polite"></div>
     <div id="manualWrap"><label>Manual progress (%)</label><input type="number" id="g_manual" min="0" max="100" value="${g?(g.manualProgress||0):0}"></div>
-    <label>XP reward on completion</label><input type="number" id="g_xp" min="0" value="${g?(g.xpReward||200):200}">
+    <p class="helper-text" id="g_xpInfo">${uiLang()==='cs'?`Odměna za dokončení: +${GOAL_XP} XP · určuje ji aplikace`:`Completion reward: +${GOAL_XP} XP · set by the app`}</p>
     <button class="btn" id="g_save">${g?'Save Changes':'Add Goal'}</button>
   </div>`);
   if(g){ inner.querySelector('#g_cat').value=g.category||''; inner.querySelector('#g_status').value=g.status||'Active'; inner.querySelector('#g_mode').value=g.mode||'auto'; }
@@ -3829,14 +3942,13 @@ function openGoalForm(existing){
       g.title=title; g.description=inner.querySelector('#g_desc').value; g.category=inner.querySelector('#g_cat').value;
       g.targetDate=inner.querySelector('#g_due').value; g.mode=inner.querySelector('#g_mode').value;
       g.manualProgress=parseFloat(inner.querySelector('#g_manual').value)||0;
-      g.xpReward=parseFloat(inner.querySelector('#g_xp').value)||0;
       if(newStatus==='Completed' && !wasCompleted){ completeGoal(g); } else { g.status=newStatus; }
     } else {
       const ng={id:uid(),title,description:inner.querySelector('#g_desc').value,category:inner.querySelector('#g_cat').value,
         targetDate:inner.querySelector('#g_due').value,status:'Active',mode:inner.querySelector('#g_mode').value,
-        manualProgress:parseFloat(inner.querySelector('#g_manual').value)||0,xpReward:parseFloat(inner.querySelector('#g_xp').value)||200,
+        manualProgress:parseFloat(inner.querySelector('#g_manual').value)||0,
         createdAt:Date.now()};
-      if(newStatus==='Completed'){ completeGoal(ng); } else { ng.status=newStatus; }
+      ng.status=newStatus; // review: a goal entered as already Completed is a record of the past -- no reward
       S.goals.push(ng);
     }
     scheduleSave();closeSheets();view='goals';render();toast(g?'Goal updated':'Goal added');
@@ -3876,12 +3988,13 @@ function renderGoalDetail(){
         ${g.description?`<p class="sub" style="margin-top:6px">${escapeHtml(g.description)}</p>`:''}</div>
         <div class="goal-pct" style="font-size:40px">${pct}<small>%</small></div></div>
       <div class="bar${pct>=100?' is-success':''}" style="height:12px;margin:14px 0 10px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
-      <div class="goal-meta"><span class="chip ${g.status==='Completed'?'is-success':''}">${uiT('g_'+g.status)}</span>${g.targetDate?`<span class="chip is-muted">⏳ ${uiT('by')} ${fmtDate(g.targetDate)}</span>`:''}<span class="chip is-gold">+${g.xpReward||200} XP</span></div>
+      <div class="goal-meta">${uiGoalStatusChip(g)}${g.targetDate?`<span class="chip is-muted">⏳ ${uiT('by')} ${fmtDate(g.targetDate)}</span>`:''}<span class="chip is-gold">+${goalXp(g)} XP</span></div>
       <div class="sub" style="margin-top:8px" data-source="${progressSource}">${g.mode==='manual'?uiT('progress_manual'):uiT('progress_auto',{s:srcLabel})}</div>
       <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap">
         <button class="btn ghost sm" id="editGoalBtn">${uiIcon('edit',16)} ${uiT('edit')}</button>
-        ${g.status!=='Completed'?`<button class="btn sm doneBtn">✓ ${uiT('mark_complete')}</button>`:''}
+        ${uiGoalReady(g)?`<button class="btn sm doneBtn">${uiIcon('check',15)} ${uiGoalCloseLabel(g)}</button>`:g.status!=='Completed'?`<button class="btn sm doneBtn">✓ ${uiT('mark_complete')}</button>`:''}
       </div>
+      ${uiGoalReady(g)?`<p class="sub" style="margin-top:10px" data-goal-ready>${uiLang()==='cs'?'Cíl je splněný na 100 %. Uzavři ho — zůstane v historii i s propojenými úkoly.':'The goal is at 100 %. Close it — it stays in your history with its linked tasks.'}</p>`:''}
     </section>
     <div class="section-header"><h3>🚩 ${uiT('milestones')} · ${milestones.filter(m=>m.completed).length}/${milestones.length}</h3><button class="action" id="addMs">＋ ${uiT('add_milestone')}</button></div>
     <div class="tree"><div class="list" id="msList"></div></div>
@@ -3903,7 +4016,7 @@ function renderGoalDetail(){
     const it=el(`<div class="item">
       <button class="check ${m.completed?'done':''}" aria-label="${escapeHtml(m.title)}" aria-pressed="${m.completed?'true':'false'}">${m.completed?'✓':''}</button>
       <div style="flex:1;min-width:0"><div class="item-title ${m.completed?'done':''}">${escapeHtml(m.title)}</div>
-      <div class="item-meta meta-row">${m.description?`<span>${escapeHtml(m.description)}</span>`:''}<span class="xp-tag">+${m.xpReward||25} XP</span></div></div>
+      <div class="item-meta meta-row">${m.description?`<span>${escapeHtml(m.description)}</span>`:''}<span class="xp-tag">+${milestoneXp(m)} XP</span></div></div>
       <div class="item-actions"><button class="iconbtn ghost-ic editMs" aria-label="${uiT('edit')}: ${escapeHtml(m.title)}">${uiIcon('edit',18)}</button>
       <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.title)}">✕</button></div>
     </div>`);
@@ -3920,17 +4033,17 @@ function openMilestoneForm(goalId,existing){
   const inner=el(`<div><h3>${m?'Edit Milestone':'New Milestone'}</h3>
     <label>Title</label><input id="ms_title" value="${m?escapeHtml(m.title):''}" placeholder="e.g. Run first 5K">
     <label>Description</label><textarea id="ms_desc" rows="2">${m?escapeHtml(m.description||''):''}</textarea>
-    <label>XP reward</label><input type="number" id="ms_xp" min="0" value="${m?(m.xpReward||25):25}">
+    <p class="helper-text" id="ms_xpInfo">${uiLang()==='cs'?`Odměna za splnění: +${MILESTONE_XP} XP · určuje ji aplikace`:`Reward: +${MILESTONE_XP} XP · set by the app`}</p>
     <button class="btn" id="ms_save">${m?'Save Changes':'Add Milestone'}</button>
   </div>`);
   inner.querySelector('#ms_save').onclick=()=>{
     const title=inner.querySelector('#ms_title').value.trim();
     if(!title){toast('Title required');return;}
     if(m){
-      m.title=title; m.description=inner.querySelector('#ms_desc').value; m.xpReward=parseFloat(inner.querySelector('#ms_xp').value)||0;
+      m.title=title; m.description=inner.querySelector('#ms_desc').value;
     } else {
       S.milestones.push({id:uid(),goalId,title,description:inner.querySelector('#ms_desc').value,
-        xpReward:parseFloat(inner.querySelector('#ms_xp').value)||25,completed:false,completedAt:null,createdAt:Date.now()});
+        completed:false,completedAt:null,createdAt:Date.now()});
     }
     scheduleSave();closeSheets();render();toast(m?'Milestone updated':'Milestone added');
   };
@@ -4030,7 +4143,9 @@ function renderCharacter(){
   const ACTIVITY_ICON={levelup:'up',skill_unlock:'star',achievement:'trophy',quest_complete:'quest',xp:'bolt'};
   // stored log texts stay as they are; an achievement entry is shown with its localized text
   const actText=a=>{ const ac=a.type==='achievement'&&ACHV.find(x=>x.title===a.title); if(ac){ const t=uiAchvText(ac); return [t.t,t.d]; }
-    return [a.title,a.type==='levelup'?String(a.description||'').replace(/ — \+1 Skill Point, \+3 Attribute Points$/,''):(a.description||'')]; };
+    if(a.type==='levelup'){ const d=String(a.description||'').replace(/ — \+1 Skill Point, \+3 Attribute Points$/,''), m=/^Reached Level (\d+)$/.exec(d); // polish pass 3: stored English text shown in Czech
+      return [a.title,m&&uiLang()==='cs'?`Dosažen level ${m[1]}`:d]; }
+    return [a.title,a.description||'']; };
   recent.forEach(a=>{ const [t,d]=actText(a); actl.appendChild(el(`<div class="tl-item"><span class="tl-ic" aria-hidden="true">${uiIcon(ACTIVITY_ICON[a.type]||'sparkle',16)}</span><div style="min-width:0"><div class="item-title" style="font-size:14px">${escapeHtml(t)}</div><div class="item-meta">${escapeHtml(d)}</div></div></div>`)); });
   wrap.appendChild(actC);
   // Polish pass: no Settings shortcut here -- Settings stay in More (and the header button).
@@ -4274,8 +4389,8 @@ function renderSettings(){
       <div><label for="st_water">${uiL('Water (ml)')}</label><input type="number" inputmode="numeric" id="st_water" value="${S.nutritionTargets.water}"></div>
       <div><label for="st_wpw">${uiL('Workouts/week')}</label><input type="number" inputmode="numeric" id="st_wpw" value="${S.dailyTargets.workoutsPerWeek}"></div>
       <div><label for="st_tpd">${uiL('Tasks/day')}</label><input type="number" inputmode="numeric" id="st_tpd" value="${S.dailyTargets.tasksPerDay}"></div>
-      <div><label for="st_hpd">${uiL('Habits/day')}</label><input type="number" inputmode="numeric" id="st_hpd" value="${S.dailyTargets.habitsPerDay}"></div>
     </div>
+    <p class="helper-text" id="st_targetsHelp">${uiLang()==='cs'?'Úkoly/den určují týdenní výpravu (× 5). Tréninky/týden platí, dokud nemáš vybrané tréninkové dny.':'Tasks/day set the weekly quest (× 5). Workouts/week applies until you pick training days.'}</p>
   </section>`);
   const bindNum=(id,setter)=>dt.querySelector(id).oninput=(e)=>{const v=parseFloat(e.target.value);if(!isNaN(v)){setter(v);scheduleSave();}};
   bindNum('#st_cal',v=>S.nutritionTargets.calories=v);
@@ -4283,7 +4398,6 @@ function renderSettings(){
   bindNum('#st_water',v=>S.nutritionTargets.water=v);
   bindNum('#st_wpw',v=>S.dailyTargets.workoutsPerWeek=v);
   bindNum('#st_tpd',v=>S.dailyTargets.tasksPerDay=v);
-  bindNum('#st_hpd',v=>S.dailyTargets.habitsPerDay=v);
   // Polish pass: training days -- the other days are Rest Days (never a missed workout in Daily Score).
   const td=Array.isArray(S.settings.trainingDays)?S.settings.trainingDays:null;
   const dayOrder=S.settings.firstDayOfWeek==='sunday'?[0,1,2,3,4,5,6]:[1,2,3,4,5,6,0];
@@ -5830,10 +5944,14 @@ function workoutFinish(wid){
   const key=`workout:${w.id}:${w.date}`;
   // Balancing: 80 XP -> 48 attribute points by the fitness profile (STR 24, VIT 14, DEX 10); the old flat
   // +20 VIT bonus was removed (VIT already stored from past workouts stays untouched).
-  const granted=grantXp(80,'Workout: '+w.name,'fitness',key);
+  // Polish pass 3: only a workout with at least one finished working set pays (workoutRewardable).
+  const granted=workoutRewardable(w)&&(xpUnderDailyLimit('workout')||S.xpLog.some(x=>x.key===key)||(xpLimitNote(),false))&&grantXp(80,'Workout: '+w.name,'fitness',key); // review: 2 rewarded workouts a day
   checkAchievements();
   return {ok:true,workout:w,granted:!!granted};
 }
+// Polish pass 3: a workout is rewarded only for real content -- at least one done, non-warm-up set (Fitness 2.0)
+// or, for a quick-logged workout, an exercise with at least one set. An empty workout is saved but pays nothing.
+function workoutRewardable(w){ return workoutTotalSets(w)>0; }
 function workoutVolume(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+(en.measurement==='weight_reps'?workoutWorkingSets(en).reduce((b,st)=>b+(Number(st.weight)||0)*(Number(st.reps)||0),0):0),0);
   return (w.exercises||[]).reduce((a,ex)=>a+(Number(ex.sets)||0)*(Number(ex.reps)||0)*(Number(ex.weight)||0),0); }
 function workoutTotalSets(w){ if(Array.isArray(w.entries)) return w.entries.reduce((a,en)=>a+workoutWorkingSets(en).length,0);
@@ -6250,7 +6368,7 @@ function uiWkT(k){
     plan:'Plán',last:'Minule',sug:'Doporučení',sug_apply:'Použít doporučení',sug_done:'Odpovídá',set:'Série',kg:'kg',reps:'Opak.',seconds:'s',distance:'km',done:'Hotovo',wu:'R',wu_hint:'Klepnutím na číslo série ji přepneš na rozcvičku (R). Rozcvička se nepočítá.',
     sets_done:'sérií hotovo',rm_set:'Odebrat sérii',rm_ex:'Odebrat cvik',toggle_wu:'přepnout rozcvičku',mark_done:'označit jako hotovou',
     name:'Název',notes:'Poznámka',date:'Datum',duration:'Délka (min)',edit_t:'Upravit trénink',save_back:'Hotovo',
-    empty_t:'Prázdný trénink',empty_q:'Tento trénink nemá žádnou dokončenou sérii. Opravdu ho chceš dokončit?',cancel:'Zrušit',
+    empty_t:'Prázdný trénink',empty_q:'Tento trénink nemá žádnou dokončenou sérii. Opravdu ho chceš dokončit? Prázdný trénink se uloží, ale nezíská XP.',cancel:'Zrušit',
     discard_q:'Zahodit rozpracovaný trénink? Nic se neuloží a nezapočítá.',discarded:'Trénink zahozen',resumed:'Pokračuješ v rozpracovaném tréninku',
     pick_ex:'Přidat cvik',lib:'Z knihovny',catalog:'Z katalogu',lib_empty:'Knihovna cviků je prázdná.',no_ex:'Zatím žádné cviky — přidej první.',
     rm_ex_q:'Odebrat cvik z tréninku?',sum_t:'Trénink dokončen',sum_dur:'Délka',sum_sets:'Série',sum_reps:'Opakování',sum_vol:'Objem',sum_ex:'Cviky',min:'min',ok:'Hotovo',
@@ -6261,7 +6379,7 @@ function uiWkT(k){
     plan:'Plan',last:'Last',sug:'Suggestion',sug_apply:'Use suggestion',sug_done:'Matches',set:'Set',kg:'kg',reps:'Reps',seconds:'s',distance:'km',done:'Done',wu:'W',wu_hint:'Tap a set number to switch it to a warm-up (W). Warm-ups do not count.',
     sets_done:'sets done',rm_set:'Remove set',rm_ex:'Remove exercise',toggle_wu:'toggle warm-up',mark_done:'mark as done',
     name:'Name',notes:'Notes',date:'Date',duration:'Duration (min)',edit_t:'Edit workout',save_back:'Done',
-    empty_t:'Empty workout',empty_q:'This workout has no completed set. Do you really want to finish it?',cancel:'Cancel',
+    empty_t:'Empty workout',empty_q:'This workout has no completed set. Do you really want to finish it? An empty workout is saved but earns no XP.',cancel:'Cancel',
     discard_q:'Discard the workout in progress? Nothing is saved or counted.',discarded:'Workout discarded',resumed:'Continuing your workout in progress',
     pick_ex:'Add exercise',lib:'From your library',catalog:'From the catalog',lib_empty:'Your exercise library is empty.',no_ex:'No exercises yet — add the first one.',
     rm_ex_q:'Remove this exercise from the workout?',sum_t:'Workout finished',sum_dur:'Duration',sum_sets:'Sets',sum_reps:'Reps',sum_vol:'Volume',sum_ex:'Exercises',min:'min',ok:'Done',
@@ -6759,7 +6877,7 @@ function openWorkoutForm(existing){
       const wid=uid();
       const key=`workout:${wid}:${fields.date}`;
       S.workouts.push(Object.assign({id:wid,createdAt:Date.now()},fields));
-      grantXp(80,'Workout: '+name,'fitness',key); // same reward as workoutFinish (no flat +20 VIT any more)
+      if(workoutRewardable(fields)){ if(xpUnderDailyLimit('workout')) grantXp(80,'Workout: '+name,'fitness',key); else xpLimitNote(); } // review: 2 a day // same reward as workoutFinish; polish pass 3: never for an empty workout
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(w?'Workout updated':'Workout logged');
@@ -6810,8 +6928,9 @@ function renderNutrition(){
     const it=el(`<div class="item meal-item"><span class="icon-circle" aria-hidden="true">🍽️</span><div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(m.name)}</div><div class="item-meta meta-row"><span class="chip is-muted">${escapeHtml(uiL(m.type||''))}${q!==1?' · ×'+q:''}</span><b class="num" style="color:var(--text)">${Math.round((m.calories||0)*q)} kcal</b><span class="num">P ${Math.round((m.protein||0)*q)} · C ${Math.round((m.carbs||0)*q)} · F ${Math.round((m.fat||0)*q)}</span></div></div><div class="item-actions"><button class="iconbtn ghost-ic repeatBtn" aria-label="${L.repeat}: ${escapeHtml(m.name)}" title="${L.repeat}">↻</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(m.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.name)}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openMealForm(m);
     it.querySelector('.repeatBtn').onclick=()=>{
-      S.meals.push({id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()});
-      grantXp(10,'Meal logged',mealAttrProfile()); checkAchievements(); scheduleSave();render();toast('Meal repeated');
+      const nm={id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()};
+      S.meals.push(nm);
+      grantXp(10,'Meal logged',mealAttrProfile(),mealXpKey(nm)); checkAchievements(); scheduleSave();render();toast('Meal repeated');
     };
     it.querySelector('.delbtn').onclick=()=>uiDelConfirm('meal',{name:m.name},()=>{
       S.meals=S.meals.filter(x=>x.id!==m.id);scheduleSave();render();toast('Meal deleted');
@@ -6827,7 +6946,7 @@ function renderNutrition(){
 }
 function savedFoodOptions(){
   const items=[...S.customFoods.map(f=>({...f,src:'custom'})),...S.recipes.map(f=>({...f,src:'recipe'}))];
-  return items.map(f=>`<option value="${f.src}:${f.id}">${f.favorite?'⭐ ':''}${escapeHtml(f.name)} (${f.src==='recipe'?'recipe':'food'})</option>`).join('');
+  return items.map(f=>`<option value="${f.src}:${f.id}">${f.favorite?'⭐ ':''}${escapeHtml(f.name)} (${uiLang()==='cs'?(f.src==='recipe'?'recept':'potravina'):(f.src==='recipe'?'recipe':'food')})</option>`).join('');
 }
 function openMealForm(existing){
   const m=existing;
@@ -6869,8 +6988,9 @@ function openMealForm(existing){
       // nutriTotals(), so changing calories/servings here correctly changes the day's macros.
       Object.assign(m,fields);
     } else {
-      S.meals.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields));
-      grantXp(10,'Meal logged',mealAttrProfile());
+      const nm=Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields);
+      S.meals.push(nm);
+      grantXp(10,'Meal logged',mealAttrProfile(),mealXpKey(nm));
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(m?'Meal updated':'Meal added');
@@ -6999,8 +7119,9 @@ function openJournalForm(existing){
     if(j){
       Object.assign(j,fields); // same id/date — editing never creates a second entry for that day
     } else {
-      S.journal.push(Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields));
-      grantXp(15,'Journal entry','reflection');
+      const jd=todayStr();
+      S.journal.push(Object.assign({id:uid(),date:jd,createdAt:Date.now()},fields));
+      grantXp(15,'Journal entry','reflection',`journal:${jd}`); // polish pass 3: one journal reward per day
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(j?'Entry updated':'Entry saved');
@@ -7216,7 +7337,7 @@ function renderSubs(){
     const days=nxt?Math.round((new Date(nxt+'T00:00')-new Date(todayStr()+'T00:00'))/86400000):null;
     const it=el(`<div class="item sub-item${s.active===false?' is-inactive':''}"><span class="icon-circle" aria-hidden="true">💳</span>
       <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(s.name)}${s.active===false?` <span class="chip is-muted">${L.inactive}</span>`:''}</div>
-      <div class="item-meta meta-row"><b class="num" style="color:var(--text)">${uiNum(s.price)}</b><span>/ ${s.period}</span>${s.category?`<span>${escapeHtml(s.category)}</span>`:''}${nxt?`<span class="chip ${days!=null&&days<=3?'is-warn':'is-muted'}">⏳ ${fmtDate(nxt)}</span>`:''}</div>
+      <div class="item-meta meta-row"><b class="num" style="color:var(--text)">${uiNum(s.price)}</b><span>/ ${uiLang()==='cs'?(s.period==='Yearly'?'rok':'měsíc'):(s.period==='Yearly'?'year':'month')}</span>${s.category?`<span>${escapeHtml(s.category)}</span>`:''}${nxt?`<span class="chip ${days!=null&&days<=3?'is-warn':'is-muted'}">⏳ ${fmtDate(nxt)}</span>`:''}</div>
       <div class="sub-actions"><button class="pill sm activeBtn">${s.active===false?L.act:L.deact}</button>
       <button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(s.name)}">${uiIcon('edit',18)}</button>
       <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(s.name)}">✕</button></div></div></div>`);
@@ -7460,7 +7581,7 @@ function renderQuests(){
   activeGoals.forEach(g=>{
     const c=el(`<div class="card quest"></div>`);
     c.appendChild(goalMini(g));
-    c.appendChild(el(`<div class="row" style="gap:6px"><span class="chip is-gold">+${g.xpReward||200} XP</span>${g.targetDate?`<span class="chip is-muted">${uiIcon('calendar',13)} ${fmtDate(g.targetDate)}</span>`:''}</div>`));
+    c.appendChild(el(`<div class="row" style="gap:6px"><span class="chip is-gold">+${goalXp(g)} XP</span>${g.targetDate?`<span class="chip is-muted">${uiIcon('calendar',13)} ${fmtDate(g.targetDate)}</span>`:''}</div>`));
     gl.appendChild(c);
   });
   return wrap;
@@ -7529,12 +7650,12 @@ function renderCalendar(){
   if(!uiCalDay) uiCalDay=today;
   const L=uiLang()==='cs'?{cal:'Kalendář',add:'Událost',today:'Dnes',week:'Týden',month:'Měsíc',upcoming:'Nadcházející',none:'Žádné nadcházející události',none_d:'Naplánuj si schůzku, narozeniny nebo trénink.',prev:'Předchozí',next:'Další'}
     :{cal:'Calendar',add:'Event',today:'Today',week:'Week',month:'Month',upcoming:'Upcoming',none:'No upcoming events',none_d:'Plan a meeting, a birthday or a workout.',prev:'Previous',next:'Next'};
-  const wrap=el(`<div>${uiPageHead(L.cal,'',`<button class="btn sm" id="addEv">＋ ${L.add}</button>`)}
+  const wrap=el(`<div>${uiPageHead(L.cal,uiLang()==='cs'?'Přehled dnů a měsíců — události a termíny úkolů. Časový plán dne je v Plánovači.':'Days and months at a glance — events and task due dates. The hour-by-hour plan lives in the Planner.',`<button class="btn sm" id="addEv">＋ ${L.add}</button>`)}
     <div class="period-selector" id="calMode" role="tablist">
       <button data-m="today" role="tab" class="${uiCalMode==='today'?'on':''}">${L.today}</button><button data-m="week" role="tab" class="${uiCalMode==='week'?'on':''}">${L.week}</button><button data-m="month" role="tab" class="${uiCalMode==='month'?'on':''}">${L.month}</button>
     </div>
     <section class="card cal-card" id="calBody"></section>
-    <div class="section-header"><h3 id="agendaTitle"></h3></div><div class="list" id="agenda"></div>
+    <div class="section-header"><h3 id="agendaTitle"></h3><button class="action" id="agendaPlan">${uiLang()==='cs'?'Plán dne':'Day plan'} ›</button></div><div class="list" id="agenda"></div>
     <div class="section-header"><h3>${L.upcoming}</h3></div><div class="list" id="evList"></div>
   </div>`);
   wrap.querySelectorAll('#calMode button').forEach(b=>b.onclick=()=>{ uiCalMode=b.dataset.m; if(uiCalMode==='today'){ uiCalDay=today; calOffset=0; } render(); });
@@ -7574,6 +7695,7 @@ function renderCalendar(){
   const agendaDay=uiCalMode==='today'?today:uiCalDay;
   wrap.querySelector('#agendaTitle').textContent=(agendaDay===today?L.today+' · ':'')+fmtDate(agendaDay);
   uiDayAgenda(agendaDay,wrap.querySelector('#agenda'));
+  wrap.querySelector('#agendaPlan').onclick=()=>uiOpenPlanner(agendaDay); // polish pass 3: Calendar -> the day's Planner
   const evl=wrap.querySelector('#evList');
   const upcoming=S.events.map(e=>({e,next:eventUpcomingDate(e)})).filter(x=>x.next).sort((a,b)=>a.next.localeCompare(b.next)).slice(0,15);
   if(!upcoming.length){ const e=el(`<div class="card">${uiEmpty('📅',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openEventForm(); evl.appendChild(e); }
@@ -8025,13 +8147,16 @@ function renderSearch(){
     searchGroups(q).forEach(([label,icon,type,items])=>{
       if(!items.length)return; any=true;
       res.appendChild(el(`<div class="section-header"><h3>${uiL(label)} · ${items.length}</h3></div>`));
-      items.forEach(r=>{
+      // polish pass 3: at most 30 hits per group are drawn (the count above stays complete) -- typing stays instant
+      const SEARCH_SHOWN=30;
+      items.slice(0,SEARCH_SHOWN).forEach(r=>{
         const it=el(`<button class="item search-hit" style="cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit"><span class="icon-circle" aria-hidden="true">${icon}</span>
           <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(r.title)}</div><div class="item-meta truncate">${escapeHtml(r.meta||'')}</div></div>
           <span class="sub" aria-hidden="true">${uiIcon('chevron',16)}</span></button>`);
         it.onclick=()=>searchNavigate(type,r.obj);
         res.appendChild(it);
       });
+      if(items.length>SEARCH_SHOWN) res.appendChild(el(`<p class="helper-text search-more">${cs?`a dalších ${items.length-SEARCH_SHOWN} — upřesni hledání`:`and ${items.length-SEARCH_SHOWN} more — refine the search`}</p>`));
     });
     if(!any) res.appendChild(el(`<div class="card">${uiEmpty('🤷',uiL('No results.'),'','')}</div>`));
     uiIconize(res); // results are redrawn while typing: same icon pass as a full render
@@ -8488,7 +8613,9 @@ function openSleepForm(existing){
     } else {
       const id=uid();
       S.sleepLog.push(Object.assign({id,createdAt:Date.now()},fields));
-      grantXp(10,'Sleep logged','sleep',`sleep:${id}`); // idempotent: this exact new record's id can only ever grant once
+      // Polish pass 3: one reward per night (the entry's date), so delete + log the same night again pays nothing.
+      // Older sleep:<record id> ledger keys stay as they are.
+      if(sleepNightRewarded(fields.date)) {} else if(!xpUnderDailyLimit('sleep')) xpLimitNote(); else grantXp(10,'Sleep logged','sleep',`sleep:day:${fields.date}`);
     }
     scheduleSave();closeSheets();render();toast(s?'Sleep entry updated':'Sleep logged');
   };
@@ -8577,15 +8704,26 @@ function doImport(e){
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=()=>{
-    try{
-      const data=JSON.parse(r.result);
-      if(!data || typeof data!=='object' || !Array.isArray(data.tasks)) throw new Error('bad format');
-      S=migrate(data);
-      scheduleSave(); applyTheme(); render();
-      toast('Backup restored');
-    }catch(err){ toast('Import failed: invalid file'); }
+    let data=null;
+    try{ data=JSON.parse(r.result); if(!data || typeof data!=='object' || !Array.isArray(data.tasks)) throw new Error('bad format'); }
+    catch(err){ toast('Import failed: invalid file'); return; }
+    // Polish pass 3: restoring replaces every record on this device -- ask first, saying what the backup holds.
+    const cs=uiLang()==='cs', n=k=>Array.isArray(data[k])?data[k].length:0;
+    uiConfirmSheet({title:cs?'Obnovit ze zálohy?':'Restore from backup?',
+      text:cs?'Všechna současná data v tomto zařízení se nahradí obsahem zálohy.':'All current data on this device will be replaced by the backup.',
+      details:[cs?`Záloha obsahuje: úkoly ${n('tasks')}, návyky ${n('habits')}, cíle ${n('goals')}, poznámky ${n('notes')}, záznamy XP ${n('xpLog')}.`:`The backup holds: tasks ${n('tasks')}, habits ${n('habits')}, goals ${n('goals')}, notes ${n('notes')}, XP entries ${n('xpLog')}.`,
+        cs?'Chceš-li si současná data ponechat, nejdřív si stáhni jejich zálohu.':'To keep the current data, download a backup of it first.'],
+      ok:cs?'Obnovit':'Restore',danger:true},()=>{
+      try{
+        S=migrate(data);
+        lastLevelSeen=levelFromXp(S.totalXp).level; // polish pass 3: level-up state follows the imported profile
+        scheduleSave(); applyTheme(); render();
+        toast('Backup restored');
+      }catch(err){ toast('Import failed: invalid file'); }
+    });
   };
   r.readAsText(f);
+  e.target.value=''; // the same file can be chosen again
 }
 function doReset(){
   // Core reliability (A3): the same two steps as before, in the app's own sheets instead of confirm().
@@ -8594,7 +8732,8 @@ function doReset(){
     text:cs?'Všechna data LifeOS v tomto zařízení budou trvale smazána – úkoly, návyky, cíle, plán, finance, trénink, jídlo, poznámky, historie i postava s XP.':'All LifeOS data on this device will be permanently deleted -- tasks, habits, goals, plan, finance, training, meals, notes, history and your character with its XP.',
     details:[cs?'Pokud si je chcete ponechat, nejdřív si stáhněte zálohu (Exportovat zálohu).':'To keep them, download a backup first (Export backup).'],ok:cs?'Pokračovat':'Continue',danger:true},()=>{
     uiConfirmSheet({title:cs?'Opravdu smazat vše?':'Really delete everything?',text:cs?'Tuto akci nelze vrátit.':'This cannot be undone.',ok:cs?'Smazat vše':'Delete everything',danger:true},()=>{
-      S=defaultState(); scheduleSave(); applyTheme();
+      S=defaultState(); lastLevelSeen=levelFromXp(S.totalXp).level; // polish pass 3: no level-up state survives a reset
+      scheduleSave(); applyTheme();
       showOnboarding();
     });
   });
@@ -8801,25 +8940,23 @@ document.getElementById('settingsBtn').onclick=()=>{ view='settings'; render(); 
 document.getElementById('fabBtn').onclick=openQuickAdd;
 document.querySelectorAll('nav.bottom button').forEach(b=>b.onclick=()=>{view=b.dataset.v;render();window.scrollTo(0,0);});
 
-/* ---- PWA: manifest + service worker (self-contained, no external files) ---- */
+/* ---- PWA (polish pass 3): real manifest.json + sw.js next to LifeOS.html ----
+   The old blob: manifest/worker could never register (browsers refuse blob: service workers), so nothing was ever
+   cached. Now, served over http(s), the app links manifest.json and registers sw.js (offline shell, versioned cache
+   "lifeos-vN"; see sw.js). Opened as a local file it works exactly as before, just without offline caching.
+   The service worker only caches the app's own files -- IndexedDB (all data) is never touched by it. */
 try{
-  const manifest={name:'LifeOS',short_name:'LifeOS',start_url:'./',display:'standalone',background_color:'#0b0d12',theme_color:'#0b0d12',
-    icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%237c5cff'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3EL%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
-  const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-  document.getElementById('manifestLink').href=URL.createObjectURL(mBlob);
-}catch(e){}
-try{
-  if('serviceWorker' in navigator){
-    const swCode=`
-      const CACHE='lifeos-v1';
-      self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.add(self.registration.scope)));});
-      self.addEventListener('activate',e=>self.clients.claim());
-      self.addEventListener('fetch',e=>{
-        e.respondWith(fetch(e.request).then(r=>{const rc=r.clone();caches.open(CACHE).then(c=>c.put(e.request,rc));return r;}).catch(()=>caches.match(e.request)));
+  if(/^https?:$/.test(location.protocol)){
+    document.getElementById('manifestLink').setAttribute('href','manifest.json');
+    if('serviceWorker' in navigator){
+      let hadController=!!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        // a newer version took over: the running page keeps working; the new files load on the next start
+        if(hadController&&S) toast(uiLang()==='cs'?'Je připravená nová verze LifeOS — projeví se po obnovení stránky.':'A new LifeOS version is ready — it applies after a reload.');
+        hadController=true;
       });
-    `;
-    const swBlob=new Blob([swCode],{type:'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
   }
 }catch(e){}
 
@@ -8924,7 +9061,6 @@ function showOnboarding(step,data){
         <div><label>Voda (ml)</label><input type="number" id="ob_water" value="${data.targets.water}"></div>
         <div><label>Tréninky/týden</label><input type="number" id="ob_wpw" value="${data.targets.workoutsPerWeek}"></div>
         <div><label>Úkoly/den</label><input type="number" id="ob_tpd" value="${data.targets.tasksPerDay}"></div>
-        <div><label>Návyky/den</label><input type="number" id="ob_hpd" value="${data.targets.habitsPerDay}"></div>
       </div></div>`);
     inner.appendChild(stepBtns('Next',()=>{
       data.targets={
@@ -8933,7 +9069,7 @@ function showOnboarding(step,data){
         water:parseFloat(inner.querySelector('#ob_water').value)||2500,
         workoutsPerWeek:parseInt(inner.querySelector('#ob_wpw').value,10)||3,
         tasksPerDay:parseInt(inner.querySelector('#ob_tpd').value,10)||3,
-        habitsPerDay:parseInt(inner.querySelector('#ob_hpd').value,10)||1,
+        habitsPerDay:data.targets.habitsPerDay||1, // polish pass 3: no longer asked (nothing used it); kept in the data for old backups
       };
       showOnboarding(6,data);
     },()=>showOnboarding(4,data)));
