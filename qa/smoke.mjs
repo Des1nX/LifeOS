@@ -90,6 +90,9 @@ function allIds(obj, out = []) {
 }
 async function appText(page) { return page.evaluate(() => document.getElementById('app').innerText); }
 
+// Smart Daily Command Center: Home shows the Command Center by default; the classic widget Home stays one switch away
+// (Settings -> Chytrý Home). Tests of the classic widgets run with that switch off.
+const classicState = () => { const s = fixtureState(); s.settings = { ...s.settings, widgets: { ...(s.settings.widgets || {}), smart: false } }; return s; };
 const tests = [];
 const test = (name, fn, opts = {}) => tests.push({ name, fn, opts });
 const notes = []; // non-failing observations about the baseline
@@ -814,7 +817,7 @@ test('9 UI: widget order/visibility is untouched - hiding Level Progress hides t
   await page.evaluate(() => { S.settings.widgets.progress = true; S.settings.widgetOrder = ['tasks', 'progress', ...S.settings.widgetOrder.filter(k => k !== 'tasks' && k !== 'progress')]; render(); });
   const order = await page.$$eval('.home > *', ns => ns.map(n => n.querySelector('[data-ds]') ? 'ds' : n.querySelector('#hTasks') ? 'tasks' : null).filter(Boolean));
   assert.deepEqual(order.slice(0, 2), ['tasks', 'ds']);
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('9 UI: Daily Score card and detail fit 320/375/390/430 px without overflow', async ({ page }) => {
   const bad = [];
@@ -1037,7 +1040,7 @@ test('10 UI: Home shows Today\'s plan (polish pass: its own widget right after t
   assert.equal(await page.locator('[data-plan="home"]').count(), 1, 'independent of the tasks widget');
   await page.evaluate(() => { S.settings.widgets.planner = false; view = 'home'; render(); });
   assert.equal(await page.locator('[data-plan="home"]').count(), 0, 'its own widget key can hide it');
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('10 UI: day navigation (prev/next/Today) and read-only calendar events (never copied)', async ({ page }) => {
   const events = JSON.stringify((await stateOf(page)).events);
@@ -1614,7 +1617,7 @@ test('11A UI: Start from a template (Fitness and Templates tab) opens the live s
   assert.equal(await page.evaluate(() => S.workouts.filter(w => w.status === 'active').length), 1, 'no duplicate');
   await page.evaluate(() => { uiWorkoutView = null; view = 'home'; render(); });
   assert.match(await appText(page), /Rozpracovaný trénink: Push A/);
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('11A UI: blank workout - add exercises from library and catalog, fill/complete sets, warm-up, add and remove sets', async ({ page }) => {
   await openWorkouts(page);
@@ -2677,7 +2680,7 @@ test('11A planner UI: Home Today\'s plan shows the workout block (icon, template
   assert.equal((await blk(page, bid)).completed, false, 'informative only');
   assert.match(await page.locator('[data-plan="home"] [data-block="pb_math"]').innerText(), /15:00[\s\S]*Matematika/, 'other rows unchanged');
   assert.equal(await page.locator('[data-plan="home"] .plan-row[data-block="pb_math"]').count(), 1);
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('11A planner UI: Quick Add -> Planner block -> Linked workout (polish pass: no Block/Workout switch), then Search finds it, opens it and Start works; Fitness shows "Naplánováno na"', async ({ page }) => {
   await page.evaluate(() => { const bench = exerciseFind('Bench press'); templateSave({ name: 'Push A', exercises: [{ exerciseId: bench.id, sets: 3, repsMin: 8, weight: 80 }] }); });
@@ -2758,7 +2761,7 @@ test('11A QA fix: history and Home "Naposledy" are newest-first by real time; Se
   assert.equal(await page.locator('#w_name').count(), 0);
   await page.evaluate(() => { uiWorkoutView = null; searchNavigate('workout', workoutFindById('w2')); });
   assert.equal(await page.inputValue('#w_name'), 'Pull day', 'legacy workout -> legacy form');
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('11A QA fix: a finished workout shows plan, Performance, Feeling, PRs and Muscle XP in history and in its detail; PR strip reads "9 opak."', async ({ page }) => {
   await plSetup(page);
@@ -2823,7 +2826,7 @@ test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -
   await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
   assert.deepEqual(await page.evaluate(() => [S.workouts, S.workoutTemplates, S.exerciseLibrary, S.muscleProgress, S.plannerBlocks]), [[], [], [], { log: [] }, []], 'reset empties every Fitness 2.0 collection');
   void tid;
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('11A final: Fitness screens at 320/375/390/430/768/1024/1440 - no overflow, no clipped values, buttons >= 36 px, no duplicate ids', async ({ page }) => {
   const { bid } = await plSetup(page);
@@ -3223,7 +3226,7 @@ test('11B integration: Home = Finance, Statistics, Search, Quick Add, subscripti
     return { before, after: financeMonthTotals('2026-09').expenses, listed, n: S.expenses.filter(e => e.description === 'Netflix').length };
   });
   assert.deepEqual(r, { before: 5869, after: 6168, listed: 1, n: 1 }, 'one Netflix payment of 299, not 598 or 897');
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('11B data: reload, export/import of every Finance collection, old backup, reset (no orphans, UI works)', async ({ page }) => {
   await finSetup(page);
@@ -3358,7 +3361,7 @@ test('P1 quests: completion uses the real completion logic, pays once, survives 
     const before = S.totalXp; checkQuests(); return { ids: S.questBoard.daily.items.map(i => i.id), gained: S.totalXp - before };
   });
   assert.ok(!t.ids.includes('dq_sleep'), 'already satisfied sleep quest is not topped up');
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('P1 quests: weekly quests + Quests screen + titles with real parameters (category, habit, targets)', async ({ page }) => {
   await go(page, 'quests');
@@ -3391,7 +3394,7 @@ test('P2 Home: order Daily Score -> plan -> tasks -> habits; old widget orders g
   // Settings -> Nástěnka lists and toggles the two new widgets
   await page.click('#settingsBtn');
   assert.match(await page.locator('#st_widgets').innerText(), /Dnešní plán[\s\S]*Denní výpravy/);
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('P3 Daily Score: training day = 0/1 until the workout is done (scored), rest day = "Den volna" (never a missed workout), unset = old rule', async ({ page }) => {
   const r = await page.evaluate(() => {
@@ -3908,7 +3911,7 @@ test('Q3 Home: quest board shows progress pips and XP still to earn from the rea
   await row.locator('.planLink').click();
   assert.equal(await page.evaluate(() => view), 'planner', 'inline link still navigates');
   assert.equal(await page.locator('[data-ds="card"] .ds-counts').count(), 0, 'no duplicated counts under the score');
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('Q4 Character + achievements + goals: attribute meanings, Czech achievement texts, Automatic mode sentence', async ({ page }) => {
   await go(page, 'character');
@@ -4213,7 +4216,7 @@ test('R6 minute tick: no full render; search, focus, typing, workout, sheet, scr
   const src = await page.evaluate(() => [...document.scripts].map(s => s.textContent).join('\n'));
   assert.match(src, /setInterval\(\(\)=>\{ if\(!S\|\|!tabActive\) return; uiMinuteTick\(\); checkBrowserNotifications\(\); \}, 60000\);/);
   assert.doesNotMatch(src, /setInterval\(\(\)=>\{ render\(\); checkBrowserNotifications\(\); \}, 60000\)/);
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('R7 layout: the "open elsewhere" screen and delete sheets at 320-1440 px, dark + light: no overflow, 44 px buttons, no duplicate ids', async ({ page }) => {
   const bad = [];
@@ -4598,7 +4601,7 @@ test('P3-B1 "Dnes" is one definition: Home Today tasks == Tasks -> Dnes == due t
   const ds = await page.evaluate(() => dailyScoreTasks(todayStr()));
   assert.deepEqual([ds.total, ds.done, ds.openOverdue], [2, 1, 1], 'Daily Score: due today counts (1 of 2 done), open overdue informational');
   assert.ok(await page.evaluate(() => getActiveReminders().some(r => r.prefType === 'task' && r.id === 'od') && !getActiveReminders().some(r => r.id === 'nd')), 'reminders: overdue only');
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('P3-B2 Daily Score never judges the live day early: "Den teprve začíná" -> "Rozpracovaný den" -> positive label; finished days keep their rating; score unchanged', async ({ page }) => {
   await page.evaluate(() => { S.tasks = []; S.meals = []; S.waterLog = []; S.sleepLog = []; S.workouts = []; S.settings.trainingDays = [];
@@ -4644,7 +4647,7 @@ test('P3-B3 a goal at 100 % reads "Dokončeno" with "Uzavřít cíl"; closing pa
   assert.equal(await xpOf(page) - x0, 200, 'reopen/close and reload never pay again');
   await page.evaluate(() => { view = 'goals'; goalFilter = 'Completed'; render(); });
   assert.match(await page.locator('.goal-card', { hasText: 'Hotový cíl' }).innerText(), /Splněn|Dokončen/);
-}, { state: fixtureState() });
+}, { state: classicState() });
 
 test('P3-B4 goals & milestones: milestone XP once, auto progress from milestones, manual mode, no completion loop; reload/export/import/reset keep the state', async ({ page }) => {
   await quietQuests(page);
@@ -4831,15 +4834,47 @@ test('P3-E1 manifest.json is valid and linked, icons exist in the declared sizes
   const inst = await cdp.send('Page.getInstallabilityErrors'); assert.deepEqual(inst.installabilityErrors.map(e => e.errorId), [], 'installable');
 });
 
-test('P3-E2 service worker: registered from sw.js, controls the page, caches the app shell under lifeos-v1 - and never touches IndexedDB', async ({ page }) => {
+const SW_SRC = () => readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+const SW_VER = () => SW_SRC().match(/const CACHE_VERSION = '([^']+)'/)[1];
+
+test('P3-E2 service worker: registered from sw.js, controls the page, caches the app shell under its CACHE_VERSION - and never touches IndexedDB', async ({ page }) => {
   assert.ok(await swReady(page));
   const url = await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).active.scriptURL);
   assert.match(url, /\/sw\.js$/);
   await reload(page); assert.equal(await page.evaluate(() => !!navigator.serviceWorker.controller), true, 'page is controlled');
   const c = await cacheState(page);
-  assert.deepEqual(Object.keys(c), ['lifeos-v1']);
-  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png']) assert.ok(c['lifeos-v1'].includes(f), 'cached ' + f);
+  assert.deepEqual(Object.keys(c), [SW_VER()]);
+  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png']) assert.ok(c[SW_VER()].includes(f), 'cached ' + f);
   assert.doesNotMatch(readFileSync(path.join(ROOT, 'sw.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''), /indexedDB|IDB|deleteDatabase|localStorage/, 'sw.js never touches app data');
+}, { state: fixtureState() });
+
+test('FP1 service worker release bump: this release is past lifeos-v1; a device with the released lifeos-v1 worker moves to the new cache, the old one is removed, data untouched', async ({ page }) => {
+  const cur = SW_VER();
+  assert.match(cur, /^lifeos-v\d+$/); assert.ok(Number(cur.slice(8)) >= 2, 'CACHE_VERSION bumped for this release (was lifeos-v1)');
+  const src = SW_SRC();
+  assert.match(src, /req\.mode === 'navigate'[\s\S]*await fetch\(req\)/, 'pages stay network-first');
+  assert.match(src, /const cached = await matchAny\(req\)[\s\S]*event\.waitUntil\(refresh/, 'other files stay stale-while-revalidate');
+  assert.ok(await swReady(page)); await reload(page);
+  const before = await idbState(page);
+  // the previously released worker (same code, lifeos-v1) is what a returning user has installed
+  serverOverrides['sw.js'] = src.replace(/const CACHE_VERSION = '[^']+';/, "const CACHE_VERSION = 'lifeos-v1';");
+  try {
+    await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
+    await page.waitForFunction(async () => { const k = await caches.keys(); return k.length === 1 && k[0] === 'lifeos-v1'; }, null, { timeout: 10000 });
+  } finally { delete serverOverrides['sw.js']; }
+  await page.waitForTimeout(300);
+  // deploy of this release
+  await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
+  await page.waitForFunction(async cur => { const k = await caches.keys(); return k.includes(cur); }, cur, { timeout: 10000 });
+  await page.waitForTimeout(500); await page.evaluate(() => fetch('manifest.json').then(r => r.text()));
+  await page.waitForFunction(async () => !(await caches.keys()).includes('lifeos-v1'), null, { timeout: 10000 });
+  const c = await cacheState(page);
+  assert.deepEqual(Object.keys(c), [cur], 'only the new cache');
+  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json']) assert.ok(c[cur].includes(f), 'new cache holds ' + f);
+  assert.deepEqual(await idbState(page), before, 'IndexedDB untouched');
+  await reload(page); assert.deepEqual(await idbState(page), before);
+  assert.equal(await page.evaluate(() => S.schemaVersion), 8);
+  assert.equal(await page.evaluate(() => (navigator.serviceWorker.controller || {}).scriptURL || ''), URL_ + 'sw.js');
 }, { state: fixtureState() });
 
 test('P3-E3 offline: reload, a fresh start and index.html open from the cache with all data; back online everything saves as before', async ({ page }) => {
@@ -4866,16 +4901,18 @@ test('P3-E4 update: a new sw.js version installs, removes the old lifeos cache (
   assert.ok(await swReady(page)); await reload(page);
   await page.evaluate(async () => { const c = await caches.open('other-app'); await c.put('/other.txt', new Response('x')); });
   const before = await idbState(page);
-  serverOverrides['sw.js'] = readFileSync(path.join(ROOT, 'sw.js'), 'utf8').replace("const CACHE_VERSION = 'lifeos-v1';", "const CACHE_VERSION = 'lifeos-v2';");
+  const cur = SW_VER(), next = 'lifeos-v' + (Number(cur.replace('lifeos-v', '')) + 1);
+  serverOverrides['sw.js'] = SW_SRC().replace(`const CACHE_VERSION = '${cur}';`, `const CACHE_VERSION = '${next}';`);
+  assert.notEqual(serverOverrides['sw.js'], SW_SRC(), 'test version published');
   try {
     await page.evaluate(() => { window.__toastLog = []; const t0 = window.toast; window.toast = function (m) { window.__toastLog.push(String(m)); return t0.apply(this, arguments); }; });
     await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
-    await page.waitForFunction(async () => { const k = await caches.keys(); return k.includes('lifeos-v2') && !k.includes('lifeos-v1'); }, null, { timeout: 10000 });
+    await page.waitForFunction(async ([cur, next]) => { const k = await caches.keys(); return k.includes(next) && !k.includes(cur); }, [cur, next], { timeout: 10000 });
     await page.waitForTimeout(500); await page.evaluate(() => fetch('manifest.json').then(r => r.text())); // a request through the new worker
-    await page.waitForFunction(async () => !(await caches.keys()).includes('lifeos-v1'), null, { timeout: 10000 });
+    await page.waitForFunction(async cur => !(await caches.keys()).includes(cur), cur, { timeout: 10000 });
     const c = await cacheState(page);
-    assert.deepEqual(Object.keys(c).sort(), ['lifeos-v2', 'other-app'], 'old app cache removed, foreign cache kept');
-    assert.ok(c['lifeos-v2'].includes('/LifeOS.html'));
+    assert.deepEqual(Object.keys(c).sort(), [next, 'other-app'], 'old app cache removed, foreign cache kept');
+    assert.ok(c[next].includes('/LifeOS.html'));
     await page.waitForFunction(() => (window.__toastLog || []).some(m => /nová verze/i.test(m)), null, { timeout: 5000 });
     assert.deepEqual(await idbState(page), before, 'IndexedDB unchanged by the update');
     await reload(page); assert.deepEqual(await idbState(page), before, 'and after reloading into the new version');
@@ -5119,6 +5156,439 @@ async function golden(page) {
     };
   }, TODAY).catch(e => { throw new Error('golden evaluation failed: ' + e.message); });
 }
+
+// ---------- Smart Daily Command Center 2.0 ----------
+// Home as the day's control centre. Everything is read from the existing state through the cc* helpers; the tests check
+// the scenarios, the priority rules (deterministic, explainable), that the Daily Score and XP stay exactly the existing
+// ones, that habits/tasks are completed only through the existing handlers, and persistence, performance, layout, a11y.
+const at = hm => new Date(`${TODAY}T${hm}:00+02:00`).getTime(); // Prague wall-clock time on the fixture day
+const ccHome = page => page.evaluate(() => { closeSheets(); view = 'home'; render(); });
+const ccNowOf = page => page.evaluate(() => { const c = ccContext(), r = ccRank(ccCandidates(c)), n = ccNow(c, r);
+  return { mode: n.mode, title: n.item ? n.item.title : null, kind: n.item ? n.item.kind : null, reasons: n.item ? n.item.reasons.map(x => x.r) : [], dom: (document.querySelector('#ccNow') || {dataset: {}}).dataset.ccMode }; });
+const ccBad = page => page.evaluate(() => { const t = document.getElementById('app').innerText, ids = {}; document.querySelectorAll('[id]').forEach(n => ids[n.id] = (ids[n.id] || 0) + 1);
+  return { bad: /undefined|NaN|\[object/.test(t), dup: Object.keys(ids).filter(k => ids[k] > 1), overflow: document.documentElement.scrollWidth - innerWidth }; });
+const ccData = page => page.evaluate(() => JSON.stringify(['tasks', 'goals', 'habits', 'plannerBlocks', 'milestones', 'workouts', 'meals', 'expenses', 'income', 'events', 'totalXp', 'attrs'].map(k => S[k])) + '|' + S.xpLog.length);
+
+test('CC1 Home is the Command Center by default: Co teď? with reasons, quick actions, attention, Dnešek, Top 3, progress, habits, goals, quests, status', async ({ page }) => {
+  await ccHome(page);
+  assert.equal(await page.locator('.cc-home[data-home="smart"]').count(), 1, 'Smart Home is the default Home');
+  assert.equal(await page.locator('.cc-home .hud .level-badge').count(), 1, 'header keeps greeting, date, level and XP');
+  assert.match(await page.locator('.hud-date').innerText(), /12:00/, 'header shows the time');
+  const n = await ccNowOf(page);
+  assert.deepEqual([n.mode, n.title, n.dom], ['next', 'Matematika', 'next'], 'the block linked to the High task due today comes next');
+  assert.ok(n.reasons.includes('linked_task') && n.reasons.includes('in_plan'), 'explained by its link and the plan');
+  await page.click('#ccNow .cc-why summary');
+  const why = await page.locator('#ccNow .cc-why').innerText();
+  assert.match(why, /Propojený úkol s prioritou vysoká, termín dnes/); assert.match(why, /Je v dnešním plánu/);
+  assert.doesNotMatch(await appText(page), /\bAI\b|umělá inteligence/i, 'no AI wording');
+  assert.deepEqual(await page.$$eval('#ccTop .cc-top-t', ns => ns.map(n => n.textContent)), ['Buy groceries', 'Drink water', 'Konzultace'], 'Top 3 without the Co teď item, quests excluded');
+  assert.deepEqual(await page.$$eval('.cc-q', ns => ns.map(n => n.dataset.q)), ['task', 'habit', 'food', 'workout']);
+  const attn = await page.$$eval('#ccAttn .cc-attn-row', ns => ns.map(n => n.innerText));
+  assert.ok(attn.length >= 1 && attn.length <= 3, 'attention: 1-3 items'); assert.match(attn.join('|'), /Team meeting v 14:00/);
+  // timeline from the Planner data: states ✓ ● → ! with nothing invented
+  const tl = await page.$$eval('#ccTimeline .cc-tl-row', ns => ns.map(n => [n.querySelector('.cc-tl-time').firstChild.textContent, n.className.match(/is-(\w+)/)[1], n.querySelector('.cc-tl-mark').textContent]));
+  assert.deepEqual(tl, [['08:00', 'done', '✓'], ['14:00', 'next', '→'], ['15:00', 'later', ''], ['15:30', 'later', ''], ['17:00', 'later', '']], 'Škola done, next marked, no fake gaps');
+  for (const s of ['#ccDay [data-ds="card"]', '#ccDay .cc-prog', '#ccHabits #hHabits .habit-item', '#ccGoals .cc-goal', '#ccQuests .quest-row', '#ccMini .cc-tile']) assert.ok(await page.locator(s).count() > 0, s);
+  assert.match(await page.locator('#ccMini [data-mini="finance"]').innerText(), /1\s620[\s\S]*rozpočet 420 \/ 6\s000/, 'finance: real month spending and budget');
+  assert.match(await page.locator('#ccMini [data-mini="fitness"]').innerText(), /2\s*\/3/);
+  assert.match(await page.locator('#ccMini [data-mini="health"]').innerText(), /7,3\s*h/);
+  assert.deepEqual(await ccBad(page), { bad: false, dup: [], overflow: 0 });
+  // clicks go to the existing screens
+  await page.click('#ccTop .cc-top-row:first-child .cc-top-main'); assert.equal(await page.evaluate(() => view), 'tasks'); assert.ok(await page.locator('.sheet #f_title').isVisible(), 'task editor');
+  await ccHome(page); await page.click('#ccGoals .cc-goal'); assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'g_fit']);
+  await ccHome(page); await page.click('#ccDay .cc-chip[data-cc-nav="tasks"]'); assert.equal(await page.evaluate(() => view), 'tasks');
+  await ccHome(page); await page.click('#ccQuests [data-nav="quests"]'); assert.equal(await page.evaluate(() => view), 'quests');
+}, { state: fixtureState() });
+
+test('CC2 scenarios by the clock: running block = Teď, within 30 min = Další, missed blocks, a running workout wins, evening, day done, empty day', async ({ page }) => {
+  const xp0 = await xpOf(page), xpLen0 = await page.evaluate(() => S.xpLog.length);
+  await page.clock.setFixedTime(at('15:10')); await ccHome(page);
+  let n = await ccNowOf(page); assert.deepEqual([n.mode, n.title, n.reasons[0]], ['now', 'Matematika', 'running']);
+  assert.match(await page.locator('#ccNow .cc-kick').innerText(), /Teď/);
+  assert.deepEqual(await page.$$eval('#ccTimeline .cc-tl-row.is-now .cc-tl-title', ns => ns.map(n => n.textContent)), ['Matematika']);
+  await page.clock.setFixedTime(at('14:45')); await ccHome(page);
+  n = await ccNowOf(page); assert.deepEqual([n.mode, n.title, n.reasons[0]], ['next', 'Matematika', 'starts_in']);
+  assert.match(await page.locator('#ccNow .cc-why').textContent(), /Začíná za 15 min/);
+  // 16:40: Matematika and Konzultace passed undone -> "!"; the workout block starts in 20 min
+  await page.evaluate(() => { const bench = exerciseFind('Bench press'); // test setup: give PUSH A a workout template (the existing template API)
+    S.plannerBlocks.find(b => b.id === 'pb_push').workoutTemplateId = templateSave({ name: 'Push A', exercises: [{ exerciseId: bench.id, sets: 3, repsMin: 8, repsMax: 10, weight: 80 }] }).template.id; });
+  await page.clock.setFixedTime(at('16:40')); await ccHome(page);
+  assert.equal(await page.locator('#ccTimeline .cc-tl-row.is-missed').count(), 2);
+  assert.deepEqual(await page.$$eval('#ccTimeline .cc-tl-row.is-missed .cc-tl-mark', ns => ns.map(n => n.textContent)), ['!', '!']);
+  n = await ccNowOf(page); assert.deepEqual([n.mode, n.title], ['next', 'PUSH A']); assert.ok(n.reasons.includes('workout_block'));
+  assert.match(await page.locator('#ccNow [data-cc-act="startwk"]').innerText(), /Spustit trénink/);
+  await page.evaluate(() => { plannerStartWorkout('pb_push'); }); await ccHome(page);
+  n = await ccNowOf(page); assert.deepEqual([n.mode, n.kind, n.reasons[0]], ['now', 'workout', 'active_workout'], 'a running workout wins');
+  assert.match(await page.locator('#ccNow [data-cc-act="go"]').innerText(), /Pokračovat/);
+  assert.equal(await xpOf(page), xp0, 'nothing on Home paid XP');
+  await page.evaluate(() => { S.workouts = S.workouts.filter(w => w.status !== 'active'); }); // test setup only: drop the started workout again
+  // evening: everything important done, the journal is still open -> "Den je téměř hotový"
+  await page.clock.setFixedTime(at('21:00'));
+  await page.evaluate(() => { const T = todayStr(); S.tasks.forEach(t => { if (t.dueDate <= T) t.done = true; }); S.habits = S.habits.filter(h => h.id !== 'h_gym');
+    const w = S.habits.find(h => h.id === 'h_water'); while (w.completions.filter(d => d === T).length < 8) w.completions.push(T);
+    S.plannerBlocks.forEach(b => { if (b.date === T) b.completed = true; }); });
+  await ccHome(page);
+  n = await ccNowOf(page); assert.equal(n.mode, 'evening');
+  assert.match(await page.locator('#ccNow').innerText(), /Den je téměř hotový[\s\S]*napsat deník/);
+  await page.evaluate(() => S.journal.push({ id: 'jcc', date: todayStr(), mood: '🙂', rating: '4', text: 'x', tags: [], createdAt: Date.now() }));
+  await ccHome(page);
+  n = await ccNowOf(page); assert.equal(n.mode, 'done');
+  assert.match(await page.locator('#ccNow').innerText(), /Den dokončen[\s\S]*Daily Score/);
+  // the test setup completed tasks/blocks, so the existing quest logic may pay its quests on render -- nothing else may pay
+  assert.deepEqual((await page.evaluate(n => [...new Set(S.xpLog.slice(n).map(x => x.key ? String(x.key).split(':')[0] : /^Quest:/.test(x.reason) ? 'quest' : x.reason))], xpLen0)).filter(k => k !== 'quest'), [], 'only the existing quests paid');
+  const xpDone = await xpOf(page); await ccHome(page); await ccHome(page); await page.evaluate(() => uiMinuteTick());
+  assert.equal(await xpOf(page), xpDone, 'the end-of-day state pays nothing');
+  // an empty day on a fresh install -> CTAs to the existing forms
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; }); await ccHome(page);
+  n = await ccNowOf(page); assert.equal(n.mode, 'empty');
+  assert.equal(await page.locator('#ccNow [data-cc-empty]').count(), 3);
+  await page.click('#ccNow [data-cc-empty="task"]'); assert.ok(await page.locator('.sheet #f_title').isVisible());
+  await page.evaluate(() => closeSheets()); await page.click('#ccNow [data-cc-empty="block"]'); assert.ok(await page.locator('.sheet').isVisible(), 'planner form');
+}, { state: fixtureState() });
+
+test('CC3 priority engine: overdue > due today, priority order, running block first, goals/habits by deadline and time, completed never win, deterministic', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const T = todayStr(), D = n => addDays(T, n);
+    const setup = () => { S = defaultState(); S.settings.onboarded = true;
+      S.tasks = [{ id: 'a', title: 'A low today', priority: 'Low', dueDate: T, done: false }, { id: 'b', title: 'B low overdue', priority: 'Low', dueDate: D(-2), done: false },
+        { id: 'c', title: 'C urgent today', priority: 'Urgent', dueDate: T, done: false }, { id: 'd', title: 'D done urgent', priority: 'Urgent', dueDate: T, done: true },
+        { id: 'e', title: 'E future', priority: 'Urgent', dueDate: D(3), done: false }, { id: 'f', title: 'F medium no date', priority: 'Medium', dueDate: '', done: false },
+        { id: 'g', title: 'Alfa', priority: 'Medium', dueDate: '', done: false }].map(t => ({ category: '', createdAt: 1, ...t }));
+      S.goals = [{ id: 'g1', title: 'Goal today', status: 'Active', targetDate: T, mode: 'manual', manualProgress: 10, createdAt: Date.now() },
+        { id: 'g2', title: 'Goal idle', status: 'Active', targetDate: '', mode: 'manual', manualProgress: 10, createdAt: Date.now() - 30 * 86400000 },
+        { id: 'g3', title: 'Goal fresh', status: 'Active', targetDate: '', mode: 'manual', manualProgress: 10, createdAt: Date.now() },
+        { id: 'g4', title: 'Goal completed', status: 'Completed', targetDate: T, mode: 'manual', manualProgress: 100, createdAt: 1 }];
+      S.habits = [{ id: 'h1', name: 'Habit timed', type: 'good', frequency: 'daily', target: 1, reminder: '11:30', completions: [], active: true, createdAt: 1 },
+        { id: 'h2', name: 'Habit plain', type: 'good', frequency: 'daily', target: 1, completions: [], active: true, createdAt: 1 },
+        { id: 'h3', name: 'Habit done', type: 'good', frequency: 'daily', target: 1, completions: [T], active: true, createdAt: 1 },
+        { id: 'h4', name: 'Habit bad', type: 'bad', frequency: 'daily', target: 1, completions: [], brokenDates: [], active: true, createdAt: 1 }];
+      S.plannerBlocks = []; };
+    const rank = () => ccRank(ccCandidates(ccContext())).filter(c => c.kind !== 'quest').map(c => `${c.kind}:${c.id}:${c.score}`);
+    setup(); const base = rank();
+    const before = JSON.stringify(S); rank(); const pure = JSON.stringify(S) === before;
+    S.tasks.reverse(); S.goals.reverse(); S.habits.reverse(); const reversed = rank();
+    const blk = (id, s, e, extra) => ({ id, date: T, startTime: s, endTime: e, title: id, category: '', taskId: '', goalId: '', completed: false, ...extra });
+    setup(); S.plannerBlocks = [blk('now', '11:30', '12:30'), blk('soon', '12:20', '13:00'), blk('twoh', '13:30', '14:00'), blk('late', '18:00', '19:00'), blk('donep', '11:00', '13:00', { completed: true }), blk('past', '08:00', '09:00')];
+    const blocks = ccRank(ccCandidates(ccContext())).filter(c => c.kind === 'planner').map(c => `${c.id}:${c.score}`);
+    const nowMode = ccNow().mode, top = ccRank(ccCandidates(ccContext()))[0].id;
+    // a later block linked to an overdue urgent task carries that task's weight; the task is not listed twice
+    setup(); S.plannerBlocks = [blk('lk', '18:00', '19:00', { taskId: 'c' })];
+    const linked = ccRank(ccCandidates(ccContext())).filter(c => c.kind !== 'quest').map(c => `${c.kind}:${c.id}:${c.score}`);
+    return { base, pure, reversed, blocks, nowMode, top, linked, again: (setup(), rank()) };
+  });
+  assert.deepEqual(r.base, ['task:c:600', 'task:b:350', 'goal:g1:350', 'task:a:300', 'habit:h1:300', 'task:g:200', 'task:f:200', 'habit:h2:150', 'goal:g2:100'],
+    'Urgent today 400+200; overdue Low 100+250 beats Low today 100+200; goal due today 350; habit at its usual time 150+150; equal scores: task > goal > habit, then title; done/future/completed/bad/fresh goal absent');
+  assert.ok(r.pure, 'scoring never changes the state');
+  assert.deepEqual(r.reversed, r.base, 'order of the stored lists does not matter');
+  assert.deepEqual(r.again, r.base, 'same state + same clock = same result');
+  assert.deepEqual(r.blocks, ['now:1000', 'soon:800', 'twoh:600', 'late:200'], 'running 1000, within 30 min 800, within 2 h 600, later 200; completed and past blocks never win');
+  assert.deepEqual([r.nowMode, r.top], ['now', 'now']);
+  assert.deepEqual(r.linked.slice(0, 2), ['planner:lk:600', 'task:b:350'], 'the linked block takes the task score (600) and the task itself is not listed');
+  assert.ok(!r.linked.some(x => x.startsWith('task:c:')));
+}, { state: fixtureState() });
+
+test('CC4 Daily Score is exactly the existing one: same numbers and the same card in the Command Center and the classic Home; progress is only a visual summary', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const T = todayStr(), ds = () => JSON.stringify(dailyScore(T));
+    const a = ds(); view = 'home'; render(); const smartCard = document.querySelector('#ccDay [data-ds="card"]').outerHTML; const b = ds();
+    S.settings.widgets.smart = false; render(); const classicCard = document.querySelector('[data-ds="card"]').outerHTML; const c = ds();
+    S.settings.widgets.smart = true; render();
+    return { same: a === b && b === c, cards: smartCard === classicCard, score: dailyScore(T).score, shown: document.querySelector('#ccDay .ring span').textContent.trim(), prog: ccProgress(ccContext()) };
+  });
+  assert.ok(r.same, 'dailyScore() identical before/after both Homes');
+  assert.ok(r.cards, 'the Daily Score card is the same markup in both Homes');
+  assert.equal(r.shown, String(r.score));
+  assert.deepEqual([r.prog.done, r.prog.total], [6, 12], 'progress: plain counts of today (tasks, habits, plan, food, sleep, workout)');
+}, { state: fixtureState() });
+
+test('CC5 habits, tasks and blocks are completed only through the existing handlers: same XP keys and amounts, counters, no double pay, no XP for blocks', async ({ page }) => {
+  await ccHome(page);
+  const T = TODAY;
+  // counter habit: 7 of 8 -> the 8th tap pays once under habit:<id>:<date>, then taps are no-ops
+  await page.evaluate(() => { const w = S.habits.find(h => h.id === 'h_water'), T = todayStr(); w.completions = w.completions.filter(d => d !== T); for (let i = 0; i < 7; i++) w.completions.push(T); render(); });
+  let xp = await xpOf(page);
+  const water = page.locator('#ccHabits .habit-item', { hasText: 'Drink water' });
+  await water.locator('.check').click();
+  const r1 = await page.evaluate(T => ({ n: S.habits.find(h => h.id === 'h_water').completions.filter(d => d === T).length, keys: S.xpLog.filter(x => x.key === `habit:h_water:${T}`).length, xp: habitXp(S.habits.find(h => h.id === 'h_water')) }), T);
+  assert.deepEqual([r1.n, r1.keys], [8, 1]); assert.equal(await xpOf(page), xp + r1.xp, 'habit XP from habitXp(), once');
+  xp = await xpOf(page);
+  await page.locator('#ccHabits .habit-item', { hasText: 'Drink water' }).locator('.check').click();
+  assert.equal(await xpOf(page), xp, 'an extra tap at the target pays nothing');
+  // Read (already done today): untick keeps XP, tick again pays nothing (existing idempotent key)
+  xp = await xpOf(page);
+  await page.locator('#ccHabits .habit-item', { hasText: 'Read' }).locator('.check').click();
+  await page.locator('#ccHabits .habit-item', { hasText: 'Read' }).locator('.check').click();
+  assert.equal(await xpOf(page), xp);
+  // Top 3 task check = the task row's check: taskGrantCompletion under task:<id>:<date>
+  xp = await xpOf(page);
+  await page.locator('#ccTop .cc-top-row', { hasText: 'Buy groceries' }).locator('.check').click();
+  const r2 = await page.evaluate(T => ({ done: S.tasks.find(t => t.id === 't_med').done, keys: S.xpLog.filter(x => x.key === `task:t_med:${T}`).length, xp: taskXp(S.tasks.find(t => t.id === 't_med')) }), T);
+  assert.deepEqual([r2.done, r2.keys], [true, 1]); assert.equal(await xpOf(page), xp + r2.xp);
+  // Co teď "Hotovo" on a block: plannerToggleCompleted (no XP)
+  xp = await xpOf(page);
+  await page.click('#ccNow [data-cc-act="done"]');
+  assert.equal(await page.evaluate(() => S.plannerBlocks.find(b => b.id === 'pb_math').completed), true);
+  assert.equal(await xpOf(page), xp, 'completing a block pays no XP (as in the Planner)');
+  await settle(page);
+  assert.equal((await idbState(page)).plannerBlocks.find(b => b.id === 'pb_math').completed, true, 'saved');
+}, { state: fixtureState() });
+
+test('CC6 goals on Home: percent, this week, the next real step or "Další krok není naplánován."; never creates a task', async ({ page }) => {
+  await page.evaluate(() => { S.goals.push({ id: 'g_new', title: 'Nový cíl', description: '', targetDate: '', status: 'Active', mode: 'manual', manualProgress: 40, createdAt: Date.now(), category: '' }); });
+  const before = await ccData(page);
+  await ccHome(page);
+  const fit = await page.locator('#ccGoals .cc-goal[data-goal="g_fit"]').innerText();
+  assert.match(fit, /Tento týden: 2\/3 tréninky/); assert.match(fit, /Blok: Matematika · Dnes 15:00/);
+  assert.match(await page.locator('#ccGoals .cc-goal[data-goal="g_new"]').innerText(), /40\s*%[\s\S]*Další krok není naplánován\./);
+  assert.equal(await ccData(page), before, 'rendering goals creates nothing');
+  await page.evaluate(() => { S.milestones.push({ id: 'ms_cc', goalId: 'g_new', title: 'První krok', completed: false, createdAt: Date.now() }); }); await ccHome(page);
+  assert.match(await page.locator('#ccGoals .cc-goal[data-goal="g_new"]').innerText(), /Milník: První krok/);
+  const r = await page.evaluate(() => ccGoalNextSteps(S.goals.find(g => g.id === 'g_fit'), ccContext()));
+  assert.equal(r.pct, await page.evaluate(() => goalProgress(S.goals.find(g => g.id === 'g_fit'))), 'the one goalProgress()');
+}, { state: fixtureState() });
+
+test('CC7 persistence: old states get the Smart Home keys (no schema change), saved choices are kept, Settings toggles persist, Home never writes data', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const old = JSON.parse(JSON.stringify(S)); delete old.settings.widgets;
+    const a = migrate(JSON.parse(JSON.stringify(old)));
+    const partial = JSON.parse(JSON.stringify(old)); partial.settings.widgets = { tasks: false, top3: false }; const b = migrate(partial);
+    return { schema: a.schemaVersion, keys: ['smart', 'command', 'top3'].map(k => a.settings.widgets[k]), kept: [b.settings.widgets.tasks, b.settings.widgets.top3, b.settings.widgets.smart],
+      idem: JSON.stringify(migrate(JSON.parse(JSON.stringify(a)))) === JSON.stringify(a), order: a.settings.widgetOrder.includes('smart') };
+  });
+  assert.deepEqual(r, { schema: 8, keys: [true, true, true], kept: [false, false, true], idem: true, order: false });
+  const before = await ccData(page);
+  await ccHome(page); await ccHome(page); await page.evaluate(() => uiMinuteTick()); await settle(page);
+  assert.equal(await ccData(page), before, 'rendering Home and the minute tick change no data');
+  // Settings -> Chytrý Home
+  await page.click('#settingsBtn');
+  assert.match(await page.locator('#st_smart').innerText(), /Chytrý Home[\s\S]*Co teď\?[\s\S]*Dnešek[\s\S]*Dnes nejdůležitější[\s\S]*Cíle[\s\S]*Návyky[\s\S]*Finance[\s\S]*Fitness[\s\S]*Spánek/);
+  await page.click('#st_smart [data-smart="command"]'); await page.click('#st_smart [data-smart="top3"]');
+  await ccHome(page);
+  assert.deepEqual([await page.locator('#ccNow').count(), await page.locator('#ccTop').count(), await page.locator('#ccTimeline').count()], [0, 0, 1]);
+  await page.click('#settingsBtn'); await page.click('#st_smart [data-smart="smart"]'); await settle(page);
+  assert.equal((await idbState(page)).settings.widgets.smart, false);
+  await reload(page); await ccHome(page);
+  assert.deepEqual([await page.locator('.cc-home').count(), await page.locator('.home .hud-wrap').count()], [0, 1], 'off -> the classic Home, after a reload too');
+  assert.equal(await page.locator('#st_smart [data-smart="command"][disabled]').count(), 0, 'not in Settings view now');
+}, { state: fixtureState() });
+
+test('CC8 performance: Command Center at 1 500 tasks / 25 000 XP entries (a year) with habits, goals and planner blocks', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3));
+    const T = todayStr();
+    for (let i = 0; i < 40; i++) S.habits.push({ id: 'ph' + i, name: 'Návyk ' + i, type: i % 9 ? 'good' : 'bad', frequency: 'daily', target: 1, completions: Array.from({ length: 200 }, (_, k) => addDays(T, -k * (1 + i % 2))), brokenDates: [], active: true, createdAt: 1 });
+    for (let i = 0; i < 25; i++) S.goals.push({ id: 'pg' + i, title: 'Cíl ' + i, status: i % 5 ? 'Active' : 'Completed', targetDate: addDays(T, i - 5), mode: 'auto', createdAt: 1 });
+    S.tasks.forEach((t, i) => { if (i % 7 === 0) t.goalId = 'pg' + (i % 25); });
+    for (let i = 0; i < 400; i++) S.plannerBlocks.push({ id: 'pp' + i, date: addDays(T, (i % 60) - 30), startTime: String(6 + i % 14).padStart(2, '0') + ':00', endTime: String(7 + i % 14).padStart(2, '0') + ':00', title: 'Blok ' + i, category: '', taskId: i % 3 ? '' : 'rt' + i, goalId: i % 4 ? '' : 'pg' + (i % 25), completed: i % 2 === 0 });
+    const m = (f, n = 5) => { f(); const ts = []; for (let i = 0; i < n; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[Math.floor(n / 2)]; };
+    return { home: m(() => { view = 'home'; render(); }), engine: m(() => ccRank(ccCandidates(ccContext()))), tick: m(() => uiMinuteTick()), bad: /undefined|NaN/.test(document.getElementById('app').innerText) };
+  });
+  console.log(`      CC8 1500/25000: Home render ${r.home.toFixed(1)} ms (median), engine ${r.engine.toFixed(1)} ms, minute tick ${r.tick.toFixed(1)} ms`);
+  assert.ok(!r.bad);
+  assert.ok(r.home < 60 && r.engine < 15 && r.tick < 20, 'fast (target Home < 30 ms; CI margin)');
+}, { state: fixtureState() });
+
+test('CC9 layout 320-1440 px, dark + light: no overflow, no duplicate ids, no undefined/NaN, every Command Center control is at least 44 px', async ({ page }) => {
+  const bad = [];
+  for (const theme of ['dark', 'light']) for (const w of [320, 360, 390, 430, 768, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.evaluate(t => { S.settings.theme = t; applyTheme(); }, theme); await ccHome(page);
+    const b = await ccBad(page); if (b.bad || b.dup.length || b.overflow > 0) bad.push(`${theme}/${w}: ${JSON.stringify(b)}`);
+    const small = await page.$$eval('.cc-q, .cc-act .btn, .cc-why summary, .cc-tl-row, .cc-chip, .cc-top-main, .cc-attn-row, .cc-tile, .cc-goal, .cc-now-main, #ccTimeline [data-cc-planner]', ns => ns.filter(n => n.offsetParent).map(n => n.getBoundingClientRect()).filter(r => r.height < 44 || r.width < 44).map(r => `${Math.round(r.width)}x${Math.round(r.height)}`));
+    const clipped = await page.$$eval('.cc-home .cc-now-t, .cc-home .cc-top-t, .cc-home .cc-tl-title, .cc-home .cc-tile-v', ns => ns.filter(n => n.scrollWidth > n.clientWidth + 1).length);
+    if (small.length) bad.push(`${theme}/${w} small targets: ${small.join(',')}`);
+    if (clipped) bad.push(`${theme}/${w}: ${clipped} clipped texts`);
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('CC10 minute tick: Co teď? and Dnešek update in place (no full render), "Proč teď?" stays open, the clock moves', async ({ page }) => {
+  await page.clock.setFixedTime(at('14:44')); await ccHome(page);
+  await page.click('#ccNow .cc-why summary');
+  await page.evaluate(() => { document.querySelector('.cc-home').dataset.sentinel = '1'; window.scrollTo(0, 300); });
+  assert.equal((await ccNowOf(page)).mode, 'next');
+  await page.clock.setFixedTime(at('15:01')); await page.evaluate(() => uiMinuteTick());
+  const r = await page.evaluate(() => ({ sentinel: document.querySelector('.cc-home').dataset.sentinel, mode: document.querySelector('#ccNow').dataset.ccMode, open: document.querySelector('#ccNow .cc-why').open,
+    clock: document.querySelector('.cc-clock').textContent, now: [...document.querySelectorAll('#ccTimeline .cc-tl-row.is-now .cc-tl-title')].map(n => n.textContent), y: window.scrollY }));
+  assert.deepEqual(r, { sentinel: '1', mode: 'now', open: true, clock: '15:01', now: ['Matematika'], y: 300 });
+  assert.match(await page.locator('#ccNow .cc-why').innerText(), /Probíhá teď \(do 16:00\)/);
+  assert.equal(await page.evaluate(() => document.activeElement.matches('#ccNow .cc-why summary')), true, 'focus stays on "Proč teď?"');
+}, { state: fixtureState() });
+
+test('CC11 accessibility: named regions and controls, progress values, keyboard "Proč teď?", reduced motion stops the animations', async ({ page }) => {
+  await ccHome(page);
+  const r = await page.evaluate(() => {
+    const h = document.querySelector('.cc-home');
+    const unnamed = [...h.querySelectorAll('button, summary, [role="button"]')].filter(n => !(n.getAttribute('aria-label') || n.textContent).trim()).map(n => n.className);
+    const bars = [...h.querySelectorAll('[role="progressbar"]')].filter(n => { const v = +n.getAttribute('aria-valuenow'); return !(v >= 0 && v <= 100) || !n.getAttribute('aria-label'); }).length;
+    const lab = document.getElementById(document.querySelector('#ccNow').getAttribute('aria-labelledby'));
+    return { unnamed, bars, label: lab && lab.textContent.trim(), anim: getComputedStyle(document.querySelector('#ccNow')).animationDuration, pulse: getComputedStyle(document.querySelector('.cc-tl-mark')).animationDuration };
+  });
+  assert.deepEqual(r.unnamed, []); assert.equal(r.bars, 0); assert.match(r.label, /Co teď\?/);
+  assert.ok(parseFloat(r.anim) < 0.01, 'reduced motion: ' + r.anim);
+  await page.focus('#ccNow .cc-why summary'); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.querySelector('#ccNow .cc-why').open), true);
+  assert.ok(await page.locator('#ccTimeline .cc-tl-row').first().getAttribute('aria-label').then(s => /08:00–09:00 Škola, hotovo/.test(s)), 'timeline rows say time, title and state');
+}, { state: fixtureState() });
+
+test('CC12 quick actions open the existing forms; attention follows the notification switches (max 3); no data = "Žádná data", never a fake zero', async ({ page }) => {
+  const before = await ccData(page);
+  for (const [q, sel] of [['task', '#f_title'], ['habit', '#h_name'], ['food', '#m_name'], ['workout', '#w_name']]) {
+    await ccHome(page); await page.click(`.cc-q[data-q="${q}"]`); assert.ok(await page.locator(`.sheet ${sel}`).isVisible(), q);
+    await page.evaluate(() => closeSheets());
+  }
+  assert.equal(await ccData(page), before, 'opening forms creates nothing');
+  await page.evaluate(() => { const T = todayStr(); for (let i = 0; i < 5; i++) S.tasks.push({ id: 'od' + i, title: 'Staré ' + i, priority: 'Low', dueDate: addDays(T, -3), done: false, category: '', createdAt: 1 });
+    S.subscriptions.push({ id: 'sub_cc', name: 'Netflix', amount: 199, period: 'monthly', nextPayment: T, active: true, createdAt: 1 }); });
+  await ccHome(page);
+  let attn = await page.$$eval('#ccAttn .cc-attn-row', ns => ns.map(n => n.innerText));
+  assert.equal(attn.length, 3); assert.match(attn[0], /5 úkolů po termínu/);
+  await page.evaluate(() => { S.settings.notifications = Object.assign({}, S.settings.notifications, { task: false, event: false }); }); await ccHome(page);
+  attn = await page.$$eval('#ccAttn .cc-attn-row', ns => ns.map(n => n.innerText));
+  assert.ok(!attn.some(t => /po termínu|Team meeting/.test(t)), 'switched-off kinds are not shown');
+  await page.click('#ccAttn .cc-attn-row[data-attn="car"]'); assert.equal(await page.evaluate(() => view), 'car');
+  // a user with only a task: status tiles say "Žádná data"
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; S.tasks.push({ id: 'x1', title: 'Jediný úkol', priority: 'Medium', dueDate: todayStr(), done: false, category: '', createdAt: 1 }); });
+  await ccHome(page);
+  const tiles = await page.$$eval('#ccMini .cc-tile', ns => ns.map(n => [n.dataset.mini, n.querySelector('.cc-tile-v').textContent]));
+  assert.deepEqual(tiles, [['finance', 'Žádná data'], ['fitness', 'Žádná data'], ['health', 'Žádná data'], ['nutrition', 'Žádná data']]);
+  assert.equal((await ccNowOf(page)).title, 'Jediný úkol');
+  assert.match(await page.locator('#ccTimeline').innerText(), /Na dnešek nemáš nic naplánováno/);
+  assert.match(await page.locator('#ccGoals').innerText(), /Zatím žádný aktivní cíl/);
+  assert.equal(await page.locator('#ccAttn').count(), 0);
+  assert.deepEqual(await ccBad(page), { bad: false, dup: [], overflow: 0 });
+}, { state: fixtureState() });
+
+// ---------- Pre-merge finishing pass: full minute tick, regression, data safety ----------
+const ccSections = page => page.evaluate(() => Object.fromEntries(['#ccNow', '#ccAttn', '#ccTimeline', '#ccTop', '#ccDay', '#ccGoals', '#ccHabits', '#ccQuests', '#ccMini'].map(k => {
+  const n = document.querySelector('.cc-home > ' + k); if (!n) return [k, null];
+  const c = n.cloneNode(true); c.querySelectorAll('details').forEach(d => d.removeAttribute('open')); return [k, c.outerHTML]; })));
+const ccTickTo = (page, hm) => page.clock.setFixedTime(at(hm)).then(() => page.evaluate(() => uiMinuteTick()));
+
+test('FP2 minute tick 14:59 -> 15:00: Co teď?, Dnešek and Top 3 follow the clock in place; focus, open "Proč teď?", scroll kept; result = a fresh render; nothing written', async ({ page }) => {
+  await page.clock.setFixedTime(at('14:59')); await ccHome(page);
+  const before = await ccData(page), xp0 = await xpOf(page);
+  let n = await ccNowOf(page); assert.deepEqual([n.mode, n.title], ['next', 'Matematika']);
+  assert.match(await page.locator('#ccNow .cc-why').textContent(), /Začíná za 1 min/);
+  assert.deepEqual(await page.$$eval('#ccTop .cc-top-t', ns => ns.map(n => n.textContent)), ['Konzultace', 'Buy groceries', 'Drink water']);
+  assert.deepEqual(await page.$$eval('#ccTimeline .cc-tl-row', ns => ns.map(n => n.className.match(/is-(\w+)/)[1])), ['done', 'now', 'next', 'later', 'later']);
+  await page.click('#ccNow .cc-why summary');
+  await page.evaluate(() => { document.querySelector('.cc-home').dataset.sentinel = '1'; });
+  await page.focus('#ccTop [data-ck="top:task:t_med"] .cc-top-main');
+  const y0 = await page.evaluate(() => window.scrollY);
+  await ccTickTo(page, '15:00');
+  n = await ccNowOf(page); assert.deepEqual([n.mode, n.title, n.reasons[0]], ['now', 'Matematika', 'running']);
+  const r = await page.evaluate(() => ({ sentinel: document.querySelector('.cc-home').dataset.sentinel, dom: document.querySelector('#ccNow').dataset.ccMode, open: document.querySelector('#ccNow .cc-why').open,
+    focus: document.activeElement.closest('[data-ck]') && document.activeElement.closest('[data-ck]').dataset.ck, focusCls: document.activeElement.className, y: window.scrollY, clock: document.querySelector('.cc-clock').textContent }));
+  assert.deepEqual(r, { sentinel: '1', dom: 'now', open: true, focus: 'top:task:t_med', focusCls: 'cc-top-main', y: y0, clock: '15:00' }, 'no full render; focus stays on the same item; "Proč teď?" stays open');
+  assert.match(await page.locator('#ccNow .cc-why').textContent(), /Probíhá teď \(do 16:00\)/);
+  assert.deepEqual(await page.$$eval('#ccTop .cc-top-t', ns => ns.map(n => n.textContent)), ['Konzultace', 'PUSH A', 'Buy groceries'], 'PUSH A enters Top 3 at 2 h before its start');
+  assert.match(await page.locator('#ccTop [data-ck="top:planner:pb_push"]').innerText(), /Začíná za 120 min/);
+  assert.deepEqual(await page.$$eval('#ccTimeline .cc-tl-row', ns => ns.map(n => n.className.match(/is-(\w+)/)[1])), ['done', 'past', 'now', 'next', 'later'], 'Team meeting over, Matematika running, Konzultace next');
+  // the ticked page is exactly what a full render at 15:00 shows
+  const ticked = await ccSections(page); await ccHome(page); assert.deepEqual(await ccSections(page), ticked, 'tick result = fresh render');
+  // a tick in the same minute changes no element
+  await page.evaluate(() => { window.__top = document.querySelector('#ccTop'); window.__day = document.querySelector('#ccDay'); uiMinuteTick(); });
+  assert.deepEqual(await page.evaluate(() => [window.__top === document.querySelector('#ccTop'), window.__day === document.querySelector('#ccDay')]), [true, true], 'unchanged sections are not replaced');
+  await settle(page);
+  assert.equal(await ccData(page), before, 'ticks write no data'); assert.equal(await xpOf(page), xp0, 'ticks pay no XP');
+}, { state: fixtureState() });
+
+test('FP3 minute tick 15:59 -> 16:00: progress context ("Ještě můžeš"), goal next step and missed blocks update under an open form without touching the typed text', async ({ page }) => {
+  await page.clock.setFixedTime(at('15:59')); await ccHome(page);
+  assert.match(await page.locator('#ccDay .cc-miss').innerText(), /3 bloky v plánu/);
+  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Blok: Matematika · Dnes 15:00/);
+  const before = await ccData(page);
+  await page.click('.cc-q[data-q="task"]'); await page.fill('.sheet #f_title', 'Rozepsaný úkol'); await page.focus('.sheet #f_title');
+  await page.evaluate(() => { const i = document.querySelector('.sheet #f_title'); i.setSelectionRange(3, 3); });
+  await ccTickTo(page, '16:00');
+  assert.deepEqual(await page.evaluate(() => { const i = document.querySelector('.sheet #f_title'); return [!!i, i && i.value, document.activeElement === i, i && i.selectionStart]; }), [true, 'Rozepsaný úkol', true, 3], 'form, text, focus and caret survive');
+  assert.match(await page.locator('#ccDay .cc-miss').innerText(), /2 bloky v plánu/, 'Matematika ended: the day context follows');
+  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Blok: PUSH A · Dnes 17:00/, 'the goal next step skips the missed block');
+  assert.equal(await page.locator('#ccTimeline [data-ck="tl:block:pb_math"].is-missed').count(), 1);
+  const n = await ccNowOf(page); assert.deepEqual([n.mode, n.title], ['now', 'Konzultace']);
+  await page.evaluate(() => closeSheets()); await settle(page);
+  assert.equal(await ccData(page), before, 'nothing saved from the open form or the tick');
+  // widgets switched off stay off through the tick
+  await page.evaluate(() => { S.settings.widgets.top3 = false; S.settings.widgets.goals = false; render(); });
+  await ccTickTo(page, '16:30');
+  assert.deepEqual([await page.locator('#ccTop').count(), await page.locator('#ccGoals').count()], [0, 0]);
+}, { state: fixtureState() });
+
+test('FP4 regression: nothing is created or paid by the Command Center itself; handlers stay the source of truth; no double reward; engine deterministic over renders and ticks', async ({ page }) => {
+  await ccHome(page);
+  const d0 = await ccData(page), xp0 = await xpOf(page);
+  for (let i = 0; i < 10; i++) await page.evaluate(i => { view = 'home'; render(); uiMinuteTick(); }, i);
+  const rk = await page.evaluate(() => { const a = []; for (let i = 0; i < 5; i++) a.push(JSON.stringify(ccRank(ccCandidates(ccContext())).map(c => [c.kind, c.id, c.score, c.reasons]))); return new Set(a).size; });
+  assert.equal(rk, 1, 'same ranking every time');
+  await settle(page); assert.equal(await ccData(page), d0, '10 renders + ticks: no records, no XP'); assert.equal(await xpOf(page), xp0);
+  // a double click on a Top 3 check pays once (the task handler's idempotent key)
+  await page.locator('#ccTop [data-ck="top:task:t_med"] .check').dblclick();
+  const r = await page.evaluate(T => ({ keys: S.xpLog.filter(x => x.key === `task:t_med:${T}`).length, xp: S.totalXp }), TODAY);
+  assert.equal(r.keys, 1);
+  const xp1 = r.xp;
+  // reopening and completing again the same day pays nothing (existing task rule), from the Tasks screen or from Home
+  await page.evaluate(() => { const t = S.tasks.find(t => t.id === 't_med'); t.done = false; render(); });
+  await ccHome(page);
+  const row = page.locator('#ccTop [data-ck="top:task:t_med"] .check'); if (await row.count()) await row.click(); else await page.evaluate(() => uiCcComplete({ kind: 'task', obj: S.tasks.find(t => t.id === 't_med') }));
+  assert.equal(await xpOf(page), xp1, 'no second reward for the same task on the same day');
+  // habit "Hotovo" from Co teď? = the existing habit handler; a second tap only unticks (no XP taken or paid twice)
+  await page.evaluate(() => { S.plannerBlocks = S.plannerBlocks.filter(b => b.date !== todayStr()); S.tasks.forEach(t => { t.done = true; }); const h = S.habits.find(h => h.id === 'h_read'); h.completions = h.completions.filter(d => d !== todayStr()); h.reminder = '11:00';
+    const w = S.habits.find(h => h.id === 'h_water'); while (w.completions.filter(d => d === todayStr()).length < 8) w.completions.push(todayStr()); render(); });
+  await ccHome(page);
+  const n = await ccNowOf(page);
+  if (n.title === 'Read') {
+    const xp2 = await xpOf(page), hasKey = await page.evaluate(T => S.xpLog.some(x => x.key === `habit:h_read:${T}`), TODAY);
+    await page.click('#ccNow [data-cc-act="done"]');
+    assert.equal(await page.evaluate(T => S.habits.find(h => h.id === 'h_read').completions.includes(T), TODAY), true);
+    assert.equal(await page.evaluate(T => S.xpLog.filter(x => x.key === `habit:h_read:${T}`).length, TODAY), 1, 'one XP entry for the day');
+    if (hasKey) assert.equal(await xpOf(page), xp2, 'already paid today -> nothing more');
+  } else assert.fail('expected the timed habit in Co teď?, got ' + JSON.stringify(n));
+  // the classic Home still works as the fallback, with the same data
+  await page.evaluate(() => { S.settings.widgets.smart = false; view = 'home'; render(); });
+  assert.deepEqual([await page.locator('.cc-home').count(), await page.locator('#hTasks').count(), await page.locator('.hud-wrap [data-ds="card"]').count()], [0, 1, 1]);
+}, { state: fixtureState() });
+
+test('FP5 data safety: existing IndexedDB data, schemaVersion 8, export/import, reset, an older state without the new widget keys, Smart Home ON/OFF', async ({ page }) => {
+  const fx = fixtureState();
+  const same = (a, b, msg) => { for (const k of ['tasks', 'habits', 'goals', 'milestones', 'plannerBlocks', 'workouts', 'meals', 'expenses', 'income', 'events', 'sleepLog', 'journal', 'subscriptions', 'vehicles']) assert.deepEqual(a[k], b[k], `${msg}: ${k}`); };
+  // existing data (loaded from IndexedDB by openApp) boots into the Command Center unchanged; the first save stores the filled-in keys
+  await persist(page);
+  let idb = await idbState(page);
+  assert.equal(idb.schemaVersion, 8); same(idb, fx, 'boot');
+  assert.deepEqual(['smart', 'command', 'top3'].map(k => (idb.settings.widgets || {})[k]), [true, true, true], 'defaults filled by the existing migrate()');
+  await ccHome(page); assert.equal(await page.locator('.cc-home').count(), 1);
+  // an older state whose widgets map predates the Command Center (own choices kept, schema unchanged)
+  await page.evaluate(async st => { st.settings.widgets = { tasks: false, finance: false }; st.settings.widgetOrder = ['tasks', 'progress', 'habits']; S = st; await rawIdbPut(st); }, JSON.parse(JSON.stringify(idb)));
+  await reload(page); await persist(page);
+  idb = await idbState(page);
+  assert.deepEqual([idb.settings.widgets.tasks, idb.settings.widgets.finance, idb.settings.widgets.smart, idb.settings.widgets.command, idb.settings.widgets.top3, idb.schemaVersion], [false, false, true, true, true, 8]);
+  same(idb, fx, 'older state');
+  await ccHome(page); assert.equal(await page.locator('#ccMini [data-mini="finance"]').count(), 0, 'its Finance switch is respected');
+  // Smart Home OFF/ON through Settings changes only that one key
+  const s0 = await stateOf(page);
+  await page.click('#settingsBtn'); await page.click('#st_smart [data-smart="smart"]'); await settle(page);
+  let s1 = await idbState(page); assert.equal(s1.settings.widgets.smart, false);
+  s1.settings.widgets.smart = true; s1.settings = { ...s1.settings }; const strip = s => { const c = JSON.parse(JSON.stringify(s)); delete c.meta; return c; };
+  assert.deepEqual(strip(s1), strip(s0), 'OFF changes nothing else');
+  // export with Smart Home off -> reset -> import: everything back, including the switch
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.equal(exported.settings.widgets.smart, false); assert.equal(exported.schemaVersion, 8);
+  await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); await settle(page);
+  const afterReset = await stateOf(page);
+  assert.deepEqual([afterReset.tasks.length, afterReset.settings.widgets.smart, afterReset.settings.widgets.command, afterReset.schemaVersion], [0, true, true, 8], 'reset = defaults, Smart Home on');
+  await page.evaluate(() => closeSheets()); await page.click('#settingsBtn');
+  await importFile(page, await dl.path()); await settle(page);
+  const imported = await idbState(page);
+  same(imported, exported, 'import'); assert.equal(imported.settings.widgets.smart, false, 'the switch comes back with the backup');
+  assert.deepEqual(imported.xpLog, exported.xpLog, 'XP history identical'); assert.equal(imported.totalXp, exported.totalXp);
+  await go(page, 'home'); assert.equal(await page.locator('.cc-home').count(), 0, 'classic Home after importing a backup with Smart Home off');
+  // switching back ON restores the Command Center with the same data
+  await page.click('#settingsBtn'); await page.click('#st_smart [data-smart="smart"]'); await settle(page);
+  await go(page, 'home'); assert.equal(await page.locator('.cc-home').count(), 1);
+  same(await idbState(page), exported, 'after ON');
+}, { state: fixtureState() });
 
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.

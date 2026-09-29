@@ -1236,6 +1236,101 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .set-group .chip{white-space:normal;text-align:left}
 .empty .e{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;background:var(--color-accent-muted);font-size:0}
 .empty .e .gi svg{width:26px;height:26px}
+
+/* ---------- Smart Daily Command Center 2.0 ---------- */
+.cc-home>.hud{margin-bottom:var(--sp-3)}
+.cc-home .cc-sec{margin-bottom:var(--sp-2);min-width:0}
+.cc-home .section-header h3{display:flex;align-items:center;gap:6px;min-width:0}
+.cc-clock{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text)}
+.cc-now{padding:18px;border-color:color-mix(in srgb,var(--accent) 32%,var(--line));
+  background:radial-gradient(110% 80% at 100% 0%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 60%),var(--card);animation:ccIn var(--dur-normal) var(--ease-standard)}
+.cc-now[data-cc-mode="now"]{border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.cc-now[data-cc-mode="done"],.cc-now[data-cc-mode="evening"]{border-color:color-mix(in srgb,var(--accent2) 40%,var(--line))}
+@keyframes ccIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.cc-now-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.cc-now-h{margin:0;font-size:var(--fs-micro);font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)}
+.cc-kick{flex:none}
+.cc-kick .live-dot{margin-right:2px}
+.cc-now-main{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;padding:0;text-align:left;cursor:pointer;min-height:var(--touch);min-width:0}
+.cc-now-ic{flex:none;width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:var(--color-accent-muted);color:var(--accent)}
+.cc-now-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.cc-now-t{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2;overflow-wrap:anywhere}
+.cc-now-m{font-size:var(--fs-body-sm);color:var(--sub);font-weight:600}
+.cc-now-d{margin:6px 0 0}
+.cc-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.cc-act .btn.sm{min-height:var(--touch);flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.cc-why{margin-top:12px;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);padding-top:8px}
+.cc-why summary{cursor:pointer;font-size:var(--fs-body-sm);font-weight:700;color:var(--accent);min-height:var(--touch);display:flex;align-items:center;list-style:none}
+.cc-why summary::-webkit-details-marker{display:none}
+.cc-why summary::after{content:'›';margin-left:6px;transition:transform var(--dur-fast)}
+.cc-why[open] summary::after{transform:rotate(90deg)}
+.cc-why ul{margin:0;padding:0 0 4px 18px;display:flex;flex-direction:column;gap:4px;font-size:var(--fs-body-sm);color:var(--text)}
+.cc-celebrate{font-size:21px}
+.cc-miss{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cc-chip{display:inline-flex;align-items:center;min-height:var(--touch);padding:6px 14px;border-radius:var(--radius-pill);border:1px solid var(--line);background:var(--card2);font-size:var(--fs-body-sm);font-weight:650;cursor:pointer;max-width:100%;text-align:left}
+.cc-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:var(--sp-3)}
+.cc-q{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:60px;padding:8px 4px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:var(--fs-caption);font-weight:700;color:var(--text);min-width:0}
+.cc-q svg{color:var(--accent)}
+.cc-q span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cc-attn{margin-bottom:var(--sp-3)}
+.cc-attn-k{margin:0 2px 6px;display:flex;align-items:center;gap:6px}.cc-attn-k svg{color:var(--danger)}
+.cc-now-h{display:flex;align-items:center;gap:6px}
+.cc-attn-list{display:flex;flex-direction:column;gap:6px}
+.cc-attn-row{max-width:100%;width:100%;text-align:left;border-left:3px solid var(--danger)}
+.cc-attn-row span{overflow-wrap:anywhere}
+.cc-tl{padding:8px}
+.cc-tl-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.cc-tl-row{display:grid;grid-template-columns:22px 92px minmax(0,1fr);align-items:center;gap:8px;width:100%;min-height:var(--touch);padding:6px 8px;border-radius:12px;border:none;background:none;text-align:left;cursor:pointer;font-size:var(--fs-body-sm)}
+.cc-tl-row:hover{background:var(--card2)}
+.cc-tl-mark{font-weight:900;text-align:center;color:var(--sub)}
+.cc-tl-time{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.cc-tl-time small{color:var(--sub);font-weight:600}
+.cc-tl-title{font-weight:650;overflow-wrap:anywhere;min-width:0}
+.cc-tl-row.is-done .cc-tl-mark,.cc-tl-row.is-past .cc-tl-mark{color:var(--accent2)}
+.cc-tl-row.is-done .cc-tl-title,.cc-tl-row.is-past .cc-tl-title{color:var(--sub);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--sub) 50%,transparent)}
+.cc-tl-row.is-now{background:var(--color-accent-muted)}
+.cc-tl-row.is-now .cc-tl-mark{color:var(--accent);animation:ccPulse 2s ease-in-out infinite}
+.cc-tl-row.is-next .cc-tl-mark{color:var(--accent)}
+.cc-tl-row.is-missed .cc-tl-mark{color:var(--warn)}
+.cc-tl-row.is-missed .cc-tl-title{color:var(--sub)}
+@keyframes ccPulse{50%{opacity:.35}}
+.cc-top{padding:6px 10px}
+.cc-top-row{display:flex;align-items:center;gap:10px;min-height:56px;min-width:0}
+.cc-top-row+.cc-top-row{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.cc-top-row .check{width:28px;height:28px}
+.cc-top-row .check::after{content:'';position:absolute;inset:-8px}
+.cc-top-n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--card2);font-weight:800;font-size:var(--fs-caption);color:var(--sub)}
+.cc-top-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;background:none;border:none;padding:8px 0;text-align:left;cursor:pointer;min-height:var(--touch)}
+.cc-top-t{font-weight:700;overflow-wrap:anywhere}
+.cc-top-m{display:flex;align-items:center;gap:4px;font-size:var(--fs-caption);color:var(--sub);flex-wrap:wrap}
+.cc-day-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.cc-day-grid>.card{margin-bottom:var(--sp-2)}
+.cc-prog-n{font-variant-numeric:tabular-nums}
+.cc-prog-bar{margin:8px 0 10px}
+.cc-parts{display:flex;flex-wrap:wrap;gap:6px}
+.cc-part{font-size:var(--fs-caption);font-weight:650;padding:3px 10px;border-radius:var(--radius-pill);background:var(--card2);color:var(--sub);font-variant-numeric:tabular-nums}
+.cc-part.is-done{background:var(--color-success-muted);color:color-mix(in srgb,var(--color-success) 78%,var(--text))}
+.cc-still{margin-top:14px}
+.cc-goals{display:flex;flex-direction:column;gap:0}
+.cc-goal{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;cursor:pointer;color:var(--text);font:inherit;margin-bottom:var(--sp-2)}
+.cc-goal .bar{height:6px;display:block}
+.cc-goal-t{font-weight:750;min-width:0}
+.cc-goal-l{display:flex;align-items:center;gap:4px;font-size:var(--fs-body-sm);flex-wrap:wrap;overflow-wrap:anywhere}
+.cc-goal-l svg{color:var(--accent);flex:none}
+.cc-goal-none{font-style:italic}
+.cc-quests .quest-row[role="button"]{cursor:pointer}
+.cc-mini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2)}
+.cc-tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px;margin:0;min-width:0;text-align:left;cursor:pointer;color:var(--text);font:inherit}
+.cc-tile .snap-k{display:flex;align-items:center;gap:6px;font-size:var(--fs-micro);font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
+.cc-tile-v{font-family:var(--font-display);font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cc-tile-v small{font-size:12px;color:var(--sub);font-weight:650}
+.cc-tile .snap-s{font-size:var(--fs-caption);color:var(--sub);line-height:1.35;overflow-wrap:anywhere}
+.cc-tile.is-empty .cc-tile-v{font-size:14px;color:var(--sub);font-weight:650}
+@media(max-width:360px){.cc-tl-row{grid-template-columns:18px 78px minmax(0,1fr);gap:6px;padding:6px 4px}.cc-now-t{font-size:19px}.cc-q{font-size:11px}}
+@media(min-width:700px){.cc-day-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:var(--sp-3)}.cc-mini{grid-template-columns:repeat(4,minmax(0,1fr))}.cc-goals{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--sp-3)}.cc-goal{margin-bottom:0}}
+@media(min-width:1100px){.cc-home{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 var(--sp-5);align-items:start}
+  .cc-home>.hud,.cc-home>#ccNow,.cc-home>.cc-quick,.cc-home>#ccAttn,.cc-home>#ccDay,.cc-home>#ccMini{grid-column:1/-1}
+  .cc-home .cc-goals{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -1545,6 +1640,11 @@ function monthBalance(s){
 // ---- Phase 6: Settings / dashboard-widget catalogue (single source of truth for both
 // renderHome's widget order and the Settings screen's show/hide + reorder UI) ----
 const AVATAR_CHOICES=['svg:mage','svg:knight','svg:ranger','svg:rogue','svg:paladin','svg:druid','svg:monk','svg:bard']; // Polish pass: SVG portraits (see AVATARS)
+// Smart Daily Command Center switches: keys in the same S.settings.widgets map as the widgets below (the existing
+// idempotent migrate() fills missing keys with these defaults and keeps every saved value -- no schema change).
+// 'smart' = the Command Center Home on/off; the rest of its sections reuse the widget keys (planner = Dnešek timeline,
+// goals, habits, quests, reminders, finance, fitness, health = sleep summary, nutrition).
+const SMART_WIDGET_DEFS=[{key:'smart',label:'Smart Daily Command Center'},{key:'command',label:'Co teď?'},{key:'top3',label:'Top 3'}];
 const WIDGET_DEFS=[
   {key:'reminders',label:'Reminders'},
   {key:'progress',label:'Level Progress'},
@@ -1615,7 +1715,7 @@ function defaultState(){return{
     trainingDays:null, // polish pass: weekday numbers (0=Sun..6=Sat) of the training schedule; null = not set
     language:'cs', dateFormat:'DD.MM.YYYY', timeFormat:'24h', firstDayOfWeek:'monday',
     animations:true, sounds:true,
-    widgets:Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true}))),
+    widgets:Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true})),...SMART_WIDGET_DEFS.map(w=>({[w.key]:true}))),
     widgetOrder:WIDGET_DEFS.map(w=>w.key),
     notifications:{task:true,event:true,habit:true,goal:true,subscription:true,car:true,quest:true,achievement:true,levelup:true},
     notificationsPermission:'default' // 'default'|'granted'|'denied'|'unsupported' -- last known Notification API state
@@ -3208,9 +3308,586 @@ function uiMetric(label,val,target,unit){
   return `<div class="metric"><div class="metric-head"><span>${label}</span><span><b>${uiNum(Math.round(val))}</b> / ${uiNum(target)}${unit?' '+unit:''}</span></div><div class="bar${over?' is-warn':pct>=100?' is-success':''}" role="progressbar" aria-label="${escapeHtml(String(label))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>`;
 }
 
+/* ================= Smart Daily Command Center 2.0 (logic) =================
+   Home as the day's control centre. Everything here only READS existing state and existing helpers
+   (tasksToday, plannerBlocksOn, isDayComplete, goalProgress, questBoardFor, dailyScore, getActiveReminders, ...):
+   no new records, no XP, no second Daily Score. Deterministic: same state + same clock = same result.
+   Candidate: {kind,id,title,score,reasons:[{r,...}],time,due,obj}. Reasons are codes the UI words ("Proč teď?"). */
+const CC_KIND_ORDER={workout:0,planner:1,task:2,goal:3,habit:4,quest:5};
+const CC_PRIO={Urgent:400,High:300,Medium:200,Low:100};
+function ccContext(now){
+  now=now||new Date();
+  return {now, D:todayStr(), nowMin:now.getHours()*60+now.getMinutes(), hour:now.getHours(), dow:now.getDay()};
+}
+// a planner block's state at ctx: done | now | missed | next
+function ccBlockState(b,ctx){
+  if(b.completed) return 'done';
+  const s=plannerTimeToMin(b.startTime), e=plannerTimeToMin(b.endTime);
+  if(ctx.nowMin>=s&&ctx.nowMin<e) return 'now';
+  return ctx.nowMin>=e?'missed':'next';
+}
+// today's timeline: planner blocks + timed calendar events, by start time (nothing invented for empty hours)
+function ccTimeline(ctx){
+  const items=plannerBlocksOn(ctx.D).map(b=>({kind:'block',id:b.id,title:b.title,start:b.startTime,end:b.endTime,state:ccBlockState(b,ctx),obj:b}));
+  uiEventsOn(ctx.D).filter(e=>plannerTimeToMin(e.start)!=null).forEach(e=>{
+    const s=plannerTimeToMin(e.start), en=plannerTimeToMin(e.end); const end=en!=null&&en>s?en:s+60;
+    items.push({kind:'event',id:e.id,title:e.title,start:e.start,end:e.end||'',state:ctx.nowMin>=end?'past':ctx.nowMin>=s?'now':'next',obj:e});
+  });
+  return items.sort((a,b)=>(plannerTimeToMin(a.start)-plannerTimeToMin(b.start))||a.title.localeCompare(b.title,'cs')||String(a.id).localeCompare(String(b.id)));
+}
+function ccCurrentPlanner(ctx){
+  const bl=plannerBlocksOn(ctx.D);
+  return {current:bl.find(b=>ccBlockState(b,ctx)==='now')||null, next:bl.filter(b=>ccBlockState(b,ctx)==='next')[0]||null};
+}
+function ccIsTrainingDay(ctx){ const td=S.settings&&S.settings.trainingDays; return Array.isArray(td)&&td.includes(ctx.dow); }
+function ccWorkoutDoneToday(ctx){ return completedWorkouts(S).some(w=>w.date===ctx.D); }
+// habits that count today: good habits scheduled today (weekly/custom only when needed today or already done),
+// bad habits (logged clean/broken per day); archived and not-yet-started habits are left out
+function ccHabitsToday(ctx){
+  return S.habits.filter(h=>{
+    if(h.active===false||(h.startDate&&ctx.D<h.startDate)) return false;
+    if(h.type==='bad') return true;
+    if(h.frequency==='weekly'||h.frequency==='custom') return isDayComplete(h,ctx.D)||dailyScoreHabitNeeded(h,ctx.D);
+    return isScheduledDate(h,ctx.D);
+  });
+}
+// last completion day per task id, from the XP ledger keys task:<id>:<date> (cached on the xpLog index)
+let ccTaskDoneCache={set:null,size:-1,map:null};
+function ccTaskDoneDates(){
+  const set=xpKeyIndex(), c=ccTaskDoneCache;
+  if(c.set===set&&c.size===set.size) return c.map;
+  const map=new Map();
+  for(const k of set){ if(typeof k!=='string'||!k.startsWith('task:')) continue; const d=k.slice(-10); if(!/^\d{4}-\d\d-\d\d$/.test(d)) continue; const id=k.slice(5,-11); if((map.get(id)||'')<d) map.set(id,d); }
+  c.set=set; c.size=set.size; c.map=map; return map;
+}
+function ccDaysBetween(a,b){ return Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000); }
+// latest real activity on a goal: a linked task done, a milestone done, a linked habit ticked, a linked block done
+function ccGoalLastActivity(g){
+  const done=ccTaskDoneDates(); let last='';
+  S.tasks.forEach(t=>{ if(t.goalId===g.id){ const d=done.get(t.id); if(d&&d>last) last=d; } });
+  S.milestones.forEach(m=>{ if(m.goalId===g.id&&m.completed&&m.completedAt){ const d=uiIsoDate(m.completedAt); if(d>last) last=d; } });
+  S.habits.forEach(h=>{ if(h.goalId===g.id) (h.completions||[]).forEach(d=>{ if(d>last) last=d; }); });
+  (S.plannerBlocks||[]).forEach(b=>{ if(b.goalId===g.id&&b.completed&&b.date>last) last=b.date; });
+  return last||null;
+}
+function ccCandidates(ctx){
+  ctx=ctx||ccContext();
+  const out=[], D=ctx.D, today=plannerBlocksOn(D);
+  const act=activeWorkout();
+  if(act) out.push({kind:'workout',id:act.id,title:act.name,score:1100,reasons:[{r:'active_workout'}],time:null,due:null,obj:act});
+  const blockTask=new Set();
+  today.forEach(b=>{
+    const st=ccBlockState(b,ctx); if(st==='done'||st==='missed') return;
+    if(b.taskId) blockTask.add(b.taskId);
+    if(act&&act.plannerBlockId===b.id) return; // the running workout already stands for it
+    const s=plannerTimeToMin(b.startTime), reasons=[];
+    let score;
+    if(st==='now'){ score=1000; reasons.push({r:'running',end:b.endTime}); }
+    else { const dm=s-ctx.nowMin; if(dm<=30){ score=800; reasons.push({r:'starts_in',min:dm}); } else if(dm<=120){ score=600; reasons.push({r:'starts_in',min:dm}); } else { score=200; reasons.push({r:'later_today',time:b.startTime}); } }
+    reasons.push({r:'in_plan'});
+    // a block linked to an open task carries that task's importance (the task itself is not listed twice)
+    const lt=b.taskId?S.tasks.find(t=>t.id===b.taskId&&!t.done):null;
+    if(lt){ const p=CC_PRIO[lt.priority]?lt.priority:'Medium'; const ts=CC_PRIO[p]+(lt.dueDate&&lt.dueDate<D?250:lt.dueDate===D?200:0);
+      reasons.push({r:'linked_task',p,due:lt.dueDate&&lt.dueDate<D?'overdue':lt.dueDate===D?'today':null}); if(ts>score) score=ts; }
+    if(b.workoutTemplateId) reasons.push({r:'workout_block'});
+    out.push({kind:'planner',id:b.id,title:b.title,score,reasons,time:s,due:null,obj:b});
+  });
+  if(!act&&ccIsTrainingDay(ctx)&&!ccWorkoutDoneToday(ctx)&&!today.some(b=>b.workoutTemplateId&&!b.completed))
+    out.push({kind:'workout',id:'training:'+D,title:'',score:250,reasons:[{r:'training_day'},{r:'no_workout_yet'}],time:null,due:null,obj:null});
+  S.tasks.forEach(t=>{
+    if(t.done||blockTask.has(t.id)) return;
+    if(t.dueDate&&t.dueDate>D) return; // later tasks are not today's
+    const p=CC_PRIO[t.priority]?t.priority:'Medium'; let score=CC_PRIO[p]; const reasons=[{r:'prio',p}];
+    if(t.dueDate&&t.dueDate<D){ score+=250; reasons.push({r:'overdue',days:ccDaysBetween(t.dueDate,D)}); }
+    else if(t.dueDate===D){ score+=200; reasons.push({r:'due_today'}); }
+    else reasons.push({r:'no_date'});
+    reasons.push({r:'not_done'});
+    out.push({kind:'task',id:t.id,title:t.title,score,reasons,time:null,due:t.dueDate||null,obj:t});
+  });
+  S.goals.forEach(g=>{
+    if(g.status!=='Active') return;
+    let score=0; const reasons=[];
+    if(goalProgress(g)>=100){ score+=260; reasons.push({r:'goal_ready'}); }
+    if(g.targetDate){ const dd=ccDaysBetween(D,g.targetDate);
+      if(dd<0){ score+=350; reasons.push({r:'goal_overdue',days:-dd}); } else if(dd===0){ score+=350; reasons.push({r:'goal_today'}); }
+      else if(dd<=3){ score+=250; reasons.push({r:'goal_soon',days:dd}); } else if(dd<=7){ score+=150; reasons.push({r:'goal_soon',days:dd}); } }
+    const last=ccGoalLastActivity(g), since=last?ccDaysBetween(last,D):(g.createdAt?Math.floor((ctx.now.getTime()-g.createdAt)/86400000):0);
+    if(since>=7&&!reasons.some(x=>x.r==='goal_ready')){ score+=100; reasons.push({r:'goal_idle',days:since,never:!last}); }
+    if(score>=100) out.push({kind:'goal',id:g.id,title:g.title,score,reasons,time:null,due:g.targetDate||null,obj:g});
+  });
+  ccHabitsToday(ctx).forEach(h=>{
+    if(h.type==='bad'||isDayComplete(h,D)) return;
+    let score=150; const reasons=[{r:'habit_today'}];
+    const rm=h.reminder?plannerTimeToMin(h.reminder):null;
+    if(rm!=null&&ctx.nowMin>=rm-60){ score+=150; reasons.push({r:'habit_time',time:h.reminder}); }
+    out.push({kind:'habit',id:h.id,title:h.name,score,reasons,time:rm,due:null,obj:h});
+  });
+  questBoardFor('daily',false).forEach(({q,p})=>{
+    if(questDone(q,'daily')) return;
+    const max=questMax(q,p), val=Math.min(questVal(q,p),max); let score=80; const reasons=[{r:'quest'}];
+    if(max>0&&val/max>=0.5){ score+=60; reasons.push({r:'quest_close',val,max}); }
+    out.push({kind:'quest',id:q.id,title:questTitle(q,p),score,reasons,time:null,due:null,obj:q,p});
+  });
+  return out;
+}
+// deterministic order: score, then kind, then time of day, then due date, then title, then id
+function ccRank(list){
+  const n=v=>v==null?Infinity:v;
+  return [...list].sort((a,b)=>(b.score-a.score)||(CC_KIND_ORDER[a.kind]-CC_KIND_ORDER[b.kind])||(n(a.time)-n(b.time))||
+    String(a.due||'9999').localeCompare(String(b.due||'9999'))||String(a.title).localeCompare(String(b.title),'cs')||String(a.id).localeCompare(String(b.id)));
+}
+function ccHasAnyData(){ return !!(S.tasks.length||S.habits.length||S.goals.length||(S.plannerBlocks||[]).length); }
+// "Co teď?": a running thing wins, then what starts within 2 h, then the most important item; evening / done / empty states
+function ccNow(ctx,ranked){
+  ctx=ctx||ccContext(); ranked=ranked||ccRank(ccCandidates(ctx));
+  const main=ranked.filter(c=>c.kind!=='quest');
+  const running=main.find(c=>c.kind==='workout'&&c.score>=1100)||main.find(c=>c.kind==='planner'&&c.reasons[0].r==='running');
+  if(running) return {mode:'now',item:running};
+  const soon=main.find(c=>c.kind==='planner'&&c.reasons[0].r==='starts_in');
+  if(soon) return {mode:'next',item:soon};
+  if(!ccHasAnyData()) return {mode:'empty'};
+  const top=main[0]||null;
+  if(ctx.hour>=19&&(!top||top.score<400)){
+    const missing=ccMissing(ctx), prog=ccProgress(ctx);
+    if(!missing.length&&prog.done>0) return {mode:'done',score:dailyScore(ctx.D).score};
+    if(prog.total&&prog.done/prog.total>=0.6) return {mode:'evening',missing,score:dailyScore(ctx.D).score,item:top};
+  }
+  if(top) return {mode:top.kind==='planner'?'next':'important',item:top};
+  return {mode:'done',score:dailyScore(ctx.D).score};
+}
+function ccTopPriorities(ctx,exclude,ranked){
+  ranked=ranked||ccRank(ccCandidates(ctx));
+  return ranked.filter(c=>c.kind!=='quest'&&!(exclude&&c.kind===exclude.kind&&c.id===exclude.id)).slice(0,3);
+}
+// what is still open today, from the same data the Daily Score reads (a to-do list, not a score)
+function ccMissing(ctx){
+  ctx=ctx||ccContext(); const out=[], D=ctx.D;
+  const due=tasksToday(D).due.length; if(due) out.push({k:'tasks',n:due});
+  const hab=ccHabitsToday(ctx).filter(h=>h.type!=='bad'&&!isDayComplete(h,D)).length; if(hab) out.push({k:'habits',n:hab});
+  const blocks=plannerBlocksOn(D).filter(b=>{ const st=ccBlockState(b,ctx); return st==='now'||st==='next'; }).length; if(blocks) out.push({k:'planner',n:blocks});
+  if((ccIsTrainingDay(ctx)||plannerBlocksOn(D).some(b=>b.workoutTemplateId&&!b.completed))&&!ccWorkoutDoneToday(ctx)) out.push({k:'workout'});
+  const nt=S.nutritionTargets||{}; if((Number(nt.calories)>0||Number(nt.protein)>0)&&!S.meals.some(m=>m.date===D)) out.push({k:'nutrition'});
+  if(!S.sleepLog.some(s=>s.date===D)) out.push({k:'sleep'});
+  if(ctx.hour>=19&&!S.journal.some(j=>j.date===D)) out.push({k:'journal'});
+  return out;
+}
+// today's progress as plain counts (a visual summary; the Daily Score stays the only score)
+function ccProgress(ctx){
+  ctx=ctx||ccContext(); const D=ctx.D, parts=[];
+  const tt=tasksToday(D), tTot=tt.due.length+tt.doneToday.length; if(tTot) parts.push({k:'tasks',done:tt.doneToday.length,total:tTot});
+  const hs=ccHabitsToday(ctx).filter(h=>h.type!=='bad'); if(hs.length) parts.push({k:'habits',done:hs.filter(h=>isDayComplete(h,D)).length,total:hs.length});
+  const bl=plannerBlocksOn(D); if(bl.length) parts.push({k:'planner',done:bl.filter(b=>b.completed).length,total:bl.length});
+  const nt=S.nutritionTargets||{}; if(Number(nt.calories)>0||Number(nt.protein)>0) parts.push({k:'nutrition',done:S.meals.some(m=>m.date===D)?1:0,total:1});
+  parts.push({k:'sleep',done:S.sleepLog.some(s=>s.date===D)?1:0,total:1});
+  if(ccIsTrainingDay(ctx)||bl.some(b=>b.workoutTemplateId)||ccWorkoutDoneToday(ctx)) parts.push({k:'fitness',done:ccWorkoutDoneToday(ctx)?1:0,total:1});
+  const done=parts.reduce((a,p)=>a+p.done,0), total=parts.reduce((a,p)=>a+p.total,0);
+  return {parts,done,total,pct:total?Math.round(done/total*100):0};
+}
+// a goal's context for Home: this week's activity and the next concrete step (never invents a task)
+function ccGoalNextSteps(g,ctx){
+  ctx=ctx||ccContext(); const D=ctx.D, ws=weekStart(), done=ccTaskDoneDates();
+  const tasks=S.tasks.filter(t=>t.goalId===g.id), taskIds=new Set(tasks.map(t=>t.id));
+  const fitness=catProfile(g.category)==='fitness'||(S.plannerBlocks||[]).some(b=>b.goalId===g.id&&b.workoutTemplateId);
+  let week=null;
+  const habits=S.habits.filter(h=>h.goalId===g.id&&h.active!==false);
+  if(fitness){ const td=S.settings&&S.settings.trainingDays; week={k:'workouts',done:completedWorkouts(S).filter(w=>w.date>=ws&&w.date<=D).length,total:Array.isArray(td)&&td.length?td.length:(Number(S.dailyTargets&&S.dailyTargets.workoutsPerWeek)||3)}; }
+  else if(habits.length) week={k:'habits',done:habits.reduce((a,h)=>a+habitWeekCount(h,ws),0),total:null};
+  else if(tasks.length) week={k:'tasks',done:tasks.filter(t=>{ const d=done.get(t.id); return t.done&&d&&d>=ws; }).length,total:null};
+  else { const ms=S.milestones.filter(m=>m.goalId===g.id); if(ms.length) week={k:'milestones',done:ms.filter(m=>m.completed).length,total:ms.length}; }
+  let next=null;
+  const blocks=(S.plannerBlocks||[]).filter(b=>!b.completed&&b.date>=D&&(b.goalId===g.id||(b.taskId&&taskIds.has(b.taskId)))&&!(b.date===D&&ccBlockState(b,ctx)==='missed'))
+    .sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
+  if(blocks[0]) next={k:'block',title:blocks[0].title,date:blocks[0].date,time:blocks[0].startTime,obj:blocks[0]};
+  if(!next){ const t=tasks.filter(t=>!t.done).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'))[0]; if(t) next={k:'task',title:t.title,date:t.dueDate||null,obj:t}; }
+  if(!next){ const m=S.milestones.filter(m=>m.goalId===g.id&&!m.completed).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))[0]; if(m) next={k:'milestone',title:m.title,obj:m}; }
+  if(!next&&fitness&&ccIsTrainingDay(ctx)&&!ccWorkoutDoneToday(ctx)) next={k:'training'};
+  return {pct:goalProgress(g),ready:uiGoalReady(g),week,next};
+}
+// goals worth showing on Home: ready to close, nearest deadline, then the least progressed
+function ccHomeGoals(){
+  return S.goals.filter(g=>g.status==='Active').sort((a,b)=>(uiGoalReady(b)-uiGoalReady(a))||String(a.targetDate||'9999').localeCompare(String(b.targetDate||'9999'))||(goalProgress(a)-goalProgress(b))||a.title.localeCompare(b.title,'cs')).slice(0,3);
+}
+// "Potřebuje pozornost": at most 3, most important first; follows the same notification switches as reminders
+function ccReminders(ctx){
+  ctx=ctx||ccContext(); const N=(S.settings&&S.settings.notifications)||{}, D=ctx.D, out=[];
+  if(N.task!==false){ const n=S.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<D).length; if(n) out.push({k:'overdue',n,rank:1}); }
+  if(N.subscription!==false) S.subscriptions.filter(s=>s.active!==false).forEach(s=>{ const nx=nextPaymentDate(s); if(!nx) return; const d=ccDaysBetween(D,nx); if(d>=0&&d<=1) out.push({k:'sub',days:d,title:s.name,id:s.id,obj:s,rank:2}); });
+  if(N.event!==false) uiEventsOn(D).forEach(e=>{ const s=plannerTimeToMin(e.start); if(s!=null&&s+60<ctx.nowMin) return; out.push({k:'event',title:e.title,time:e.start||'',id:e.id,obj:e,rank:3}); });
+  if(N.goal!==false) S.goals.filter(g=>g.status==='Active'&&g.targetDate).forEach(g=>{ const d=ccDaysBetween(D,g.targetDate); if(d>=0&&d<=2) out.push({k:'goal',days:d,title:g.title,id:g.id,obj:g,rank:4}); });
+  if(N.car!==false){ const n=S.vehicles.reduce((a,v)=>a+carReminders(v).length,0); if(n) out.push({k:'car',n,rank:5}); }
+  return out.sort((a,b)=>a.rank-b.rank||String(a.time||'').localeCompare(String(b.time||''))||String(a.title||'').localeCompare(String(b.title||''),'cs')).slice(0,3);
+}
+// small status lines -- null when there is no data (never a fake zero)
+function ccMini(ctx){
+  ctx=ctx||ccContext(); const out={finance:null,fitness:null,sleep:null};
+  if(S.expenses.length||S.income.length){ const t=financeMonthTotals(finYm()), us=financeBudgetUsage(finYm()); const lim=us.reduce((a,u)=>a+(u.limit||0),0);
+    out.finance={spent:t.expenses,income:t.income,budget:lim>0?lim:null,budgetSpent:us.reduce((a,u)=>a+(u.spent||0),0)}; }
+  const td=S.settings&&S.settings.trainingDays;
+  if(completedWorkouts(S).length||(Array.isArray(td)&&td.length)) out.fitness={done:workoutsThisWeek(S),target:Array.isArray(td)&&td.length?td.length:(Number(S.dailyTargets&&S.dailyTargets.workoutsPerWeek)||3)};
+  const last=[...S.sleepLog].filter(s=>s.date<=ctx.D).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(last) out.sleep={hours:sleepDuration(last),date:last.date,quality:Number(last.quality)||null};
+  return out;
+}
+/* ================= Smart Daily Command Center 2.0 (presentation) =================
+   Only builds markup from the cc* helpers above; every action goes through the existing handlers
+   (taskGrantCompletion, toggleHabitDay/incrementHabitToday/markHabitClean, plannerToggleCompleted,
+   uiPlannerStartWorkout, the existing forms) -- no new XP path, no new records. */
+const UI_CC={
+  cs:{title:'Co teď?',now:'Teď',next:'Další',important:'Další důležitá věc',why:'Proč teď?',all_done:'Dnešek máš hotový',
+    evening:'Den je téměř hotový',evening_d:'Ještě můžeš:',day_done:'Den dokončen',day_done_d:'Všechno podstatné je hotové. Dobrá práce.',
+    empty_t:'Začni svůj den',empty_d:'Přidej úkol, návyk nebo si naplánuj blok — Home ti pak řekne, co je teď nejdůležitější.',
+    plan_block:'Naplánovat blok',open:'Otevřít',done_btn:'Hotovo',start_wk:'Spustit trénink',continue_wk:'Pokračovat',open_goal:'Otevřít cíl',
+    close_goal:'Uzavřít cíl',open_fitness:'Otevřít Fitness',
+    timeline:'Dnešek',timeline_empty:'Na dnešek nemáš nic naplánováno.',planner:'Plánovač',event:'událost',
+    st_done:'hotovo',st_now:'probíhá',st_next:'další',st_missed:'nesplněno',st_past:'proběhlo',st_later:'později',
+    top3:'Dnes nejdůležitější',top3_empty:'Nic dalšího důležitého na dnešek.',
+    day:'Dnešní postup',done_today:'Splněno dnes',still:'Ještě můžeš…',nothing_missing:'Nic nechybí — dnešek je pokrytý.',
+    habits:'Návyky na dnešek',habits_empty_t:'Na dnešek žádné návyky',habits_empty_d:'Návyk ti pomůže budovat rytmus dne.',
+    goals:'Cíle',goals_empty_t:'Zatím žádný aktivní cíl',goals_empty_d:'Cíl dává dnešním úkolům směr.',add_goal:'Přidat cíl',
+    no_next:'Další krok není naplánován.',next_step:'Další krok',this_week:'Tento týden',
+    quests:'Výpravy',quests_all:'Zobrazit všechny',quests_done:'Všechny dnešní výpravy splněny',
+    attention:'Potřebuje pozornost',
+    status:'Stav',finance:'Finance',fitness:'Fitness',sleep:'Spánek',nutrition:'Výživa',no_data:'Žádná data',
+    spent:'utraceno tento měsíc',budget:'rozpočet',wk_week:'tréninků tento týden',sleep_last:'poslední noc',q:'kvalita',
+    add_task:'Úkol',add_habit:'Návyk',add_food:'Jídlo',add_workout:'Trénink',quick:'Rychlé akce',
+    k_task:'Úkol',k_habit:'Návyk',k_goal:'Cíl',k_planner:'Blok',k_workout:'Trénink',k_quest:'Výprava',k_event:'Událost',
+    m_tasks:n=>`${n} ${n===1?'úkol':n<5?'úkoly':'úkolů'} na dnešek`,m_habits:n=>`${n} ${n===1?'návyk':n<5?'návyky':'návyků'}`,m_planner:n=>`${n} ${n===1?'blok':n<5?'bloky':'bloků'} v plánu`,
+    m_workout:'trénink',m_nutrition:'zapsat jídlo',m_sleep:'zapsat spánek',m_journal:'napsat deník',
+    p_tasks:'Úkoly',p_habits:'Návyky',p_planner:'Plán',p_nutrition:'Jídlo',p_sleep:'Spánek',p_fitness:'Trénink',
+    w_workouts:'tréninky',w_habits:'splnění návyků',w_tasks:'hotové úkoly',w_milestones:'milníky',
+    n_block:'Blok',n_task:'Úkol',n_milestone:'Milník',n_training:'Dnešní trénink',
+    a_overdue:n=>`${n} ${n===1?'úkol':n<5?'úkoly':'úkolů'} po termínu`,a_sub:(t,d)=>`Platba ${t} ${d?'zítra':'dnes'}`,a_event:(t,tm)=>`${t}${tm?' v '+tm:''}`,
+    a_goal:(t,d)=>`Cíl ${t}: termín ${d===0?'dnes':d===1?'zítra':'za '+d+' dny'}`,a_car:n=>`Auto: ${n} ${n===1?'připomínka':n<5?'připomínky':'připomínek'}`,
+    r:{active_workout:()=>'Trénink právě probíhá',running:x=>`Probíhá teď${x.end?` (do ${x.end})`:''}`,
+      starts_in:x=>x.min<=0?'Začíná teď':`Začíná za ${x.min} min`,later_today:x=>`Naplánováno na ${x.time}`,in_plan:()=>'Je v dnešním plánu',
+      linked_task:x=>`Propojený úkol s prioritou ${uiT('prio_'+x.p).toLowerCase()}${x.due==='overdue'?', po termínu':x.due==='today'?', termín dnes':''}`,
+      workout_block:()=>'Tréninkový blok',training_day:()=>'Dnes je tréninkový den',no_workout_yet:()=>'Dnes ještě nemáš trénink',
+      prio:x=>`Priorita: ${uiT('prio_'+x.p).toLowerCase()}`,overdue:x=>`Po termínu ${x.days} ${x.days===1?'den':x.days<5?'dny':'dní'}`,due_today:()=>'Termín je dnes',
+      no_date:()=>'Bez termínu — zbývá z dřívějška',not_done:()=>'Ještě není hotové',
+      goal_ready:()=>'Cíl je na 100 % — můžeš ho uzavřít',goal_overdue:x=>`Termín cíle minul před ${x.days} d`,goal_today:()=>'Termín cíle je dnes',
+      goal_soon:x=>`Termín cíle za ${x.days} ${x.days===1?'den':x.days<5?'dny':'dní'}`,goal_idle:x=>x.never?'Na cíli se zatím nepracovalo':`Na cíli se ${x.days} dní nic nestalo`,
+      habit_today:()=>'Návyk je na dnešek',habit_time:x=>`Obvyklý čas ${x.time}`,quest:()=>'Denní výprava',quest_close:x=>`Máš ${x.val}/${x.max}`}},
+  en:{title:'What now?',now:'Now',next:'Next',important:'Next important thing',why:'Why now?',all_done:'Your day is done',
+    evening:'The day is almost done',evening_d:'You can still:',day_done:'Day complete',day_done_d:'Everything that matters is done. Nice work.',
+    empty_t:'Start your day',empty_d:'Add a task, a habit or plan a block — Home will then tell you what matters most right now.',
+    plan_block:'Plan a block',open:'Open',done_btn:'Done',start_wk:'Start workout',continue_wk:'Continue',open_goal:'Open goal',
+    close_goal:'Close goal',open_fitness:'Open Fitness',
+    timeline:'Today',timeline_empty:'Nothing planned for today.',planner:'Planner',event:'event',
+    st_done:'done',st_now:'now',st_next:'next',st_missed:'missed',st_past:'past',st_later:'later',
+    top3:'Most important today',top3_empty:'Nothing else important today.',
+    day:"Today's progress",done_today:'Done today',still:'You can still…',nothing_missing:'Nothing missing — today is covered.',
+    habits:"Today's habits",habits_empty_t:'No habits for today',habits_empty_d:'A habit helps you build the rhythm of your day.',
+    goals:'Goals',goals_empty_t:'No active goal yet',goals_empty_d:"A goal gives today's tasks a direction.",add_goal:'Add goal',
+    no_next:'No next step planned.',next_step:'Next step',this_week:'This week',
+    quests:'Quests',quests_all:'Show all',quests_done:"All of today's quests complete",
+    attention:'Needs attention',
+    status:'Status',finance:'Finance',fitness:'Fitness',sleep:'Sleep',nutrition:'Nutrition',no_data:'No data',
+    spent:'spent this month',budget:'budget',wk_week:'workouts this week',sleep_last:'last night',q:'quality',
+    add_task:'Task',add_habit:'Habit',add_food:'Food',add_workout:'Workout',quick:'Quick actions',
+    k_task:'Task',k_habit:'Habit',k_goal:'Goal',k_planner:'Block',k_workout:'Workout',k_quest:'Quest',k_event:'Event',
+    m_tasks:n=>`${n} task${n===1?'':'s'} for today`,m_habits:n=>`${n} habit${n===1?'':'s'}`,m_planner:n=>`${n} planned block${n===1?'':'s'}`,
+    m_workout:'workout',m_nutrition:'log food',m_sleep:'log sleep',m_journal:'write the journal',
+    p_tasks:'Tasks',p_habits:'Habits',p_planner:'Plan',p_nutrition:'Food',p_sleep:'Sleep',p_fitness:'Workout',
+    w_workouts:'workouts',w_habits:'habit check-ins',w_tasks:'tasks done',w_milestones:'milestones',
+    n_block:'Block',n_task:'Task',n_milestone:'Milestone',n_training:"Today's workout",
+    a_overdue:n=>`${n} overdue task${n===1?'':'s'}`,a_sub:(t,d)=>`${t} payment ${d?'tomorrow':'today'}`,a_event:(t,tm)=>`${t}${tm?' at '+tm:''}`,
+    a_goal:(t,d)=>`Goal ${t}: due ${d===0?'today':d===1?'tomorrow':'in '+d+' days'}`,a_car:n=>`Car: ${n} reminder${n===1?'':'s'}`,
+    r:{active_workout:()=>'A workout is in progress',running:x=>`Happening now${x.end?` (until ${x.end})`:''}`,
+      starts_in:x=>x.min<=0?'Starts now':`Starts in ${x.min} min`,later_today:x=>`Planned for ${x.time}`,in_plan:()=>"It's in today's plan",
+      linked_task:x=>`Linked task with ${uiT('prio_'+x.p).toLowerCase()} priority${x.due==='overdue'?', overdue':x.due==='today'?', due today':''}`,
+      workout_block:()=>'Workout block',training_day:()=>"Today is a training day",no_workout_yet:()=>'No workout yet today',
+      prio:x=>`Priority: ${uiT('prio_'+x.p).toLowerCase()}`,overdue:x=>`Overdue by ${x.days} day${x.days===1?'':'s'}`,due_today:()=>'Due today',
+      no_date:()=>'No due date — still open',not_done:()=>'Not done yet',
+      goal_ready:()=>'The goal is at 100 % — you can close it',goal_overdue:x=>`Goal deadline passed ${x.days} d ago`,goal_today:()=>'Goal deadline is today',
+      goal_soon:x=>`Goal due in ${x.days} day${x.days===1?'':'s'}`,goal_idle:x=>x.never?'No progress on this goal yet':`No activity on this goal for ${x.days} days`,
+      habit_today:()=>'The habit is due today',habit_time:x=>`Usual time ${x.time}`,quest:()=>'Daily quest',quest_close:x=>`You have ${x.val}/${x.max}`}},
+};
+function uiCcT(k){ return (UI_CC[uiLang()]||UI_CC.cs)[k]; }
+function uiCcReason(x){ const f=uiCcT('r')[x.r]; return f?f(x):''; }
+const UI_CC_KIND_ICON={task:'tasks',habit:'habits',goal:'target',planner:'clock',workout:'dumbbell',quest:'quest',event:'calendar'};
+function uiCcTitle(c){ return c.kind==='workout'&&!c.title?uiCcT('n_training'):c.title; }
+function uiCcClock(){ const n=new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
+// navigation for a candidate / timeline row -- the same destinations Search uses
+function uiCcOpen(c){
+  if(c.kind==='workout'){ if(c.obj) uiGoActiveWorkout(); else { view='fitness'; render(); window.scrollTo(0,0); } return; }
+  if(c.kind==='planner'){ searchNavigate('plannerBlock',c.obj); return; }
+  if(c.kind==='quest'){ searchNavigate('quest',null); return; }
+  if(c.kind==='event'){ searchNavigate('event',c.obj); return; }
+  searchNavigate(c.kind,c.obj);
+}
+// "done" through the existing handlers only (XP, if any, is granted by them under their idempotent keys)
+function uiCcComplete(c){
+  if(c.kind==='task'){ const t=c.obj; if(t.done) return; t.done=true; taskGrantCompletion(t); scheduleSave(); render(); return; }
+  if(c.kind==='habit'){ const h=c.obj; if(habitUsesDayCounter(h)) incrementHabitToday(h); else toggleHabitDay(h); return; }
+  if(c.kind==='planner'){ plannerToggleCompleted(c.obj.id); render(); }
+}
+function uiCcActions(c){
+  const T=uiCcT, b=[];
+  if(c.kind==='workout') b.push(['go',c.obj?T('continue_wk'):T('open_fitness'),'dumbbell']);
+  else if(c.kind==='planner'){
+    const wk=c.obj.workoutTemplateId?uiPlannerWorkoutInfo(c.obj):null;
+    if(wk&&wk.action) b.push(['startwk',wk.action,'dumbbell']);
+    b.push(['done',T('done_btn'),'check']); b.push(['open',T('open'),'chevron']);
+  }
+  else if(c.kind==='task'||c.kind==='habit'){ b.push(['done',T('done_btn'),'check']); b.push(['open',T('open'),'chevron']); }
+  else if(c.kind==='goal') b.push(['open',uiGoalReady(c.obj)?T('close_goal'):T('open_goal'),'target']);
+  return b;
+}
+function uiCcNowCard(ctx,ranked,st){
+  const T=uiCcT; st=st||ccNow(ctx,ranked);
+  const card=el(`<section class="card cc-now" id="ccNow" data-cc-mode="${st.mode}" data-ck="${escapeHtml(st.mode+(st.item?':'+st.item.kind+':'+st.item.id:''))}" aria-labelledby="ccNowH"></section>`);
+  const head=`<div class="cc-now-head"><h2 id="ccNowH" class="cc-now-h">${uiIcon('bolt',14)} ${T('title')}</h2>`;
+  if(st.mode==='empty'){
+    card.innerHTML=`${head}</div><div class="cc-now-t">${T('empty_t')}</div><p class="sub cc-now-d">${T('empty_d')}</p>
+      <div class="cc-act"><button class="btn sm" data-cc-empty="task">＋ ${T('add_task')}</button><button class="btn sm ghost" data-cc-empty="block">＋ ${T('plan_block')}</button><button class="btn sm ghost" data-cc-empty="habit">＋ ${T('add_habit')}</button></div>`;
+    card.querySelector('[data-cc-empty="task"]').onclick=()=>openForm('task');
+    card.querySelector('[data-cc-empty="block"]').onclick=()=>openPlannerForm(null,{date:ctx.D});
+    card.querySelector('[data-cc-empty="habit"]').onclick=()=>openHabitForm();
+    return card;
+  }
+  if(st.mode==='done'||st.mode==='evening'){
+    const miss=st.mode==='evening'?(st.missing||[]):[];
+    card.innerHTML=`${head}</div><div class="cc-now-t cc-celebrate">${st.mode==='done'?'🎉 '+(ctx.hour>=19?T('day_done'):T('all_done')):'🌙 '+T('evening')}</div>
+      ${st.mode==='done'?`<p class="sub cc-now-d">${T('day_done_d')}${st.score!=null?` · Daily Score <b>${st.score}</b>`:''}</p>`
+        :`<p class="sub cc-now-d">${T('evening_d')}</p><div class="cc-miss">${miss.map(m=>uiCcMissChip(m)).join('')}</div>`}`;
+    uiCcWireMiss(card);
+    return card;
+  }
+  const c=st.item, kick=st.mode==='now'?T('now'):st.mode==='next'?T('next'):T('important');
+  const time=c.kind==='planner'?`${c.obj.startTime}–${c.obj.endTime}`:c.kind==='habit'&&c.obj.reminder?c.obj.reminder:c.kind==='task'&&c.due?uiDueLabel(c.due):'';
+  card.innerHTML=`${head}<span class="chip ${st.mode==='now'?'is-warn':''} cc-kick">${st.mode==='now'?'<span class="live-dot" aria-hidden="true"></span>':''}${kick}</span></div>
+    <button class="cc-now-main" data-cc-open="1"><span class="cc-now-ic" aria-hidden="true">${uiIcon(UI_CC_KIND_ICON[c.kind],22)}</span>
+      <span class="cc-now-txt"><span class="cc-now-t">${escapeHtml(uiCcTitle(c))}</span><span class="cc-now-m">${T('k_'+c.kind)}${time?' · '+escapeHtml(time):''}</span></span></button>
+    <div class="cc-act">${uiCcActions(c).map(([k,l,ic],i)=>`<button class="btn sm${i?' ghost':''}" data-cc-act="${k}">${uiIcon(ic,16)} ${l}</button>`).join('')}</div>
+    <details class="cc-why"><summary>${T('why')}</summary><ul>${c.reasons.map(x=>`<li>${escapeHtml(uiCcReason(x))}</li>`).join('')}</ul></details>`;
+  card.querySelector('[data-cc-open]').onclick=()=>uiCcOpen(c);
+  card.querySelectorAll('[data-cc-act]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.ccAct;
+    if(k==='done') uiCcComplete(c); else if(k==='startwk') uiPlannerStartWorkout(c.obj); else uiCcOpen(c);
+  });
+  return card;
+}
+const UI_CC_MISS_NAV={tasks:'tasks',habits:'habits',planner:'planner',workout:'fitness',nutrition:'nutrition',sleep:'health',journal:'journal'};
+function uiCcMissChip(m){
+  const T=uiCcT, f=T('m_'+m.k), txt=typeof f==='function'?f(m.n):f;
+  return `<button class="cc-chip" data-ck="miss:${m.k}" data-cc-nav="${UI_CC_MISS_NAV[m.k]}">${escapeHtml(txt)} ›</button>`;
+}
+function uiCcWireMiss(root){
+  root.querySelectorAll('[data-cc-nav]').forEach(b=>b.onclick=()=>{ const v=b.dataset.ccNav; if(v==='planner') uiOpenPlanner(todayStr()); else { view=v; render(); window.scrollTo(0,0); } });
+}
+function uiCcTimeline(ctx){
+  const T=uiCcT, items=ccTimeline(ctx);
+  const sec=el(`<section class="cc-sec" id="ccTimeline"><div class="section-header"><h3>${uiIcon('calendar',18)} ${T('timeline')}</h3><button class="action" data-cc-planner="1">${T('planner')} ›</button></div><div class="card cc-tl"></div></section>`);
+  const box=sec.querySelector('.cc-tl');
+  if(!items.length){
+    box.innerHTML=`<p class="sub" style="margin:0 0 10px">${T('timeline_empty')}</p><button class="btn sm" data-cc-add="1">＋ ${T('plan_block')}</button>`;
+    box.querySelector('[data-cc-add]').onclick=()=>openPlannerForm(null,{date:ctx.D});
+  } else {
+    const firstNext=items.find(i=>i.state==='next');
+    const mark={done:'✓',now:'●',next:'→',missed:'!',past:'✓'};
+    box.innerHTML=`<ol class="cc-tl-list">${items.map(i=>{
+      const st=i.state==='next'&&i!==firstNext?'later':i.state;
+      return `<li><button class="cc-tl-row is-${st}${i.kind==='event'?' is-event':''}" data-ck="tl:${i.kind}:${escapeHtml(String(i.id))}" data-tl="${escapeHtml(String(i.id))}" data-tl-kind="${i.kind}" aria-label="${escapeHtml(i.start+(i.end?'–'+i.end:'')+' '+i.title)}, ${T('st_'+st)}">
+        <span class="cc-tl-mark" aria-hidden="true">${st==='later'?'':mark[st]}</span><span class="cc-tl-time">${i.start}${i.end?'<small>–'+i.end+'</small>':''}</span>
+        <span class="cc-tl-title">${escapeHtml(i.title)}${i.kind==='event'?` <small class="sub">· ${T('event')}</small>`:''}</span></button></li>`; }).join('')}</ol>`;
+    box.querySelectorAll('[data-tl]').forEach(r=>r.onclick=()=>{
+      const it=items.find(x=>String(x.id)===r.dataset.tl&&x.kind===r.dataset.tlKind); if(!it) return;
+      if(it.kind==='event') searchNavigate('event',it.obj); else searchNavigate('plannerBlock',it.obj);
+    });
+  }
+  sec.querySelector('[data-cc-planner]').onclick=()=>uiOpenPlanner(ctx.D);
+  return sec;
+}
+function uiCcTop3(ctx,exclude,ranked){
+  const T=uiCcT, top=ccTopPriorities(ctx,exclude,ranked);
+  const sec=el(`<section class="cc-sec" id="ccTop"><div class="section-header"><h3>${uiIcon('target',18)} ${T('top3')}</h3></div><div class="card cc-top"></div></section>`);
+  const box=sec.querySelector('.cc-top');
+  if(!top.length){ box.innerHTML=`<p class="sub" style="margin:0">${T('top3_empty')}</p>`; return sec; }
+  top.forEach((c,i)=>{
+    const canCheck=c.kind==='task'||(c.kind==='habit'&&!habitUsesDayCounter(c.obj));
+    const row=el(`<div class="cc-top-row" data-ck="top:${c.kind}:${escapeHtml(String(c.id))}" data-cc-kind="${c.kind}" data-cc-id="${escapeHtml(String(c.id))}">
+      ${canCheck?`<button class="check" aria-label="${T('done_btn')}: ${escapeHtml(uiCcTitle(c))}"></button>`:`<span class="cc-top-n" aria-hidden="true">${i+1}</span>`}
+      <button class="cc-top-main"><span class="cc-top-t">${escapeHtml(uiCcTitle(c))}</span><span class="cc-top-m">${uiIcon(UI_CC_KIND_ICON[c.kind],13)} ${T('k_'+c.kind)} · ${escapeHtml(uiCcReason(c.reasons.find(x=>x.r!=='in_plan'&&x.r!=='not_done')||c.reasons[0]))}</span></button></div>`);
+    row.querySelector('.cc-top-main').onclick=()=>uiCcOpen(c);
+    const ck=row.querySelector('.check'); if(ck) ck.onclick=()=>uiCcComplete(c);
+    box.appendChild(row);
+  });
+  return sec;
+}
+function uiCcDay(ctx){
+  const T=uiCcT, prog=ccProgress(ctx), miss=ccMissing(ctx);
+  const sec=el(`<section class="cc-sec cc-day" id="ccDay"><div class="section-header"><h3>${T('day')}</h3></div><div class="cc-day-grid"></div></section>`);
+  const g=sec.querySelector('.cc-day-grid');
+  g.appendChild(uiTodayCard()); // the existing Daily Score card: same dailyScore(), same presentation helpers
+  const pc=el(`<div class="card cc-prog">
+    <div class="between"><span class="kicker">${T('done_today')}</span><b class="cc-prog-n">${prog.done}/${prog.total}</b></div>
+    <div class="bar cc-prog-bar" role="progressbar" aria-label="${T('day')}" aria-valuenow="${prog.pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${prog.pct}%"></i></div>
+    <div class="cc-parts">${prog.parts.map(p=>`<span class="cc-part${p.done>=p.total?' is-done':''}">${p.done>=p.total?'✓ ':''}${T('p_'+p.k)} ${p.total>1?`${p.done}/${p.total}`:''}</span>`).join('')}</div>
+    <div class="kicker cc-still">${T('still')}</div>
+    ${miss.length?`<div class="cc-miss">${miss.map(m=>uiCcMissChip(m)).join('')}</div>`:`<p class="sub" style="margin:0">${T('nothing_missing')}</p>`}
+  </div>`);
+  uiCcWireMiss(pc);
+  g.appendChild(pc);
+  return sec;
+}
+function uiCcHabits(ctx){
+  const T=uiCcT, hs=ccHabitsToday(ctx), D=ctx.D;
+  const shown=[...hs].sort((a,b)=>(isDayComplete(a,D)-isDayComplete(b,D))||String(a.reminder||'99').localeCompare(String(b.reminder||'99'))).slice(0,6);
+  const good=hs.filter(h=>h.type!=='bad');
+  const sec=el(`<section class="cc-sec" id="ccHabits"><div class="section-header"><h3>${uiIcon('habits',18)} ${T('habits')}</h3><button class="action" data-nav="habits">${good.filter(h=>isDayComplete(h,D)).length}/${good.length} ›</button></div><div class="list" id="hHabits"></div></section>`);
+  const l=sec.querySelector('#hHabits');
+  if(!shown.length){ const e=el(`<div class="card">${uiEmpty('🔥',T('habits_empty_t'),T('habits_empty_d'),uiT('add_habit'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openHabitForm(); l.appendChild(e); }
+  shown.forEach(h=>l.appendChild(habitItem(h))); // the existing row + its existing check handlers
+  return sec;
+}
+function uiCcGoals(ctx){
+  const T=uiCcT, goals=ccHomeGoals();
+  const sec=el(`<section class="cc-sec" id="ccGoals"><div class="section-header"><h3>${uiIcon('flag',18)} ${T('goals')}</h3><button class="action" data-nav="goals">${uiT('see_all')} ›</button></div><div class="cc-goals"></div></section>`);
+  const box=sec.querySelector('.cc-goals');
+  if(!goals.length){ const e=el(`<div class="card">${uiEmpty('🎯',T('goals_empty_t'),T('goals_empty_d'),T('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openForm('goal'); box.appendChild(e); return sec; }
+  goals.forEach(g=>{
+    const ns=ccGoalNextSteps(g,ctx);
+    const wk=ns.week?`${T('this_week')}: ${ns.week.done}${ns.week.total!=null?'/'+ns.week.total:''} ${T('w_'+ns.week.k)}`:'';
+    const nx=ns.next?(ns.next.k==='training'?T('n_training'):`${T('n_'+ns.next.k)}: ${escapeHtml(ns.next.title)}${ns.next.date?` · ${ns.next.date===ctx.D?uiT('today'):fmtDate(ns.next.date)}`:''}${ns.next.time?' '+ns.next.time:''}`):'';
+    const c=el(`<button class="card cc-goal" data-ck="goal:${g.id}" data-goal="${g.id}">
+      <span class="between"><span class="cc-goal-t truncate">${escapeHtml(g.title)}</span><span class="goal-pct">${ns.pct}<small>%</small></span></span>
+      <span class="bar" role="progressbar" aria-label="${escapeHtml(g.title)}" aria-valuenow="${ns.pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${ns.pct}%"></i></span>
+      ${ns.ready?`<span class="cc-goal-l">${uiGoalStatusChip(g)}</span>`:''}
+      ${wk?`<span class="cc-goal-l sub">${wk}</span>`:''}
+      <span class="cc-goal-l ${ns.next?'':'sub cc-goal-none'}">${ns.next?`${uiIcon('chevron',13)} ${nx}`:T('no_next')}</span>
+    </button>`);
+    c.onclick=()=>{ currentGoalId=g.id; view='goalDetail'; render(); window.scrollTo(0,0); };
+    box.appendChild(c);
+  });
+  return sec;
+}
+function uiCcQuests(){
+  const T=uiCcT, board=questBoardFor('daily');
+  if(!board.length) return null;
+  const doneN=board.filter(x=>questDone(x.q,'daily')).length, open=board.filter(x=>!questDone(x.q,'daily')).slice(0,3);
+  const sec=el(`<section class="cc-sec" id="ccQuests"><div class="section-header"><h3>${uiIcon('quest',18)} ${T('quests')} <small class="sub">${doneN}/${board.length}</small></h3><button class="action" data-nav="quests">${T('quests_all')} ›</button></div>
+    <div class="card quest-board cc-quests">${open.length?`<div class="quest-list" id="hQuests">${open.map(x=>uiQuestRow(x.q,x.p,'daily')).join('')}</div>`:`<p class="sub" style="margin:0">✓ ${T('quests_done')}</p>`}</div></section>`);
+  sec.querySelectorAll('.quest-row').forEach(r=>{ r.setAttribute('role','button'); r.tabIndex=0; r.onclick=()=>searchNavigate('quest',null); r.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); r.onclick(); } }; });
+  return sec;
+}
+function uiCcAttention(ctx){
+  const T=uiCcT, rs=ccReminders(ctx);
+  if(!rs.length) return null;
+  const sec=el(`<section class="cc-sec cc-attn" id="ccAttn" aria-label="${T('attention')}"><div class="kicker cc-attn-k">${uiIcon('bell',14)} ${T('attention')}</div><div class="cc-attn-list"></div></section>`);
+  const box=sec.querySelector('.cc-attn-list');
+  rs.forEach(r=>{
+    const txt=r.k==='overdue'?T('a_overdue')(r.n):r.k==='sub'?T('a_sub')(r.title,r.days):r.k==='event'?T('a_event')(r.title,r.time):r.k==='goal'?T('a_goal')(r.title,r.days):T('a_car')(r.n);
+    const b=el(`<button class="reminder cc-attn-row" data-ck="attn:${r.k}:${escapeHtml(String(r.id||r.title||''))}" data-attn="${r.k}"><span>${escapeHtml(txt)}</span></button>`);
+    b.onclick=()=>{
+      if(r.k==='overdue'){ view='tasks'; render(); window.scrollTo(0,0); }
+      else if(r.k==='sub') searchNavigate('subscription',r.obj);
+      else if(r.k==='event') searchNavigate('event',r.obj);
+      else if(r.k==='goal') searchNavigate('goal',r.obj);
+      else { view='car'; render(); window.scrollTo(0,0); }
+    };
+    box.appendChild(b);
+  });
+  return sec;
+}
+function uiCcQuick(){
+  const T=uiCcT;
+  const sec=el(`<div class="cc-quick" role="group" aria-label="${T('quick')}">
+    <button class="cc-q" data-q="task">${uiIcon('tasks',18)}<span>＋ ${T('add_task')}</span></button>
+    <button class="cc-q" data-q="habit">${uiIcon('habits',18)}<span>＋ ${T('add_habit')}</span></button>
+    <button class="cc-q" data-q="food">${uiIcon('apple',18)}<span>＋ ${T('add_food')}</span></button>
+    <button class="cc-q" data-q="workout">${uiIcon('dumbbell',18)}<span>＋ ${T('add_workout')}</span></button></div>`);
+  const A={task:()=>openForm('task'),habit:()=>openHabitForm(),food:()=>openMealForm(),workout:()=>openWorkoutForm()};
+  sec.querySelectorAll('[data-q]').forEach(b=>b.onclick=A[b.dataset.q]);
+  return sec;
+}
+function uiCcMini(ctx,W){
+  const T=uiCcT, m=ccMini(ctx), tiles=[];
+  if(W.finance!==false){
+    const f=m.finance;
+    tiles.push(['finance','💰',T('finance'),f?`${uiMoney(f.spent)}`:'',f?(f.budget?`${T('budget')} ${uiMoney(f.budgetSpent)} / ${uiMoney(f.budget)}`:T('spent')):'']);
+  }
+  if(W.fitness!==false){ const f=m.fitness; tiles.push(['fitness','🏋️',T('fitness'),f?`${f.done}<small>/${f.target}</small>`:'',f?T('wk_week'):'']); }
+  if(W.health!==false){ const s=m.sleep;
+    tiles.push(['health','😴',T('sleep'),s?`${uiNum(Math.round(s.hours*10)/10)} <small>h</small>`:'',s?`${s.date===ctx.D?T('sleep_last'):fmtDate(s.date)}${s.quality?` · ${T('q')} ${s.quality}/5`:''}`:'']); }
+  if(W.nutrition!==false){
+    const has=S.meals.some(x=>x.date===ctx.D), tg=S.nutritionTargets||{};
+    const tot=has?nutriTotals(ctx.D):null;
+    tiles.push(['nutrition','🍎',T('nutrition'),tot?`${uiNum(Math.round(tot.calories))}${Number(tg.calories)>0?` <small>/ ${uiNum(tg.calories)}</small>`:''}`:'',tot?uiT('kcal'):'']);
+  }
+  if(!tiles.length) return null;
+  const sec=el(`<section class="cc-sec" id="ccMini"><div class="section-header"><h3>${T('status')}</h3></div><div class="cc-mini">${tiles.map(([k,ic,l,v,s])=>
+    `<button class="card cc-tile${v?'':' is-empty'}" data-mini="${k}"><span class="snap-k">${ic} ${l}</span><span class="cc-tile-v">${v||T('no_data')}</span>${s?`<span class="snap-s">${s}</span>`:''}</button>`).join('')}</div></section>`);
+  sec.querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>{ const k=b.dataset.mini; if(k==='finance'){ finView='dashboard'; finMonth=null; } view=k; render(); window.scrollTo(0,0); });
+  return sec;
+}
+// Smart Home: a fixed hierarchy (Co teď → quick actions → attention → Dnešek → Top 3 → progress → habits → goals → quests → status)
+function uiCcHome(W){
+  const t0=performance.now(), ctx=ccContext(), ranked=ccRank(ccCandidates(ctx));
+  const wrap=el(`<div class="home cc-home" data-home="smart"></div>`);
+  const hud=progressCard(); const hd=hud.querySelector('.hud-date'); if(hd) hd.insertAdjacentHTML('beforeend',` · <time class="cc-clock">${uiCcClock()}</time>`);
+  wrap.appendChild(hud);
+  let nowItem=null;
+  if(W.command!==false){ const st=ccNow(ctx,ranked); wrap.appendChild(uiCcNowCard(ctx,ranked,st)); nowItem=st.item||null; }
+  wrap.appendChild(uiCcQuick());
+  if(W.reminders!==false){ const a=uiCcAttention(ctx); if(a) wrap.appendChild(a); }
+  if(W.planner!==false) wrap.appendChild(uiCcTimeline(ctx));
+  if(W.top3!==false) wrap.appendChild(uiCcTop3(ctx,nowItem,ranked));
+  if(W.progress!==false) wrap.appendChild(uiCcDay(ctx));
+  if(W.habits!==false) wrap.appendChild(uiCcHabits(ctx));
+  if(W.goals!==false) wrap.appendChild(uiCcGoals(ctx));
+  if(W.quests!==false){ const q=uiCcQuests(); if(q) wrap.appendChild(q); }
+  const mini=uiCcMini(ctx,W); if(mini) wrap.appendChild(mini);
+  uiCcWireNav(wrap);
+  window.__ccMs=performance.now()-t0;
+  return wrap;
+}
+// minute tick: every Command Center section whose content depends on the clock is rebuilt from the same helpers and
+// swapped in place only when it actually changed -- never a full render. Order of the sections on Home:
+const UI_CC_ORDER=['#ccNow','.cc-quick','#ccAttn','#ccTimeline','#ccTop','#ccDay','#ccHabits','#ccGoals','#ccQuests','#ccMini'];
+// the focused control inside a section, as "selector + position", so the same control can be focused in its replacement
+function uiCcWireNav(root){ root.querySelectorAll('[data-nav]').forEach(n=>{ if(!n.onclick) n.onclick=()=>{view=n.dataset.nav;render();window.scrollTo(0,0);}; }); }
+// the focused control as "keyed item (data-ck) + selector + position": focus only ever moves to the same item's control
+function uiCcFocusKey(root,n){
+  if(!n||!root.contains(n)) return null;
+  const host=n.closest('[data-ck]'), base=host&&root.contains(host)?host:root;
+  const sel=n.tagName.toLowerCase()+[...n.classList].map(c=>'.'+CSS.escape(c)).join('');
+  return {ck:base===root?null:host.dataset.ck,self:n===base,sel,idx:n===base?0:[...base.querySelectorAll(sel)].indexOf(n)};
+}
+function uiCcFocusFind(fresh,k){
+  let base=fresh;
+  if(k.ck!=null){ base=fresh.matches(`[data-ck="${CSS.escape(k.ck)}"]`)?fresh:fresh.querySelector(`[data-ck="${CSS.escape(k.ck)}"]`); if(!base) return null; }
+  return k.self?base:base.querySelectorAll(k.sel)[k.idx]||null;
+}
+function uiCcSwap(home,key,old,fresh){
+  if(fresh){ uiIconize(fresh); uiCcWireNav(fresh); const ow=old&&old.querySelector('.cc-why'), fw=fresh.querySelector('.cc-why'); if(ow&&fw&&ow.open) fw.open=true; } // "Proč teď?" stays open
+  if(!old&&!fresh) return;
+  if(old&&fresh&&old.outerHTML===fresh.outerHTML) return; // nothing changed this minute
+  const fa=document.activeElement, fk=old?uiCcFocusKey(old,fa):null;
+  let target=null;
+  if(fk){ target=fresh?uiCcFocusFind(fresh,fk):null; if(!target) return; } // no matching control: keep this one until focus moves on
+  if(old&&fresh) old.replaceWith(fresh);
+  else if(old) old.remove();
+  else { let prev=null; for(const k of UI_CC_ORDER.slice(0,UI_CC_ORDER.indexOf(key)).reverse()){ prev=home.querySelector(':scope > '+k); if(prev) break; }
+    if(prev) prev.after(fresh); else home.querySelector(':scope > .hud').after(fresh); }
+  if(target) target.focus({preventScroll:true});
+}
+function uiCcTick(app){
+  const home=app.querySelector('.cc-home'); if(!home) return;
+  const ck=home.querySelector('.cc-clock'); if(ck) ck.textContent=uiCcClock();
+  const W=Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true})),S.settings.widgets||{});
+  const ctx=ccContext(), ranked=ccRank(ccCandidates(ctx)), st=ccNow(ctx,ranked);
+  const q=k=>home.querySelector(':scope > '+k);
+  if(W.command!==false) uiCcSwap(home,'#ccNow',q('#ccNow'),uiCcNowCard(ctx,ranked,st));
+  if(W.reminders!==false) uiCcSwap(home,'#ccAttn',q('#ccAttn'),uiCcAttention(ctx));
+  if(W.planner!==false) uiCcSwap(home,'#ccTimeline',q('#ccTimeline'),uiCcTimeline(ctx));
+  if(W.top3!==false) uiCcSwap(home,'#ccTop',q('#ccTop'),uiCcTop3(ctx,W.command!==false?st.item||null:null,ranked));
+  if(W.progress!==false) uiCcSwap(home,'#ccDay',q('#ccDay'),uiCcDay(ctx));
+  if(W.goals!==false) uiCcSwap(home,'#ccGoals',q('#ccGoals'),uiCcGoals(ctx));
+}
 function renderHome(){
   const wrap=el(`<div class="home"></div>`);
   const W=Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true})),S.settings.widgets||{});
+  if(W.smart!==false) return uiCcHome(W); // Smart Daily Command Center (Settings → Chytrý Home); off = the classic widget Home below
   const sectionHead=(title,meta,navTo)=>`<div class="section-header"><h3>${title}</h3>${navTo?`<button class="action" data-nav="${navTo}">${meta} ›</button>`:`<span class="sub">${meta}</span>`}</div>`;
 
   // Phase 6: each widget is a small builder returning a node or null (hidden / nothing to show),
@@ -4329,6 +5006,20 @@ function renderSettings(){
   </section>`);
   th.querySelector('#st_theme').onchange=(e)=>{S.settings.theme=e.target.value;applyTheme();scheduleSave();render();};
   wrap.appendChild(th);
+
+  // -- Smart Home (Command Center): on/off + its sections; the same S.settings.widgets map as the dashboard below --
+  const smartOn=S.settings.widgets.smart!==false;
+  const sh=el(`<section class="card set-group" id="st_smart"><h3>${cs?'Chytrý Home':'Smart Home'}</h3><div class="sub" style="margin:-2px 0 4px">${cs?'Domů jako řídicí centrum dne: co teď, plán, priority a stav. Vypnuto = klasické widgety níže.':'Home as the control centre of your day: what now, plan, priorities and status. Off = the classic widgets below.'}</div><div id="st_smart_rows"></div></section>`);
+  const shr=sh.querySelector('#st_smart_rows');
+  const SMART_ROWS=[['smart',cs?'Chytrý Home':'Smart Home'],['command',cs?'Co teď?':'What now?'],['planner',cs?'Dnešek (časová osa)':'Today (timeline)'],['top3',cs?'Dnes nejdůležitější':'Most important today'],
+    ['goals',cs?'Cíle':'Goals'],['habits',cs?'Návyky':'Habits'],['finance',cs?'Finance':'Finance'],['fitness',cs?'Fitness':'Fitness'],['health',cs?'Spánek':'Sleep']];
+  SMART_ROWS.forEach(([k,lbl],i)=>{
+    const on=S.settings.widgets[k]!==false, dis=i>0&&!smartOn;
+    const row=el(`<div class="set-row${dis?' is-disabled':''}"><span>${escapeHtml(lbl)}</span>${sw(on,`data-smart="${k}" aria-label="${escapeHtml(lbl)}"${dis?' disabled':''}`)}</div>`);
+    row.querySelector('[data-smart]').onclick=()=>{ S.settings.widgets[k]=!on; scheduleSave(); render(); };
+    shr.appendChild(row);
+  });
+  wrap.appendChild(sh);
 
   // -- Dashboard widgets: show/hide + ↑/↓ reorder, in real persisted order --
   const dash=el(`<section class="card set-group"><h3>${tr('settings_dashboard')}</h3><div class="sub" style="margin:-2px 0 4px">${cs?'Pořadí a viditelnost widgetů na Domů':'Order and visibility of Home widgets'}</div><div id="st_widgets"></div></section>`);
@@ -9132,6 +9823,7 @@ function uiMinuteTick(){
     uiTickDay=D; const y=window.scrollY; render(); window.scrollTo(0,y); return;
   }
   const g=app.querySelector('.hud-greet'); if(g){ const t=uiGreeting()+','; if(g.textContent!==t) g.textContent=t; }
+  uiCcTick(app);
   const pc=app.querySelector('.plan-card.is-home');
   if(pc){ const had=document.activeElement===pc, n=uiTodaysPlanCard(); uiIconize(n); pc.replaceWith(n); if(had) n.focus({preventScroll:true}); }
   const grid=app.querySelector('#plTimeline');
