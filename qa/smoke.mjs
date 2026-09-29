@@ -28,7 +28,17 @@ const MORE_ITEMS = ['planner', 'goals', 'finance', 'fitness', 'nutrition', 'note
 const QUICK_ADD = ['task', 'habit', 'goal', 'expense', 'income', 'workout', 'meal', 'note', 'journal', 'event', 'water', 'fuel', 'planner'];
 
 // ---------- harness ----------
+// Serves the app like a static host: the PWA files next to LifeOS.html (sw.js, manifest.json, icons/, index.html) by
+// path, anything else -> LifeOS.html. `serverOverrides` lets a test publish a new version of a file (e.g. sw.js).
+const ROOT = path.dirname(APP);
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/manifest+json', '.png': 'image/png' };
+export const serverOverrides = {};
 const server = http.createServer((req, res) => {
+  const p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '');
+  if (serverOverrides[p] != null) { res.writeHead(200, { 'content-type': MIME[path.extname(p)] || 'text/plain', 'cache-control': 'no-store' }); res.end(serverOverrides[p]); return; }
+  const file = p && !p.includes('..') && path.join(ROOT, p);
+  if (file && p !== 'LifeOS.html' && existsSync(file) && /^(sw\.js|manifest\.json|index\.html|icons\/[\w-]+\.png)$/.test(p)) {
+    res.writeHead(200, { 'content-type': MIME[path.extname(p)], 'cache-control': 'no-store' }); res.end(readFileSync(file)); return; }
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
   res.end(readFileSync(APP));
 });
@@ -68,6 +78,8 @@ const settle = page => page.waitForTimeout(450); // > scheduleSave()'s 250 ms de
 // Persist through the app's own flushSave() and wait until IndexedDB holds exactly S (for state
 // changed by code paths that don't schedule a save themselves, e.g. boot settling, grantXp()).
 const persist = async page => { await page.evaluate(() => flushSave()); await page.waitForFunction(async () => JSON.stringify(await rawIdbGet()) === JSON.stringify(S)); };
+// Polish pass 3: restoring a backup asks first (it replaces all data) -- choose the file, then confirm the sheet.
+const importFile = async (page, file) => { await page.setInputFiles('#st_impFile', file); await page.waitForSelector('.cf-sheet'); await page.click('#cf_ok'); };
 const stateOf = page => page.evaluate(() => JSON.parse(JSON.stringify(S)));
 const idbState = page => page.evaluate(async () => JSON.parse(JSON.stringify(await rawIdbGet()))); // JSON view, like stateOf (xpLog.key may be undefined)
 const go = (page, v) => page.evaluate(v => { view = v; render(); }, v);
@@ -308,7 +320,7 @@ test('export/import: backup JSON equals state; import restores it exactly', asyn
   const s = await stateOf(page);
   assert.deepEqual(exported, s, 'export equals state');
   await page.evaluate(() => { S.tasks = []; S.habits = []; S.totalXp = 0; render(); });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.tasks.length > 0);
   assert.deepEqual(await stateOf(page), s, 'import restores identical state');
   await settle(page); await reload(page);
@@ -316,6 +328,7 @@ test('export/import: backup JSON equals state; import restores it exactly', asyn
   await page.click('#settingsBtn');
   await page.setInputFiles('#st_impFile', { name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"nope":1}') });
   await page.waitForTimeout(200);
+  assert.equal(await page.locator('.cf-sheet').count(), 0, 'an invalid file never reaches the restore question');
   assert.deepEqual(await stateOf(page), s, 'invalid import is rejected without changes');
 }, { state: fixtureState() });
 
@@ -735,7 +748,7 @@ test('9 history: snapshots persist through save + reload and survive export/impo
   const exported = JSON.parse(readFileSync(file, 'utf8'));
   assert.deepEqual(exported.dailyScores, snap); assert.equal(exported.dailyScoresSince, TODAY);
   await page.evaluate(() => { S.dailyScores = {}; S.dailyScoresSince = null; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => Object.keys(S.dailyScores).length > 0);
   assert.deepEqual((await stateOf(page)).dailyScores, snap, 'import restores snapshots');
 }, { state: fixtureState() });
@@ -743,7 +756,7 @@ test('9 history: snapshots persist through save + reload and survive export/impo
 test('9 history: a pre-Phase-9 backup (no dailyScores keys) imports cleanly; reset clears history', async ({ page }) => {
   const old = fixtureState(); delete old.dailyScores; delete old.dailyScoresSince;
   await page.click('#settingsBtn');
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.profile.name === 'Tester');
   let s = await stateOf(page);
   assert.deepEqual(s.dailyScores, {}); assert.equal(s.dailyScoresSince, TODAY); assert.equal(s.schemaVersion, 8);
@@ -1059,10 +1072,10 @@ test('10 data: planner blocks survive reload + export/import; reset removes them
   const file = await dl.path();
   assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).plannerBlocks, blocks);
   await page.evaluate(() => { S.plannerBlocks = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.plannerBlocks.length === 5);
   const old = fixtureState(); delete old.plannerBlocks;
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => Array.isArray(S.plannerBlocks) && S.plannerBlocks.length === 0);
   assert.equal((await stateOf(page)).schemaVersion, 8);
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
@@ -1254,11 +1267,11 @@ test('11A data: library survives reload + export/import; old backup is seeded; r
   const file = await dl.path();
   assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).exerciseLibrary, lib);
   await page.evaluate(() => { S.exerciseLibrary = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.exerciseLibrary.length === 4);
   assert.deepEqual((await stateOf(page)).exerciseLibrary, lib, 'import restores it exactly (same ids)');
   const old = fixtureState(); delete old.exerciseLibrary;
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.exerciseLibrary.length === 3 && S.exerciseLibrary.every(x => x.source === 'history'));
   assert.equal((await stateOf(page)).schemaVersion, 8);
   page.on('dialog', d => d.accept());
@@ -1391,11 +1404,11 @@ test('11A data: templates survive reload + export/import; old backup gets []; re
   const file = await dl.path();
   assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).workoutTemplates, tpls);
   await page.evaluate(() => { S.workoutTemplates = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.workoutTemplates.length === 1);
   assert.deepEqual((await stateOf(page)).workoutTemplates, tpls);
   const old = fixtureState(); delete old.workoutTemplates;
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => Array.isArray(S.workoutTemplates) && S.workoutTemplates.length === 0);
   page.on('dialog', d => d.accept());
   await page.evaluate(() => templateSave({ name: 'x', exercises: [{ exerciseId: S.exerciseLibrary[0].id, sets: 1, repsMin: 1 }] }));
@@ -1494,10 +1507,11 @@ test('11A active: Finish pays exactly what the Log Workout form pays (same XP an
   }, fn);
   // first_workout is pre-unlocked so neither path also pays the one-off achievement XP
   await page.evaluate(tid => { window.__tid = tid; S.achievementsUnlocked.push('first_workout'); }, tid);
-  const viaFinish = await delta('const w = workoutStart({ templateId: tid }).workout; workoutFinish(w.id);');
+  // polish pass 3: both paths need real content (one finished working set / one logged exercise with sets)
+  const viaFinish = await delta('const w = workoutStart({ templateId: tid }).workout; const en = w.entries[0]; workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: true }); workoutFinish(w.id);');
   await page.evaluate(() => { closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; render(); });
   const b = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
-  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.click('#w_save');
+  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.fill('.ex-edit .exn', 'Bench'); await page.fill('.ex-edit .exs', '3'); await page.fill('.ex-edit .exr', '5'); await page.click('#w_save');
   const a = await page.evaluate(() => ({ xp: S.totalXp, STR: S.attrs.STR, VIT: S.attrs.VIT }));
   const viaForm = { xp: a.xp - b.xp, STR: a.STR - b.STR, VIT: a.VIT - b.VIT };
   assert.deepEqual(viaFinish, viaForm);
@@ -1557,12 +1571,12 @@ test('11A active: the Fitness page lists only finished workouts; export/import k
   const file = await dl.path();
   const wk = (await stateOf(page)).workouts;
   await page.evaluate(() => { S.workouts = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.workouts.length === 3);
   assert.deepEqual((await stateOf(page)).workouts, wk);
   assert.equal(await page.evaluate(() => activeWorkout().name), 'Push A');
   const old = fixtureState();
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.workouts.length === 2);
   assert.deepEqual(await page.evaluate(() => [completedWorkouts(S).length, activeWorkout(), S.workouts.some(w => 'status' in w)]), [2, null, false]);
 }, { state: fixtureState() });
@@ -1708,7 +1722,7 @@ test('11A UI: Finish -> done + summary; XP only once; history shows it and opens
   assert.equal(await page.locator('#w_name').inputValue(), 'Pull day', 'legacy workout opens the legacy form');
 }, { state: fixtureState() });
 
-test('11A UI: Finish with no completed working set asks first - Cancel keeps it active, Dokončit finishes with the usual XP', async ({ page }) => {
+test('11A UI: Finish with no completed working set asks first - Cancel keeps it active, Dokončit finishes it (polish pass 3: without XP)', async ({ page }) => {
   await setupTpl(page);
   await openWorkouts(page);
   await page.click('[data-start-tpl] .wkStartTpl');
@@ -1727,7 +1741,7 @@ test('11A UI: Finish with no completed working set asks first - Cancel keeps it 
   const x0 = await page.evaluate(() => S.totalXp);
   await page.click('#wkFinish'); await page.click('#cf_ok');
   assert.equal(await active(page), null);
-  assert.equal(await page.evaluate(() => S.totalXp) - x0, 80, 'same XP as today for a workout without sets');
+  assert.equal(await page.evaluate(() => S.totalXp) - x0, 0, 'polish pass 3: a workout without a finished working set pays no XP');
   assert.equal(await page.locator('#wkSummary').count(), 1);
 }, { state: fixtureState() });
 
@@ -1796,7 +1810,7 @@ test('11A UI: export/import keeps the active workout and it can be continued and
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
   const file = await dl.path();
   await page.evaluate(() => { S.workouts = S.workouts.filter(w => w.status !== 'active'); });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => !!activeWorkout());
   assert.deepEqual(await active(page), wk);
   await openWorkouts(page);
@@ -1965,12 +1979,12 @@ test('11A PR data: export/import keeps result.prs and the same records; an old b
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
   const file = await dl.path();
   await page.evaluate(() => { S.workouts = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.workouts.length === 2);
   assert.equal(await page.evaluate(() => JSON.stringify([exercisePRs(), S.workouts.map(w => w.result)])), before);
   const old = fixtureState();
   old.workouts.push({ id: 'w0', name: 'Older push', date: '2026-09-10', duration: '50', notes: '', createdAt: NOW - 13 * 864e5, exercises: [{ id: 'ex0', name: 'Bench press', sets: '3', reps: '8', weight: '75', muscle: '', rpe: '', rest: '' }] });
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.workouts.length === 3);
   assert.deepEqual(await page.evaluate(() => exercisePRs().map(p => [p.name, p.type, p.weight, p.prevWeight, p.workoutId])), [['Bench press', 'weight', 80, 75, 'w1']]);
   assert.deepEqual(await page.evaluate(() => [S.workouts.some(w => 'result' in w || 'status' in w), computeStats('all').fitness.prs.length]), [false, 1], 'old records untouched; Statistics counts the same records');
@@ -2428,11 +2442,11 @@ test('11A muscle XP: idempotent - reload, render, editing, a second Finish, expo
   assert.deepEqual(await totals(page), t0, 'reload, renders, an edit (+1 done set), a second Finish and recovery pay nothing');
   assert.equal(await page.evaluate(() => S.muscleProgress.log.length), n0);
   await page.click('#settingsBtn');
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => workoutFindById(completedWorkouts(S)[0].id).entries[0].sets.length === 3);
   assert.deepEqual(await totals(page), t0, 'import of the full backup: no double pay');
   delete backup.muscleProgress;
-  await page.setInputFiles('#st_impFile', { name: 'nolog.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+  await importFile(page, { name: 'nolog.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
   await page.waitForTimeout(300);
   assert.deepEqual(await page.evaluate(() => S.muscleProgress.log.map(({ ts, ...r }) => r)), log0, 'a backup without the log is rebuilt once from its stored data and snapshots - identical');
   assert.deepEqual(await totals(page), t0);
@@ -2446,7 +2460,7 @@ test('11A muscle XP: history - legacy exercises[] never pay; a record with exerc
   old.workouts.push({ id: 'pre8', name: 'Before step 8', date: '2026-09-22', status: 'done', startedAt: NOW - 864e5, finishedAt: NOW - 864e5 + 3600e3, duration: '60', notes: '', exercises: [], createdAt: NOW - 864e5,
     entries: [{ id: 'e1', exerciseId: 'mb', name: 'Bench press', measurement: 'weight_reps', target: null, notes: '', sets: [1, 2].map(i => ({ id: 's' + i, weight: 60, reps: 8, seconds: null, distance: null, rpe: null, warmup: false, done: true })) }], result: { prs: [] } });
   await page.click('#settingsBtn');
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.workouts.some(w => w.id === 'pre8'));
   const r = await page.evaluate(() => ({ log: S.muscleProgress.log.map(x => [x.workoutId, x.exerciseId, x.xp]), snap: workoutFindById('pre8').entries[0].muscles }));
   assert.deepEqual(r.log, [['pre8', 'mb', { Chest: 14, Triceps: 4, Shoulders: 2 }]], 'only the record with an exerciseId; legacy rows 0');
@@ -2559,7 +2573,7 @@ test('11A planner: workout block model - template reference only, edit template/
   const file = await dl.path();
   assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).plannerBlocks.find(x => x.id === bid), b);
   await page.evaluate(() => { S.plannerBlocks = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(id => S.plannerBlocks.some(x => x.id === id), bid);
   assert.deepEqual(await blk(page, bid), b, 'export/import');
   assert.equal(await page.evaluate(id => plannerLinks(S.plannerBlocks.find(x => x.id === id)).template.name, bid), 'Pull B');
@@ -2796,7 +2810,7 @@ test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
   const file = await dl.path();
   await page.evaluate(() => { S.workouts = []; S.workoutTemplates = []; S.exerciseLibrary = []; S.muscleProgress = { log: [] }; S.plannerBlocks = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.workoutTemplates.length === 1);
   assert.equal(await page.evaluate(() => JSON.stringify(['workouts', 'workoutTemplates', 'exerciseLibrary', 'muscleProgress', 'plannerBlocks'].map(k => S[k]))), keep, 'export/import: identical');
   await reload(page);
@@ -3231,11 +3245,11 @@ test('11B data: reload, export/import of every Finance collection, old backup, r
   assert.deepEqual(K.filter(k => !(k in backup)), [], 'every collection is in the backup');
   assert.ok(backup.savingsGoals[0].contributions.length && backup.investments[0].valuations.length && backup.accounts[0].checkpoints.length);
   await page.evaluate(K => K.forEach(k => { S[k] = []; }), K);
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(() => S.investments.length === 1);
   assert.deepEqual(JSON.parse(await snap()), JSON.parse(s0), 'import restores all of it');
   const old = fixtureState();
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => S.investments.length === 0 && S.accounts.length === 0);
   const o = await stateOf(page);
   assert.deepEqual([o.expenses, o.income, o.budgets, o.subscriptions], [old.expenses, old.income, old.budgets, old.subscriptions], 'old backup: untouched');
@@ -3535,10 +3549,10 @@ test('P6 categories: reload, export/import, old backup and reset', async ({ page
   assert.ok(exp.lifeCategories.some(c => c.key === key));
   assert.ok('questBoard' in exp && 'trainingDays' in exp.settings);
   await page.evaluate(() => { S.lifeCategories = []; });
-  await page.setInputFiles('#st_impFile', file);
+  await importFile(page, file);
   await page.waitForFunction(k => S.lifeCategories.some(c => c.key === k), key);
   const old = fixtureState(); delete old.lifeCategories; delete old.questBoard;
-  await page.setInputFiles('#st_impFile', { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => Array.isArray(S.lifeCategories) && S.lifeCategories.length === 0);
   assert.equal(await page.evaluate(() => catList('life').length), 8, 'an old backup gets the built-ins');
   assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Učení');
@@ -3743,25 +3757,25 @@ test('B1 balancing: a workout pays 80 XP and exactly 48 attribute points (STR 24
   // the Log Workout form pays the same
   await page.evaluate(() => { S.achievementsUnlocked.push('first_workout'); closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; render(); });
   const b = await page.evaluate(() => ({ ...S.attrs, xp: S.totalXp }));
-  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.click('#w_save');
+  await page.click('#addW'); await page.fill('#w_name', 'Legacy log'); await page.fill('.ex-edit .exn', 'Squat'); await page.fill('.ex-edit .exs', '3'); await page.fill('.ex-edit .exr', '5'); await page.click('#w_save');
   const a = await page.evaluate(() => ({ ...S.attrs, xp: S.totalXp }));
   assert.deepEqual([a.xp - b.xp, a.STR - b.STR, a.VIT - b.VIT, a.DEX - b.DEX], [80, 24, 14, 10]);
 }, { state: fixtureState() });
 
-test('B2 balancing: every meal keeps its 10 XP; only the first meal logged each day gives attribute points (+6 VIT)', async ({ page }) => {
+test('B2 balancing: each meal type pays its 10 XP once a day (polish pass 3); only the first meal logged each day gives attribute points (+6 VIT)', async ({ page }) => {
   await quietQuests(page);
   const log = () => page.evaluate(() => S.xpLog.filter(x => x.reason === 'Meal logged').map(x => [x.amount, x.attrs || null]));
   const vit = () => page.evaluate(() => S.attrs.VIT);
   const v0 = await vit(), n0 = (await log()).length;
-  for (const name of ['Snídaně', 'Oběd', 'Večeře']) {
+  for (const [name, type] of [['Snídaně', 'Breakfast'], ['Oběd', 'Lunch'], ['Večeře', 'Dinner']]) {
     await page.evaluate(() => { closeSheets(); openMealForm(); });
-    await page.fill('#m_name', name); await page.fill('#m_cal', '500'); await page.click('#m_save');
+    await page.fill('#m_name', name); await page.selectOption('#m_type', type); await page.fill('#m_cal', '500'); await page.click('#m_save');
   }
   // the "repeat meal" button is the other way to log a meal
   await page.evaluate(() => { view = 'nutrition'; render(); });
   await page.locator('.meal-item .repeatBtn').first().click();
   const l = (await log()).slice(n0);
-  assert.deepEqual(l, [[10, { VIT: 6 }], [10, null], [10, null], [10, null]], 'XP for each meal, attributes only once');
+  assert.deepEqual(l, [[10, { VIT: 6 }], [10, null], [10, null]], 'XP once per meal type, attributes only once; repeating a meal of an already rewarded type pays nothing');
   assert.equal(await vit() - v0, 6);
   // next day: the first meal counts again
   await page.clock.setFixedTime(NOW + 86400000);
@@ -4061,7 +4075,7 @@ test('R3 deletes: task, goal, milestone and goal-detail habit ask in an app shee
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
   const keep = JSON.stringify(await stateOf(page));
   await page.evaluate(() => { S.tasks = []; S.goals = []; });
-  await page.setInputFiles('#st_impFile', await dl.path()); await page.waitForFunction(() => S.goals.length > 0);
+  await importFile(page, await dl.path()); await page.waitForFunction(() => S.goals.length > 0);
   assert.equal(JSON.stringify(await stateOf(page)), keep, 'export/import identical');
   await settle(page); await reload(page); assert.equal(JSON.stringify(await stateOf(page)), keep, 'reload identical');
   assert.deepEqual(dialogs, [], 'no native browser dialogs');
@@ -4143,7 +4157,7 @@ test('R5 performance: 1 500 tasks / 25 000 XP entries render fast with results i
   const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
   assert.equal(exported.xpLog.length, r.xs, 'export keeps every XP entry');
   await page.evaluate(() => { S.xpLog = []; });
-  await page.setInputFiles('#st_impFile', await dl.path()); await page.waitForFunction(n => S.xpLog.length === n, r.xs);
+  await importFile(page, await dl.path()); await page.waitForFunction(n => S.xpLog.length === n, r.xs);
   assert.ok(await page.evaluate(() => xpKeyIndex().has(`task:bt3:${todayStr()}`) && xpKeyIndex().size === new Set(S.xpLog.map(x => x.key)).size), 'index follows the imported log');
   await page.evaluate(() => { S = defaultState(); }); assert.equal(await page.evaluate(() => xpKeyIndex().size), 0, 'index follows reset');
 }, { state: fixtureState() });
@@ -4395,6 +4409,546 @@ test('R15 deletes: A3 still works - task sheet cancel/confirm, goal cascade text
   await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); assert.match(await page.locator('.cf-sheet').innerText(), /Opravdu smazat vše\?/); await page.click('#cf_ok'); await settle(page);
   assert.equal((await idbState(page)).tasks.length, 0); assert.deepEqual(dialogs, []);
 }, { state: fixtureState() });
+
+// ---------- Polish pass 3: A XP integrity ----------
+const xpOf = page => page.evaluate(() => S.totalXp);
+// every toast() message since the last call (toasts on screen are grouped/queued, so read the calls themselves)
+const toastsText = page => page.evaluate(() => { const t = (window.__toastLog || []).join(' | '); window.__toastLog = []; return t; });
+const spyToasts = page => page.evaluate(() => { window.__toastLog = []; if (!window.__toastSpy) { const t0 = window.toast; window.toast = function (m) { window.__toastLog.push(String(m)); return t0.apply(this, arguments); }; window.__toastSpy = true; } });
+
+test('P3-A1 reset clears the level-up state: a new profile sees its first level-up again; import follows the imported level', async ({ page }) => {
+  const lv = await page.evaluate(() => { grantXp(3000, 'boost'); return [levelFromXp(S.totalXp).level, lastLevelSeen]; });
+  assert.ok(lv[0] >= 5 && lv[1] === lv[0], 'profile on a higher level: ' + lv);
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [levelFromXp(S.totalXp).level, lastLevelSeen, S.totalXp]), [1, 1, 0], 'level 1, lastLevelSeen 1');
+  await page.click('.sheet [data-ob="skip"]');
+  await spyToasts(page);
+  await page.evaluate(() => grantXp(levelFromXp(0).need + 1, 'first steps'));
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => [levelFromXp(S.totalXp).level, lastLevelSeen].join()), '2,2');
+  assert.match(await toastsText(page), /úrovni 2|Level 2/, 'the level-up toast shows again after a reset');
+  // import: the imported level becomes the seen level (no false level-up), later level-ups still show
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const file = await dl.path(); const data = JSON.parse(readFileSync(file, 'utf8')); data.totalXp = 5000;
+  const f2 = file + '.json'; writeFileSync(f2, JSON.stringify(data));
+  await spyToasts(page);
+  await importFile(page, f2); await page.waitForFunction(() => S.totalXp === 5000);
+  assert.equal(await page.evaluate(() => lastLevelSeen === levelFromXp(S.totalXp).level), true);
+  await page.waitForTimeout(150); assert.doesNotMatch(await toastsText(page), /úrovni|Level Up/i, 'importing is not a level-up');
+  await page.evaluate(() => { const l = levelFromXp(S.totalXp); grantXp(l.need - l.into + 1, 'next'); });
+  await page.waitForTimeout(150); assert.match(await toastsText(page), /úrovni|Level/, 'next real level-up shows');
+}, { state: fixtureState() });
+
+test('P3-A2 goal and milestone XP are set by the app: stored 0 / negative / decimal / 99 999 all pay exactly 200 / 25, once; no XP input in the forms', async ({ page }) => {
+  await quietQuests(page);
+  await page.evaluate(() => { closeSheets(); openGoalForm(); });
+  assert.equal(await page.locator('#g_xp').count(), 0, 'no goal XP field'); assert.match(await page.locator('#g_xpInfo').innerText(), /\+200 XP/);
+  await page.evaluate(() => { closeSheets(); openMilestoneForm(S.goals[0].id); });
+  assert.equal(await page.locator('#ms_xp').count(), 0, 'no milestone XP field'); assert.match(await page.locator('#ms_xpInfo').innerText(), /\+25 XP/);
+  await page.evaluate(() => closeSheets());
+  const r = await page.evaluate(() => { const out = [];
+    for (const v of [0, -50, 2.5, 99999, '1e9', undefined]) {
+      const g = { id: 'gx' + out.length, title: 'G ' + v, status: 'Active', mode: 'manual', manualProgress: 0, xpReward: v, createdAt: 1 }; S.goals.push(g);
+      const m = { id: 'mx' + out.length, goalId: g.id, title: 'M', completed: false, completedAt: null, xpReward: v, createdAt: 1 }; S.milestones.push(m);
+      const a = S.totalXp; toggleMilestone(m); const mxp = S.totalXp - a;
+      const b = S.totalXp; completeGoal(g); const gxp = S.totalXp - b;
+      // reopen -> complete again, milestone off/on again: never a second reward
+      const c = S.totalXp; g.status = 'Active'; completeGoal(g); toggleMilestone(m); toggleMilestone(m); const again = S.totalXp - c;
+      out.push([String(v), gxp, mxp, again, g.xpReward === v && m.xpReward === v]); }
+    return out; });
+  for (const [v, g, m, again, kept] of r) { assert.deepEqual([g, m, again], [200, 25, 0], `stored ${v}`); assert.ok(kept, `stored value ${v} left untouched`); }
+  // reload -> complete again: still once
+  await persist(page); await reload(page);
+  assert.equal(await page.evaluate(() => { const a = S.totalXp; const g = S.goals.find(x => x.id === 'gx3'); g.status = 'Active'; completeGoal(g); return S.totalXp - a; }), 0, 'reload does not re-open the reward');
+  // new goal through the form + complete in UI = 200 once; edit keeps no XP field
+  await page.evaluate(() => { closeSheets(); openGoalForm(); }); await page.fill('#g_title', 'P3 goal'); await page.click('#g_save');
+  const g0 = await xpOf(page);
+  await page.evaluate(() => { view = 'goals'; goalFilter = 'Active'; render(); });
+  await page.locator('.goal-card', { hasText: 'P3 goal' }).locator('.sm-done').click();
+  assert.equal(await xpOf(page) - g0, 200);
+  assert.ok(await page.evaluate(() => !('xpReward' in S.goals.find(g => g.title === 'P3 goal'))), 'new goals no longer store a typed reward');
+}, { state: fixtureState() });
+
+test('P3-A3 an empty workout pays nothing; one finished working set pays the usual 80 XP / 48 points; undone last set, reload, log form', async ({ page }) => {
+  await quietQuests(page);
+  await page.evaluate(() => { S.achievementsUnlocked.push('first_workout', 'workouts_10'); exerciseAddPreset('Bench Press'); window.__t = templateSave({ name: 'E', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 2, repsMin: 5, weight: 50 }] }).template.id; });
+  const run = (f, a) => page.evaluate(f, a);
+  const empty = await run(() => { const a = S.totalXp, v = { ...S.attrs }; const w = workoutStart({ templateId: window.__t }).workout; const r = workoutFinish(w.id); return [S.totalXp - a, r.granted, w.status, S.attrs.STR - v.STR]; });
+  assert.deepEqual(empty, [0, false, 'done', 0], 'empty workout: saved as done, 0 XP, no attributes');
+  const undone = await run(() => { const a = S.totalXp; const w = workoutStart({ templateId: window.__t }).workout; const en = w.entries[0];
+    workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: true }); workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: false }); en.sets.slice().forEach(st => workoutRemoveSet(w.id, en.id, st.id)); workoutFinish(w.id); return S.totalXp - a; });
+  assert.equal(undone, 0, 'finished set undone + sets removed before Finish: no reward');
+  const wid = await run(() => { const w = workoutStart({ templateId: window.__t }).workout; const en = w.entries[0]; workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: true, reps: 5, weight: 50 }); flushSave(); return w.id; });
+  await persist(page); await reload(page);
+  const real = await run(wid => { const a = S.totalXp, v = { ...S.attrs }; workoutFinish(wid); const again = S.totalXp; workoutFinish(wid); return [S.totalXp - a, again - a, S.attrs.STR - v.STR, S.attrs.VIT - v.VIT, S.attrs.DEX - v.DEX]; }, wid);
+  assert.deepEqual(real, [80, 80, 24, 14, 10], 'after reload: 80 XP + STR 24 / VIT 14 / DEX 10, once');
+  // Log Workout form: empty -> 0, with an exercise with sets -> 80
+  await page.evaluate(() => { closeSheets(); view = 'fitness'; fitnessTab = 'workouts'; uiWorkoutView = null; render(); });
+  let x = await xpOf(page); await page.click('#addW'); await page.fill('#w_name', 'Prázdný'); await page.click('#w_save');
+  assert.equal(await xpOf(page) - x, 0, 'form without exercises: 0 XP');
+  x = await xpOf(page); await page.click('#addW'); await page.fill('#w_name', 'Bez sérií'); await page.fill('.ex-edit .exn', 'Dřep'); await page.click('#w_save');
+  assert.equal(await xpOf(page) - x, 0, 'form exercise without sets: 0 XP');
+  x = await xpOf(page); await page.click('#addW'); await page.fill('#w_name', 'Skutečný'); await page.fill('.ex-edit .exn', 'Dřep'); await page.fill('.ex-edit .exs', '3'); await page.click('#w_save');
+  assert.equal(await xpOf(page) - x, 80, 'form with sets: 80 XP');
+}, { state: fixtureState() });
+
+test('P3-A4 meal spam: 20 meals of one type pay 10 XP once; each of the 4 types once a day (40 XP max); repeat button; next day; history untouched', async ({ page }) => {
+  await quietQuests(page);
+  const hist0 = await page.evaluate(() => JSON.stringify(S.xpLog.filter(x => x.reason === 'Meal logged')));
+  const x0 = await xpOf(page);
+  for (let i = 0; i < 20; i++) await page.evaluate(i => { const m = { id: 'sp' + i, name: 'Spam', type: 'Snack', date: todayStr(), calories: 10, createdAt: 1 }; S.meals.push(m); grantXp(10, 'Meal logged', mealAttrProfile(), mealXpKey(m)); }, i);
+  assert.equal(await xpOf(page) - x0, 10, '20 snacks: one reward');
+  for (const type of ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Breakfast']) {
+    await page.evaluate(() => { closeSheets(); openMealForm(); }); await page.fill('#m_name', 'Jídlo'); await page.selectOption('#m_type', type); await page.click('#m_save'); }
+  await page.evaluate(() => { view = 'nutrition'; render(); });
+  for (let i = 0; i < 5; i++) await page.locator('.meal-item .repeatBtn').first().click();
+  assert.equal(await xpOf(page) - x0, 40, 'at most 4 x 10 XP a day');
+  assert.ok(await page.evaluate(() => S.meals.filter(m => m.date === todayStr()).length >= 30), 'every meal is still logged');
+  await persist(page); await reload(page);
+  await page.evaluate(() => { const m = { id: 'after', name: 'X', type: 'Lunch', date: todayStr(), createdAt: 1 }; S.meals.push(m); grantXp(10, 'Meal logged', mealAttrProfile(), mealXpKey(m)); });
+  assert.equal(await xpOf(page) - x0, 40, 'reload opens nothing');
+  await page.clock.setFixedTime(NOW + 86400000);
+  await page.evaluate(() => { closeSheets(); openMealForm(); }); await page.fill('#m_name', 'Zítra'); await page.click('#m_save');
+  assert.equal(await xpOf(page) - x0, 50, 'next day pays again');
+  assert.equal(await page.evaluate(() => JSON.stringify(S.xpLog.filter(x => x.reason === 'Meal logged' && !x.key))), hist0, 'older meal XP entries unchanged');
+}, { state: fixtureState() });
+
+test('P3-A5 sleep: one reward per night - edit, re-save, delete + log the same night again pay nothing; another night pays', async ({ page }) => {
+  await quietQuests(page);
+  const x0 = await xpOf(page);
+  const logSleep = async date => { await page.evaluate(() => { closeSheets(); openSleepForm(); }); await page.fill('#sl_date', date); await page.click('#sl_save'); };
+  await logSleep('2026-09-20'); assert.equal(await xpOf(page) - x0, 10, 'new night: 10 XP');
+  for (let i = 0; i < 5; i++) { // delete + log the same night again
+    await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(s => s.date !== '2026-09-20'); }); await logSleep('2026-09-20'); }
+  await page.evaluate(() => { closeSheets(); openSleepForm(S.sleepLog.find(s => s.date === '2026-09-20')); }); await page.fill('#sl_q', '5'); await page.click('#sl_save');
+  assert.equal(await xpOf(page) - x0, 10, 'edit / delete+recreate the same night: nothing more');
+  await persist(page); await reload(page); await logSleep('2026-09-20');
+  assert.equal(await xpOf(page) - x0, 10, 'after reload too');
+  await logSleep('2026-09-19'); assert.equal(await xpOf(page) - x0, 20, 'another night pays');
+  // journal follows the same rule: one reward per day however many entries are written
+  const j0 = await xpOf(page);
+  for (let i = 0; i < 3; i++) { await page.evaluate(() => { closeSheets(); openJournalForm(); }); await page.click('#j_save'); }
+  assert.equal(await xpOf(page) - j0, await page.evaluate(() => S.xpLog.some(x => x.key === `journal:${todayStr()}` && x.amount === 15)) ? 15 : 0, 'journal: at most 15 XP a day');
+  assert.ok(await page.evaluate(() => S.xpLog.filter(x => x.key === `journal:${todayStr()}`).length === 1), 'one journal reward today');
+}, { state: fixtureState() });
+
+test('P3-A6 a task pays once in its lifetime: reopen/complete same day, next day, after edit and reload pay nothing; completion day still recorded once', async ({ page }) => {
+  await quietQuests(page);
+  await page.evaluate(() => { S.tasks.push({ id: 'once', title: 'Jednou', priority: 'High', dueDate: todayStr(), done: false, createdAt: 1 }); view = 'tasks'; taskFilter = 'All'; render(); });
+  const x0 = await xpOf(page);
+  const toggle = () => page.evaluate(() => [...document.querySelectorAll('#tlist .item')].find(n => n.textContent.includes('Jednou')).querySelector('.check').click());
+  await page.evaluate(() => { taskFilter = 'All'; render(); }); await toggle(); await page.waitForTimeout(700);
+  assert.equal(await xpOf(page) - x0, 30, 'first completion: High = 30 XP');
+  await page.evaluate(() => { taskFilter = 'Completed'; render(); }); await toggle(); await page.waitForTimeout(100);
+  await page.evaluate(() => { taskFilter = 'All'; render(); }); await toggle(); await page.waitForTimeout(700);
+  assert.equal(await xpOf(page) - x0, 30, 'reopen + complete the same day: nothing');
+  await page.clock.setFixedTime(NOW + 86400000);
+  await page.evaluate(() => { const t = S.tasks.find(t => t.id === 'once'); t.done = false; t.title = 'Jednou upraveno'; taskFilter = 'All'; render(); });
+  await persist(page); await reload(page);
+  await page.evaluate(() => { view = 'tasks'; taskFilter = 'All'; render(); });
+  await page.evaluate(() => [...document.querySelectorAll('#tlist .item')].find(n => n.textContent.includes('Jednou')).querySelector('.check').click()); await page.waitForTimeout(700);
+  assert.equal(await xpOf(page) - x0, 30, 'next day after edit + reload: nothing');
+  assert.equal(await page.evaluate(() => S.xpLog.filter(x => (x.key || '').startsWith('task:once:')).length), 1, 'one ledger entry for the task');
+  // a task rewarded before this pass (key from an earlier day) counts as rewarded; a brand new task pays
+  assert.equal(await page.evaluate(() => { S.tasks.push({ id: 'legacy', title: 'L', priority: 'Low', done: false, createdAt: 1 }); S.xpLog.push({ id: 'lx', amount: 10, reason: 'Task: L', ts: 1, key: 'task:legacy:2025-01-01' }); const t = S.tasks.find(t => t.id === 'legacy'); t.done = true; const a = S.totalXp; taskGrantCompletion(t); return S.totalXp - a; }), 0);
+  assert.equal(await page.evaluate(() => { S.tasks.push({ id: 'legacy:x', title: 'LX', priority: 'Low', done: true, createdAt: 1 }); const a = S.totalXp; taskGrantCompletion(S.tasks.find(t => t.id === 'legacy:x')); return S.totalXp - a; }), 10, 'ids sharing a prefix are separate tasks');
+}, { state: fixtureState() });
+
+test('P3-A7 achievements pay once: repeated checks, reload and export/import never pay again; reset starts clean; achievement XP carries no attribute points', async ({ page }) => {
+  await quietQuests(page);
+  const r = await page.evaluate(() => { const unlocked0 = S.achievementsUnlocked.length, x = S.totalXp;
+    for (let i = 0; i < 12; i++) S.tasks.push({ id: 'ach' + i, title: 'A' + i, priority: 'Low', dueDate: todayStr(), done: true, createdAt: 1 });
+    checkAchievements(); const gained = S.totalXp - x; const n1 = S.achievementsUnlocked.length;
+    checkAchievements(); checkAchievements(); return { newly: n1 - unlocked0, gained, again: S.totalXp - x - gained, attrs: S.xpLog.filter(e => e.reason === 'Achievement').some(e => e.attrs) }; });
+  assert.ok(r.newly >= 1, 'something unlocked'); assert.equal(r.again, 0, 'repeated checks pay nothing'); assert.equal(r.attrs, false, 'no attribute points from achievements');
+  const x1 = await xpOf(page); await persist(page); await reload(page); await page.evaluate(() => checkAchievements());
+  assert.equal(await xpOf(page), x1, 'reload pays nothing');
+  await page.click('#settingsBtn'); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  await importFile(page, await dl.path()); await page.waitForTimeout(300); await page.evaluate(() => checkAchievements());
+  assert.equal(await xpOf(page), x1, 'export/import pays nothing');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [S.achievementsUnlocked.length, S.totalXp, S.xpLog.length]), [0, 0, 0], 'reset: clean profile');
+}, { state: fixtureState() });
+
+// ---------- Polish pass 3: B Today / Daily Score / goals ----------
+test('P3-B1 "Dnes" is one definition: Home Today tasks == Tasks -> Dnes == due today + overdue (open); no date, future, completed stay out', async ({ page }) => {
+  await page.evaluate(() => { S.tasks = [
+    { id: 'td', title: 'Due today', priority: 'Medium', dueDate: todayStr(), done: false, createdAt: 1 },
+    { id: 'od', title: 'Overdue', priority: 'Low', dueDate: addDays(todayStr(), -3), done: false, createdAt: 1 },
+    { id: 'nd', title: 'No date', priority: 'Low', dueDate: '', done: false, createdAt: 1 },
+    { id: 'fu', title: 'Future', priority: 'Low', dueDate: addDays(todayStr(), 2), done: false, createdAt: 1 },
+    { id: 'dn', title: 'Done today', priority: 'Low', dueDate: todayStr(), done: true, createdAt: 1 },
+    { id: 'do', title: 'Done overdue', priority: 'Low', dueDate: addDays(todayStr(), -2), done: true, createdAt: 1 }]; });
+  await go(page, 'home');
+  const home = await page.$$eval('#hTasks .item .item-title', n => n.map(x => x.textContent.trim()));
+  await page.evaluate(() => { view = 'tasks'; taskFilter = 'Today'; render(); });
+  const tasks = await page.$$eval('#tlist .item .item-title', n => n.map(x => x.textContent.trim()));
+  assert.deepEqual(home, ['Due today', 'Overdue']); assert.deepEqual(tasks, home, 'Home and Tasks -> Dnes agree');
+  assert.match(await page.locator('#tlist .task-group').innerText(), /Po termínu · 1/i);
+  assert.match(await page.locator('#tlist .task-nodate').innerText(), /Bez termínu: 1/);
+  const open = (await page.evaluate(() => { taskFilter = 'All'; render(); return [...document.querySelectorAll('#tlist .item-title')].map(x => x.textContent.trim()); }));
+  assert.ok(open.includes('No date') && open.includes('Future'), 'undated and future tasks are in Otevřené');
+  const ds = await page.evaluate(() => dailyScoreTasks(todayStr()));
+  assert.deepEqual([ds.total, ds.done, ds.openOverdue], [2, 1, 1], 'Daily Score: due today counts (1 of 2 done), open overdue informational');
+  assert.ok(await page.evaluate(() => getActiveReminders().some(r => r.prefType === 'task' && r.id === 'od') && !getActiveReminders().some(r => r.id === 'nd')), 'reminders: overdue only');
+}, { state: fixtureState() });
+
+test('P3-B2 Daily Score never judges the live day early: "Den teprve začíná" -> "Rozpracovaný den" -> positive label; finished days keep their rating; score unchanged', async ({ page }) => {
+  await page.evaluate(() => { S.tasks = []; S.meals = []; S.waterLog = []; S.sleepLog = []; S.workouts = []; S.settings.trainingDays = [];
+    S.habits = [{ id: 'hA', name: 'A', category: 'Health', completions: [], active: true, frequency: 'daily', createdAt: 1 }, { id: 'hB', name: 'B', category: 'Health', completions: [], active: true, frequency: 'daily', createdAt: 1 }].map(migrateHabit); view = 'home'; render(); });
+  const state = () => page.evaluate(() => { const r = dailyScore(todayStr()); return { score: r.score, st: document.querySelector('.ds-card').dataset.state, chip: document.querySelector('.ds-card .chip')?.textContent, tone: document.querySelector('.ds-card .chip')?.className }; });
+  let st = await state();
+  assert.equal(st.score, 0); assert.equal(st.st, 'early'); assert.equal(st.chip, 'Den teprve začíná'); assert.match(st.tone, /is-muted/);
+  await page.evaluate(() => { toggleHabitDay(S.habits[0], todayStr()); render(); });
+  st = await state(); assert.equal(st.score, 50); assert.equal(st.chip, 'Rozpracovaný den');
+  await page.evaluate(() => { toggleHabitDay(S.habits[1], todayStr()); render(); });
+  st = await state(); assert.equal(st.score, 100); assert.equal(st.chip, 'Výborný den');
+  await page.evaluate(() => { toggleHabitDay(S.habits[1], todayStr()); toggleHabitDay(S.habits[0], todayStr()); uiOpenDailyScore(todayStr()); });
+  const det = await page.locator('.ds-detail').innerText();
+  assert.match(det, /Den teprve začíná/); assert.doesNotMatch(det, /Náročný den|Slabší den/); assert.match(det, /hodnocení dne se uloží po jeho konci/);
+  // a finished day keeps the evaluative label
+  await page.evaluate(() => { closeSheets(); S.dailyScores = S.dailyScores || {}; S.dailyScores[addDays(todayStr(), -1)] = { score: 10, label: 'tough', areas: dailyScore(todayStr()).areas }; uiOpenDailyScore(addDays(todayStr(), -1)); });
+  assert.match(await page.locator('.ds-detail').innerText(), /Náročný den/);
+}, { state: fixtureState() });
+
+test('P3-B3 a goal at 100 % reads "Dokončeno" with "Uzavřít cíl"; closing pays 200 XP once, keeps linked tasks and history; reopen/close again pays nothing', async ({ page }) => {
+  await quietQuests(page);
+  await page.evaluate(() => { S.goals.push({ id: 'g100', title: 'Hotový cíl', status: 'Active', mode: 'auto', createdAt: 1 });
+    S.tasks.push({ id: 'gt1', title: 'Krok 1', priority: 'Low', goalId: 'g100', done: true, createdAt: 1 }, { id: 'gt2', title: 'Krok 2', priority: 'Low', goalId: 'g100', done: true, createdAt: 1 });
+    S.goals.push({ id: 'gman', title: 'Ruční cíl', status: 'Active', mode: 'manual', manualProgress: 100, createdAt: 1 });
+    view = 'goals'; goalFilter = 'Active'; render(); });
+  const card = page.locator('.goal-card', { hasText: 'Hotový cíl' });
+  assert.equal(await card.locator('[data-goal-state="ready"]').innerText(), 'Dokončeno');
+  assert.doesNotMatch(await card.innerText(), /Aktivní/, 'never "Aktivní 100 %"');
+  assert.match(await card.locator('.sm-done').innerText(), /Uzavřít cíl · \+200 XP/);
+  assert.equal(await page.locator('.goal-card', { hasText: 'Ruční cíl' }).locator('[data-goal-state="ready"]').count(), 1, 'manual mode at 100 % too');
+  await page.evaluate(() => { view = 'home'; render(); });
+  assert.equal(await page.locator('.goal-mini', { hasText: 'Hotový cíl' }).locator('[data-goal-state="ready"]').count(), 1, 'Home goal widget shows Dokončeno too');
+  await page.evaluate(() => { currentGoalId = 'g100'; view = 'goalDetail'; render(); });
+  assert.equal(await page.locator('[data-goal-ready]').count(), 1);
+  const x0 = await xpOf(page);
+  await page.click('.doneBtn');
+  assert.equal(await xpOf(page) - x0, 200);
+  const g = await page.evaluate(() => [S.goals.find(g => g.id === 'g100').status, S.tasks.filter(t => t.goalId === 'g100').length]);
+  assert.deepEqual(g, ['Completed', 2], 'closed, linked tasks kept');
+  await page.evaluate(() => { S.goals.find(g => g.id === 'g100').status = 'Active'; completeGoal(S.goals.find(g => g.id === 'g100')); });
+  await persist(page); await reload(page);
+  await page.evaluate(() => { const g = S.goals.find(g => g.id === 'g100'); g.status = 'Active'; completeGoal(g); });
+  assert.equal(await xpOf(page) - x0, 200, 'reopen/close and reload never pay again');
+  await page.evaluate(() => { view = 'goals'; goalFilter = 'Completed'; render(); });
+  assert.match(await page.locator('.goal-card', { hasText: 'Hotový cíl' }).innerText(), /Splněn|Dokončen/);
+}, { state: fixtureState() });
+
+test('P3-B4 goals & milestones: milestone XP once, auto progress from milestones, manual mode, no completion loop; reload/export/import/reset keep the state', async ({ page }) => {
+  await quietQuests(page);
+  const r = await page.evaluate(() => { const g = { id: 'gm', title: 'Milníky', status: 'Active', mode: 'auto', createdAt: 1 }; S.goals.push(g);
+    const ms = [1, 2, 3, 4].map(i => ({ id: 'mm' + i, goalId: 'gm', title: 'M' + i, completed: false, completedAt: null, createdAt: i })); S.milestones.push(...ms);
+    const x = S.totalXp; const p = [];
+    ms.forEach(m => { toggleMilestone(m); p.push(goalProgress(g)); });
+    toggleMilestone(ms[0]); p.push(goalProgress(g)); toggleMilestone(ms[0]); p.push(goalProgress(g));
+    return { xp: S.totalXp - x, p, status: g.status }; });
+  assert.equal(r.xp, 100, '4 milestones x 25 XP, re-checking pays nothing'); assert.deepEqual(r.p, [25, 50, 75, 100, 75, 100]);
+  assert.equal(r.status, 'Active', 'no automatic completion loop - the user closes the goal');
+  const snap = () => page.evaluate(() => JSON.stringify([S.goals.find(g => g.id === 'gm'), S.milestones.filter(m => m.goalId === 'gm').map(m => [m.id, m.completed])]));
+  const s0 = await snap(); await persist(page); await reload(page); assert.equal(await snap(), s0, 'reload');
+  await page.click('#settingsBtn'); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  await page.evaluate(() => { S.goals = []; S.milestones = []; }); await importFile(page, await dl.path()); await page.waitForFunction(() => S.goals.length > 0);
+  assert.equal(await snap(), s0, 'export/import');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [S.goals.length, S.milestones.length]), [0, 0], 'reset');
+}, { state: fixtureState() });
+
+// ---------- Polish pass 3: C Planner / Calendar ----------
+const overlapDay = page => page.evaluate(() => { const D = todayStr();
+  S.plannerBlocks = [['a', 'Porada týmu kvartální', '09:00', '10:00'], ['b', 'Hovor s klientem', '09:15', '09:45'], ['c', 'Oběd', '09:30', '10:30'], ['d', 'Krátký 1', '11:00', '11:15'], ['e', 'Krátký 2', '11:20', '11:35'], ['f', 'Krátký 3', '11:40', '12:00'], ['g', 'Samostatný', '14:00', '15:00']]
+    .map(([id, title, st, en]) => ({ id: 'ov' + id, title, date: D, startTime: st, endTime: en, category: 'Work', completed: false, createdAt: 1 }));
+  S.plannerBlocks[0].taskId = 't_open'; uiOpenPlanner(D); });
+
+test('P3-C1 Planner and Calendar say what each is for and link to each other', async ({ page }) => {
+  await page.evaluate(() => uiOpenPlanner(todayStr()));
+  assert.match(await page.locator('.planner .page-head .sub').innerText(), /Časový plán dne/);
+  await page.click('#plCal'); assert.equal(await page.evaluate(() => view), 'calendar');
+  assert.match(await page.locator('.page-head .sub').innerText(), /Přehled dnů a měsíců/);
+  await page.click('#agendaPlan'); assert.equal(await page.evaluate(() => [view, uiPlannerDay === todayStr()].join()), 'planner,true');
+}, { state: fixtureState() });
+
+test('P3-C2 "Teď" scrolls the current time into view; the now-line stays; other days offer "Dnes"', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 640 });
+  await page.clock.setFixedTime(new Date(`${TODAY}T13:30:00`).getTime());
+  await page.evaluate(() => { uiOpenPlanner(todayStr()); window.scrollTo(0, 0); });
+  assert.equal(await page.locator('#plTimeline .pl-now').count(), 1);
+  await page.click('#plNow'); await page.waitForTimeout(700);
+  const r = await page.evaluate(() => { const b = document.querySelector('#plTimeline .pl-now').getBoundingClientRect(); return { top: b.top, h: innerHeight, y: scrollY }; });
+  assert.ok(r.y > 0 && r.top > 0 && r.top < r.h * 0.6, `now-line in view (${Math.round(r.top)} of ${r.h})`);
+  await page.click('#plNext'); assert.equal(await page.locator('#plNow').count(), 0); assert.equal(await page.locator('#plToday').count(), 1);
+}, { state: fixtureState() });
+
+test('P3-C3 overlapping and short blocks: each tap opens its own block, titles readable, no overflow at 320-430; linked task/workout blocks still work', async ({ page }) => {
+  const bad = [];
+  for (const width of [320, 375, 390, 430, 768, 1440]) {
+    await page.setViewportSize({ width, height: 800 }); await overlapDay(page);
+    const r = await page.evaluate(() => { const out = [];
+      document.querySelectorAll('#plTimeline .pl-block[data-block]').forEach(n => { n.scrollIntoView({ block: 'center' }); const b = n.getBoundingClientRect(); const t = n.querySelector('.pl-t');
+        const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(b.height / 2, 20)); const own = hit && hit.closest('.pl-block') === n;
+        const tb = t.getBoundingClientRect(); const ck = n.querySelector('.check').getBoundingClientRect();
+        out.push({ id: n.dataset.block, own, titleH: Math.round(tb.height), titleVisible: tb.height >= 12 && tb.width >= 30, checkIn: ck.bottom <= b.bottom + 1 }); });
+      return { out, over: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
+    if (r.over > 0) bad.push(`${width}: overflow ${r.over}`);
+    r.out.forEach(x => { if (!x.own) bad.push(`${width}: tap on ${x.id} hits another block`); if (!x.titleVisible) bad.push(`${width}: ${x.id} title hidden`); if (!x.checkIn) bad.push(`${width}: ${x.id} check clipped`); });
+  }
+  assert.deepEqual(bad, []);
+  // clicking opens the right block's form
+  await page.setViewportSize({ width: 320, height: 800 }); await overlapDay(page);
+  await page.locator('[data-block="ovb"] .pl-open').click(); assert.equal(await page.inputValue('#pb_title'), 'Hovor s klientem');
+  await page.evaluate(() => closeSheets());
+  // the check still completes only the block
+  await page.locator('[data-block="ove"] .plCheck').click(); assert.deepEqual(await page.evaluate(() => [S.plannerBlocks.find(b => b.id === 'ove').completed, S.tasks.find(t => t.id === 't_open').done]), [true, false]);
+  // linked task chip / workout block on a wide screen
+  await page.setViewportSize({ width: 1024, height: 800 }); await overlapDay(page);
+  assert.match(await page.locator('[data-block="ova"]').innerText(), /Porada týmu kvartální/);
+  await page.evaluate(() => { exerciseAddPreset('Bench Press'); const t = templateSave({ name: 'Pl', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id; S.plannerBlocks.push({ id: 'ovw', title: 'Trénink', date: todayStr(), startTime: '17:00', endTime: '18:00', category: 'Health', workoutTemplateId: t, completed: false, createdAt: 1 }); uiOpenPlanner(todayStr()); });
+  await page.locator('[data-block="ovw"] .plWkStart').click();
+  assert.ok(await page.evaluate(() => !!activeWorkout() && activeWorkout().plannerBlockId === 'ovw'), 'linked workout starts from its block');
+}, { state: fixtureState() });
+
+// ---------- Polish pass 3: D UI polish ----------
+test('P3-D1 no browser-native dialogs in the app code: confirm/alert/prompt are not called anywhere', async () => {
+  const src = readFileSync(APP, 'utf8').replace(/\/\/[^\n]*/g, '');
+  const calls = [...src.matchAll(/(^|[^.\w])(confirm|alert|prompt)\s*\(/g)].map(m => m[2]);
+  assert.deepEqual(calls, [], 'native dialog calls found');
+});
+
+test('P3-D2 Settings shows only targets that do something: Návyky/den is gone (old values kept), Úkoly/den explains its effect', async ({ page }) => {
+  await page.evaluate(() => { view = 'settings'; render(); });
+  assert.equal(await page.locator('#st_hpd').count(), 0); assert.equal(await page.locator('#st_tpd').count(), 1);
+  assert.match(await page.locator('#st_targetsHelp').innerText(), /týdenní výpravu/);
+  await page.fill('#st_tpd', '4'); await settle(page);
+  assert.equal(await page.evaluate(() => WEEKLY_QUESTS.find(q => q.id === 'wq_tasks').max(S)), 20, 'Úkoly/den drive the weekly quest');
+  const old = await page.evaluate(() => { const st = JSON.parse(JSON.stringify(S)); st.dailyTargets.habitsPerDay = 4; return migrate(st).dailyTargets.habitsPerDay; });
+  assert.equal(old, 4, 'an old saved value survives migration untouched');
+  await page.evaluate(() => { S.settings.onboarded = false; showOnboarding(5); });
+  assert.equal(await page.locator('#ob_hpd').count(), 0, 'onboarding no longer asks for it');
+}, { state: fixtureState() });
+
+test('P3-D3 WCAG AA contrast for text in light and dark on the main screens (attributes, rarity, timestamps, secondary text, chips, links)', async ({ page }) => {
+  const bad = [];
+  for (const theme of ['light', 'dark']) {
+    const r = await page.evaluate(theme => { S.settings.theme = theme; applyTheme(); closeSheets();
+      const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+      const lum = c => { const f = x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }; return .2126 * f(c.r) + .7152 * f(c.g) + .0722 * f(c.b); };
+      const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+      const bgOf = el => { const stack = []; for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e); if (cs.backgroundImage && cs.backgroundImage !== 'none' && /gradient/.test(cs.backgroundImage) && e.matches('.btn:not(.ghost):not(.danger),.fab')) return null; const c = parse(cs.backgroundColor); if (c && c.a > 0) { stack.push(c); if (c.a >= 1) break; } }
+        let bg = parse(getComputedStyle(document.body).backgroundColor); for (let i = stack.length - 1; i >= 0; i--) bg = blend(stack[i], bg); return bg; };
+      const out = [];
+      for (const v of ['home', 'tasks', 'habits', 'goals', 'character', 'finance', 'nutrition', 'quests', 'statistics', 'health', 'settings', 'planner', 'calendar', 'notes', 'subscriptions']) { currentGoalId = 'g_fit'; view = v; render();
+        document.querySelectorAll('#app *').forEach(e => { if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden' || e.closest('[aria-hidden="true"],[disabled]')) return;
+          const fg0 = parse(cs.color); if (!fg0 || fg0.a === 0) return; const bg = bgOf(e); if (!bg) return; const fg = blend(fg0, bg);
+          const L1 = lum(fg), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05); const size = parseFloat(cs.fontSize);
+          const need = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700) ? 3 : 4.5;
+          if (ratio < need) out.push(`${theme}/${v}: "${e.textContent.trim().slice(0, 20)}" ${ratio.toFixed(2)} (${size}px)`); }); }
+      return out; }, theme);
+    bad.push(...r);
+  }
+  assert.deepEqual([...new Set(bad)], []);
+}, { state: fixtureState() });
+
+test('P3-D4 Czech UI: level-up activity, subscription period and food picker are Czech; user data untouched', async ({ page }) => {
+  await page.evaluate(() => { S.rpg.activityLog.unshift({ id: 'lv', type: 'levelup', title: 'Level 7', description: 'Reached Level 7', xp: 0, createdAt: 1 }); view = 'character'; render(); });
+  const t = await page.locator('#app').innerText(); assert.match(t, /Dosažen level 7/); assert.doesNotMatch(t, /Reached Level/);
+  assert.equal(await page.evaluate(() => S.rpg.activityLog[0].description), 'Reached Level 7', 'stored text unchanged');
+  await go(page, 'subscriptions'); const st = await page.locator('#app').innerText(); assert.match(st, /\/ (měsíc|rok)/); assert.doesNotMatch(st, /\/ (Monthly|Yearly)/);
+  await page.evaluate(() => openMealForm()); assert.doesNotMatch(await page.locator('.sheet').innerText(), /\((food|recipe)\)/);
+}, { state: fixtureState() });
+
+test('P3-D5 toasts on a phone sit under the header, are compact, can be tapped away; the level-up toast is shorter (level-up logic unchanged)', async ({ page }) => {
+  await go(page, 'home');
+  await page.evaluate(() => { const l = levelFromXp(S.totalXp); grantXp(l.need - l.into + 1, 'up'); });
+  await page.waitForSelector('#toasts .toast.is-level');
+  const r = await page.evaluate(() => { const t = document.querySelector('#toasts .toast.is-level').getBoundingClientRect(); const h = document.querySelector('header.topbar').getBoundingClientRect(); return { tTop: t.top, hBottom: h.bottom, tH: t.height }; });
+  assert.ok(r.tTop >= r.hBottom - 1, `toast below the header (${r.tTop} >= ${r.hBottom})`); assert.ok(r.tH <= 56, 'compact');
+  const lvEl = await page.$('#toasts .toast.is-level'); const t0 = Date.now();
+  await page.waitForFunction(el => !el.isConnected, lvEl, { timeout: 6000 }); assert.ok(Date.now() - t0 < 3800, 'this level toast leaves after ~3 s');
+  await page.waitForFunction(() => !document.querySelector('#toasts .toast') && !uiToastQueue.length, null, { timeout: 20000 });
+  await page.evaluate(() => toast('Test zprávy')); const el = await page.waitForSelector('#toasts .toast'); await el.click();
+  await page.waitForFunction(el => !el.isConnected, el, { timeout: 1000 });
+}, { state: fixtureState() });
+
+test('P3-D6/D7 at 320 px every filter option is visible (wraps, no hidden scroll) with 44 px targets; Settings texts are not cut; no overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const r = await page.evaluate(() => { const out = [];
+    for (const v of ['tasks', 'goals', 'health', 'statistics', 'calendar']) { view = v; render();
+      document.querySelectorAll('#app .period-selector').forEach(ps => { const pr = ps.getBoundingClientRect();
+        ps.querySelectorAll('button').forEach(b => { const br = b.getBoundingClientRect(); if (br.right > pr.right + 1 || br.left < pr.left - 1) out.push(`${v}: "${b.textContent.trim()}" off-screen`); if (b.classList.contains('pill') && br.height < 44) out.push(`${v}: "${b.textContent.trim()}" ${Math.round(br.height)} px`); }); }); }
+    view = 'settings'; render();
+    [...document.querySelectorAll('#app *')].forEach(e => { const cs = getComputedStyle(e); if (!e.children.length && e.textContent.trim() && e.scrollWidth > e.clientWidth + 1 && (cs.overflow.includes('hidden') || cs.textOverflow === 'ellipsis')) out.push('settings cut: ' + e.textContent.trim().slice(0, 30)); });
+    if (document.documentElement.scrollWidth > innerWidth) out.push('overflow');
+    return out; });
+  assert.deepEqual(r, []);
+}, { state: fixtureState() });
+
+test('P3-D8 avatar photo: upload, crop + zoom, remove (asks), reload, export/import keep it, reset clears it', async ({ page }) => {
+  const { PNG } = await import('pngjs');
+  const png = new PNG({ width: 300, height: 300 }); for (let i = 0; i < png.data.length; i += 4) { png.data[i] = 30; png.data[i + 1] = 140; png.data[i + 2] = 200; png.data[i + 3] = 255; }
+  await page.evaluate(() => { view = 'character'; render(); }); await page.click('#charAvatar');
+  await page.setInputFiles('#avFile', { name: 'a.png', mimeType: 'image/png', buffer: PNG.sync.write(png) }); await page.waitForSelector('#photoCrop');
+  const z0 = await page.inputValue('#cropZoom'); await page.click('#cropIn'); assert.ok(+(await page.inputValue('#cropZoom')) > +z0, 'zoom in');
+  await page.click('#cropSave');
+  const photo = await page.evaluate(() => S.profile.photo); assert.match(photo, /^data:image\/jpeg/); assert.ok(z0);
+  await persist(page); await reload(page); assert.equal(await page.evaluate(() => S.profile.photo), photo, 'reload');
+  await page.click('#settingsBtn'); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  await page.evaluate(() => { delete S.profile.photo; S.profile.avatar = 'svg:mage'; });
+  await importFile(page, await dl.path()); await page.waitForFunction(() => !!S.profile.photo);
+  assert.equal(await page.evaluate(() => S.profile.photo), photo, 'export/import');
+  await page.evaluate(() => { view = 'character'; render(); }); await page.click('#charAvatar'); await page.click('#avRemovePhoto');
+  assert.match(await page.locator('.cf-sheet').innerText(), /Odebrat fotku/); await page.click('#cf_cancel'); assert.ok(await page.evaluate(() => !!S.profile.photo), 'cancel keeps it');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [!!S.profile.photo, S.profile.avatar !== 'photo']), [false, true], 'reset clears the photo');
+}, { state: fixtureState() });
+
+// ---------- Polish pass 3: E PWA ----------
+const swReady = page => page.evaluate(async () => { const reg = await navigator.serviceWorker.ready; return !!reg.active; });
+const cacheState = page => page.evaluate(async () => { const out = {}; for (const n of await caches.keys()) { const c = await caches.open(n); out[n] = (await c.keys()).map(r => new URL(r.url).pathname).sort(); } return out; });
+
+test('P3-E1 manifest.json is valid and linked, icons exist in the declared sizes, Chrome reports the app installable', async ({ page }) => {
+  const m = await page.evaluate(async () => { const r = await fetch('manifest.json'); return { type: r.headers.get('content-type'), json: await r.json(), link: document.getElementById('manifestLink').getAttribute('href') }; });
+  assert.equal(m.link, 'manifest.json');
+  for (const k of ['name', 'short_name', 'start_url', 'scope', 'display', 'background_color', 'theme_color', 'icons']) assert.ok(m.json[k], 'manifest.' + k);
+  assert.equal(m.json.display, 'standalone'); assert.equal(m.json.start_url, './LifeOS.html');
+  const { PNG } = await import('pngjs');
+  for (const ic of m.json.icons) { const [w, h] = ic.sizes.split('x').map(Number); const png = PNG.sync.read(readFileSync(path.join(ROOT, ic.src))); assert.deepEqual([png.width, png.height], [w, h], ic.src); }
+  assert.ok(m.json.icons.some(i => i.sizes === '192x192') && m.json.icons.some(i => i.sizes === '512x512') && m.json.icons.some(i => i.purpose === 'maskable'));
+  assert.ok(await swReady(page)); await reload(page);
+  const cdp = await page.context().newCDPSession(page);
+  const man = await cdp.send('Page.getAppManifest'); assert.deepEqual(man.errors, [], 'manifest parses without errors');
+  const inst = await cdp.send('Page.getInstallabilityErrors'); assert.deepEqual(inst.installabilityErrors.map(e => e.errorId), [], 'installable');
+});
+
+test('P3-E2 service worker: registered from sw.js, controls the page, caches the app shell under lifeos-v1 - and never touches IndexedDB', async ({ page }) => {
+  assert.ok(await swReady(page));
+  const url = await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).active.scriptURL);
+  assert.match(url, /\/sw\.js$/);
+  await reload(page); assert.equal(await page.evaluate(() => !!navigator.serviceWorker.controller), true, 'page is controlled');
+  const c = await cacheState(page);
+  assert.deepEqual(Object.keys(c), ['lifeos-v1']);
+  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png']) assert.ok(c['lifeos-v1'].includes(f), 'cached ' + f);
+  assert.doesNotMatch(readFileSync(path.join(ROOT, 'sw.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''), /indexedDB|IDB|deleteDatabase|localStorage/, 'sw.js never touches app data');
+}, { state: fixtureState() });
+
+test('P3-E3 offline: reload, a fresh start and index.html open from the cache with all data; back online everything saves as before', async ({ page }) => {
+  const ctx = page.context();
+  assert.ok(await swReady(page)); await reload(page);
+  await page.evaluate(() => { S.tasks.push({ id: 'off1', title: 'Před výpadkem', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); }); await settle(page);
+  await ctx.setOffline(true);
+  await reload(page);
+  assert.ok(await page.evaluate(() => S.tasks.some(t => t.id === 'off1')), 'offline reload keeps data');
+  await page.evaluate(() => { S.tasks.push({ id: 'off2', title: 'Offline změna', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); }); await settle(page);
+  await page.close();
+  const p2 = await ctx.newPage(); await p2.clock.setFixedTime(NOW); await p2.goto(URL_ + 'index.html');
+  await p2.waitForFunction(() => location.pathname.endsWith('/LifeOS.html') && typeof S !== 'undefined' && S && tabActive, null, { timeout: 10000 });
+  assert.ok(await p2.evaluate(() => ['off1', 'off2'].every(id => S.tasks.some(t => t.id === id))), 'fresh offline start via index.html has all data');
+  await ctx.setOffline(false);
+  await p2.reload(); await p2.waitForFunction(() => typeof S !== 'undefined' && S && tabActive);
+  await p2.evaluate(() => { S.tasks.push({ id: 'on1', title: 'Znovu online', priority: 'Low', dueDate: todayStr(), done: false, createdAt: 1 }); scheduleSave(); }); await p2.waitForTimeout(450);
+  await p2.reload(); await p2.waitForFunction(() => typeof S !== 'undefined' && S && tabActive);
+  assert.ok(await p2.evaluate(() => ['off1', 'off2', 'on1'].every(id => S.tasks.some(t => t.id === id))), 'online again: saved + reloaded');
+  await p2.close();
+}, { state: fixtureState() });
+
+test('P3-E4 update: a new sw.js version installs, removes the old lifeos cache (other caches stay), tells the user, and IndexedDB data is untouched', async ({ page }) => {
+  assert.ok(await swReady(page)); await reload(page);
+  await page.evaluate(async () => { const c = await caches.open('other-app'); await c.put('/other.txt', new Response('x')); });
+  const before = await idbState(page);
+  serverOverrides['sw.js'] = readFileSync(path.join(ROOT, 'sw.js'), 'utf8').replace("const CACHE_VERSION = 'lifeos-v1';", "const CACHE_VERSION = 'lifeos-v2';");
+  try {
+    await page.evaluate(() => { window.__toastLog = []; const t0 = window.toast; window.toast = function (m) { window.__toastLog.push(String(m)); return t0.apply(this, arguments); }; });
+    await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
+    await page.waitForFunction(async () => { const k = await caches.keys(); return k.includes('lifeos-v2') && !k.includes('lifeos-v1'); }, null, { timeout: 10000 });
+    await page.waitForTimeout(500); await page.evaluate(() => fetch('manifest.json').then(r => r.text())); // a request through the new worker
+    await page.waitForFunction(async () => !(await caches.keys()).includes('lifeos-v1'), null, { timeout: 10000 });
+    const c = await cacheState(page);
+    assert.deepEqual(Object.keys(c).sort(), ['lifeos-v2', 'other-app'], 'old app cache removed, foreign cache kept');
+    assert.ok(c['lifeos-v2'].includes('/LifeOS.html'));
+    await page.waitForFunction(() => (window.__toastLog || []).some(m => /nová verze/i.test(m)), null, { timeout: 5000 });
+    assert.deepEqual(await idbState(page), before, 'IndexedDB unchanged by the update');
+    await reload(page); assert.deepEqual(await idbState(page), before, 'and after reloading into the new version');
+  } finally { delete serverOverrides['sw.js']; }
+}, { state: fixtureState() });
+
+test('P3-E5 opened as a local file the app works as before: no service worker, no manifest request, no console errors', async ({ page }) => {
+  const errs = []; const p = await page.context().newPage();
+  p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); p.on('pageerror', e => errs.push(e.message));
+  await p.goto('file://' + APP); await p.waitForFunction(() => typeof S !== 'undefined' && S);
+  assert.deepEqual(await p.evaluate(() => [location.protocol, document.getElementById('manifestLink').getAttribute('href'), !!(navigator.serviceWorker && navigator.serviceWorker.controller)]), ['file:', null, false]);
+  assert.ok(await p.evaluate(() => !!S && tabActive), 'app runs');
+  await p.waitForTimeout(300); assert.deepEqual(errs, []); await p.close();
+});
+
+// ---------- Polish pass 3: F data safety ----------
+test('P3-F1 every destructive action asks first: deletes, reset, restore from backup (cancel keeps everything)', async ({ page }) => {
+  const snap = () => page.evaluate(() => JSON.stringify(S));
+  const s0 = await snap();
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  await page.evaluate(() => { S.tasks.push({ id: 'new', title: 'po exportu', priority: 'Low', done: false, createdAt: 1 }); render(); });
+  const s1 = await snap();
+  await page.setInputFiles('#st_impFile', await dl.path()); await page.waitForSelector('.cf-sheet');
+  assert.match(await page.locator('.cf-sheet').innerText(), /Obnovit ze zálohy\?[\s\S]*nahradí[\s\S]*úkoly \d+/);
+  await page.click('#cf_cancel'); assert.equal(await snap(), s1, 'cancel: nothing replaced');
+  await page.setInputFiles('#st_impFile', await dl.path()); await page.click('#cf_ok'); await page.waitForTimeout(200);
+  assert.equal(await snap(), s0, 'confirm: restored');
+  await page.click('#st_reset'); await page.click('#cf_cancel'); assert.equal(await snap(), s0, 'reset cancel');
+  await go(page, 'tasks'); await page.locator('#tlist .delbtn').first().click(); await page.click('#cf_cancel'); assert.equal(await snap(), s0, 'delete cancel');
+}, { state: fixtureState() });
+
+test('P3-F2 deletes leave no broken reference: task/goal/habit/workout/template/subscription/vehicle/meal/sleep removed -> every screen and form renders cleanly', async ({ page }) => {
+  await page.evaluate(() => { exerciseAddPreset('Bench Press'); const t = templateSave({ name: 'Ref', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id;
+    S.plannerBlocks.push({ id: 'refb', title: 'Propojený blok', date: todayStr(), startTime: '19:00', endTime: '20:00', category: 'Work', taskId: 't_open', goalId: 'g_fit', workoutId: 'w1', workoutTemplateId: t, completed: false, createdAt: 1 });
+    S.habits.find(h => h.id === 'h_read').goalId = 'g_fit'; window.__tpl = t; });
+  const del = async (setup, sel) => { await page.evaluate(setup => { closeSheets(); eval(setup); }, setup); await page.locator(sel).first().click(); await page.click('#cf_ok'); };
+  await del("view='tasks';taskFilter='All';render()", '#tlist .item:has-text("Write report") .delbtn');
+  await del("view='goals';goalFilter='All';render()", '.goal-card:has-text("Get in shape") .delbtn');
+  await del("fitnessTab='workouts';uiWorkoutView=null;view='fitness';render()", '#app .delbtn[aria-label^="Smazat: "]');
+  await del("openTemplateForm(S.workoutTemplates.find(t=>t.id===window.__tpl))", '#tp_delete');
+  await del("view='subscriptions';render()", '#app .item .delbtn');
+  await del("view='car';render()", '#app .delbtn[aria-label^="Smazat: "]');
+  await del("view='nutrition';render()", '#app .meal-item .delbtn, #app .item .delbtn');
+  await del("healthTab='sleep';view='health';render()", '#app .item .delbtn');
+  const st = await stateOf(page);
+  assert.ok(!st.tasks.some(t => t.goalId === 'g_fit') && !st.habits.some(h => h.goalId === 'g_fit') && !st.milestones.some(m => m.goalId === 'g_fit'), 'goal links cleared');
+  assert.ok(!st.carServices.some(x => !st.vehicles.some(v => v.id === x.vehicleId)) && !st.fuelEntries.some(x => !st.vehicles.some(v => v.id === x.vehicleId)), 'no orphan services/fuel');
+  const bad = await page.evaluate(() => { const out = []; const check = (label, root) => { const t = root.innerText; for (const w of ['undefined', 'NaN', '[object', 'null']) if (new RegExp('(^|[^a-z])' + w.replace('[', '\\[') + '($|[^a-z])').test(t)) out.push(label + ': ' + w); };
+    for (const v of ['home', 'tasks', 'habits', 'goals', 'character', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner']) {
+      currentGoalId = 'g_fit'; currentHabitId = 'h_read'; uiPlannerDay = todayStr(); view = v; render(); check(v, document.getElementById('app')); }
+    closeSheets(); openPlannerForm(S.plannerBlocks.find(b => b.id === 'refb')); check('planner form', document.querySelector('.sheet'));
+    closeSheets(); openDayOverview(todayStr()); check('day overview', document.querySelector('.sheet')); closeSheets();
+    ['week', 'month', 'year', 'all'].forEach(p => { try { computeStats(p); } catch (e) { out.push('stats ' + p + ': ' + e.message); } });
+    getActiveReminders().forEach(r => { if (r.navType !== 'quest' && !resolveReminderEntity(r.navType, r.id)) out.push('reminder to a missing ' + r.navType); }); // quest reminders open the board, not a record
+    return out; });
+  assert.deepEqual(bad, []);
+  assert.equal(await page.evaluate(() => { currentGoalId = 'g_fit'; view = 'goalDetail'; render(); return view; }), 'goals', 'a stale goal detail falls back to the goal list');
+  await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
+  assert.match(await page.locator('[data-block="refb"]').innerText(), /smazáno|missing/i, 'the block says its task is gone instead of linking to it');
+}, { state: fixtureState() });
+
+// ---------- Polish pass 3: G performance (realistic year) ----------
+test('P3-G1 realistic year (1 500 tasks / 25 000 XP): Home, Tasks, Statistics, Search, Quests stay fast; Dnes shows 10 oldest overdue + a link, Search draws 30 hits per group with the full count', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3));
+    const m = (f, n = 3) => { f(); const t = performance.now(); for (let i = 0; i < n; i++) f(); return (performance.now() - t) / n; };
+    const search = () => { view = 'search'; render(); const g = document.getElementById('gs'); g.value = 'úkol'; g.dispatchEvent(new Event('input')); };
+    return { home: m(() => { view = 'home'; render(); }), tasks: m(() => { view = 'tasks'; taskFilter = 'Today'; render(); }), statistics: m(() => { view = 'statistics'; render(); }, 2), search: m(search), quests: m(() => { view = 'quests'; render(); }) }; });
+  console.log('      P3-G1 ' + Object.entries(r).map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', '));
+  assert.ok(r.home < 300 && r.tasks < 150 && r.statistics < 800 && r.search < 150 && r.quests < 150, JSON.stringify(r));
+  await page.evaluate(() => { view = 'tasks'; taskFilter = 'Today'; render(); });
+  const t = await page.evaluate(() => { const tt = tasksToday(); return { shown: document.querySelectorAll('#tlist .item').length, due: tt.due.length, overdue: tt.overdue.length }; });
+  assert.equal(t.shown, t.due + Math.min(10, t.overdue)); assert.ok(t.overdue > 10);
+  await page.click('[data-more="overdue"]'); assert.equal(await page.evaluate(() => taskFilter), 'Overdue');
+  await page.evaluate(() => { view = 'search'; render(); const g = document.getElementById('gs'); g.value = 'úkol'; g.dispatchEvent(new Event('input')); });
+  const sr = await page.evaluate(() => ({ hits: document.querySelectorAll('#gsRes .search-hit').length, head: document.querySelector('#gsRes .section-header h3').textContent, more: document.querySelector('#gsRes .search-more')?.textContent }));
+  assert.ok(sr.hits <= 30 * 12 && /· \d{3,}/.test(sr.head) && /dalších \d+/.test(sr.more), JSON.stringify(sr));
+});
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
