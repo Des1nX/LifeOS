@@ -1144,7 +1144,10 @@
     "nutrition": true,
     "finance": true,
     "fitness": true,
-    "health": true
+    "health": true,
+    "smart": true,
+    "command": true,
+    "top3": true
    },
    "widgetOrder": [
     "reminders",
@@ -1498,7 +1501,10 @@
     "nutrition": true,
     "finance": true,
     "fitness": true,
-    "health": true
+    "health": true,
+    "smart": true,
+    "command": true,
+    "top3": true
    },
    "widgetOrder": [
     "reminders",
