@@ -34,6 +34,23 @@ the data, export or import.
    An open app shows the notice "Je připravená nová verze LifeOS — projeví se po obnovení stránky"
    ("A new LifeOS version is ready — it applies after a reload"). The data in IndexedDB stays untouched.
 
+### Verifying installation (Chrome desktop / Android)
+
+The automated tests check the manifest, the icons, installability (Chrome DevTools: `Page.getInstallabilityErrors`
+without errors), the service worker, offline mode and updates. What can be verified by hand on a real device:
+
+1. **Chrome desktop:** open the deployed `…/LifeOS.html` → DevTools → *Application* → *Manifest*: no errors,
+   icons 192/512 + maskable; *Service workers*: `sw.js` *activated and running*; *Cache storage*: `lifeos-v1`.
+   The address bar shows the *Install* icon → install → the app opens in its own window.
+2. **Offline:** DevTools → *Network* → *Offline* → reload: the app loads with its data. Or close the installed app,
+   turn off the internet and open it again.
+3. **Android (Chrome):** menu → *Install app* / *Add to Home screen* → launch from the home screen (no address bar),
+   turn on airplane mode, open the app again: the data is there.
+4. **Update:** deploy with a higher `CACHE_VERSION` → on the next online launch the app shows the notice about the new
+   version; after a reload DevTools *Cache storage* holds only the new `lifeos-vN`; the data stays.
+
+Installation on iOS/Safari hasn't been tested on a real device (the `apple-touch-icon` and meta tags are ready).
+
 ## Tests
 
 See `qa/README.md` (`cd qa && npm install && npm test`).

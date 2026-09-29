@@ -1023,7 +1023,8 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .pl-open{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;background:none;border:none;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;min-height:32px}
 .pl-t{font-weight:700;font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block}
 .pl-m{font-size:var(--fs-caption);color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.pl-chips{display:flex;flex-wrap:nowrap;gap:4px;margin-top:3px;min-width:0;overflow:hidden} /* review: one line, never cut at the block's bottom */
+.pl-chips .chip{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pl-chips .chip{font-size:10.5px;padding:2px 7px}
 .pl-block.is-compact .pl-open{flex-direction:row;align-items:baseline;gap:6px}
 .plan-list{display:flex;flex-direction:column;gap:2px}
@@ -1340,6 +1341,14 @@ function rpgMixProfiles(list){
 // Polish pass 3: meal XP is paid once per meal type per day (breakfast, lunch, dinner, snack -- at most 4 x 10 XP),
 // under the ledger key meal:<date>:<type>. Logging more meals still works, it just doesn't pay again.
 function mealXpKey(m){ return `meal:${m.date||todayStr()}:${m.type||'Other'}`; }
+// Review: a night already paid -- under the new key, by a still existing older record (sleep:<record id>), or by an
+// older entry logged on that very day (older records were keyed by id, so a deleted one is matched by its day).
+function sleepNightRewarded(date){
+  if(xpKeyIndex().has(`sleep:day:${date}`)) return true;
+  const keys=xpKeyIndex();
+  if(S.sleepLog.some(r=>r.date===date&&keys.has(`sleep:${r.id}`))) return true;
+  return S.xpLog.some(x=>typeof x.key==='string'&&/^sleep:(?!day:)/.test(x.key)&&uiIsoDate(x.ts)===date);
+}
 function mealAttrProfile(){
   const d=todayStr();
   return S.xpLog.some(x=>x.reason==='Meal logged'&&x.attrs&&uiIsoDate(x.ts)===d)?null:'nutrition';
@@ -1367,6 +1376,18 @@ function rpgAttrGains(total,profile){
    (Low/Medium/High); an older habit without one is read from its old xpReward (record not rewritten). ---- */
 const TASK_XP={Low:10,Medium:20,High:30,Urgent:40};
 function taskXp(t){ return TASK_XP[t&&t.priority]||TASK_XP.Medium; }
+// Review (anti-farming): the amounts never change -- only how often a source can pay. Limits count rewards by the
+// REAL day they were granted (entry timestamp), so an editable record date (backfilled sleep, backdated workouts)
+// cannot open new ones. Same-name repeats (delete + add the same task/habit again) pay once a day.
+const XP_DAILY_LIMIT={workout:2, goal:2, milestone:10, sleep:1};
+function xpTodayEntries(test){
+  const d=new Date(), from=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(), to=from+86400000; let n=0;
+  for(const x of S.xpLog) if(x&&x.ts>=from&&x.ts<to&&test(x)) n++;
+  return n;
+}
+function xpUnderDailyLimit(kind){ return xpTodayEntries(x=>typeof x.key==='string'&&x.key.startsWith(kind+':'))<XP_DAILY_LIMIT[kind]; }
+function xpSameNameToday(prefix,reason){ return xpTodayEntries(x=>x.reason===reason&&typeof x.key==='string'&&x.key.startsWith(prefix))>0; }
+function xpLimitNote(){ toast(uiLang()==='cs'?'Uloženo · dnešní limit XP pro tento typ je vyčerpaný':'Saved · today\'s XP limit for this kind is used up'); }
 // Polish pass 3: a task pays its XP once in its lifetime. The ledger key keeps the completion day (task:<id>:<date>,
 // which Daily Score and quests read); reopening and completing again -- the same day or any later day -- pays
 // nothing. LifeOS has no recurring tasks (repeating things are habits), so no task needs a second reward.
@@ -1382,7 +1403,7 @@ function tasksToday(D){
     doneToday:S.tasks.filter(t=>t.done&&t.dueDate===D)};
 }
 function taskGrantCompletion(t){
-  if(taskRewarded(t)) return false;
+  if(taskRewarded(t)||xpSameNameToday('task:','Task: '+t.title)) return false; // review: delete + add the same task again
   return grantXp(taskXp(t),'Task: '+t.title,catProfile(t.category)||'discipline',`task:${t.id}:${todayStr()}`);
 }
 // Polish pass 3: like tasks (priority table), habits and workouts, goals and milestones pay a fixed reward set by
@@ -2515,14 +2536,17 @@ function renderPlanner(){
   // Polish pass 3: columns follow the DRAWN size -- a block is at least 44 px tall, 76 px when three or more share their time
   // (on a phone the title then stacks above the check) -- so short neighbours never cover each other and a tap opens its own block.
   const PX=1.1, drawn=(its,minFor)=>its.map(it=>Object.assign({},it,{end:Math.max(it.end,it.start+Math.ceil(minFor(it)/PX))}));
-  let lay=plannerLayout(drawn(items,()=>44));
-  for(let pass=0;pass<3;pass++){ const prev=lay; lay=plannerLayout(drawn(items,it=>prev[it.id].cols>2?76:44)); if(items.every(it=>(lay[it.id].cols>2)===(prev[it.id].cols>2))) break; }
+  // review: a block that shows link chips (task / goal / workout) needs 80 px for title + time + chips
+  const hasChips=it=>!!(it.b&&(it.b.taskId||it.b.goalId||it.b.workoutId||it.b.workoutTemplateId));
+  const minH=(it,cols)=>cols>2?76:hasChips(it)?80:44;
+  let lay=plannerLayout(drawn(items,it=>minH(it,1)));
+  for(let pass=0;pass<3;pass++){ const prev=lay; lay=plannerLayout(drawn(items,it=>minH(it,prev[it.id].cols))); if(items.every(it=>(lay[it.id].cols>2)===(prev[it.id].cols>2))) break; }
   const tl=el(`<section class="card pl-timeline" aria-label="${dayLabel}"><div class="pl-grid" id="plTimeline" data-day="${D}" data-from="${from}" data-to="${to}" data-px="${PX}" style="height:${Math.round((to-from)*PX)}px"></div></section>`);
   const grid=tl.querySelector('#plTimeline');
   for(let h=from;h<=to;h+=60) grid.appendChild(el(`<div class="pl-hour" style="top:${Math.round((h-from)*PX)}px"><span>${plannerMinToTime(Math.min(h,1439)).replace('23:59','24:00')}</span></div>`));
   if(D===today){ const n=new Date(), nm=n.getHours()*60+n.getMinutes(); if(nm>=from&&nm<=to) grid.appendChild(el(`<div class="pl-now" style="top:${Math.round((nm-from)*PX)}px" aria-hidden="true"></div>`)); }
   items.forEach(it=>{
-    const L=lay[it.id], top=Math.round((it.start-from)*PX), h=Math.max(L.cols>2?76:44,Math.round((it.end-it.start)*PX));
+    const L=lay[it.id], top=Math.round((it.start-from)*PX), h=Math.max(minH(it,L.cols),Math.round((it.end-it.start)*PX));
     const pos=`top:${top}px;height:${h}px;left:calc(var(--pl-gutter) + (100% - var(--pl-gutter)) * ${L.col} / ${L.cols});width:calc((100% - var(--pl-gutter)) / ${L.cols} - 4px)`;
     if(it.ev){
       const e=it.ev;
@@ -3487,7 +3511,7 @@ function toggleHabitDay(h){
   else {
     h.completions.push(date);
     const key=`habit:${h.id}:${date}`;
-    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
+    if(!xpSameNameToday('habit:','Habit: '+h.name)) grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key); // review: a re-created habit of the same name pays once a day
   }
   scheduleSave();render();
 }
@@ -3500,7 +3524,7 @@ function incrementHabitToday(h){
   h.completions.push(date);
   if(count+1>=(h.target||1)){
     const key=`habit:${h.id}:${date}`;
-    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
+    if(!xpSameNameToday('habit:','Habit: '+h.name)) grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key); // review: a re-created habit of the same name pays once a day
   }
   scheduleSave();render();
 }
@@ -3518,7 +3542,7 @@ function markHabitClean(h,dateStr){
   if(!h.completions.includes(dateStr)){
     h.completions.push(dateStr);
     const key=`habit:${h.id}:${dateStr}`;
-    grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key);
+    if(!xpSameNameToday('habit:','Habit: '+h.name)) grantXp(habitXp(h),'Habit: '+h.name,habitAttrProfile(h),key); // review: a re-created habit of the same name pays once a day
   }
   scheduleSave();render();
 }
@@ -3607,6 +3631,8 @@ function completeGoal(g){
   // Idempotent: a goal's completion XP is granted at most once ever (not per-day, since
   // goal completion is not a recurring daily event like a task/habit).
   g.status='Completed';
+  // review: at most XP_DAILY_LIMIT.goal goal rewards a day (goals are long-term; creating + closing on the spot is farming)
+  if(!S.xpLog.some(x=>x.key===`goal:${g.id}:complete`)&&!xpUnderDailyLimit('goal')){ xpLimitNote(); scheduleSave(); return; }
   grantXp(goalXp(g),'Goal: '+g.title,catProfile(g.category)||'WIS',`goal:${g.id}:complete`);
   scheduleSave();
 }
@@ -3615,6 +3641,7 @@ function toggleMilestone(m){
   if(m.completed){
     m.completedAt=Date.now();
     const g=S.goals.find(x=>x.id===m.goalId);
+    if(!S.xpLog.some(x=>x.key===`milestone:${m.id}`)&&!xpUnderDailyLimit('milestone')) xpLimitNote(); else
     grantXp(milestoneXp(m),'Milestone: '+m.title,(g&&catProfile(g.category))||'WIS',`milestone:${m.id}`);
     checkAchievements();
   } else {
@@ -3921,7 +3948,7 @@ function openGoalForm(existing){
         targetDate:inner.querySelector('#g_due').value,status:'Active',mode:inner.querySelector('#g_mode').value,
         manualProgress:parseFloat(inner.querySelector('#g_manual').value)||0,
         createdAt:Date.now()};
-      if(newStatus==='Completed'){ completeGoal(ng); } else { ng.status=newStatus; }
+      ng.status=newStatus; // review: a goal entered as already Completed is a record of the past -- no reward
       S.goals.push(ng);
     }
     scheduleSave();closeSheets();view='goals';render();toast(g?'Goal updated':'Goal added');
@@ -5918,7 +5945,7 @@ function workoutFinish(wid){
   // Balancing: 80 XP -> 48 attribute points by the fitness profile (STR 24, VIT 14, DEX 10); the old flat
   // +20 VIT bonus was removed (VIT already stored from past workouts stays untouched).
   // Polish pass 3: only a workout with at least one finished working set pays (workoutRewardable).
-  const granted=workoutRewardable(w)&&grantXp(80,'Workout: '+w.name,'fitness',key);
+  const granted=workoutRewardable(w)&&(xpUnderDailyLimit('workout')||S.xpLog.some(x=>x.key===key)||(xpLimitNote(),false))&&grantXp(80,'Workout: '+w.name,'fitness',key); // review: 2 rewarded workouts a day
   checkAchievements();
   return {ok:true,workout:w,granted:!!granted};
 }
@@ -6850,7 +6877,7 @@ function openWorkoutForm(existing){
       const wid=uid();
       const key=`workout:${wid}:${fields.date}`;
       S.workouts.push(Object.assign({id:wid,createdAt:Date.now()},fields));
-      if(workoutRewardable(fields)) grantXp(80,'Workout: '+name,'fitness',key); // same reward as workoutFinish; polish pass 3: never for an empty workout
+      if(workoutRewardable(fields)){ if(xpUnderDailyLimit('workout')) grantXp(80,'Workout: '+name,'fitness',key); else xpLimitNote(); } // review: 2 a day // same reward as workoutFinish; polish pass 3: never for an empty workout
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(w?'Workout updated':'Workout logged');
@@ -8588,7 +8615,7 @@ function openSleepForm(existing){
       S.sleepLog.push(Object.assign({id,createdAt:Date.now()},fields));
       // Polish pass 3: one reward per night (the entry's date), so delete + log the same night again pays nothing.
       // Older sleep:<record id> ledger keys stay as they are.
-      grantXp(10,'Sleep logged','sleep',`sleep:day:${fields.date}`);
+      if(sleepNightRewarded(fields.date)) {} else if(!xpUnderDailyLimit('sleep')) xpLimitNote(); else grantXp(10,'Sleep logged','sleep',`sleep:day:${fields.date}`);
     }
     scheduleSave();closeSheets();render();toast(s?'Sleep entry updated':'Sleep logged');
   };

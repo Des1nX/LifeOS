@@ -1007,7 +1007,8 @@ test('10 UI: Task -> Naplánovat creates a linked block, the task itself stays u
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
   const blk = page.locator(`[data-block="${b.id}"]`);
   assert.match(await blk.locator('.pl-open').getAttribute('aria-label'), /úkol hotový/);
-  assert.equal(await blk.locator('[title="úkol hotový"] svg').count(), 1, 'compact block still shows the linked task is done (line icon)');
+  // review: a block with link chips is drawn tall enough for them -> the done state shows as the chip (compact blocks keep the icon)
+  assert.equal(await blk.locator('[title="úkol hotový"] svg').count() + await blk.locator('.pl-chips .chip.is-success').count(), 1, 'the block shows the linked task is done');
   assert.equal((await stateOf(page)).plannerBlocks.find(x => x.id === b.id).completed, false, 'block keeps its own completed flag');
 }, { state: fixtureState() });
 
@@ -4447,20 +4448,23 @@ test('P3-A2 goal and milestone XP are set by the app: stored 0 / negative / deci
   await page.evaluate(() => { closeSheets(); openMilestoneForm(S.goals[0].id); });
   assert.equal(await page.locator('#ms_xp').count(), 0, 'no milestone XP field'); assert.match(await page.locator('#ms_xpInfo').innerText(), /\+25 XP/);
   await page.evaluate(() => closeSheets());
-  const r = await page.evaluate(() => { const out = [];
-    for (const v of [0, -50, 2.5, 99999, '1e9', undefined]) {
-      const g = { id: 'gx' + out.length, title: 'G ' + v, status: 'Active', mode: 'manual', manualProgress: 0, xpReward: v, createdAt: 1 }; S.goals.push(g);
-      const m = { id: 'mx' + out.length, goalId: g.id, title: 'M', completed: false, completedAt: null, xpReward: v, createdAt: 1 }; S.milestones.push(m);
+  const r = []; let day = 0;
+  for (const v of [0, -50, 2.5, 99999, '1e9', undefined]) { // one case a day (review: at most 2 goal rewards a day)
+    await page.clock.setFixedTime(NOW + (day++) * 86400000);
+    r.push(await page.evaluate(v => { const i = S.goals.length;
+      const g = { id: 'gx' + i, title: 'G ' + v, status: 'Active', mode: 'manual', manualProgress: 0, xpReward: v, createdAt: 1 }; S.goals.push(g);
+      const m = { id: 'mx' + i, goalId: g.id, title: 'M', completed: false, completedAt: null, xpReward: v, createdAt: 1 }; S.milestones.push(m);
       const a = S.totalXp; toggleMilestone(m); const mxp = S.totalXp - a;
       const b = S.totalXp; completeGoal(g); const gxp = S.totalXp - b;
       // reopen -> complete again, milestone off/on again: never a second reward
       const c = S.totalXp; g.status = 'Active'; completeGoal(g); toggleMilestone(m); toggleMilestone(m); const again = S.totalXp - c;
-      out.push([String(v), gxp, mxp, again, g.xpReward === v && m.xpReward === v]); }
-    return out; });
+      return [String(v), gxp, mxp, again, g.xpReward === v && m.xpReward === v]; }, v));
+  }
+  await page.clock.setFixedTime(NOW + (day++) * 86400000);
   for (const [v, g, m, again, kept] of r) { assert.deepEqual([g, m, again], [200, 25, 0], `stored ${v}`); assert.ok(kept, `stored value ${v} left untouched`); }
   // reload -> complete again: still once
   await persist(page); await reload(page);
-  assert.equal(await page.evaluate(() => { const a = S.totalXp; const g = S.goals.find(x => x.id === 'gx3'); g.status = 'Active'; completeGoal(g); return S.totalXp - a; }), 0, 'reload does not re-open the reward');
+  assert.equal(await page.evaluate(() => { const a = S.totalXp; const g = S.goals.find(x => x.title === 'G 99999'); g.status = 'Active'; completeGoal(g); return S.totalXp - a; }), 0, 'reload does not re-open the reward');
   // new goal through the form + complete in UI = 200 once; edit keeps no XP field
   await page.evaluate(() => { closeSheets(); openGoalForm(); }); await page.fill('#g_title', 'P3 goal'); await page.click('#g_save');
   const g0 = await xpOf(page);
@@ -4525,7 +4529,9 @@ test('P3-A5 sleep: one reward per night - edit, re-save, delete + log the same n
   assert.equal(await xpOf(page) - x0, 10, 'edit / delete+recreate the same night: nothing more');
   await persist(page); await reload(page); await logSleep('2026-09-20');
   assert.equal(await xpOf(page) - x0, 10, 'after reload too');
-  await logSleep('2026-09-19'); assert.equal(await xpOf(page) - x0, 20, 'another night pays');
+  await logSleep('2026-09-19'); assert.equal(await xpOf(page) - x0, 10, 'review: another (backfilled) night the same day pays nothing - one sleep reward a day');
+  await page.clock.setFixedTime(NOW + 86400000);
+  await logSleep('2026-09-21'); assert.equal(await xpOf(page) - x0, 20, 'the next day a new night pays');
   // journal follows the same rule: one reward per day however many entries are written
   const j0 = await xpOf(page);
   for (let i = 0; i < 3; i++) { await page.evaluate(() => { closeSheets(); openJournalForm(); }); await page.click('#j_save'); }
@@ -4949,6 +4955,121 @@ test('P3-G1 realistic year (1 500 tasks / 25 000 XP): Home, Tasks, Statistics, S
   const sr = await page.evaluate(() => ({ hits: document.querySelectorAll('#gsRes .search-hit').length, head: document.querySelector('#gsRes .section-header h3').textContent, more: document.querySelector('#gsRes .search-more')?.textContent }));
   assert.ok(sr.hits <= 30 * 12 && /· \d{3,}/.test(sr.head) && /dalších \d+/.test(sr.more), JSON.stringify(sr));
 });
+
+// ---------- Final review before merge ----------
+test('RV1 an older sleep record (keyed sleep:<id>) cannot be farmed: delete + log the same night again, a duplicate entry or an edit pay nothing; a new night still pays', async ({ page }) => {
+  await quietQuests(page);
+  await page.evaluate(() => { const D = addDays(todayStr(), -5); S.sleepLog.push({ id: 'legacy1', date: D, bedtime: '23:00', wake: '07:00', quality: 3, createdAt: 1 });
+    S.xpLog.push({ id: 'lgx', amount: 10, reason: 'Sleep logged', ts: new Date(D + 'T08:00').getTime(), key: 'sleep:legacy1' }); scheduleSave(); });
+  const hist = await page.evaluate(() => JSON.stringify(S.xpLog.filter(x => /^sleep:/.test(x.key || ''))));
+  const x0 = await xpOf(page);
+  const logNight = async d => { await page.evaluate(() => { closeSheets(); openSleepForm(); }); await page.fill('#sl_date', d); await page.click('#sl_save'); };
+  const D = await page.evaluate(() => addDays(todayStr(), -5));
+  await logNight(D); assert.equal(await xpOf(page) - x0, 0, 'a second entry for a night the old record paid');
+  await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(r => r.id !== 'legacy1'); }); await logNight(D);
+  assert.equal(await xpOf(page) - x0, 0, 'delete the old record + log the same night again');
+  await persist(page); await reload(page); await logNight(D); assert.equal(await xpOf(page) - x0, 0, 'after reload too');
+  await logNight(await page.evaluate(() => todayStr())); assert.equal(await xpOf(page) - x0, 10, 'a genuinely new night pays');
+  assert.equal(await page.evaluate(() => JSON.stringify(S.xpLog.filter(x => /^sleep:(?!day:)/.test(x.key || '')))), JSON.stringify(JSON.parse(hist).filter(x => /^sleep:(?!day:)/.test(x.key))), 'older XP entries untouched');
+}, { state: fixtureState() });
+
+test('RV2 backups and achievements: an exported backup never pays achievements again; an old backup without an achievement list (and so without achievement XP) pays each unlocked achievement exactly once', async ({ page }) => {
+  await quietQuests(page);
+  await page.click('#settingsBtn'); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const x0 = await xpOf(page); await importFile(page, await dl.path()); await page.waitForTimeout(200); await page.evaluate(() => checkAchievements());
+  assert.equal(await xpOf(page), x0, 'own export: nothing paid again');
+  const legacy = { tasks: Array.from({ length: 12 }, (_, i) => ({ id: 'lt' + i, title: 'Old ' + i, done: true, createdAt: 1 })), habits: [], totalXp: 800, xpLog: [], schemaVersion: 4 };
+  const f = path.join(here, 'out', 'legacy-no-achievements.json'); mkdirSync(path.dirname(f), { recursive: true }); writeFileSync(f, JSON.stringify(legacy));
+  await importFile(page, f); await page.waitForFunction(() => S.tasks.some(t => t.id === 'lt0'));
+  await page.evaluate(() => checkAchievements());
+  const a = await page.evaluate(() => ({ n: S.achievementsUnlocked.length, paid: S.xpLog.filter(x => x.reason === 'Achievement').length, xp: S.totalXp }));
+  assert.ok(a.n >= 1, 'achievements unlock from the old data');
+  await page.evaluate(() => checkAchievements()); await persist(page); await reload(page); await page.evaluate(() => checkAchievements());
+  assert.deepEqual(await page.evaluate(() => [S.achievementsUnlocked.length, S.xpLog.filter(x => x.reason === 'Achievement').length, S.totalXp]), [a.n, a.paid, a.xp], 'paid once: repeated checks and reload add nothing');
+}, { state: fixtureState() });
+
+test('RV3 XP matrix: every source against repeat / reopen / delete+re-add / alternative path / backdating / double click pays within its rule', async ({ page }) => {
+  const r = await page.evaluate(() => { const rq = window.checkQuests; window.checkQuests = () => false; S.achievementsUnlocked = ACHV.map(a => a.id);
+    const out = {}; const d = (k, f) => { const a = S.totalXp; f(); out[k] = S.totalXp - a; };
+    const click = sel => document.querySelector(sel).click();
+    d('task: 5 distinct', () => { for (let i = 0; i < 5; i++) { const t = { id: 'tt' + i, title: 'T' + i, priority: 'Urgent', dueDate: todayStr(), done: true, createdAt: 1 }; S.tasks.push(t); taskGrantCompletion(t); } });
+    d('task: delete + re-add same x5', () => { for (let i = 0; i < 5; i++) { S.tasks = S.tasks.filter(t => t.title !== 'Same'); const t = { id: uid(), title: 'Same', priority: 'Urgent', dueDate: todayStr(), done: true, createdAt: 1 }; S.tasks.push(t); taskGrantCompletion(t); } });
+    d('task: reopen/complete x5', () => { const t = S.tasks.find(t => t.id === 'tt0'); for (let i = 0; i < 5; i++) taskGrantCompletion(t); });
+    d('habit: toggle x5', () => { const h = S.habits.find(h => h.id === 'h_read'); for (let i = 0; i < 5; i++) toggleHabitDay(h); });
+    d('habit: delete + re-add same x5', () => { for (let i = 0; i < 5; i++) { S.habits = S.habits.filter(h => h.name !== 'Loop'); const h = migrateHabit({ id: uid(), name: 'Loop', category: 'Health', completions: [], active: true, createdAt: 1 }); S.habits.push(h); toggleHabitDay(h); } });
+    d('goal: saved as Completed', () => { openGoalForm(); document.getElementById('g_title').value = 'Hned'; document.getElementById('g_status').value = 'Completed'; click('#g_save'); });
+    d('goal: 5 distinct', () => { for (let i = 0; i < 5; i++) { const g = { id: 'gg' + i, title: 'G' + i, status: 'Active', mode: 'manual', createdAt: 1 }; S.goals.push(g); completeGoal(g); } });
+    d('goal: reopen + complete', () => { const g = S.goals.find(g => g.id === 'gg0'); g.status = 'Active'; completeGoal(g); });
+    d('milestone: 12 distinct', () => { for (let i = 0; i < 12; i++) { const m = { id: 'mm' + i, goalId: 'g_fit', title: 'M' + i, completed: false, createdAt: 1 }; S.milestones.push(m); toggleMilestone(m); } });
+    d('milestone: toggle x5', () => { const m = S.milestones.find(m => m.id === 'mm0'); for (let i = 0; i < 5; i++) { toggleMilestone(m); toggleMilestone(m); } });
+    exerciseAddPreset('Bench Press'); const tpl = templateSave({ name: 'A', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id;
+    d('workout: 5 finished', () => { for (let i = 0; i < 5; i++) { const w = workoutStart({ templateId: tpl }).workout; const en = w.entries[0]; workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: true }); workoutFinish(w.id); } });
+    d('workout: log form backdated x3', () => { for (let i = 0; i < 3; i++) { closeSheets(); openWorkoutForm(); document.getElementById('w_name').value = 'L' + i; document.getElementById('w_date').value = addDays(todayStr(), -10 - i); const row = document.querySelector('.ex-edit'); row.querySelector('.exn').value = 'Dřep'; row.querySelector('.exs').value = '3'; click('#w_save'); } });
+    d('workout: second Finish', () => workoutFinish(completedWorkouts(S).slice(-1)[0].id));
+    d('meal: 10 of all types', () => { for (let i = 0; i < 10; i++) { const m = { id: uid(), name: 'F', type: ['Breakfast', 'Lunch', 'Dinner', 'Snack'][i % 4], date: todayStr(), createdAt: 1 }; S.meals.push(m); grantXp(10, 'Meal logged', mealAttrProfile(), mealXpKey(m)); } });
+    d('sleep: 10 backfilled nights', () => { for (let i = 0; i < 10; i++) { closeSheets(); openSleepForm(); document.getElementById('sl_date').value = addDays(todayStr(), -30 - i); click('#sl_save'); } });
+    d('journal: 5 entries', () => { for (let i = 0; i < 5; i++) { closeSheets(); openJournalForm(); click('#j_save'); } });
+    d('finance: 5 transactions', () => { for (let i = 0; i < 5; i++) { financeSaveTransaction('expense', { amount: 10, categoryId: S.financeCategories[0].id, date: todayStr(), description: 'x' }); financeGrantXp(); } });
+    d('achievements: 3 checks', () => { checkAchievements(); checkAchievements(); checkAchievements(); });
+    closeSheets(); rq(); d('quests: repeated checks', () => { rq(); rq(); }); window.checkQuests = rq; return out; });
+  assert.deepEqual(r, { 'task: 5 distinct': 200, 'task: delete + re-add same x5': 40, 'task: reopen/complete x5': 0, 'habit: toggle x5': 0, 'habit: delete + re-add same x5': 15,
+    'goal: saved as Completed': 0, 'goal: 5 distinct': 400, 'goal: reopen + complete': 0, 'milestone: 12 distinct': 250, 'milestone: toggle x5': 0,
+    'workout: 5 finished': 160, 'workout: log form backdated x3': 0, 'workout: second Finish': 0, 'meal: 10 of all types': 40, 'sleep: 10 backfilled nights': 10,
+    'journal: 5 entries': 15, 'finance: 5 transactions': 5, 'achievements: 3 checks': 0, 'quests: repeated checks': 0 });
+}, { state: fixtureState() });
+
+test('RV4 a daily XP limit never blocks the record itself and says why: workout, goal, milestone and sleep are saved; the next day pays again; per-item amounts unchanged', async ({ page }) => {
+  await quietQuests(page); await spyToasts(page);
+  await page.evaluate(() => { S.achievementsUnlocked = ACHV.map(a => a.id); exerciseAddPreset('Bench Press'); window.__t = templateSave({ name: 'B', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id; });
+  const fin = () => page.evaluate(() => { const w = workoutStart({ templateId: window.__t }).workout; const en = w.entries[0]; workoutUpdateSet(w.id, en.id, en.sets[0].id, { done: true }); const a = S.totalXp, v = S.attrs.STR; const r = workoutFinish(w.id); return [S.totalXp - a, S.attrs.STR - v, w.status]; });
+  assert.deepEqual(await fin(), [80, 24, 'done']); assert.deepEqual(await fin(), [80, 24, 'done']);
+  assert.deepEqual(await fin(), [0, 0, 'done'], 'third workout of the day: saved, no XP');
+  assert.match(await toastsText(page), /limit XP/);
+  await page.evaluate(() => { for (let i = 0; i < 3; i++) { const g = { id: 'gl' + i, title: 'GL' + i, status: 'Active', mode: 'manual', createdAt: 1 }; S.goals.push(g); completeGoal(g); } });
+  assert.deepEqual(await page.evaluate(() => S.goals.filter(g => /^gl/.test(g.id)).map(g => g.status)), ['Completed', 'Completed', 'Completed'], 'the third goal is closed too');
+  await page.clock.setFixedTime(NOW + 86400000);
+  assert.deepEqual(await fin(), [80, 24, 'done'], 'next day pays again');
+  assert.equal(await page.evaluate(() => { const g = S.goals.find(g => g.id === 'gl2'); g.status = 'Active'; const a = S.totalXp; completeGoal(g); return S.totalXp - a; }), 200, 'a goal blocked by yesterday\'s limit can still be rewarded once later');
+}, { state: fixtureState() });
+
+test('RV5 Planner: blocks with link chips are tall enough - nothing clipped at the block bottom at 320-1440 px, taps open the right block', async ({ page }) => {
+  const bad = [];
+  for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => { S.plannerBlocks.push({ id: 'lk2', title: 'Druhý s odkazem', date: todayStr(), startTime: '15:10', endTime: '15:50', category: 'Work', taskId: 't_med', goalId: 'g_fit', completed: false, createdAt: 1 }); uiOpenPlanner(todayStr()); });
+    const r = await page.evaluate(() => [...document.querySelectorAll('#plTimeline .pl-block[data-block]')].flatMap(n => { n.scrollIntoView({ block: 'center' }); const nb = n.getBoundingClientRect();
+      const cut = [...n.querySelectorAll('.pl-t,.pl-m,.pl-chips .chip,.check,.plWkStart')].filter(e => { const b = e.getBoundingClientRect(); return b.height && getComputedStyle(e).display !== 'none' && b.bottom > nb.bottom + 0.5; }).map(e => n.dataset.block + ' cut ' + e.className.split(' ')[0]);
+      const hit = document.elementFromPoint(nb.left + nb.width / 2, nb.top + Math.min(20, nb.height / 2)); if (!hit || hit.closest('.pl-block') !== n) cut.push(n.dataset.block + ' tap hits another block');
+      return cut; }));
+    r.forEach(x => bad.push(width + ': ' + x));
+    await page.evaluate(() => { S.plannerBlocks = S.plannerBlocks.filter(b => b.id !== 'lk2'); });
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('RV6 data safety sweep: archive (goal, habit, category, exercise), deletes, import and reset leave no undefined/NaN, no duplicate ids, and XP totals match the ledger', async ({ page }) => {
+  const sweep = () => page.evaluate(() => { const out = [];
+    for (const v of ['home', 'tasks', 'habits', 'goals', 'character', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner']) {
+      currentGoalId = S.goals[0] ? S.goals[0].id : 'x'; currentHabitId = S.habits[0] ? S.habits[0].id : 'x'; uiPlannerDay = todayStr(); view = v; render();
+      const t = document.getElementById('app').innerText; for (const w of ['undefined', 'NaN', '[object']) if (t.includes(w)) out.push(v + ': ' + w);
+      const ids = {}; document.querySelectorAll('[id]').forEach(e => ids[e.id] = (ids[e.id] || 0) + 1); const dup = Object.keys(ids).filter(k => ids[k] > 1); if (dup.length) out.push(v + ' dup ' + dup); }
+    const ids = [...S.tasks, ...S.habits, ...S.goals, ...S.milestones, ...S.notes, ...S.meals, ...S.workouts, ...S.plannerBlocks, ...S.xpLog].map(x => x.id); if (new Set(ids).size !== ids.length) out.push('duplicate record ids');
+    return out; });
+  const x0 = await page.evaluate(() => [S.totalXp, S.xpLog.reduce((a, x) => a + x.amount, 0)]);
+  await page.evaluate(() => { const g = S.goals.find(g => g.id === 'g_done') || S.goals[0]; g.status = 'Archived'; const h = S.habits.find(h => h.id === 'h_smoke') || S.habits[0]; h.active = false;
+    const c = catList('life')[0]; catSetArchived(c.key, 'life', true); exerciseAddPreset('Plank'); exerciseDelete(exerciseFind('Plank').id); scheduleSave(); });
+  assert.deepEqual(await sweep(), [], 'after archiving');
+  await page.evaluate(() => { closeSheets(); view = 'tasks'; taskFilter = 'All'; render(); }); await page.locator('#tlist .delbtn').first().click(); await page.click('#cf_ok');
+  await page.evaluate(() => { closeSheets(); view = 'notes'; render(); }); await page.locator('#app .delbtn').first().click(); await page.click('#cf_ok');
+  assert.deepEqual(await sweep(), [], 'after deletes');
+  const x1 = await page.evaluate(() => [S.totalXp, S.xpLog.reduce((a, x) => a + x.amount, 0)]);
+  assert.equal(x1[0] - x0[0], x1[1] - x0[1], 'every XP change is in the ledger (no phantom XP)');
+  await page.click('#settingsBtn'); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const before = await stateOf(page); await importFile(page, await dl.path()); await page.waitForTimeout(200);
+  assert.deepEqual(await stateOf(page), before, 'export -> import is lossless'); assert.deepEqual(await sweep(), [], 'after import');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); await page.click('.sheet [data-ob="skip"]');
+  assert.deepEqual(await sweep(), [], 'after reset');
+}, { state: fixtureState() });
 
 test('golden: model, rules and computed numbers match the recorded baseline', async ({ page }) => {
   const g = await golden(page);
