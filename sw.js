@@ -7,7 +7,7 @@
  * - Release a new version by bumping CACHE_VERSION: the new worker installs its own cache, activates at once and
  *   removes every older "lifeos-" cache. Caches of other apps on the same origin are left alone.
  */
-const CACHE_VERSION = 'lifeos-v1';
+const CACHE_VERSION = 'lifeos-v2'; // v2: Smart Daily Command Center release
 const CACHE_PREFIX = 'lifeos-';
 const SHELL = ['./LifeOS.html', './index.html', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png'];

@@ -4834,15 +4834,47 @@ test('P3-E1 manifest.json is valid and linked, icons exist in the declared sizes
   const inst = await cdp.send('Page.getInstallabilityErrors'); assert.deepEqual(inst.installabilityErrors.map(e => e.errorId), [], 'installable');
 });
 
-test('P3-E2 service worker: registered from sw.js, controls the page, caches the app shell under lifeos-v1 - and never touches IndexedDB', async ({ page }) => {
+const SW_SRC = () => readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+const SW_VER = () => SW_SRC().match(/const CACHE_VERSION = '([^']+)'/)[1];
+
+test('P3-E2 service worker: registered from sw.js, controls the page, caches the app shell under its CACHE_VERSION - and never touches IndexedDB', async ({ page }) => {
   assert.ok(await swReady(page));
   const url = await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).active.scriptURL);
   assert.match(url, /\/sw\.js$/);
   await reload(page); assert.equal(await page.evaluate(() => !!navigator.serviceWorker.controller), true, 'page is controlled');
   const c = await cacheState(page);
-  assert.deepEqual(Object.keys(c), ['lifeos-v1']);
-  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png']) assert.ok(c['lifeos-v1'].includes(f), 'cached ' + f);
+  assert.deepEqual(Object.keys(c), [SW_VER()]);
+  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png']) assert.ok(c[SW_VER()].includes(f), 'cached ' + f);
   assert.doesNotMatch(readFileSync(path.join(ROOT, 'sw.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''), /indexedDB|IDB|deleteDatabase|localStorage/, 'sw.js never touches app data');
+}, { state: fixtureState() });
+
+test('FP1 service worker release bump: this release is past lifeos-v1; a device with the released lifeos-v1 worker moves to the new cache, the old one is removed, data untouched', async ({ page }) => {
+  const cur = SW_VER();
+  assert.match(cur, /^lifeos-v\d+$/); assert.ok(Number(cur.slice(8)) >= 2, 'CACHE_VERSION bumped for this release (was lifeos-v1)');
+  const src = SW_SRC();
+  assert.match(src, /req\.mode === 'navigate'[\s\S]*await fetch\(req\)/, 'pages stay network-first');
+  assert.match(src, /const cached = await matchAny\(req\)[\s\S]*event\.waitUntil\(refresh/, 'other files stay stale-while-revalidate');
+  assert.ok(await swReady(page)); await reload(page);
+  const before = await idbState(page);
+  // the previously released worker (same code, lifeos-v1) is what a returning user has installed
+  serverOverrides['sw.js'] = src.replace(/const CACHE_VERSION = '[^']+';/, "const CACHE_VERSION = 'lifeos-v1';");
+  try {
+    await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
+    await page.waitForFunction(async () => { const k = await caches.keys(); return k.length === 1 && k[0] === 'lifeos-v1'; }, null, { timeout: 10000 });
+  } finally { delete serverOverrides['sw.js']; }
+  await page.waitForTimeout(300);
+  // deploy of this release
+  await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
+  await page.waitForFunction(async cur => { const k = await caches.keys(); return k.includes(cur); }, cur, { timeout: 10000 });
+  await page.waitForTimeout(500); await page.evaluate(() => fetch('manifest.json').then(r => r.text()));
+  await page.waitForFunction(async () => !(await caches.keys()).includes('lifeos-v1'), null, { timeout: 10000 });
+  const c = await cacheState(page);
+  assert.deepEqual(Object.keys(c), [cur], 'only the new cache');
+  for (const f of ['/LifeOS.html', '/index.html', '/manifest.json']) assert.ok(c[cur].includes(f), 'new cache holds ' + f);
+  assert.deepEqual(await idbState(page), before, 'IndexedDB untouched');
+  await reload(page); assert.deepEqual(await idbState(page), before);
+  assert.equal(await page.evaluate(() => S.schemaVersion), 8);
+  assert.equal(await page.evaluate(() => (navigator.serviceWorker.controller || {}).scriptURL || ''), URL_ + 'sw.js');
 }, { state: fixtureState() });
 
 test('P3-E3 offline: reload, a fresh start and index.html open from the cache with all data; back online everything saves as before', async ({ page }) => {
@@ -4869,16 +4901,18 @@ test('P3-E4 update: a new sw.js version installs, removes the old lifeos cache (
   assert.ok(await swReady(page)); await reload(page);
   await page.evaluate(async () => { const c = await caches.open('other-app'); await c.put('/other.txt', new Response('x')); });
   const before = await idbState(page);
-  serverOverrides['sw.js'] = readFileSync(path.join(ROOT, 'sw.js'), 'utf8').replace("const CACHE_VERSION = 'lifeos-v1';", "const CACHE_VERSION = 'lifeos-v2';");
+  const cur = SW_VER(), next = 'lifeos-v' + (Number(cur.replace('lifeos-v', '')) + 1);
+  serverOverrides['sw.js'] = SW_SRC().replace(`const CACHE_VERSION = '${cur}';`, `const CACHE_VERSION = '${next}';`);
+  assert.notEqual(serverOverrides['sw.js'], SW_SRC(), 'test version published');
   try {
     await page.evaluate(() => { window.__toastLog = []; const t0 = window.toast; window.toast = function (m) { window.__toastLog.push(String(m)); return t0.apply(this, arguments); }; });
     await page.evaluate(async () => { const reg = await navigator.serviceWorker.getRegistration(); await reg.update(); });
-    await page.waitForFunction(async () => { const k = await caches.keys(); return k.includes('lifeos-v2') && !k.includes('lifeos-v1'); }, null, { timeout: 10000 });
+    await page.waitForFunction(async ([cur, next]) => { const k = await caches.keys(); return k.includes(next) && !k.includes(cur); }, [cur, next], { timeout: 10000 });
     await page.waitForTimeout(500); await page.evaluate(() => fetch('manifest.json').then(r => r.text())); // a request through the new worker
-    await page.waitForFunction(async () => !(await caches.keys()).includes('lifeos-v1'), null, { timeout: 10000 });
+    await page.waitForFunction(async cur => !(await caches.keys()).includes(cur), cur, { timeout: 10000 });
     const c = await cacheState(page);
-    assert.deepEqual(Object.keys(c).sort(), ['lifeos-v2', 'other-app'], 'old app cache removed, foreign cache kept');
-    assert.ok(c['lifeos-v2'].includes('/LifeOS.html'));
+    assert.deepEqual(Object.keys(c).sort(), [next, 'other-app'], 'old app cache removed, foreign cache kept');
+    assert.ok(c[next].includes('/LifeOS.html'));
     await page.waitForFunction(() => (window.__toastLog || []).some(m => /nová verze/i.test(m)), null, { timeout: 5000 });
     assert.deepEqual(await idbState(page), before, 'IndexedDB unchanged by the update');
     await reload(page); assert.deepEqual(await idbState(page), before, 'and after reloading into the new version');
@@ -5356,7 +5390,7 @@ test('CC8 performance: Command Center at 1 500 tasks / 25 000 XP entries (a year
 
 test('CC9 layout 320-1440 px, dark + light: no overflow, no duplicate ids, no undefined/NaN, every Command Center control is at least 44 px', async ({ page }) => {
   const bad = [];
-  for (const theme of ['dark', 'light']) for (const w of [320, 360, 390, 430, 768, 1024, 1440]) {
+  for (const theme of ['dark', 'light']) for (const w of [320, 360, 390, 430, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width: w, height: 900 });
     await page.evaluate(t => { S.settings.theme = t; applyTheme(); }, theme); await ccHome(page);
     const b = await ccBad(page); if (b.bad || b.dup.length || b.overflow > 0) bad.push(`${theme}/${w}: ${JSON.stringify(b)}`);
@@ -5423,6 +5457,137 @@ test('CC12 quick actions open the existing forms; attention follows the notifica
   assert.match(await page.locator('#ccGoals').innerText(), /Zatím žádný aktivní cíl/);
   assert.equal(await page.locator('#ccAttn').count(), 0);
   assert.deepEqual(await ccBad(page), { bad: false, dup: [], overflow: 0 });
+}, { state: fixtureState() });
+
+// ---------- Pre-merge finishing pass: full minute tick, regression, data safety ----------
+const ccSections = page => page.evaluate(() => Object.fromEntries(['#ccNow', '#ccAttn', '#ccTimeline', '#ccTop', '#ccDay', '#ccGoals', '#ccHabits', '#ccQuests', '#ccMini'].map(k => {
+  const n = document.querySelector('.cc-home > ' + k); if (!n) return [k, null];
+  const c = n.cloneNode(true); c.querySelectorAll('details').forEach(d => d.removeAttribute('open')); return [k, c.outerHTML]; })));
+const ccTickTo = (page, hm) => page.clock.setFixedTime(at(hm)).then(() => page.evaluate(() => uiMinuteTick()));
+
+test('FP2 minute tick 14:59 -> 15:00: Co teď?, Dnešek and Top 3 follow the clock in place; focus, open "Proč teď?", scroll kept; result = a fresh render; nothing written', async ({ page }) => {
+  await page.clock.setFixedTime(at('14:59')); await ccHome(page);
+  const before = await ccData(page), xp0 = await xpOf(page);
+  let n = await ccNowOf(page); assert.deepEqual([n.mode, n.title], ['next', 'Matematika']);
+  assert.match(await page.locator('#ccNow .cc-why').textContent(), /Začíná za 1 min/);
+  assert.deepEqual(await page.$$eval('#ccTop .cc-top-t', ns => ns.map(n => n.textContent)), ['Konzultace', 'Buy groceries', 'Drink water']);
+  assert.deepEqual(await page.$$eval('#ccTimeline .cc-tl-row', ns => ns.map(n => n.className.match(/is-(\w+)/)[1])), ['done', 'now', 'next', 'later', 'later']);
+  await page.click('#ccNow .cc-why summary');
+  await page.evaluate(() => { document.querySelector('.cc-home').dataset.sentinel = '1'; });
+  await page.focus('#ccTop [data-ck="top:task:t_med"] .cc-top-main');
+  const y0 = await page.evaluate(() => window.scrollY);
+  await ccTickTo(page, '15:00');
+  n = await ccNowOf(page); assert.deepEqual([n.mode, n.title, n.reasons[0]], ['now', 'Matematika', 'running']);
+  const r = await page.evaluate(() => ({ sentinel: document.querySelector('.cc-home').dataset.sentinel, dom: document.querySelector('#ccNow').dataset.ccMode, open: document.querySelector('#ccNow .cc-why').open,
+    focus: document.activeElement.closest('[data-ck]') && document.activeElement.closest('[data-ck]').dataset.ck, focusCls: document.activeElement.className, y: window.scrollY, clock: document.querySelector('.cc-clock').textContent }));
+  assert.deepEqual(r, { sentinel: '1', dom: 'now', open: true, focus: 'top:task:t_med', focusCls: 'cc-top-main', y: y0, clock: '15:00' }, 'no full render; focus stays on the same item; "Proč teď?" stays open');
+  assert.match(await page.locator('#ccNow .cc-why').textContent(), /Probíhá teď \(do 16:00\)/);
+  assert.deepEqual(await page.$$eval('#ccTop .cc-top-t', ns => ns.map(n => n.textContent)), ['Konzultace', 'PUSH A', 'Buy groceries'], 'PUSH A enters Top 3 at 2 h before its start');
+  assert.match(await page.locator('#ccTop [data-ck="top:planner:pb_push"]').innerText(), /Začíná za 120 min/);
+  assert.deepEqual(await page.$$eval('#ccTimeline .cc-tl-row', ns => ns.map(n => n.className.match(/is-(\w+)/)[1])), ['done', 'past', 'now', 'next', 'later'], 'Team meeting over, Matematika running, Konzultace next');
+  // the ticked page is exactly what a full render at 15:00 shows
+  const ticked = await ccSections(page); await ccHome(page); assert.deepEqual(await ccSections(page), ticked, 'tick result = fresh render');
+  // a tick in the same minute changes no element
+  await page.evaluate(() => { window.__top = document.querySelector('#ccTop'); window.__day = document.querySelector('#ccDay'); uiMinuteTick(); });
+  assert.deepEqual(await page.evaluate(() => [window.__top === document.querySelector('#ccTop'), window.__day === document.querySelector('#ccDay')]), [true, true], 'unchanged sections are not replaced');
+  await settle(page);
+  assert.equal(await ccData(page), before, 'ticks write no data'); assert.equal(await xpOf(page), xp0, 'ticks pay no XP');
+}, { state: fixtureState() });
+
+test('FP3 minute tick 15:59 -> 16:00: progress context ("Ještě můžeš"), goal next step and missed blocks update under an open form without touching the typed text', async ({ page }) => {
+  await page.clock.setFixedTime(at('15:59')); await ccHome(page);
+  assert.match(await page.locator('#ccDay .cc-miss').innerText(), /3 bloky v plánu/);
+  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Blok: Matematika · Dnes 15:00/);
+  const before = await ccData(page);
+  await page.click('.cc-q[data-q="task"]'); await page.fill('.sheet #f_title', 'Rozepsaný úkol'); await page.focus('.sheet #f_title');
+  await page.evaluate(() => { const i = document.querySelector('.sheet #f_title'); i.setSelectionRange(3, 3); });
+  await ccTickTo(page, '16:00');
+  assert.deepEqual(await page.evaluate(() => { const i = document.querySelector('.sheet #f_title'); return [!!i, i && i.value, document.activeElement === i, i && i.selectionStart]; }), [true, 'Rozepsaný úkol', true, 3], 'form, text, focus and caret survive');
+  assert.match(await page.locator('#ccDay .cc-miss').innerText(), /2 bloky v plánu/, 'Matematika ended: the day context follows');
+  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Blok: PUSH A · Dnes 17:00/, 'the goal next step skips the missed block');
+  assert.equal(await page.locator('#ccTimeline [data-ck="tl:block:pb_math"].is-missed').count(), 1);
+  const n = await ccNowOf(page); assert.deepEqual([n.mode, n.title], ['now', 'Konzultace']);
+  await page.evaluate(() => closeSheets()); await settle(page);
+  assert.equal(await ccData(page), before, 'nothing saved from the open form or the tick');
+  // widgets switched off stay off through the tick
+  await page.evaluate(() => { S.settings.widgets.top3 = false; S.settings.widgets.goals = false; render(); });
+  await ccTickTo(page, '16:30');
+  assert.deepEqual([await page.locator('#ccTop').count(), await page.locator('#ccGoals').count()], [0, 0]);
+}, { state: fixtureState() });
+
+test('FP4 regression: nothing is created or paid by the Command Center itself; handlers stay the source of truth; no double reward; engine deterministic over renders and ticks', async ({ page }) => {
+  await ccHome(page);
+  const d0 = await ccData(page), xp0 = await xpOf(page);
+  for (let i = 0; i < 10; i++) await page.evaluate(i => { view = 'home'; render(); uiMinuteTick(); }, i);
+  const rk = await page.evaluate(() => { const a = []; for (let i = 0; i < 5; i++) a.push(JSON.stringify(ccRank(ccCandidates(ccContext())).map(c => [c.kind, c.id, c.score, c.reasons]))); return new Set(a).size; });
+  assert.equal(rk, 1, 'same ranking every time');
+  await settle(page); assert.equal(await ccData(page), d0, '10 renders + ticks: no records, no XP'); assert.equal(await xpOf(page), xp0);
+  // a double click on a Top 3 check pays once (the task handler's idempotent key)
+  await page.locator('#ccTop [data-ck="top:task:t_med"] .check').dblclick();
+  const r = await page.evaluate(T => ({ keys: S.xpLog.filter(x => x.key === `task:t_med:${T}`).length, xp: S.totalXp }), TODAY);
+  assert.equal(r.keys, 1);
+  const xp1 = r.xp;
+  // reopening and completing again the same day pays nothing (existing task rule), from the Tasks screen or from Home
+  await page.evaluate(() => { const t = S.tasks.find(t => t.id === 't_med'); t.done = false; render(); });
+  await ccHome(page);
+  const row = page.locator('#ccTop [data-ck="top:task:t_med"] .check'); if (await row.count()) await row.click(); else await page.evaluate(() => uiCcComplete({ kind: 'task', obj: S.tasks.find(t => t.id === 't_med') }));
+  assert.equal(await xpOf(page), xp1, 'no second reward for the same task on the same day');
+  // habit "Hotovo" from Co teď? = the existing habit handler; a second tap only unticks (no XP taken or paid twice)
+  await page.evaluate(() => { S.plannerBlocks = S.plannerBlocks.filter(b => b.date !== todayStr()); S.tasks.forEach(t => { t.done = true; }); const h = S.habits.find(h => h.id === 'h_read'); h.completions = h.completions.filter(d => d !== todayStr()); h.reminder = '11:00';
+    const w = S.habits.find(h => h.id === 'h_water'); while (w.completions.filter(d => d === todayStr()).length < 8) w.completions.push(todayStr()); render(); });
+  await ccHome(page);
+  const n = await ccNowOf(page);
+  if (n.title === 'Read') {
+    const xp2 = await xpOf(page), hasKey = await page.evaluate(T => S.xpLog.some(x => x.key === `habit:h_read:${T}`), TODAY);
+    await page.click('#ccNow [data-cc-act="done"]');
+    assert.equal(await page.evaluate(T => S.habits.find(h => h.id === 'h_read').completions.includes(T), TODAY), true);
+    assert.equal(await page.evaluate(T => S.xpLog.filter(x => x.key === `habit:h_read:${T}`).length, TODAY), 1, 'one XP entry for the day');
+    if (hasKey) assert.equal(await xpOf(page), xp2, 'already paid today -> nothing more');
+  } else assert.fail('expected the timed habit in Co teď?, got ' + JSON.stringify(n));
+  // the classic Home still works as the fallback, with the same data
+  await page.evaluate(() => { S.settings.widgets.smart = false; view = 'home'; render(); });
+  assert.deepEqual([await page.locator('.cc-home').count(), await page.locator('#hTasks').count(), await page.locator('.hud-wrap [data-ds="card"]').count()], [0, 1, 1]);
+}, { state: fixtureState() });
+
+test('FP5 data safety: existing IndexedDB data, schemaVersion 8, export/import, reset, an older state without the new widget keys, Smart Home ON/OFF', async ({ page }) => {
+  const fx = fixtureState();
+  const same = (a, b, msg) => { for (const k of ['tasks', 'habits', 'goals', 'milestones', 'plannerBlocks', 'workouts', 'meals', 'expenses', 'income', 'events', 'sleepLog', 'journal', 'subscriptions', 'vehicles']) assert.deepEqual(a[k], b[k], `${msg}: ${k}`); };
+  // existing data (loaded from IndexedDB by openApp) boots into the Command Center unchanged; the first save stores the filled-in keys
+  await persist(page);
+  let idb = await idbState(page);
+  assert.equal(idb.schemaVersion, 8); same(idb, fx, 'boot');
+  assert.deepEqual(['smart', 'command', 'top3'].map(k => (idb.settings.widgets || {})[k]), [true, true, true], 'defaults filled by the existing migrate()');
+  await ccHome(page); assert.equal(await page.locator('.cc-home').count(), 1);
+  // an older state whose widgets map predates the Command Center (own choices kept, schema unchanged)
+  await page.evaluate(async st => { st.settings.widgets = { tasks: false, finance: false }; st.settings.widgetOrder = ['tasks', 'progress', 'habits']; S = st; await rawIdbPut(st); }, JSON.parse(JSON.stringify(idb)));
+  await reload(page); await persist(page);
+  idb = await idbState(page);
+  assert.deepEqual([idb.settings.widgets.tasks, idb.settings.widgets.finance, idb.settings.widgets.smart, idb.settings.widgets.command, idb.settings.widgets.top3, idb.schemaVersion], [false, false, true, true, true, 8]);
+  same(idb, fx, 'older state');
+  await ccHome(page); assert.equal(await page.locator('#ccMini [data-mini="finance"]').count(), 0, 'its Finance switch is respected');
+  // Smart Home OFF/ON through Settings changes only that one key
+  const s0 = await stateOf(page);
+  await page.click('#settingsBtn'); await page.click('#st_smart [data-smart="smart"]'); await settle(page);
+  let s1 = await idbState(page); assert.equal(s1.settings.widgets.smart, false);
+  s1.settings.widgets.smart = true; s1.settings = { ...s1.settings }; const strip = s => { const c = JSON.parse(JSON.stringify(s)); delete c.meta; return c; };
+  assert.deepEqual(strip(s1), strip(s0), 'OFF changes nothing else');
+  // export with Smart Home off -> reset -> import: everything back, including the switch
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.equal(exported.settings.widgets.smart, false); assert.equal(exported.schemaVersion, 8);
+  await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); await settle(page);
+  const afterReset = await stateOf(page);
+  assert.deepEqual([afterReset.tasks.length, afterReset.settings.widgets.smart, afterReset.settings.widgets.command, afterReset.schemaVersion], [0, true, true, 8], 'reset = defaults, Smart Home on');
+  await page.evaluate(() => closeSheets()); await page.click('#settingsBtn');
+  await importFile(page, await dl.path()); await settle(page);
+  const imported = await idbState(page);
+  same(imported, exported, 'import'); assert.equal(imported.settings.widgets.smart, false, 'the switch comes back with the backup');
+  assert.deepEqual(imported.xpLog, exported.xpLog, 'XP history identical'); assert.equal(imported.totalXp, exported.totalXp);
+  await go(page, 'home'); assert.equal(await page.locator('.cc-home').count(), 0, 'classic Home after importing a backup with Smart Home off');
+  // switching back ON restores the Command Center with the same data
+  await page.click('#settingsBtn'); await page.click('#st_smart [data-smart="smart"]'); await settle(page);
+  await go(page, 'home'); assert.equal(await page.locator('.cc-home').count(), 1);
+  same(await idbState(page), exported, 'after ON');
 }, { state: fixtureState() });
 
 // ---------- screenshots ----------

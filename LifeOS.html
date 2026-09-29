@@ -3635,7 +3635,7 @@ function uiCcActions(c){
 }
 function uiCcNowCard(ctx,ranked,st){
   const T=uiCcT; st=st||ccNow(ctx,ranked);
-  const card=el(`<section class="card cc-now" id="ccNow" data-cc-mode="${st.mode}" aria-labelledby="ccNowH"></section>`);
+  const card=el(`<section class="card cc-now" id="ccNow" data-cc-mode="${st.mode}" data-ck="${escapeHtml(st.mode+(st.item?':'+st.item.kind+':'+st.item.id:''))}" aria-labelledby="ccNowH"></section>`);
   const head=`<div class="cc-now-head"><h2 id="ccNowH" class="cc-now-h">${uiIcon('bolt',14)} ${T('title')}</h2>`;
   if(st.mode==='empty'){
     card.innerHTML=`${head}</div><div class="cc-now-t">${T('empty_t')}</div><p class="sub cc-now-d">${T('empty_d')}</p>
@@ -3670,7 +3670,7 @@ function uiCcNowCard(ctx,ranked,st){
 const UI_CC_MISS_NAV={tasks:'tasks',habits:'habits',planner:'planner',workout:'fitness',nutrition:'nutrition',sleep:'health',journal:'journal'};
 function uiCcMissChip(m){
   const T=uiCcT, f=T('m_'+m.k), txt=typeof f==='function'?f(m.n):f;
-  return `<button class="cc-chip" data-cc-nav="${UI_CC_MISS_NAV[m.k]}">${escapeHtml(txt)} ›</button>`;
+  return `<button class="cc-chip" data-ck="miss:${m.k}" data-cc-nav="${UI_CC_MISS_NAV[m.k]}">${escapeHtml(txt)} ›</button>`;
 }
 function uiCcWireMiss(root){
   root.querySelectorAll('[data-cc-nav]').forEach(b=>b.onclick=()=>{ const v=b.dataset.ccNav; if(v==='planner') uiOpenPlanner(todayStr()); else { view=v; render(); window.scrollTo(0,0); } });
@@ -3687,7 +3687,7 @@ function uiCcTimeline(ctx){
     const mark={done:'✓',now:'●',next:'→',missed:'!',past:'✓'};
     box.innerHTML=`<ol class="cc-tl-list">${items.map(i=>{
       const st=i.state==='next'&&i!==firstNext?'later':i.state;
-      return `<li><button class="cc-tl-row is-${st}${i.kind==='event'?' is-event':''}" data-tl="${escapeHtml(String(i.id))}" data-tl-kind="${i.kind}" aria-label="${escapeHtml(i.start+(i.end?'–'+i.end:'')+' '+i.title)}, ${T('st_'+st)}">
+      return `<li><button class="cc-tl-row is-${st}${i.kind==='event'?' is-event':''}" data-ck="tl:${i.kind}:${escapeHtml(String(i.id))}" data-tl="${escapeHtml(String(i.id))}" data-tl-kind="${i.kind}" aria-label="${escapeHtml(i.start+(i.end?'–'+i.end:'')+' '+i.title)}, ${T('st_'+st)}">
         <span class="cc-tl-mark" aria-hidden="true">${st==='later'?'':mark[st]}</span><span class="cc-tl-time">${i.start}${i.end?'<small>–'+i.end+'</small>':''}</span>
         <span class="cc-tl-title">${escapeHtml(i.title)}${i.kind==='event'?` <small class="sub">· ${T('event')}</small>`:''}</span></button></li>`; }).join('')}</ol>`;
     box.querySelectorAll('[data-tl]').forEach(r=>r.onclick=()=>{
@@ -3705,7 +3705,7 @@ function uiCcTop3(ctx,exclude,ranked){
   if(!top.length){ box.innerHTML=`<p class="sub" style="margin:0">${T('top3_empty')}</p>`; return sec; }
   top.forEach((c,i)=>{
     const canCheck=c.kind==='task'||(c.kind==='habit'&&!habitUsesDayCounter(c.obj));
-    const row=el(`<div class="cc-top-row" data-cc-kind="${c.kind}" data-cc-id="${escapeHtml(String(c.id))}">
+    const row=el(`<div class="cc-top-row" data-ck="top:${c.kind}:${escapeHtml(String(c.id))}" data-cc-kind="${c.kind}" data-cc-id="${escapeHtml(String(c.id))}">
       ${canCheck?`<button class="check" aria-label="${T('done_btn')}: ${escapeHtml(uiCcTitle(c))}"></button>`:`<span class="cc-top-n" aria-hidden="true">${i+1}</span>`}
       <button class="cc-top-main"><span class="cc-top-t">${escapeHtml(uiCcTitle(c))}</span><span class="cc-top-m">${uiIcon(UI_CC_KIND_ICON[c.kind],13)} ${T('k_'+c.kind)} · ${escapeHtml(uiCcReason(c.reasons.find(x=>x.r!=='in_plan'&&x.r!=='not_done')||c.reasons[0]))}</span></button></div>`);
     row.querySelector('.cc-top-main').onclick=()=>uiCcOpen(c);
@@ -3749,7 +3749,7 @@ function uiCcGoals(ctx){
     const ns=ccGoalNextSteps(g,ctx);
     const wk=ns.week?`${T('this_week')}: ${ns.week.done}${ns.week.total!=null?'/'+ns.week.total:''} ${T('w_'+ns.week.k)}`:'';
     const nx=ns.next?(ns.next.k==='training'?T('n_training'):`${T('n_'+ns.next.k)}: ${escapeHtml(ns.next.title)}${ns.next.date?` · ${ns.next.date===ctx.D?uiT('today'):fmtDate(ns.next.date)}`:''}${ns.next.time?' '+ns.next.time:''}`):'';
-    const c=el(`<button class="card cc-goal" data-goal="${g.id}">
+    const c=el(`<button class="card cc-goal" data-ck="goal:${g.id}" data-goal="${g.id}">
       <span class="between"><span class="cc-goal-t truncate">${escapeHtml(g.title)}</span><span class="goal-pct">${ns.pct}<small>%</small></span></span>
       <span class="bar" role="progressbar" aria-label="${escapeHtml(g.title)}" aria-valuenow="${ns.pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${ns.pct}%"></i></span>
       ${ns.ready?`<span class="cc-goal-l">${uiGoalStatusChip(g)}</span>`:''}
@@ -3777,7 +3777,7 @@ function uiCcAttention(ctx){
   const box=sec.querySelector('.cc-attn-list');
   rs.forEach(r=>{
     const txt=r.k==='overdue'?T('a_overdue')(r.n):r.k==='sub'?T('a_sub')(r.title,r.days):r.k==='event'?T('a_event')(r.title,r.time):r.k==='goal'?T('a_goal')(r.title,r.days):T('a_car')(r.n);
-    const b=el(`<button class="reminder cc-attn-row" data-attn="${r.k}"><span>${escapeHtml(txt)}</span></button>`);
+    const b=el(`<button class="reminder cc-attn-row" data-ck="attn:${r.k}:${escapeHtml(String(r.id||r.title||''))}" data-attn="${r.k}"><span>${escapeHtml(txt)}</span></button>`);
     b.onclick=()=>{
       if(r.k==='overdue'){ view='tasks'; render(); window.scrollTo(0,0); }
       else if(r.k==='sub') searchNavigate('subscription',r.obj);
@@ -3837,21 +3837,52 @@ function uiCcHome(W){
   if(W.goals!==false) wrap.appendChild(uiCcGoals(ctx));
   if(W.quests!==false){ const q=uiCcQuests(); if(q) wrap.appendChild(q); }
   const mini=uiCcMini(ctx,W); if(mini) wrap.appendChild(mini);
-  wrap.querySelectorAll('[data-nav]').forEach(n=>{ if(!n.onclick) n.onclick=()=>{view=n.dataset.nav;render();window.scrollTo(0,0);}; });
+  uiCcWireNav(wrap);
   window.__ccMs=performance.now()-t0;
   return wrap;
 }
-// minute tick: refresh the clock, "Co teď?" (keeping "Proč teď?" open) and the timeline states in place
+// minute tick: every Command Center section whose content depends on the clock is rebuilt from the same helpers and
+// swapped in place only when it actually changed -- never a full render. Order of the sections on Home:
+const UI_CC_ORDER=['#ccNow','.cc-quick','#ccAttn','#ccTimeline','#ccTop','#ccDay','#ccHabits','#ccGoals','#ccQuests','#ccMini'];
+// the focused control inside a section, as "selector + position", so the same control can be focused in its replacement
+function uiCcWireNav(root){ root.querySelectorAll('[data-nav]').forEach(n=>{ if(!n.onclick) n.onclick=()=>{view=n.dataset.nav;render();window.scrollTo(0,0);}; }); }
+// the focused control as "keyed item (data-ck) + selector + position": focus only ever moves to the same item's control
+function uiCcFocusKey(root,n){
+  if(!n||!root.contains(n)) return null;
+  const host=n.closest('[data-ck]'), base=host&&root.contains(host)?host:root;
+  const sel=n.tagName.toLowerCase()+[...n.classList].map(c=>'.'+CSS.escape(c)).join('');
+  return {ck:base===root?null:host.dataset.ck,self:n===base,sel,idx:n===base?0:[...base.querySelectorAll(sel)].indexOf(n)};
+}
+function uiCcFocusFind(fresh,k){
+  let base=fresh;
+  if(k.ck!=null){ base=fresh.matches(`[data-ck="${CSS.escape(k.ck)}"]`)?fresh:fresh.querySelector(`[data-ck="${CSS.escape(k.ck)}"]`); if(!base) return null; }
+  return k.self?base:base.querySelectorAll(k.sel)[k.idx]||null;
+}
+function uiCcSwap(home,key,old,fresh){
+  if(fresh){ uiIconize(fresh); uiCcWireNav(fresh); const ow=old&&old.querySelector('.cc-why'), fw=fresh.querySelector('.cc-why'); if(ow&&fw&&ow.open) fw.open=true; } // "Proč teď?" stays open
+  if(!old&&!fresh) return;
+  if(old&&fresh&&old.outerHTML===fresh.outerHTML) return; // nothing changed this minute
+  const fa=document.activeElement, fk=old?uiCcFocusKey(old,fa):null;
+  let target=null;
+  if(fk){ target=fresh?uiCcFocusFind(fresh,fk):null; if(!target) return; } // no matching control: keep this one until focus moves on
+  if(old&&fresh) old.replaceWith(fresh);
+  else if(old) old.remove();
+  else { let prev=null; for(const k of UI_CC_ORDER.slice(0,UI_CC_ORDER.indexOf(key)).reverse()){ prev=home.querySelector(':scope > '+k); if(prev) break; }
+    if(prev) prev.after(fresh); else home.querySelector(':scope > .hud').after(fresh); }
+  if(target) target.focus({preventScroll:true});
+}
 function uiCcTick(app){
   const home=app.querySelector('.cc-home'); if(!home) return;
   const ck=home.querySelector('.cc-clock'); if(ck) ck.textContent=uiCcClock();
-  const ctx=ccContext(), ranked=ccRank(ccCandidates(ctx)), W=Object.assign({},S.settings.widgets||{});
-  const nowEl=home.querySelector('#ccNow');
-  // replaced in place; a focused "Proč teď?" keeps focus, any other focused control postpones the refresh to the next tick
-  const fa=document.activeElement, onWhy=!!(fa&&fa.matches&&fa.matches('#ccNow .cc-why summary'));
-  if(nowEl&&(onWhy||!nowEl.contains(fa))){ const open=!!(nowEl.querySelector('.cc-why')||{}).open; const n=uiCcNowCard(ctx,ranked); uiIconize(n); const d=n.querySelector('.cc-why'); if(open&&d) d.open=true; nowEl.replaceWith(n); if(onWhy&&d) d.querySelector('summary').focus({preventScroll:true}); }
-  const tl=home.querySelector('#ccTimeline');
-  if(tl&&W.planner!==false&&!tl.contains(document.activeElement)){ const n=uiCcTimeline(ctx); uiIconize(n); tl.replaceWith(n); }
+  const W=Object.assign({},...WIDGET_DEFS.map(w=>({[w.key]:true})),S.settings.widgets||{});
+  const ctx=ccContext(), ranked=ccRank(ccCandidates(ctx)), st=ccNow(ctx,ranked);
+  const q=k=>home.querySelector(':scope > '+k);
+  if(W.command!==false) uiCcSwap(home,'#ccNow',q('#ccNow'),uiCcNowCard(ctx,ranked,st));
+  if(W.reminders!==false) uiCcSwap(home,'#ccAttn',q('#ccAttn'),uiCcAttention(ctx));
+  if(W.planner!==false) uiCcSwap(home,'#ccTimeline',q('#ccTimeline'),uiCcTimeline(ctx));
+  if(W.top3!==false) uiCcSwap(home,'#ccTop',q('#ccTop'),uiCcTop3(ctx,W.command!==false?st.item||null:null,ranked));
+  if(W.progress!==false) uiCcSwap(home,'#ccDay',q('#ccDay'),uiCcDay(ctx));
+  if(W.goals!==false) uiCcSwap(home,'#ccGoals',q('#ccGoals'),uiCcGoals(ctx));
 }
 function renderHome(){
   const wrap=el(`<div class="home"></div>`);

@@ -29,7 +29,7 @@ the data, export or import.
 ### Releasing a new version
 
 1. Change `LifeOS.html` (and possibly the other files).
-2. In `sw.js`, bump `CACHE_VERSION` (`lifeos-v1` → `lifeos-v2` …).
+2. In `sw.js`, bump `CACHE_VERSION` (`lifeos-v2` → `lifeos-v3` …).
 3. Deploy. The new worker installs its own cache, takes over immediately and deletes older `lifeos-*` caches.
    An open app shows the notice "Je připravená nová verze LifeOS — projeví se po obnovení stránky"
    ("A new LifeOS version is ready — it applies after a reload"). The data in IndexedDB stays untouched.
@@ -40,7 +40,7 @@ The automated tests check the manifest, the icons, installability (Chrome DevToo
 without errors), the service worker, offline mode and updates. What can be verified by hand on a real device:
 
 1. **Chrome desktop:** open the deployed `…/LifeOS.html` → DevTools → *Application* → *Manifest*: no errors,
-   icons 192/512 + maskable; *Service workers*: `sw.js` *activated and running*; *Cache storage*: `lifeos-v1`.
+   icons 192/512 + maskable; *Service workers*: `sw.js` *activated and running*; *Cache storage*: `lifeos-v2` (the current `CACHE_VERSION`).
    The address bar shows the *Install* icon → install → the app opens in its own window.
 2. **Offline:** DevTools → *Network* → *Offline* → reload: the app loads with its data. Or close the installed app,
    turn off the internet and open it again.
