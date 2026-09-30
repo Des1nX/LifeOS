@@ -1644,6 +1644,35 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .pl-dow.on{background:var(--accent-strong);color:#fff;border-color:transparent}
 .chip.is-accent{background:var(--color-accent-muted);color:var(--accent)}
 @media(min-width:900px){.cal .cg-card{padding:12px 12px 16px 6px}}
+
+/* ---- Reality QA: LifeOS date / time pickers (the native field keeps the value; no browser chrome) ---- */
+.pk-wrap{position:relative;display:block}
+.pk-wrap>input{padding-right:52px}
+.pk-show{position:absolute;left:15px;right:52px;top:0;height:46px;display:flex;align-items:center;pointer-events:none;font-size:16px;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.pk-wrap.has-v>input:not(:focus){color:transparent}
+.pk-wrap>input:focus~.pk-show,.pk-wrap:not(.has-v) .pk-show{display:none}
+input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{display:none;-webkit-appearance:none}
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;font-variant-numeric:tabular-nums;min-height:46px;text-align:left}
+input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-edit{padding:0}
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-webkit-datetime-edit-fields-wrapper{padding:0}
+.pk-btn{position:absolute;right:4px;top:1px;width:44px;height:44px;min-height:44px;padding:0;border:none;border-radius:10px;background:transparent;color:var(--color-text-secondary);display:grid;place-items:center;cursor:pointer}
+.pk-btn:hover{background:var(--card2);color:var(--text)}
+.pk-pop{position:fixed;z-index:1000;width:320px;max-width:calc(100vw - 16px);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-card);padding:12px}
+.pk-pop.is-sheet{left:8px;right:8px;bottom:8px;width:auto;max-width:none;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
+.pk-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.pk-title{text-transform:capitalize;font-size:15px}.pk-big{font-size:28px;font-variant-numeric:tabular-nums;margin:0 auto;letter-spacing:.02em}
+.pk-nav{width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);display:grid;place-items:center;cursor:pointer;padding:0}
+.pk-nav[data-m="-1"] svg{transform:none}
+.pk-dows{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:var(--fs-micro);font-weight:750;color:var(--color-text-secondary);margin-bottom:4px}
+.pk-grid{display:grid;gap:4px}.pk-days{grid-template-columns:repeat(7,1fr)}.pk-hours{grid-template-columns:repeat(6,1fr)}.pk-mins{grid-template-columns:repeat(4,1fr)}
+.pk-cell{min-height:40px;border:none;border-radius:10px;background:transparent;color:var(--text);font:inherit;font-variant-numeric:tabular-nums;cursor:pointer;padding:0}
+.pk-cell:hover{background:var(--card2)}
+.pk-cell.is-today{color:var(--accent);font-weight:800}
+.pk-cell[aria-pressed="true"]{background:var(--accent-strong);color:#fff;font-weight:750}
+.pk-cell:focus-visible,.pk-nav:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.pk-lbl{font-size:var(--fs-micro);font-weight:750;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:8px 2px 4px}
+.pk-foot{display:flex;justify-content:space-between;gap:8px;margin-top:10px}.pk-foot .btn{min-height:44px;flex:1}
+@media(pointer:coarse){.pk-cell{min-height:44px}}
 </style>
 </head>
 <body>
@@ -2757,8 +2786,10 @@ function render(){
   if(finalizeDailyScores()) scheduleSave();
   // Polish pass: quests complete automatically after any action (idempotent, ledger-keyed).
   if(S.settings.onboarded!==false && checkQuests()) scheduleSave();
+  uiPickerClose(false);
   app.appendChild(map[view]());
   uiIconize(app);
+  uiEnhancePickers(app);
   // Phase 8B presentation: entrance animation only when the screen actually changes (not on the
   // 60 s refresh or after a tap on the same screen), motion follows Settings → Animations.
   const viewChanged=uiLastView!==view; uiLastView=view;
@@ -2990,7 +3021,7 @@ function openPlannerForm(existing,preset){
   daysBox.querySelectorAll('[data-dow]').forEach(c=>c.onclick=()=>{ const on=!c.classList.contains('on'); c.classList.toggle('on',on); c.setAttribute('aria-pressed',String(on)); });
   // keep the end date with the start date unless the block really runs over several days
   const dIn=inner.querySelector('#pb_date'), edIn=inner.querySelector('#pb_enddate'); let edPrev=dIn.value;
-  dIn.addEventListener('change',()=>{ if(edIn.value===edPrev||!edIn.value||edIn.value<dIn.value) edIn.value=dIn.value; edPrev=dIn.value; });
+  dIn.addEventListener('change',()=>{ if(edIn.value===edPrev||!edIn.value||edIn.value<dIn.value){ edIn.value=dIn.value; edIn.dispatchEvent(new Event('input')); } edPrev=dIn.value; });
   const titleIn=inner.querySelector('#pb_title'), field=inner.querySelector('#pb_link'), panel=inner.querySelector('#pb_linkList'), items=inner.querySelector('.lk-items'), filt=inner.querySelector('#pb_linkFilter');
   let autoTitle=false;
   const opts=()=>plannerLinkOptions(link);
@@ -11331,6 +11362,109 @@ function doReset(){
 }
 
 /* ---- Quick Add ---- */
+/* ================= Reality QA: LifeOS date / time pickers =================
+   The native <input type="date|time"> stays the value holder: the same ISO value ('YYYY-MM-DD' / 'HH:MM') for every
+   form, typing and keyboard entry, validation and events. It loses the browser chrome (no native picker icon) and gets
+   a LifeOS picker: a button in the field (and, on touch screens, a tap on the field) opens a month grid or an hour /
+   minute grid. Arrow keys move, Enter picks, Escape closes and returns focus to the field. */
+let uiPkOpen=null;
+function uiPkDateText(D){ try{ const d=new Date(D+'T00:00'); const wd=d.toLocaleDateString(uiLocale(),{weekday:'short'}); return (wd.charAt(0).toUpperCase()+wd.slice(1))+' '+formatDateDisplay(D); }catch(e){ return formatDateDisplay(D); } }
+function uiPkLabel(inp){ const l=inp.id&&document.querySelector(`label[for="${CSS.escape(inp.id)}"]`); return l?l.textContent.trim():''; }
+function uiEnhancePickers(root){
+  if(!root||!root.querySelectorAll) return;
+  root.querySelectorAll('input[type="date"]:not([data-pk]),input[type="time"]:not([data-pk])').forEach(inp=>{
+    if(inp.closest('.fin-month-pick')||inp.classList.contains('hide')) return;
+    inp.dataset.pk='1';
+    const isDate=inp.type==='date', cs=uiLang()==='cs';
+    const w=document.createElement('span'); w.className='pk-wrap'; inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
+    const b=document.createElement('button'); b.type='button'; b.className='pk-btn';
+    const lbl=uiPkLabel(inp);
+    b.setAttribute('aria-label',(isDate?(cs?'Vybrat datum':'Pick a date'):(cs?'Vybrat čas':'Pick a time'))+(lbl?': '+lbl:''));
+    b.setAttribute('aria-haspopup','dialog'); b.innerHTML=uiIcon(isDate?'calendar':'clock',18); w.appendChild(b);
+    // the value as LifeOS shows dates / times (settings format, 24 h); the native text shows only while typing in the field
+    const show=document.createElement('span'); show.className='pk-show'; show.setAttribute('aria-hidden','true'); w.appendChild(show);
+    const upd=()=>{ const v=inp.value; show.textContent=!v?'':isDate?(/^\d{4}-\d\d-\d\d$/.test(v)?uiPkDateText(v):v):formatTimeDisplay(v); w.classList.toggle('has-v',!!v); };
+    inp.addEventListener('input',upd); inp.addEventListener('change',upd); inp.addEventListener('blur',upd); inp.addEventListener('focus',upd); w.addEventListener('pointerenter',upd); upd();
+    b.onclick=()=>uiPickerOpen(inp,b);
+    inp.addEventListener('pointerdown',e=>{ if(e.pointerType==='touch'||e.pointerType==='pen'){ e.preventDefault(); uiPickerOpen(inp,b); } });
+    inp.addEventListener('keydown',e=>{ if(e.altKey&&e.key==='ArrowDown'){ e.preventDefault(); uiPickerOpen(inp,b); } });
+  });
+}
+function uiPickerClose(focusBack){
+  if(!uiPkOpen) return; const o=uiPkOpen; uiPkOpen=null;
+  o.pop.remove(); document.removeEventListener('pointerdown',o.outside,true);
+  if(focusBack&&o.inp.isConnected) o.inp.focus({preventScroll:true});
+}
+function uiPickerSet(inp,v){ inp.value=v; inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); }
+function uiPickerOpen(inp,btn){
+  if(uiPkOpen&&uiPkOpen.inp===inp){ uiPickerClose(true); return; }
+  uiPickerClose(false);
+  const isDate=inp.type==='date', cs=uiLang()==='cs';
+  const pop=el(`<div class="pk-pop" role="dialog" aria-modal="false" aria-label="${escapeHtml((isDate?(cs?'Výběr data':'Date picker'):(cs?'Výběr času':'Time picker'))+(uiPkLabel(inp)?': '+uiPkLabel(inp):''))}"></div>`);
+  document.body.appendChild(pop);
+  const o={inp,btn,pop,outside:e=>{ if(!pop.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)&&e.target!==inp) uiPickerClose(false); }};
+  uiPkOpen=o;
+  document.addEventListener('pointerdown',o.outside,true);
+  pop.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); uiPickerClose(true); } });
+  if(isDate) uiPkDate(o,/^\d{4}-\d\d-\d\d$/.test(inp.value)?inp.value:todayStr()); else uiPkTime(o);
+  // position: under the field (above when there is no room); a bottom sheet on narrow screens
+  const r=inp.getBoundingClientRect(), vw=window.innerWidth, vh=window.innerHeight;
+  if(vw<520){ pop.classList.add('is-sheet'); }
+  else { const h=pop.offsetHeight, w=pop.offsetWidth; let top=r.bottom+6; if(top+h>vh-8&&r.top-h-6>8) top=r.top-h-6; pop.style.top=Math.max(8,top)+'px'; pop.style.left=Math.max(8,Math.min(r.left,vw-w-8))+'px'; }
+  const f=pop.querySelector('[aria-pressed="true"]')||pop.querySelector('.pk-cell:not([disabled])'); if(f) f.focus({preventScroll:true});
+}
+function uiPkGridKeys(grid,cols,onEdge){
+  grid.addEventListener('keydown',e=>{
+    const cells=[...grid.querySelectorAll('.pk-cell')], i=cells.indexOf(document.activeElement); if(i<0) return;
+    const d={ArrowLeft:-1,ArrowRight:1,ArrowUp:-cols,ArrowDown:cols}[e.key]; if(d==null) return;
+    e.preventDefault(); const j=i+d;
+    if(j>=0&&j<cells.length) cells[j].focus(); else if(onEdge) onEdge(d,i);
+  });
+}
+function uiPkDate(o,sel){
+  const cs=uiLang()==='cs', today=todayStr(), fdow=(S&&S.settings&&S.settings.firstDayOfWeek)==='sunday'?0:1;
+  let ym=sel.slice(0,7);
+  const draw=(focusDay)=>{
+    const y=+ym.slice(0,4), m=+ym.slice(5,7)-1, first=new Date(y,m,1), n=new Date(y,m+1,0).getDate(), lead=(first.getDay()-fdow+7)%7;
+    const title=first.toLocaleDateString(uiLocale(),{month:'long',year:'numeric'});
+    const dows=(cs?['Ne','Po','Út','St','Čt','Pá','So']:['Su','Mo','Tu','We','Th','Fr','Sa']);
+    let cells='';
+    for(let i=0;i<lead;i++) cells+='<span></span>';
+    for(let d=1;d<=n;d++){ const D=ym+'-'+String(d).padStart(2,'0');
+      cells+=`<button type="button" class="pk-cell${D===today?' is-today':''}" data-v="${D}" aria-pressed="${D===o.inp.value}" aria-label="${escapeHtml(fmtDate(D))}">${d}</button>`; }
+    o.pop.innerHTML=`<div class="pk-head"><button type="button" class="pk-nav" data-m="-1" aria-label="${cs?'Předchozí měsíc':'Previous month'}">${uiIcon('back',18)}</button><b class="pk-title">${escapeHtml(title)}</b><button type="button" class="pk-nav" data-m="1" aria-label="${cs?'Další měsíc':'Next month'}">${uiIcon('chevron',18)}</button></div>
+      <div class="pk-dows" aria-hidden="true">${Array.from({length:7},(_,i)=>`<span>${dows[(i+fdow)%7]}</span>`).join('')}</div>
+      <div class="pk-grid pk-days" role="group">${cells}</div>
+      <div class="pk-foot"><button type="button" class="btn sm ghost pk-today">${cs?'Dnes':'Today'}</button><button type="button" class="btn sm ghost pk-close">${cs?'Zavřít':'Close'}</button></div>`;
+    const step=dm=>{ const d=new Date(y,m+dm,1); ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+    o.pop.querySelectorAll('.pk-nav').forEach(b=>b.onclick=()=>{ step(+b.dataset.m); draw(); o.pop.querySelector(`.pk-nav[data-m="${b.dataset.m}"]`).focus(); });
+    o.pop.querySelectorAll('.pk-cell').forEach(c=>c.onclick=()=>{ uiPickerSet(o.inp,c.dataset.v); uiPickerClose(true); });
+    o.pop.querySelector('.pk-today').onclick=()=>{ uiPickerSet(o.inp,today); uiPickerClose(true); };
+    o.pop.querySelector('.pk-close').onclick=()=>uiPickerClose(true);
+    uiPkGridKeys(o.pop.querySelector('.pk-grid'),7,(d)=>{ step(d<0?-1:1); draw(d<0?'last':'first'); });
+    if(focusDay){ const cs2=o.pop.querySelectorAll('.pk-cell'); (focusDay==='last'?cs2[cs2.length-1]:cs2[0]).focus(); }
+  };
+  draw();
+}
+function uiPkTime(o){
+  const cs=uiLang()==='cs', stepMin=Math.max(1,Math.round((Number(o.inp.step)||300)/60)), mStep=stepMin>=5?5:stepMin;
+  const cur=plannerTimeToMin(o.inp.value); let h=cur!=null&&cur<1440?Math.floor(cur/60):null, mi=cur!=null&&cur<1440?cur%60:null;
+  const draw=()=>{
+    const hh=Array.from({length:24},(_,i)=>`<button type="button" class="pk-cell" data-h="${i}" aria-pressed="${h===i}" aria-label="${i} ${cs?'h':'h'}">${String(i).padStart(2,'0')}</button>`).join('');
+    const mm=Array.from({length:Math.ceil(60/mStep)},(_,k)=>k*mStep).map(v=>`<button type="button" class="pk-cell" data-mi="${v}" aria-pressed="${mi===v}" aria-label="${v} min">:${String(v).padStart(2,'0')}</button>`).join('');
+    o.pop.innerHTML=`<div class="pk-head"><b class="pk-title pk-big">${h==null?'--':String(h).padStart(2,'0')}:${mi==null?'--':String(mi).padStart(2,'0')}</b></div>
+      <div class="pk-lbl">${cs?'Hodina':'Hour'}</div><div class="pk-grid pk-hours" role="group" aria-label="${cs?'Hodina':'Hour'}">${hh}</div>
+      <div class="pk-lbl">${cs?'Minuty':'Minutes'}</div><div class="pk-grid pk-mins" role="group" aria-label="${cs?'Minuty':'Minutes'}">${mm}</div>
+      <div class="pk-foot"><button type="button" class="btn sm ghost pk-close">${cs?'Zavřít':'Close'}</button><button type="button" class="btn sm pk-done">${cs?'Hotovo':'Done'}</button></div>`;
+    const apply=()=>{ if(h!=null) uiPickerSet(o.inp,String(h).padStart(2,'0')+':'+String(mi==null?0:mi).padStart(2,'0')); };
+    o.pop.querySelectorAll('[data-h]').forEach(c=>c.onclick=()=>{ h=+c.dataset.h; if(mi==null) mi=0; apply(); draw(); const f=o.pop.querySelector(`[data-mi="${mi-mi%mStep}"]`)||o.pop.querySelector('[data-mi]'); f.focus(); });
+    o.pop.querySelectorAll('[data-mi]').forEach(c=>c.onclick=()=>{ mi=+c.dataset.mi; if(h==null) h=9; apply(); uiPickerClose(true); });
+    o.pop.querySelector('.pk-done').onclick=()=>{ apply(); uiPickerClose(true); };
+    o.pop.querySelector('.pk-close').onclick=()=>uiPickerClose(true);
+    uiPkGridKeys(o.pop.querySelector('.pk-hours'),6); uiPkGridKeys(o.pop.querySelector('.pk-mins'),4);
+  };
+  draw();
+}
 function openSheet(contentEl){
   const bg=el(`<div class="sheet-bg"></div>`);
   const sheet=el(`<div class="sheet" role="dialog" aria-modal="true"></div>`);
@@ -11341,6 +11475,7 @@ function openSheet(contentEl){
   // backdrop tap -- onboarding clears bg.onclick, so it stays non-dismissable), focus moves in.
   uiLocalizeTree(sheet);
   uiIconize(sheet);
+  uiEnhancePickers(sheet);
   const h=sheet.querySelector('h2,h3'); if(h){ if(!h.id) h.id='uiSheetTitle'+Math.random().toString(36).slice(2,7); sheet.setAttribute('aria-labelledby',h.id); }
   bg.onkeydown=(e)=>{ if(e.key==='Escape'&&bg.onclick) bg.remove(); };
   // Polish pass: every sheet can be pulled down to close -- by its grab strip or its title (never by the
@@ -11483,7 +11618,7 @@ function openForm(type){
   }
   openSheet(inner);
 }
-function closeSheets(){document.querySelectorAll('.sheet-bg').forEach(s=>s.remove());}
+function closeSheets(){uiPickerClose(false);document.querySelectorAll('.sheet-bg').forEach(s=>s.remove());}
 
 /* ---- Quick Add: Water & Fuel (Phase 4) — write to the exact same real collections/model
    used by the Nutrition and Car modules, never a UI-only change. ---- */
