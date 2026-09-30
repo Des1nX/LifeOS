@@ -1676,6 +1676,21 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-we
 
 .cf-attrs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}.cf-attr{min-width:52px;min-height:44px;justify-content:center;cursor:pointer;font-weight:750}
 .cf-attr.on{background:var(--accent-strong);color:#fff;border-color:transparent}
+
+/* ---- Reality QA: 0-100 % field ---- */
+.pct-field{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pct-field input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:44px;margin:0;padding:0;border:none;background:transparent}
+.pct-field input[type=range].is-empty{opacity:.45}
+.pct-step{flex:none;width:44px;height:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;padding:0}
+.pct-num{flex:none;display:flex;align-items:center;gap:4px;font-weight:700}
+.pct-num input{width:72px;min-height:44px;margin:0;text-align:center;font-variant-numeric:tabular-nums;padding:8px}
+.pct-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.pct-pre{min-height:44px;cursor:pointer}
+
+/* ---- Reality QA: Nutrition day bar + favourite foods ---- */
+.nu-daybar{display:flex;align-items:center;gap:8px;padding:8px}
+.nu-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
+.food-item .item-actions{display:flex;align-items:center;gap:4px}
+.food-item .useFood{min-height:44px}
 </style>
 </head>
 <body>
@@ -2131,6 +2146,7 @@ function migrateFuel(f){
    never have any records to migrate here at all (their arrays are freshly created empty via
    the generic top-level Object.keys(d) fill-in in migrate() below). ---- */
 function migrateSleepEntry(s){
+  // Reality QA: qualityPct (0-100 %) is new and optional -- an old entry keeps its 1-5 `quality` untouched (no conversion)
   return Object.assign({notes:'', quality:null, createdAt:Date.now()}, s);
 }
 function migrateWeightEntry(w){
@@ -3145,7 +3161,7 @@ function uiDsReason(k,a){
   }
   if(k==='sleep'){
     if(a.score==null) return cs?'Spánek pro tento den není zapsaný.':'No sleep logged for this day.';
-    return `${String(a.hours).replace('.',cs?',':'.')} h${a.quality?` · ${cs?'kvalita':'quality'} ${a.quality}/5`:''}. ${cs?'Plné skóre v rozmezí 7–9 h.':'Full score between 7 and 9 h.'}`;
+    return `${String(a.hours).replace('.',cs?',':'.')} h${a.qualityPct!=null?` · ${cs?'kvalita':'quality'} ${a.qualityPct} %`:a.quality?` · ${cs?'kvalita':'quality'} ${a.quality}/5`:''}. ${cs?'Plné skóre délky v rozmezí 7–9 h.':'Full duration score between 7 and 9 h.'}${a.qualityPct!=null?(cs?` Skóre = 70 % délka (${a.band}) + 30 % kvalita.`:` Score = 70 % duration (${a.band}) + 30 % quality.`):''}`;
   }
   if(k==='fitness'){
     const bonus=a.bonus?` ${cs?'Bonus: trénink zapsán (mimo skóre).':'Bonus: workout logged (outside the score).'}`:'';
@@ -3823,7 +3839,7 @@ function ccMini(ctx){
   const td=S.settings&&S.settings.trainingDays;
   if(completedWorkouts(S).length||(Array.isArray(td)&&td.length)) out.fitness={done:workoutsThisWeek(S),target:Array.isArray(td)&&td.length?td.length:(Number(S.dailyTargets&&S.dailyTargets.workoutsPerWeek)||3)};
   const last=[...S.sleepLog].filter(s=>s.date<=ctx.D).sort((a,b)=>b.date.localeCompare(a.date))[0];
-  if(last) out.sleep={hours:sleepDuration(last),date:last.date,quality:Number(last.quality)||null};
+  if(last) out.sleep={hours:sleepDuration(last),date:last.date,quality:Number(last.quality)||null,qtext:sleepQualityText(last)};
   return out;
 }
 /* ================= Smart Daily Command Center 2.0 (presentation) =================
@@ -4105,7 +4121,7 @@ function uiCcMini(ctx,W){
   }
   if(W.fitness!==false){ const f=m.fitness; tiles.push(['fitness','🏋️',T('fitness'),f?`${f.done}<small>/${f.target}</small>`:'',f?T('wk_week'):'']); }
   if(W.health!==false){ const s=m.sleep;
-    tiles.push(['health','😴',T('sleep'),s?`${uiNum(Math.round(s.hours*10)/10)} <small>h</small>`:'',s?`${s.date===ctx.D?T('sleep_last'):fmtDate(s.date)}${s.quality?` · ${T('q')} ${s.quality}/5`:''}`:'']); }
+    tiles.push(['health','😴',T('sleep'),s?`${uiNum(Math.round(s.hours*10)/10)} <small>h</small>`:'',s?`${s.date===ctx.D?T('sleep_last'):fmtDate(s.date)}${s.qtext?` · ${T('q')} ${s.qtext}`:''}`:'']); }
   if(W.nutrition!==false){
     const has=S.meals.some(x=>x.date===ctx.D), tg=S.nutritionTargets||{};
     const tot=has?nutriTotals(ctx.D):null;
@@ -7733,6 +7749,7 @@ function uiDelConfirm(kind,o,onOk){
     workout:[cs?'Smazat trénink?':'Delete workout?',cs?`Trénink ${q} bude trvale smazán i se všemi sériemi.`:`The workout ${q} will be permanently deleted with all its sets.`,[cs?'Osobní rekordy se přepočítají ze zbývajících tréninků.':'Personal records are recalculated from the remaining workouts.',xp]],
     exercise:[cs?'Smazat cvik?':'Delete exercise?',cs?`Cvik ${q} bude smazán z knihovny.`:`The exercise ${q} will be removed from the library.`,[cs?'Pokud ho používá trénink nebo šablona, jen se archivuje a jeho historie zůstane.':'If a workout or template uses it, it is only archived and its history stays.']],
     template:[cs?'Smazat šablonu?':'Delete template?',cs?`Šablona ${q} bude trvale smazána.`:`The template ${q} will be permanently deleted.`,[cs?'Tréninky podle ní už odcvičené zůstanou beze změny.':'Workouts already done from it stay unchanged.']],
+    food:[cs?'Smazat oblíbené jídlo?':'Delete favourite food?',cs?`Oblíbené jídlo ${q} bude smazáno ze seznamu.`:`The favourite food ${q} will be removed from the list.`,[cs?'Už zapsaná jídla zůstanou beze změny.':'Meals already logged stay unchanged.']],
     meal:[cs?'Smazat jídlo?':'Delete meal?',cs?`Jídlo ${q} bude trvale smazáno ze záznamu.`:`The meal ${q} will be permanently deleted from your log.`,[xp]],
     note:[cs?'Smazat poznámku?':'Delete note?',cs?`Poznámka ${q} bude trvale smazána.`:`The note ${q} will be permanently deleted.`,[]],
     journal:[cs?'Smazat zápis?':'Delete entry?',cs?`Zápis z ${o.name} bude trvale smazán.`:`The journal entry for ${o.name} will be permanently deleted.`,[]],
@@ -8191,15 +8208,23 @@ function macroRow(label,val,target,unit){
   const pct=Math.min(100,Math.round(val/target*100))||0;
   return `<div style="margin-bottom:10px"><div class="between"><span class="sub">${label}</span><span class="sub">${Math.round(val)}/${target}${unit}</span></div><div class="bar" style="margin-top:4px"><i style="width:${pct}%"></i></div></div>`;
 }
+// Reality QA: the Nutrition screen shows one chosen day (‹ / Dnes / ›); meals and water can be logged for any day.
+// XP is paid only for a meal logged with today's date (same rule and key as before), so back- or forward-dated
+// entries never open a new XP source; Daily Score and quests read the real dates as always.
+let nutriDay=null;
 function renderNutrition(){
-  const t=S.nutritionTargets, today=todayStr();
+  const t=S.nutritionTargets, realToday=todayStr(); if(!nutriDay) nutriDay=realToday; const today=nutriDay;
   const tot=nutriTotals(today);
-  const water=waterToday(S);
+  const water=waterOnDate(today);
   const cs=uiLang()==='cs';
-  const L=cs?{t:'Výživa',cal:'Kalorie',left:'zbývá',over:'nad cílem',p:'Bílkoviny',c:'Sacharidy',f:'Tuky',w:'Voda',meal:'Jídlo',water:'250 ml vody',meals:'Dnešní jídla',repeat:'Zopakovat',none:'Dnes žádná jídla',none_d:'Zapiš jídlo a uvidíš, jak plníš denní cíl.'}
+  const L=cs?{t:'Jídlo',cal:'Kalorie',left:'zbývá',over:'nad cílem',p:'Bílkoviny',c:'Sacharidy',f:'Tuky',w:'Voda',meal:'Jídlo',water:'250 ml vody',meals:'Dnešní jídla',repeat:'Zopakovat',none:'Dnes žádná jídla',none_d:'Zapiš jídlo a uvidíš, jak plníš denní cíl.'}
     :{t:'Nutrition',cal:'Calories',left:'left',over:'over target',p:'Protein',c:'Carbs',f:'Fat',w:'Water',meal:'Meal',water:'250 ml water',meals:"Today's meals",repeat:'Repeat',none:'No meals today',none_d:'Log a meal to see how you track against your daily target.'};
   const calPct=uiPct(tot.calories,t.calories), left=Math.round(t.calories-tot.calories);
-  const wrap=el(`<div>${uiPageHead(L.t,uiTodayLong())}
+  const dayLabel=(()=>{ try{ const x=new Date(today+'T00:00').toLocaleDateString(uiLocale(),{weekday:'long',day:'numeric',month:'long'}); return x.charAt(0).toUpperCase()+x.slice(1); }catch(e){ return fmtDate(today); } })();
+  const wrap=el(`<div>${uiPageHead(L.t,today===realToday?uiTodayLong():dayLabel)}
+    <section class="card nu-daybar" aria-label="${cs?'Výběr dne':'Day'}"><button class="iconbtn" id="nuPrev" aria-label="${cs?'Předchozí den':'Previous day'}">‹</button>
+      <div class="nu-day"><b>${escapeHtml(dayLabel)}</b>${today!==realToday?`<span class="sub">${today<realToday?(cs?'zpětný zápis':'past day'):(cs?'budoucí den':'future day')}</span>`:''}</div>
+      ${today!==realToday?`<button class="btn sm ghost" id="nuToday">${cs?'Dnes':'Today'}</button>`:''}<button class="iconbtn" id="nuNext" aria-label="${cs?'Další den':'Next day'}">›</button></section>
     <section class="card nutri-hero">
       <div class="today-grid">
         <div class="ring" style="--p:${calPct};--c:${tot.calories>t.calories?'var(--warn)':'var(--accent2)'}" role="img" aria-label="${L.cal} ${calPct}%"><span>${calPct}%</span></div>
@@ -8212,26 +8237,44 @@ function renderNutrition(){
       <button class="btn sm" id="addMeal">＋ ${L.meal}</button>
       <button class="btn sm ghost" id="addWater">💧 ＋ ${L.water}</button>
     </div>
-    <div class="section-header"><h3>${L.meals}</h3></div><div class="list" id="mealList"></div>
+    <div class="section-header"><h3>${today===realToday?L.meals:(cs?'Jídla dne':'Meals of the day')}</h3></div><div class="list" id="mealList"></div>
+    <div class="section-header"><h3>${cs?'Oblíbená jídla':'Favourite foods'}</h3><button class="action" id="addFood">＋ ${cs?'Přidat':'Add'}</button></div><div class="list" id="foodList"></div>
   </div>`);
+  wrap.querySelector('#nuPrev').onclick=()=>{ nutriDay=addDays(today,-1); render(); };
+  wrap.querySelector('#nuNext').onclick=()=>{ nutriDay=addDays(today,1); render(); };
+  const nt=wrap.querySelector('#nuToday'); if(nt) nt.onclick=()=>{ nutriDay=realToday; render(); };
   const ml=wrap.querySelector('#mealList');
   const meals=S.meals.filter(m=>m.date===today);
-  if(!meals.length){ const e=el(`<div class="card">${uiEmpty('🍎',L.none,L.none_d,'＋ '+L.meal)}</div>`); e.querySelector('.emptyCta').onclick=()=>openMealForm(); ml.appendChild(e); }
+  if(!meals.length){ const e=el(`<div class="card">${uiEmpty('🍎',today===realToday?L.none:(cs?'V tento den žádná jídla':'No meals this day'),L.none_d,'＋ '+L.meal)}</div>`); e.querySelector('.emptyCta').onclick=()=>openMealForm(null,{date:today}); ml.appendChild(e); }
   meals.forEach(m=>{
     const q=Number(m.servings)||1;
     const it=el(`<div class="item meal-item"><span class="icon-circle" aria-hidden="true">🍽️</span><div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(m.name)}</div><div class="item-meta meta-row"><span class="chip is-muted">${escapeHtml(uiL(m.type||''))}${q!==1?' · ×'+q:''}</span><b class="num" style="color:var(--text)">${Math.round((m.calories||0)*q)} kcal</b><span class="num">P ${Math.round((m.protein||0)*q)} · C ${Math.round((m.carbs||0)*q)} · F ${Math.round((m.fat||0)*q)}</span></div></div><div class="item-actions"><button class="iconbtn ghost-ic repeatBtn" aria-label="${L.repeat}: ${escapeHtml(m.name)}" title="${L.repeat}">↻</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(m.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.name)}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openMealForm(m);
     it.querySelector('.repeatBtn').onclick=()=>{
-      const nm={id:uid(),name:m.name,type:m.type,date:todayStr(),calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()};
+      const nm={id:uid(),name:m.name,type:m.type,date:today,calories:m.calories,protein:m.protein,carbs:m.carbs,fat:m.fat,servings:m.servings||1,notes:m.notes||'',createdAt:Date.now()};
       S.meals.push(nm);
-      grantXp(10,'Meal logged',mealAttrProfile(),mealXpKey(nm)); checkAchievements(); scheduleSave();render();toast('Meal repeated');
+      if(nm.date===todayStr()) grantXp(10,'Meal logged',mealAttrProfile(),mealXpKey(nm)); checkAchievements(); scheduleSave();render();toast('Meal repeated');
     };
     it.querySelector('.delbtn').onclick=()=>uiDelConfirm('meal',{name:m.name},()=>{
       S.meals=S.meals.filter(x=>x.id!==m.id);scheduleSave();render();toast('Meal deleted');
     });
     ml.appendChild(it);
   });
-  wrap.querySelector('#addMeal').onclick=()=>openMealForm();
+  wrap.querySelector('#addMeal').onclick=()=>openMealForm(null,{date:today});
+  // favourite foods: the saved foods (S.customFoods); "Použít" logs one into the shown day through the meal form
+  const fl=wrap.querySelector('#foodList'), foods=[...S.customFoods].sort((a,b)=>(!!b.favorite-!!a.favorite)||String(a.name).localeCompare(String(b.name),uiLocale()));
+  if(!foods.length) fl.appendChild(el(`<div class="card"><p class="sub" style="margin:0">${cs?'Zatím žádné oblíbené jídlo. Ulož si ho tady nebo při zápisu jídla.':'No favourite food yet. Save one here or when logging a meal.'}</p></div>`));
+  foods.forEach(f=>{
+    const it=el(`<div class="item food-item" data-food="${escapeHtml(f.id)}"><span class="icon-circle" aria-hidden="true">${uiIcon('apple',18)}</span><div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(f.name)}</div>
+      <div class="item-meta">${uiNum(Number(f.calories)||0)} kcal · B ${uiNum(Number(f.protein)||0)} g · S ${uiNum(Number(f.carbs)||0)} g · T ${uiNum(Number(f.fat)||0)} g</div></div>
+      <div class="item-actions"><button class="btn sm useFood" aria-label="${escapeHtml((cs?'Použít: ':'Use: ')+f.name)}">＋ ${cs?'Použít':'Use'}</button>
+      <button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(f.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(f.name)}">✕</button></div></div>`);
+    it.querySelector('.useFood').onclick=()=>openMealForm(null,{date:today,name:f.name,calories:f.calories,protein:f.protein,carbs:f.carbs,fat:f.fat});
+    it.querySelector('.editBtn').onclick=()=>openFoodForm(f);
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('food',{name:f.name},()=>{ S.customFoods=S.customFoods.filter(x=>x.id!==f.id); scheduleSave(); render(); });
+    fl.appendChild(it);
+  });
+  wrap.querySelector('#addFood').onclick=()=>openFoodForm();
   wrap.querySelector('#addWater').onclick=()=>{
     S.waterLog.push({id:uid(),date:today,amount:250});
     checkAchievements();scheduleSave();render();toast('+250ml water');
@@ -8242,16 +8285,33 @@ function savedFoodOptions(){
   const items=[...S.customFoods.map(f=>({...f,src:'custom'})),...S.recipes.map(f=>({...f,src:'recipe'}))];
   return items.map(f=>`<option value="${f.src}:${f.id}">${f.favorite?'⭐ ':''}${escapeHtml(f.name)} (${uiLang()==='cs'?(f.src==='recipe'?'recept':'potravina'):(f.src==='recipe'?'recipe':'food')})</option>`).join('');
 }
-function openMealForm(existing){
-  const m=existing;
+function openFoodForm(existing){
+  const f=existing, cs=uiLang()==='cs';
+  const inner=el(`<div class="food-form"><h3>${f?(cs?'Upravit oblíbené jídlo':'Edit favourite food'):(cs?'Nové oblíbené jídlo':'New favourite food')}</h3>
+    <label for="fd_name">${cs?'Název':'Name'}</label><input id="fd_name" value="${f?escapeHtml(f.name):''}"><div class="field-error" data-err="name" hidden></div>
+    <div class="grid2"><div><label for="fd_cal">${cs?'Kalorie (kcal)':'Calories (kcal)'}</label><input type="number" id="fd_cal" min="0" inputmode="decimal" value="${f?(f.calories||0):''}"></div><div><label for="fd_p">${cs?'Bílkoviny (g)':'Protein (g)'}</label><input type="number" id="fd_p" min="0" inputmode="decimal" value="${f?(f.protein||0):''}"></div></div>
+    <div class="grid2"><div><label for="fd_c">${cs?'Sacharidy (g)':'Carbs (g)'}</label><input type="number" id="fd_c" min="0" inputmode="decimal" value="${f?(f.carbs||0):''}"></div><div><label for="fd_f">${cs?'Tuky (g)':'Fat (g)'}</label><input type="number" id="fd_f" min="0" inputmode="decimal" value="${f?(f.fat||0):''}"></div></div>
+    <button class="btn" id="fd_save">${cs?'Uložit':'Save'}</button></div>`);
+  const bg=openSheet(inner);
+  inner.querySelector('#fd_save').onclick=()=>{
+    const name=inner.querySelector('#fd_name').value.trim(), err=inner.querySelector('[data-err="name"]');
+    if(!name){ err.hidden=false; err.textContent=cs?'Vyplň název':'Name required'; inner.querySelector('#fd_name').focus(); return; }
+    const n=id=>Math.max(0,Number(inner.querySelector('#'+id).value)||0), fields={name,calories:n('fd_cal'),protein:n('fd_p'),carbs:n('fd_c'),fat:n('fd_f'),favorite:true,updatedAt:Date.now()};
+    if(f) Object.assign(f,fields); else S.customFoods.push(Object.assign({id:uid(),createdAt:Date.now()},fields));
+    scheduleSave(); bg.remove(); render(); toast(cs?'Uloženo':'Saved');
+  };
+}
+function openMealForm(existing,preset){
+  const m=existing, pr=preset||{}, cs=uiLang()==='cs', mDate=m?m.date:(pr.date||todayStr());
   const inner=el(`<div><h3>${m?'Edit Meal':'New Meal'}</h3>
     ${(S.customFoods.length||S.recipes.length)?`<label>Use saved food/recipe</label><select id="m_saved"><option value="">— pick to autofill —</option>${savedFoodOptions()}</select>`:''}
-    <label>Name</label><input id="m_name" value="${m?escapeHtml(m.name):''}" placeholder="e.g. Chicken & rice">
+    <label>Name</label><input id="m_name" value="${m?escapeHtml(m.name):escapeHtml(pr.name||'')}" placeholder="e.g. Chicken & rice">
+    <label for="m_date">${cs?'Datum':'Date'}</label><input type="date" id="m_date" value="${mDate}">
     <label>Type</label><select id="m_type"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
     <label>Servings</label><input type="number" id="m_qty" min="0.25" step="0.25" value="${m?(m.servings||1):1}">
-    <label>Calories (per serving)</label><input type="number" id="m_cal" min="0" value="${m?(m.calories||''):''}">
-    <div class="grid2"><div><label>Protein (g)</label><input type="number" id="m_p" min="0" value="${m?(m.protein||''):''}"></div><div><label>Carbs (g)</label><input type="number" id="m_c" min="0" value="${m?(m.carbs||''):''}"></div></div>
-    <label>Fat (g)</label><input type="number" id="m_f" min="0" value="${m?(m.fat||''):''}">
+    <label>Calories (per serving)</label><input type="number" id="m_cal" min="0" value="${m?(m.calories||''):(pr.calories!=null?pr.calories:'')}">
+    <div class="grid2"><div><label>Protein (g)</label><input type="number" id="m_p" min="0" value="${m?(m.protein||''):(pr.protein!=null?pr.protein:'')}"></div><div><label>Carbs (g)</label><input type="number" id="m_c" min="0" value="${m?(m.carbs||''):(pr.carbs!=null?pr.carbs:'')}"></div></div>
+    <label>Fat (g)</label><input type="number" id="m_f" min="0" value="${m?(m.fat||''):(pr.fat!=null?pr.fat:'')}">
     <label>Notes</label><input id="m_notes" value="${m?escapeHtml(m.notes||''):''}" placeholder="optional">
     <label><input type="checkbox" id="m_fav" style="width:auto;display:inline-block;margin-right:6px">Save as favorite custom food</label>
     <button class="btn" id="m_save">${m?'Save Changes':'Add Meal'}</button>
@@ -8272,7 +8332,7 @@ function openMealForm(existing){
     if(!name){toast('Name required');return;}
     const fields={name,type:inner.querySelector('#m_type').value,servings:parseFloat(inner.querySelector('#m_qty').value)||1,
       calories:inner.querySelector('#m_cal').value,protein:inner.querySelector('#m_p').value,
-      carbs:inner.querySelector('#m_c').value,fat:inner.querySelector('#m_f').value,notes:inner.querySelector('#m_notes').value};
+      carbs:inner.querySelector('#m_c').value,fat:inner.querySelector('#m_f').value,notes:inner.querySelector('#m_notes').value,date:inner.querySelector('#m_date').value||mDate};
     if(inner.querySelector('#m_fav').checked){
       S.customFoods.push({id:uid(),name,calories:Number(fields.calories)||0,protein:Number(fields.protein)||0,
         carbs:Number(fields.carbs)||0,fat:Number(fields.fat)||0,favorite:true,createdAt:Date.now()});
@@ -8282,9 +8342,9 @@ function openMealForm(existing){
       // nutriTotals(), so changing calories/servings here correctly changes the day's macros.
       Object.assign(m,fields);
     } else {
-      const nm=Object.assign({id:uid(),date:todayStr(),createdAt:Date.now()},fields);
+      const nm=Object.assign({id:uid(),createdAt:Date.now()},fields);
       S.meals.push(nm);
-      grantXp(10,'Meal logged',mealAttrProfile(),mealXpKey(nm));
+      if(nm.date===todayStr()) grantXp(10,'Meal logged',mealAttrProfile(),mealXpKey(nm)); // only today's meal pays (no XP for back/forward-dated entries)
       checkAchievements();
     }
     scheduleSave();closeSheets();render();toast(m?'Meal updated':'Meal added');
@@ -10704,6 +10764,9 @@ function renderSearch(){
 /* ---- Sleep / Health module ---- */
 // Correct overnight-safe duration: if wake <= bedtime on the same reference day, wake is
 // treated as the NEXT day (23:00 -> 07:00 = 8h, never a naive/negative subtraction).
+// Reality QA: the quality as text -- the new 0-100 % value, else an old 1-5 rating as it was entered
+function sleepQualityPct(x){ const v=x?x.qualityPct:null; return v!=null&&v!==''&&Number.isFinite(+v)?Math.max(0,Math.min(100,Math.round(+v))):null; }
+function sleepQualityText(x){ const p=sleepQualityPct(x); return p!=null?p+' %':Number(x&&x.quality)>0?x.quality+'/5':''; }
 function sleepDuration(s){
   if(!s.bedtime||!s.wake) return 0;
   let b=new Date('2000-01-01T'+s.bedtime), w=new Date('2000-01-01T'+s.wake);
@@ -10901,7 +10964,8 @@ function plannerToggleCompleted(id,occ){ const b=(S.plannerBlocks||[]).find(x=>x
    Strictly read-only: never grants XP, never touches level/attributes/points/achievements/quests.
    Every area returns {score:0..100|null, ...details}; null = N/A (not relevant or no data) and
    N/A areas are left out of the weighted average entirely (weights re-normalize). ---- */
-const DAILY_SCORE_ALGO=2; // 2 (polish pass): Fitness is also planned by the user's training days (see fitnessDayPlan)
+const DAILY_SCORE_ALGO=3; // 2 (polish pass): Fitness is also planned by the user's training days (see fitnessDayPlan)
+// 3 (Reality QA): Sleep = 70 % duration band + 30 % sleep quality when a quality in % was entered; otherwise exactly as in 2
 const DAILY_SCORE_WEIGHTS={tasks:30,habits:30,nutrition:15,sleep:15,fitness:10}; // goals: info only (weight 0)
 const DAILY_SCORE_PRIORITY_WEIGHT={Low:1,Medium:1,High:1.5,Urgent:2};
 function dailyScoreLabelKey(score){
@@ -11008,7 +11072,8 @@ function dailyScoreSleep(D){
   if(!entries.length) return {score:null,reason:'no_data'};
   const best=entries.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a);
   const hours=sleepDuration(best);
-  return {score:Math.round(dailyScoreSleepBand(hours)),hours,quality:best.quality!=null&&best.quality!==''?Number(best.quality):null};
+  const band=dailyScoreSleepBand(hours), qp=sleepQualityPct(best);
+  return {score:Math.round(qp==null?band:0.7*band+0.3*qp),hours,band:Math.round(band),qualityPct:qp,quality:best.quality!=null&&best.quality!==''?Number(best.quality):null};
 }
 // Fitness is scored only when a workout was planned: a Fitness-category calendar event on D
 // (same "stored date or next occurrence" rule as the calendar) or -- polish pass -- one of the user's
@@ -11076,7 +11141,8 @@ function sleepStats(period){
   }
   const qualities=logs.map(s=>Number(s.quality)).filter(q=>q>0);
   const avgQuality = qualities.length ? qualities.reduce((a,b)=>a+b,0)/qualities.length : null;
-  return {daysLogged:logs.length, avg, shortest, longest, consistency, avgQuality, entries:logs, durations};
+  const pcts=logs.map(sleepQualityPct).filter(q=>q!=null), avgQualityPct=pcts.length?pcts.reduce((a,b)=>a+b,0)/pcts.length:null;
+  return {daysLogged:logs.length, avg, shortest, longest, consistency, avgQuality, avgQualityPct, entries:logs, durations};
 }
 // Generic aggregator reused for weight/steps/heart-rate/active-calories (all share the same
 // {id,date,<valueField>,...} shape and the same "average / latest / chronological list" needs).
@@ -11109,7 +11175,9 @@ let healthTab='sleep';
 function renderHealth(){
   const wrap=el(`<div>${uiPageHead(uiL('Health'))}<div class="period-selector" id="hTabs" role="tablist"></div><div id="hBody"></div></div>`);
   const tabs=wrap.querySelector('#hTabs');
-  [['sleep','😴 Sleep'],['weight','⚖️ Weight'],['steps','👟 Steps'],['heartrate','❤️ Heart Rate'],['activecal','🔥 Active Cal']].forEach(([k,l])=>{
+  // Reality QA: steps and heart rate are not entered by hand any more (a future watch import); their old records stay
+  if(healthTab==='steps'||healthTab==='heartrate') healthTab='sleep';
+  [['sleep','😴 Sleep'],['weight','⚖️ Weight'],['activecal','🔥 Active Cal']].forEach(([k,l])=>{
     const b=el(`<button class="pill ${healthTab===k?'on':''}" data-k="${k}" role="tab" aria-selected="${healthTab===k}">${l.split(' ')[0]} ${uiL(l.split(' ').slice(1).join(' '))}</button>`);
     b.onclick=()=>{healthTab=k;render();};
     tabs.appendChild(b);
@@ -11118,8 +11186,6 @@ function renderHealth(){
   const data=healthDashboardData('month'); // dashboard summary always over a rolling month, per-tab lists show everything
   if(healthTab==='sleep') body.appendChild(renderHealthSleepTab(data));
   else if(healthTab==='weight') body.appendChild(renderHealthWeightTab(data));
-  else if(healthTab==='steps') body.appendChild(renderHealthStepsTab(data));
-  else if(healthTab==='heartrate') body.appendChild(renderHealthHeartRateTab(data));
   else body.appendChild(renderHealthActiveCalTab(data));
   return wrap;
 }
@@ -11133,7 +11199,8 @@ function renderHealthSleepTab(data){
     <div class="stat-card"><div class="stat-label">${uiL('Shortest / Longest')}</div><div class="stat-value" style="font-size:17px">${data.sleep.durations.length?data.sleep.shortest+'h / '+data.sleep.longest+'h':uiL('No data')}</div></div>
     <div class="stat-card"><div class="stat-label">${uiL('Consistency')}</div><div class="stat-value" style="font-size:17px">${data.sleep.consistency!=null?data.sleep.consistency+'/100':uiL('Need 2+ nights')}</div></div>
   </div>`));
-  if(data.sleep.avgQuality!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${data.sleep.avgQuality.toFixed(1)}/5</div></div>`));
+  if(data.sleep.avgQualityPct!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${Math.round(data.sleep.avgQualityPct)} %</div></div>`));
+  else if(data.sleep.avgQuality!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${data.sleep.avgQuality.toFixed(1)}/5</div></div>`));
   wrap.appendChild(el(chartCard(uiL('Sleep duration trend (30d)'), chartValuesForLog(S.sleepLog,'month',sleepDuration), null, {type:'line'})));
   wrap.appendChild(el(`<button class="btn ghost" id="addSleep" style="margin:4px 0 12px">＋ ${uiL('Log Sleep')}</button>`));
   wrap.querySelector('#addSleep').onclick=()=>openSleepForm();
@@ -11141,7 +11208,7 @@ function renderHealthSleepTab(data){
   const sorted=[...S.sleepLog].sort((a,b)=>b.date.localeCompare(a.date));
   if(!sorted.length) sl.appendChild(el(`<div class="card">${uiEmpty('😴',uiL('No sleep logged yet.'),'','')}</div>`));
   sorted.slice(0,30).forEach(s=>{
-    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">😴</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(s.date)}</div><div class="item-meta">${sleepDuration(s)}h · ${formatTimeDisplay(s.bedtime)}–${formatTimeDisplay(s.wake)}${s.quality?' · '+uiL('quality')+' '+s.quality+'/5':''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
+    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">😴</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(s.date)}</div><div class="item-meta">${sleepDuration(s)}h · ${formatTimeDisplay(s.bedtime)}–${formatTimeDisplay(s.wake)}${sleepQualityText(s)?' · '+uiL('quality')+' '+sleepQualityText(s):''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
     it.querySelector('.editBtn').onclick=()=>openSleepForm(s);
     it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('sleep',s)},()=>{ S.sleepLog=S.sleepLog.filter(x=>x.id!==s.id);scheduleSave();render(); });
     sl.appendChild(it);
@@ -11170,48 +11237,6 @@ function renderHealthWeightTab(data){
   wrap.appendChild(list);
   return wrap;
 }
-function renderHealthStepsTab(data){
-  const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="stat-grid">
-    <div class="stat-card"><div class="stat-label">${uiL('Today')}</div><div class="stat-value">${data.stepsToday?Number(data.stepsToday.steps).toLocaleString():'—'}</div></div>
-    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.steps.avg?Math.round(data.steps.avg).toLocaleString():'—'}</div></div>
-  </div>`));
-  wrap.appendChild(el(chartCard(uiL('Steps trend (30d)'), chartValuesForLog(S.stepsLog,'month',x=>Number(x.steps)||0), null, {})));
-  wrap.appendChild(el(`<button class="btn ghost" id="addSt" style="margin:4px 0 12px">＋ ${uiL('Log Steps')}</button>`));
-  wrap.querySelector('#addSt').onclick=()=>openStepsForm();
-  const list=el(`<div class="list" id="stList"></div>`);
-  const sorted=[...S.stepsLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) list.appendChild(el(`<div class="card">${uiEmpty('👟',uiL('No steps logged yet.'),'','')}</div>`));
-  sorted.slice(0,30).forEach(x=>{
-    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">👟</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${uiNum(x.steps)} ${uiL('steps')}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
-    it.querySelector('.editBtn').onclick=()=>openStepsForm(x);
-    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('steps',x)},()=>{ S.stepsLog=S.stepsLog.filter(y=>y.id!==x.id);scheduleSave();render(); });
-    list.appendChild(it);
-  });
-  wrap.appendChild(list);
-  return wrap;
-}
-function renderHealthHeartRateTab(data){
-  const wrap=el(`<div></div>`);
-  wrap.appendChild(el(`<div class="stat-grid">
-    <div class="stat-card"><div class="stat-label">${uiL('Latest')}</div><div class="stat-value">${data.latestHeartRate?data.latestHeartRate.value+' bpm':'—'}</div></div>
-    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.heartRate.avg?Math.round(data.heartRate.avg)+' bpm':'—'}</div></div>
-  </div>`));
-  wrap.appendChild(el(chartCard(uiL('Heart rate trend (30d)'), chartValuesForLog(S.heartRateLog,'month',x=>Number(x.value)||0), null, {type:'line'})));
-  wrap.appendChild(el(`<button class="btn ghost" id="addHr" style="margin:4px 0 12px">＋ ${uiL('Log Heart Rate')}</button>`));
-  wrap.querySelector('#addHr').onclick=()=>openHeartRateForm();
-  const list=el(`<div class="list" id="hrList"></div>`);
-  const sorted=[...S.heartRateLog].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length) list.appendChild(el(`<div class="card">${uiEmpty('❤️',uiL('No heart rate logged yet.'),'','')}</div>`));
-  sorted.slice(0,30).forEach(x=>{
-    const it=el(`<div class="item"><span class="icon-circle" aria-hidden="true">❤️</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(x.date)}</div><div class="item-meta">${x.value} bpm${x.type?' · '+uiL(x.type):''}</div></div><div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}">✕</button></div></div>`);
-    it.querySelector('.editBtn').onclick=()=>openHeartRateForm(x);
-    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('health',{name:uiHealthDelName('heart',x)},()=>{ S.heartRateLog=S.heartRateLog.filter(y=>y.id!==x.id);scheduleSave();render(); });
-    list.appendChild(it);
-  });
-  wrap.appendChild(list);
-  return wrap;
-}
 function renderHealthActiveCalTab(data){
   const wrap=el(`<div></div>`);
   wrap.appendChild(el(`<div class="stat-grid">
@@ -11233,17 +11258,44 @@ function renderHealthActiveCalTab(data){
   wrap.appendChild(list);
   return wrap;
 }
+// Reality QA: a LifeOS 0-100 % field (slider + number + -/+ + quick values); '' = not filled in. Used for sleep quality.
+function uiPctFieldHtml(id,v,label,hint){
+  const cs=uiLang()==='cs', has=v!==''&&v!=null;
+  return `<label for="${id}">${label}</label><div class="pct-field" id="${id}_wrap"><button type="button" class="pct-step" data-d="-5" aria-label="${cs?'Snížit o 5 %':'Minus 5 %'}">−</button>
+    <input type="range" id="${id}_r" min="0" max="100" step="1" value="${has?v:50}" aria-label="${escapeHtml(label)}" class="${has?'':'is-empty'}">
+    <span class="pct-num"><input type="number" id="${id}" inputmode="numeric" min="0" max="100" step="1" value="${has?v:''}" placeholder="—" aria-describedby="${id}_err"><span aria-hidden="true">%</span></span>
+    <button type="button" class="pct-step" data-d="5" aria-label="${cs?'Zvýšit o 5 %':'Plus 5 %'}">+</button></div>
+    <div class="pct-presets" role="group" aria-label="${escapeHtml(label)}">${[0,25,50,75,100].map(n=>`<button type="button" class="chip pct-pre" data-v="${n}">${n} %</button>`).join('')}<button type="button" class="chip pct-pre" data-v="">${cs?'Nevyplněno':'Not set'}</button></div>
+    <div class="field-error" id="${id}_err" hidden></div>${hint?`<p class="helper-text">${escapeHtml(hint)}</p>`:''}`;
+}
+function uiPctFieldWire(root,id){
+  const num=root.querySelector('#'+id), rng=root.querySelector('#'+id+'_r');
+  const set=v=>{ num.value=v===''?'':String(Math.max(0,Math.min(100,Math.round(v)))); if(num.value!==''){ rng.value=num.value; rng.classList.remove('is-empty'); } else rng.classList.add('is-empty'); num.removeAttribute('aria-invalid'); root.querySelector('#'+id+'_err').hidden=true; };
+  rng.oninput=()=>set(+rng.value);
+  num.oninput=()=>{ const v=num.value; if(v!==''&&/^\d{1,3}$/.test(v)&&+v<=100){ rng.value=v; rng.classList.remove('is-empty'); } };
+  root.querySelectorAll('#'+id+'_wrap .pct-step').forEach(b=>b.onclick=()=>set((num.value===''?50:+num.value)+Number(b.dataset.d)));
+  root.querySelectorAll('.pct-pre').forEach(b=>b.onclick=()=>set(b.dataset.v===''?'':+b.dataset.v));
+}
+// '' (not filled), 0..100, or false after showing the error (not a whole number 0-100)
+function uiPctFieldValue(root,id){
+  const num=root.querySelector('#'+id), v=String(num.value).trim(), err=root.querySelector('#'+id+'_err');
+  if(v==='') return '';
+  if(!/^\d{1,3}$/.test(v)||+v>100){ num.setAttribute('aria-invalid','true'); err.hidden=false; err.textContent=uiLang()==='cs'?'Zadej celé číslo 0–100':'Enter a whole number 0–100'; num.focus(); return false; }
+  return +v;
+}
 function openSleepForm(existing){
   const s=existing;
   const inner=el(`<div><h3>${s?'Edit Sleep':'Log Sleep'}</h3>
     <label>Date (wake-up day)</label><input type="date" id="sl_date" value="${s?s.date:todayStr()}">
     <div class="grid2"><div><label>Bedtime</label><input type="time" id="sl_bed" value="${s?s.bedtime:'23:00'}"></div><div><label>Wake time</label><input type="time" id="sl_wake" value="${s?s.wake:'07:00'}"></div></div>
-    <label>Quality (1-5)</label><input type="number" id="sl_q" min="1" max="5" value="${s?(s.quality||4):4}">
+    ${uiPctFieldHtml('sl_qp',s&&s.qualityPct!=null&&s.qualityPct!==''?s.qualityPct:'',uiLang()==='cs'?'Kvalita spánku':'Sleep quality',s&&s.qualityPct==null&&Number(s.quality)>0?(uiLang()==='cs'?`Dřívější hodnocení: ${s.quality}/5`:`Earlier rating: ${s.quality}/5`):'')}
     <label>Notes</label><textarea id="sl_notes" rows="2">${s?escapeHtml(s.notes||''):''}</textarea>
     <button class="btn" id="sl_save">Save</button>
   </div>`);
+  uiPctFieldWire(inner,'sl_qp');
   inner.querySelector('#sl_save').onclick=()=>{
-    const fields={date:inner.querySelector('#sl_date').value||todayStr(),bedtime:inner.querySelector('#sl_bed').value,wake:inner.querySelector('#sl_wake').value,quality:inner.querySelector('#sl_q').value,notes:inner.querySelector('#sl_notes').value};
+    const qp=uiPctFieldValue(inner,'sl_qp'); if(qp===false) return;
+    const fields={date:inner.querySelector('#sl_date').value||todayStr(),bedtime:inner.querySelector('#sl_bed').value,wake:inner.querySelector('#sl_wake').value,qualityPct:qp,notes:inner.querySelector('#sl_notes').value};
     if(s){
       // Edit in place: same id/createdAt. Never re-grants XP -- only creating a NEW entry does.
       Object.assign(s,fields);
@@ -11272,40 +11324,6 @@ function openWeightForm(existing){
     if(w) Object.assign(w,fields);
     else S.weightLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields));
     scheduleSave();closeSheets();render();toast(w?'Weight updated':'Weight logged');
-  };
-  openSheet(inner);
-}
-function openStepsForm(existing){
-  const s=existing;
-  const inner=el(`<div><h3>${s?'Edit Steps':'Log Steps'}</h3>
-    <label>Date</label><input type="date" id="st_date" value="${s?s.date:todayStr()}">
-    <label>Steps</label><input type="number" id="st_val" value="${s?s.steps:''}">
-    <button class="btn" id="st_save">Save</button>
-  </div>`);
-  inner.querySelector('#st_save').onclick=()=>{
-    const val=parseInt(inner.querySelector('#st_val').value,10);
-    if(isNaN(val)){toast('Steps required');return;}
-    const fields={date:inner.querySelector('#st_date').value||todayStr(),steps:val};
-    if(s) Object.assign(s,fields);
-    else S.stepsLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields));
-    scheduleSave();closeSheets();render();toast(s?'Steps updated':'Steps logged');
-  };
-  openSheet(inner);
-}
-function openHeartRateForm(existing){
-  const h=existing;
-  const inner=el(`<div><h3>${h?'Edit Heart Rate':'Log Heart Rate'}</h3>
-    <label>Date</label><input type="date" id="hr_date" value="${h?h.date:todayStr()}">
-    <div class="grid2"><div><label>Value (bpm)</label><input type="number" id="hr_val" value="${h?h.value:''}"></div><div><label>Type</label><select id="hr_type"><option value="general" ${h&&h.type==='general'?'selected':''}>General</option><option value="resting" ${h&&h.type==='resting'?'selected':''}>Resting</option></select></div></div>
-    <button class="btn" id="hr_save">Save</button>
-  </div>`);
-  inner.querySelector('#hr_save').onclick=()=>{
-    const val=parseInt(inner.querySelector('#hr_val').value,10);
-    if(isNaN(val)){toast('Value required');return;}
-    const fields={date:inner.querySelector('#hr_date').value||todayStr(),value:val,type:inner.querySelector('#hr_type').value};
-    if(h) Object.assign(h,fields);
-    else S.heartRateLog.push(Object.assign({id:uid(),createdAt:Date.now()},fields));
-    scheduleSave();closeSheets();render();toast(h?'Heart rate updated':'Heart rate logged');
   };
   openSheet(inner);
 }
@@ -11504,7 +11522,7 @@ function openSheet(contentEl){
   sx.onclick=()=>{ if(bg.onclick) bg.remove(); };
   uiSheetDrag(bg,sheet,[grab,h&&h.closest('.ob')?null:h]);
   document.body.appendChild(bg);
-  const first=sheet.querySelector('input:not([type=hidden]):not(.hide),select,textarea,button:not(.sheet-x)');
+  const first=sheet.querySelector('input:not([type=hidden]):not(.hide):not([type=date]):not([type=time]),select,textarea,button:not(.sheet-x):not(.pk-btn)');
   // Never steal focus from a field the user already moved to (the timer can fire late on slow devices).
   setTimeout(()=>{ try{ if(sheet.contains(document.activeElement)) return; (first&&first.tagName!=='BUTTON'&&window.matchMedia('(pointer:fine)').matches?first:sheet).focus({preventScroll:true}); }catch(e){} },30);
   sheet.tabIndex=-1;
