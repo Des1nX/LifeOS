@@ -1691,6 +1691,13 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-we
 .nu-day{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
 .food-item .item-actions{display:flex;align-items:center;gap:4px}
 .food-item .useFood{min-height:44px}
+
+/* ---- Reality QA: Finance total balance + investment history rows ---- */
+.fin-bal{margin-bottom:var(--sp-3)}
+.fin-bal .big{font-size:32px;font-weight:800;letter-spacing:-.02em;margin:2px 0 8px}
+.fin-bal-list{display:grid;gap:2px}
+.fin-bal-row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:44px;padding:6px 4px;border:none;border-top:1px solid var(--line);background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.inv-row{display:grid;grid-template-columns:1fr auto 44px;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -6053,8 +6060,8 @@ function finAddMonthsClamped(anchor,k){
 function financeOccurrences(frequency,anchor,from,to,allowBefore){
   // occurrence dates in [from,to]; plans start at their anchor, subscriptions (rolling anchor) may look back
   if(!plannerValidDate(anchor)) return [];
-  const out=[]; const step=k=>frequency==='weekly'?addDays(anchor,7*k):finAddMonthsClamped(anchor,frequency==='yearly'?12*k:k);
-  const per=frequency==='weekly'?7:frequency==='yearly'?365:30;
+  const out=[]; const step=k=>frequency==='weekly'?addDays(anchor,7*k):frequency==='biweekly'?addDays(anchor,14*k):finAddMonthsClamped(anchor,frequency==='yearly'?12*k:k);
+  const per=frequency==='weekly'?7:frequency==='biweekly'?14:frequency==='yearly'?365:30;
   let k=allowBefore?Math.floor(finDaysBetween(anchor,from)/per)-1:0; if(!allowBefore&&k<0) k=0;
   for(let guard=0;guard<600;guard++,k++){ const d=step(k); if(d>to) break; if(d>=from&&(allowBefore||d>=anchor)) out.push(d); }
   return out;
@@ -6090,7 +6097,7 @@ function financeExpectedInRange(from,to,st){
   }));
   (st.subscriptions||[]).filter(s=>s.active!==false&&!covered.has(s.id)&&s.nextPayment).forEach(s=>{
     const start=financeSubStartDate(s);
-    financeOccurrences(s.period==='Yearly'?'yearly':'monthly',s.nextPayment,from,to,true).filter(d=>!start||d>=start.slice(0,7)+'-01').forEach(date=>{
+    financeOccurrences(subFrequency(s),s.nextPayment,from,to,true).filter(d=>!start||d>=start.slice(0,7)+'-01').forEach(date=>{
       const tx=(st.expenses||[]).find(x=>x.subscriptionId===s.id&&x.recurringFor===date)||null;
       out.push({source:'subscription',id:s.id,type:'expense',name:s.name,amount:finNum(s.price),date,realized:tx,item:s});
     });
@@ -6109,7 +6116,7 @@ function financeConfirmExpected(source,id,date,over){
   if(!it) return {ok:false,reason:'no_occurrence'};
   if(it.realized) return {ok:true,tx:it.realized,created:false};
   const base=source==='recurring'?{categoryId:it.item.categoryId,accountId:it.item.accountId,recurringId:id,recurringFor:date,subscriptionId:it.item.subscriptionId||''}
-    :{categoryId:(financeCategoryOf({category:'Subscriptions'},'expense')||{}).id||'',accountId:'',subscriptionId:id,recurringFor:date,recurringId:''};
+    :{categoryId:(financeCategoryOf({category:'Subscriptions'},'expense')||{}).id||'',accountId:it.item.accountId&&financeAccountById(it.item.accountId)?it.item.accountId:'',subscriptionId:id,recurringFor:date,recurringId:''};
   return financeSaveTransaction(it.type,Object.assign({amount:it.amount,date:over.date||date,description:it.name},base,over));
 }
 function financeRecurringNextDue(r,st){
@@ -6343,6 +6350,7 @@ function renderFinanceDashboard(){
   const txs=[...financeTxInRange('expense',t.from,t.to).map(x=>[x,'expense']),...financeTxInRange('income',t.from,t.to).map(x=>[x,'income'])].sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||'')||(b[0].createdAt||0)-(a[0].createdAt||0));
   const tile=(id,k,v,sub,cls)=>`<button class="stat-card fin-kpi" id="${id}"><div class="stat-label">${k}</div><div class="stat-value num ${cls||''}">${v}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</button>`;
   const wrap=el(`<div class="fin">${uiPageHead(uiFinT('t'),'',`<div class="row" style="gap:6px"><button class="btn sm" id="addExp">＋ ${uiFinT('exp')}</button><button class="btn sm ghost" id="addInc">＋ ${uiFinT('inc')}</button></div>`)}
+    ${uiFinBalanceCard()}
     ${uiFinMonthBar()}
     <div class="stat-grid fin-kpis">
       ${tile('kpiNet',uiFinT('net'),`${t.net>=0?'+':''}${uiMoney(t.net)}`,uiFinT('month_net'),t.net>=0?'is-inc':'is-exp')}
@@ -6367,6 +6375,7 @@ function renderFinanceDashboard(){
       `<button class="card fin-sec" data-fin-sec="${k}"><span aria-hidden="true">${ic}</span><b>${uiFinT('s_'+k)}</b></button>`).join('')}</div>
   </div>`);
   uiBindFinMonthBar(wrap); uiBindTxRows(wrap); uiBindExpected(wrap);
+  wrap.querySelectorAll('[data-bal-acc]').forEach(b=>b.onclick=()=>uiFinOpen('accounts'));
   const e=wrap.querySelector('#finList .emptyCta'); if(e) e.onclick=()=>openFinanceForm('expense');
   wrap.querySelector('#addExp').onclick=()=>openFinanceForm('expense');
   wrap.querySelector('#addInc').onclick=()=>openFinanceForm('income');
@@ -6375,8 +6384,23 @@ function renderFinanceDashboard(){
   wrap.querySelector('#finGoTx').onclick=()=>uiFinOpen('tx');
   const kpi={kpiNet:'review',kpiInc:'tx',kpiExp:'tx',kpiBud:'budgets',kpiSav:'savings',kpiInv:'invest'};
   Object.entries(kpi).forEach(([id,v])=>wrap.querySelector('#'+id).onclick=()=>{ if(id==='kpiInc') finTxFilter='income'; if(id==='kpiExp') finTxFilter='expense'; uiFinOpen(v); });
-  wrap.querySelectorAll('[data-fin-sec]').forEach(b=>b.onclick=()=>{ const k=b.dataset.finSec; if(k==='subs'){ view='subscriptions'; render(); window.scrollTo(0,0); } else { if(k==='tx') finTxFilter='all'; uiFinOpen(k); } });
+  wrap.querySelectorAll('[data-fin-sec]').forEach(b=>b.onclick=()=>{ const k=b.dataset.finSec; if(k==='tx') finTxFilter='all'; uiFinOpen(k); });
   return wrap;
+}
+// Reality QA: "Celkový zůstatek" = the money on the accounts now (each account's latest real balance entered, else
+// its calculated balance). The month's income / expenses and the investments' value are shown separately below.
+function financeTotalBalance(st){
+  st=st||S; const accs=(st.accounts||[]).filter(a=>a.active!==false);
+  const rows=accs.map(a=>{ const x=financeAccountStatus(a,st); return {a,balance:x.fromCheckpoint!=null?x.fromCheckpoint:x.calculated}; });
+  return {rows,total:finRound(rows.reduce((t,r)=>t+r.balance,0))};
+}
+function uiFinBalanceCard(){
+  const cs=uiLang()==='cs', b=financeTotalBalance();
+  return `<section class="card fin-bal" id="finBalance" aria-labelledby="finBalH"><div class="kicker" id="finBalH">${cs?'Celkový zůstatek':'Total balance'}</div>
+    ${b.rows.length?`<div class="big num">${uiMoney(b.total)}</div><div class="fin-bal-list">${b.rows.map(r=>`<button class="fin-bal-row" data-bal-acc="${escapeHtml(r.a.id)}"><span>${escapeHtml(r.a.name)}</span><b class="num ${r.balance<0?'is-exp':''}">${uiMoney(r.balance)}</b></button>`).join('')}</div>
+      <p class="helper-text" style="margin:8px 0 0">${cs?'Peníze na účtech teď. Příjmy a výdaje měsíce (cashflow) a hodnota investic jsou níže zvlášť.':'Money on your accounts now. The month\'s income and expenses (cash flow) and the investments\' value are shown separately below.'}</p>`
+      :`<p class="sub" style="margin:4px 0 8px">${cs?'Přidej účty (např. ČSOB, Revolut, hotovost) a jejich počáteční stav — tady pak uvidíš celkový zůstatek.':'Add your accounts (e.g. a bank, cash) with their opening balance to see the total here.'}</p><button class="btn sm ghost" data-bal-acc="">${cs?'Účty':'Accounts'} ›</button>`}
+  </section>`;
 }
 function uiFinSelect(id,label,opts,cur,withNone){
   return `<label for="${id}">${label}</label><select id="${id}">${withNone?`<option value="">${uiFinT('none')}</option>`:''}${opts.map(o=>`<option value="${escapeHtml(o[0])}" ${o[0]===cur?'selected':''}>${escapeHtml(o[1])}</option>`).join('')}</select><div class="field-error" hidden data-err="${id}"></div>`;
@@ -6661,10 +6685,28 @@ function openInvestmentForm(existing){
   };
   openSheet(inner);
 }
+// one contribution ('c') or valuation ('v') of an investment: edit amount / date, or delete it
+function openInvestmentEntryForm(i,k,id){
+  const cs=uiLang()==='cs', list=k==='c'?i.contributions:i.valuations, x=list.find(e=>e.id===id); if(!x) return;
+  closeSheets();
+  const inner=el(`<div class="fin-form"><h3>${k==='c'?(cs?'Upravit vklad':'Edit contribution'):(cs?'Upravit ocenění':'Edit valuation')}</h3>
+    <div class="grid2"><div><label for="ie_amt">${k==='c'?(cs?'Částka (výběr = záporná)':'Amount (withdrawal = negative)'):(cs?'Hodnota':'Value')}</label><input type="number" id="ie_amt" inputmode="decimal" step="0.01" value="${k==='c'?x.amount:x.value}"><div class="field-error" hidden data-err="ie_amt"></div></div>
+      <div><label for="ie_date">${uiFinT('f_date')}</label><input type="date" id="ie_date" value="${x.date}"><div class="field-error" hidden data-err="ie_date"></div></div></div>
+    <button class="btn" id="ie_save">${uiFinT('save')}</button><button class="btn danger" id="ie_del" style="margin-top:8px">${uiIcon('trash',16)} ${cs?'Smazat záznam':'Delete entry'}</button></div>`);
+  inner.querySelector('#ie_save').onclick=()=>{
+    const v=inner.querySelector('#ie_amt').value, d=inner.querySelector('#ie_date').value, err=(id2,t)=>{ const m=inner.querySelector(`[data-err="${id2}"]`); m.hidden=false; m.textContent=t; inner.querySelector('#'+id2).setAttribute('aria-invalid','true'); };
+    if(v===''||!Number.isFinite(Number(v))||(k==='v'&&Number(v)<0)||(k==='c'&&Number(v)===0)){ err('ie_amt',cs?'Neplatná částka':'Invalid amount'); return; }
+    if(!plannerValidDate(d)){ err('ie_date',cs?'Neplatné datum':'Invalid date'); return; }
+    if(k==='c') x.amount=finRound(finNum(v)); else x.value=finRound(finNum(v)); x.date=d; i.updatedAt=Date.now();
+    scheduleSave(); closeSheets(); render(); openInvestmentDetail(i);
+  };
+  inner.querySelector('#ie_del').onclick=()=>{ if(k==='c') i.contributions=i.contributions.filter(e=>e.id!==id); else i.valuations=i.valuations.filter(e=>e.id!==id); i.updatedAt=Date.now(); scheduleSave(); closeSheets(); render(); openInvestmentDetail(i); };
+  openSheet(inner);
+}
 function openInvestmentDetail(i){
   const p=financeInvestmentPerformance(i);
   const row=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
-  const hist=[...i.contributions.map(c=>[c.date,`${uiFin2T('add_contrib')}${c.note?' · '+escapeHtml(c.note):''}`,`${c.amount>0?'+':''}${uiMoney(c.amount)}`]),...i.valuations.map(v=>[v.date,uiFin2T('value'),`= ${uiMoney(v.value)}`])].sort((a,b)=>b[0].localeCompare(a[0]));
+  const hist=[...i.contributions.map(c=>[c.date,`${uiFin2T('add_contrib')}${c.note?' · '+escapeHtml(c.note):''}`,`${c.amount>0?'+':''}${uiMoney(c.amount)}`,'c',c.id]),...i.valuations.map(v=>[v.date,uiFin2T('value'),`= ${uiMoney(v.value)}`,'v',v.id])].sort((a,b)=>b[0].localeCompare(a[0]));
   const inner=el(`<div class="fin-detail" id="invDetail"><h3>${escapeHtml(i.name)}${i.ticker?` <span class="sub">${escapeHtml(i.ticker)}</span>`:''}</h3>
     <div class="card">${row(uiFin2T('value'),`${uiMoney(p.value)} ${escapeHtml(i.currency)}${p.hasValuation?'':` (${uiFin2T('no_val')})`}`)}${row(uiFin2T('invested'),uiMoney(p.invested))}
       ${row(uiFin2T('gain'),`${p.gain>=0?'+':''}${uiMoney(p.gain)}${p.pct!=null?` · ${uiFinPct(p.pct,true)}`:''}`)}</div>
@@ -6673,17 +6715,20 @@ function openInvestmentDetail(i){
     <button class="btn ghost" id="iv_save">${uiFin2T('add_val')}</button>
     <div class="grid2" style="margin-top:10px"><div><label for="ic_amt">${uiFin2T('add_contrib')}</label><input type="number" id="ic_amt" inputmode="decimal" step="0.01"><div class="field-error" hidden data-err="ic_amt"></div></div><div><label for="ic_date">${uiFinT('f_date')}</label><input type="date" id="ic_date" value="${todayStr()}"></div></div>
     <button class="btn ghost" id="ic_save">${uiFin2T('add_contrib')}</button>
-    <div class="section-header"><h3>${uiFin2T('history')}</h3></div><div class="card">${hist.map(h=>row(`${fmtDate(h[0])} · ${h[1]}`,h[2])).join('')||'<div class="sub">—</div>'}</div>
-    <div class="btn-row" style="margin-top:12px"><button class="btn ghost" id="i_edit">${uiFinT('edit')}</button><button class="btn ghost" id="i_act">${i.active===false?uiFin2T('act'):uiFin2T('deact')}</button></div></div>`);
+    <div class="section-header"><h3>${uiFin2T('history')}</h3></div><div class="card inv-hist">${hist.map(h=>`<div class="kv inv-row"><span>${fmtDate(h[0])} · ${h[1]}</span><b>${h[2]}</b><button class="iconbtn ghost-ic" data-inv-edit="${h[3]}:${escapeHtml(h[4])}" aria-label="${uiT('edit')}: ${fmtDate(h[0])} ${escapeHtml(h[1].replace(/<[^>]*>/g,''))}">${uiIcon('edit',16)}</button></div>`).join('')||'<div class="sub">—</div>'}</div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn ghost" id="i_edit">${uiFinT('edit')}</button><button class="btn ghost" id="i_act">${i.active===false?uiFin2T('act'):uiFin2T('deact')}</button></div>
+    <button class="btn danger" id="i_del" style="margin-top:8px">${uiIcon('trash',16)} ${uiLang()==='cs'?'Smazat investici':'Delete investment'}</button></div>`);
   inner.querySelector('#iv_save').onclick=()=>{ const r=financeInvestmentAdd(i.id,'valuation',{value:inner.querySelector('#iv_val').value,date:inner.querySelector('#iv_date').value}); if(!r.ok){ uiFinShowErrors(inner,r.errors,{value:'iv_val'}); return; } scheduleSave(); closeSheets(); render(); openInvestmentDetail(i); };
   inner.querySelector('#ic_save').onclick=()=>{ const r=financeInvestmentAdd(i.id,'contribution',{amount:inner.querySelector('#ic_amt').value,date:inner.querySelector('#ic_date').value}); if(!r.ok){ uiFinShowErrors(inner,r.errors,{amount:'ic_amt'}); return; } scheduleSave(); closeSheets(); render(); openInvestmentDetail(i); };
   inner.querySelector('#i_edit').onclick=()=>{ closeSheets(); openInvestmentForm(i); };
   inner.querySelector('#i_act').onclick=()=>{ i.active=i.active===false; i.updatedAt=Date.now(); scheduleSave(); closeSheets(); render(); };
+  inner.querySelector('#i_del').onclick=()=>uiDelConfirm('investment',{name:i.name},()=>{ S.investments=(S.investments||[]).filter(x=>x.id!==i.id); scheduleSave(); closeSheets(); render(); });
+  inner.querySelectorAll('[data-inv-edit]').forEach(b=>b.onclick=()=>{ const [k,id]=b.dataset.invEdit.split(':'); openInvestmentEntryForm(i,k,id); });
   openSheet(inner);
 }
 function renderFinanceRecurring(){
   const ym=finMonth||finYm(), ex=financeExpectedMonth(ym), plans=[...(S.recurringFinance||[])].sort((a,b)=>(b.active!==false)-(a.active!==false)||a.name.localeCompare(b.name,uiLocale()));
-  const subsMonthly=S.subscriptions.filter(s=>s.active!==false).reduce((a,s)=>a+(s.period==='Yearly'?Number(s.price||0)/12:Number(s.price||0)),0);
+  const subsMonthly=S.subscriptions.filter(s=>s.active!==false).reduce((a,s)=>a+subMonthly(s),0);
   const wrap=el(`<div class="fin">${uiFinSubHead(uiFinT('s_recurring'),`<button class="btn sm" id="addRec">＋ ${uiFin2T('add_rec')}</button>`)}${uiFinMonthBar()}
     <div class="card fin-expected"><div class="kicker" style="margin-bottom:6px">${uiFinT('expected')} · ${escapeHtml(uiFinMonthLabel(ym))}</div><p class="helper-text" style="margin:0 0 8px">${uiFinT('expected_d')}</p>${uiFinExpectedList(ex)}</div>
     <div class="section-header"><h3>${uiFinT('s_recurring')}</h3></div><div class="list" id="finRecList"></div>
@@ -6782,7 +6827,7 @@ function renderFinance(){
   // arriving from another screen opens the dashboard of the current month (Search keeps its target)
   if(uiLastView!=='finance'&&!finKeepView){ finView='dashboard'; finMonth=null; }
   finKeepView=false;
-  const map={tx:renderFinanceTx,budgets:renderFinanceBudgets,accounts:renderFinanceAccounts,savings:renderFinanceSavings,invest:renderFinanceInvestments,recurring:renderFinanceRecurring,cats:renderFinanceCategories,review:renderFinanceReview};
+  const map={subs:renderFinanceSubs,tx:renderFinanceTx,budgets:renderFinanceBudgets,accounts:renderFinanceAccounts,savings:renderFinanceSavings,invest:renderFinanceInvestments,recurring:renderFinanceRecurring,cats:renderFinanceCategories,review:renderFinanceReview};
   return (map[finView]||renderFinanceDashboard)();
 }
 
@@ -7749,6 +7794,7 @@ function uiDelConfirm(kind,o,onOk){
     workout:[cs?'Smazat trénink?':'Delete workout?',cs?`Trénink ${q} bude trvale smazán i se všemi sériemi.`:`The workout ${q} will be permanently deleted with all its sets.`,[cs?'Osobní rekordy se přepočítají ze zbývajících tréninků.':'Personal records are recalculated from the remaining workouts.',xp]],
     exercise:[cs?'Smazat cvik?':'Delete exercise?',cs?`Cvik ${q} bude smazán z knihovny.`:`The exercise ${q} will be removed from the library.`,[cs?'Pokud ho používá trénink nebo šablona, jen se archivuje a jeho historie zůstane.':'If a workout or template uses it, it is only archived and its history stays.']],
     template:[cs?'Smazat šablonu?':'Delete template?',cs?`Šablona ${q} bude trvale smazána.`:`The template ${q} will be permanently deleted.`,[cs?'Tréninky podle ní už odcvičené zůstanou beze změny.':'Workouts already done from it stay unchanged.']],
+    investment:[cs?'Smazat investici?':'Delete investment?',cs?`Investice ${q} bude smazána i se všemi vklady a oceněními.`:`The investment ${q} will be deleted with all its contributions and valuations.`,[cs?'Transakce na účtech zůstanou beze změny.':'Account transactions stay unchanged.']],
     food:[cs?'Smazat oblíbené jídlo?':'Delete favourite food?',cs?`Oblíbené jídlo ${q} bude smazáno ze seznamu.`:`The favourite food ${q} will be removed from the list.`,[cs?'Už zapsaná jídla zůstanou beze změny.':'Meals already logged stay unchanged.']],
     meal:[cs?'Smazat jídlo?':'Delete meal?',cs?`Jídlo ${q} bude trvale smazáno ze záznamu.`:`The meal ${q} will be permanently deleted from your log.`,[xp]],
     note:[cs?'Smazat poznámku?':'Delete note?',cs?`Poznámka ${q} bude trvale smazána.`:`The note ${q} will be permanently deleted.`,[]],
@@ -8528,18 +8574,26 @@ function nextPaymentDate(sub){
   while(d<todayStr()){ d=addPeriod(d,sub.period); }
   return d;
 }
+// Reality QA: subscriptions also repeat weekly / every 14 days (period 'Weekly' / 'Biweekly'); old records stay Monthly / Yearly
+const SUB_PERIODS=['Weekly','Biweekly','Monthly','Yearly'];
+function subPeriod(s){ return SUB_PERIODS.includes(s&&s.period)?s.period:'Monthly'; }
+function subFrequency(s){ return {Weekly:'weekly',Biweekly:'biweekly',Monthly:'monthly',Yearly:'yearly'}[subPeriod(s)]; }
+function subMonthly(s){ const p=Number(s.price||0); return {Weekly:p*52/12,Biweekly:p*26/12,Monthly:p,Yearly:p/12}[subPeriod(s)]; }
 function addPeriod(dstr,period){
   const d=new Date(dstr+'T00:00');
-  if(period==='Yearly') d.setFullYear(d.getFullYear()+1); else d.setMonth(d.getMonth()+1);
+  if(period==='Weekly'||period==='Biweekly') d.setDate(d.getDate()+(period==='Weekly'?7:14));
+  else if(period==='Yearly') d.setFullYear(d.getFullYear()+1); else d.setMonth(d.getMonth()+1);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function renderSubs(){
+// Reality QA: Subscriptions are a part of Finance (Finance → Předplatná); the old route lands there
+function renderSubs(){ finView='subs'; finKeepView=true; view='finance'; return renderFinance(); }
+function renderFinanceSubs(){
   const active=S.subscriptions.filter(s=>s.active!==false);
-  const monthlyTotal=active.reduce((a,s)=>a+(s.period==='Yearly'?Number(s.price||0)/12:Number(s.price||0)),0);
+  const monthlyTotal=active.reduce((a,s)=>a+subMonthly(s),0);
   const cs=uiLang()==='cs';
   const L=cs?{t:'Předplatné',mo:'Měsíčně (aktivní)',yr:'Ročně (aktivní)',add:'Předplatné',act:'Aktivovat',deact:'Pozastavit',inactive:'neaktivní',next:'další platba',none:'Žádná předplatná',none_d:'Sleduj pravidelné platby a kdy přijde další.',n:'aktivních'}
     :{t:'Subscriptions',mo:'Monthly (active)',yr:'Yearly (active)',add:'Subscription',act:'Activate',deact:'Deactivate',inactive:'inactive',next:'next payment',none:'No subscriptions yet',none_d:'Track recurring payments and when the next one is due.',n:'active'};
-  const wrap=el(`<div>${uiPageHead(L.t,`${active.length} ${L.n}`,`<button class="btn sm" id="addSub">＋ ${L.add}</button>`)}
+  const wrap=el(`<div class="fin">${uiFinSubHead(L.t,`<button class="btn sm" id="addSub">＋ ${L.add}</button>`)}<p class="sub" style="margin:-8px 2px 12px">${active.length} ${L.n}</p>
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-label">${L.mo}</div><div class="stat-value">${uiNum(Math.round(monthlyTotal))}</div></div>
       <div class="stat-card"><div class="stat-label">${L.yr}</div><div class="stat-value">${uiNum(Math.round(monthlyTotal*12))}</div></div>
@@ -8556,7 +8610,7 @@ function renderSubs(){
     const days=nxt?Math.round((new Date(nxt+'T00:00')-new Date(todayStr()+'T00:00'))/86400000):null;
     const it=el(`<div class="item sub-item${s.active===false?' is-inactive':''}"><span class="icon-circle" aria-hidden="true">💳</span>
       <div style="flex:1;min-width:0"><div class="item-title truncate">${escapeHtml(s.name)}${s.active===false?` <span class="chip is-muted">${L.inactive}</span>`:''}</div>
-      <div class="item-meta meta-row"><b class="num" style="color:var(--text)">${uiNum(s.price)}</b><span>/ ${uiLang()==='cs'?(s.period==='Yearly'?'rok':'měsíc'):(s.period==='Yearly'?'year':'month')}</span>${s.category?`<span>${escapeHtml(s.category)}</span>`:''}${nxt?`<span class="chip ${days!=null&&days<=3?'is-warn':'is-muted'}">⏳ ${fmtDate(nxt)}</span>`:''}</div>
+      <div class="item-meta meta-row"><b class="num" style="color:var(--text)">${uiNum(s.price)}</b><span>/ ${uiSubPeriodShort(subPeriod(s))}</span>${s.accountId&&financeAccountById(s.accountId)?`<span>${uiIcon('wallet',12)} ${escapeHtml(financeAccountById(s.accountId).name)}</span>`:''}${s.category?`<span>${escapeHtml(s.category)}</span>`:''}${nxt?`<span class="chip ${days!=null&&days<=3?'is-warn':'is-muted'}">⏳ ${fmtDate(nxt)}</span>`:''}</div>
       <div class="sub-actions"><button class="pill sm activeBtn">${s.active===false?L.act:L.deact}</button>
       <button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(s.name)}">${uiIcon('edit',18)}</button>
       <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(s.name)}">✕</button></div></div></div>`);
@@ -8568,25 +8622,28 @@ function renderSubs(){
     sl.appendChild(it);
   });
   wrap.querySelector('#addSub').onclick=()=>openSubForm();
+  wrap.querySelector('#finBack').onclick=()=>uiFinOpen('dashboard');
   return wrap;
 }
+function uiSubPeriodShort(p){ const cs=uiLang()==='cs'; return {Weekly:cs?'týden':'week',Biweekly:cs?'14 dní':'2 weeks',Monthly:cs?'měsíc':'month',Yearly:cs?'rok':'year'}[p]; }
 function openSubForm(existing){
   const s=existing;
   const inner=el(`<div><h3>${s?'Edit Subscription':'New Subscription'}</h3>
     <label>Name</label><input id="su_name" value="${s?escapeHtml(s.name):''}" placeholder="e.g. Netflix">
     <div class="grid2"><div><label>Price</label><input type="number" id="su_price" step="0.01" value="${s?s.price:''}"></div>
-    <div><label>Period</label><select id="su_period"><option>Monthly</option><option>Yearly</option></select></div></div>
+    <div><label for="su_period">${uiLang()==='cs'?'Frekvence':'Frequency'}</label><select id="su_period">${SUB_PERIODS.map(p=>`<option value="${p}">${{Weekly:uiLang()==='cs'?'Týdně':'Weekly',Biweekly:uiLang()==='cs'?'Každých 14 dní':'Every 14 days',Monthly:uiLang()==='cs'?'Měsíčně':'Monthly',Yearly:uiLang()==='cs'?'Ročně':'Yearly'}[p]}</option>`).join('')}</select></div></div>
+    <label for="su_acc">${uiLang()==='cs'?'Strhává se z účtu':'Paid from account'}</label><select id="su_acc"><option value="">${uiLang()==='cs'?'— bez účtu —':'— no account —'}</option>${(S.accounts||[]).filter(a=>a.active!==false||(s&&a.id===s.accountId)).map(a=>`<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)}</option>`).join('')}</select>
     <label>Next payment date</label><input type="date" id="su_next" value="${s?(s.nextPayment||todayStr()):todayStr()}">
     <label>Category</label><select id="su_cat"><option value="">None</option>${catOptions()}</select>
     <label>Notes</label><textarea id="su_notes" rows="2">${s?escapeHtml(s.notes||''):''}</textarea>
     <label>Status</label><select id="su_active"><option value="1">Active</option><option value="0">Inactive</option></select>
     <button class="btn" id="su_save">${s?'Save Changes':'Add'}</button>
   </div>`);
-  if(s){ inner.querySelector('#su_period').value=s.period||'Monthly'; inner.querySelector('#su_cat').value=s.category||''; inner.querySelector('#su_active').value=s.active===false?'0':'1'; }
+  if(s){ inner.querySelector('#su_period').value=subPeriod(s); inner.querySelector('#su_acc').value=s.accountId||''; inner.querySelector('#su_cat').value=s.category||''; inner.querySelector('#su_active').value=s.active===false?'0':'1'; }
   inner.querySelector('#su_save').onclick=()=>{
     const name=inner.querySelector('#su_name').value.trim();
     if(!name){toast('Name required');return;}
-    const fields={name,price:parseFloat(inner.querySelector('#su_price').value)||0,period:inner.querySelector('#su_period').value,
+    const fields={name,price:parseFloat(inner.querySelector('#su_price').value)||0,period:inner.querySelector('#su_period').value,accountId:inner.querySelector('#su_acc').value,
       nextPayment:inner.querySelector('#su_next').value,category:inner.querySelector('#su_cat').value,notes:inner.querySelector('#su_notes').value,
       active:inner.querySelector('#su_active').value==='1'};
     if(s){
