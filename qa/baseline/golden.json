@@ -420,7 +420,7 @@
    "icon": "book",
    "color": "",
    "profile": null,
-   "archived": false,
+   "archived": true,
    "builtin": true
   },
   {
@@ -430,7 +430,7 @@
    "icon": "star",
    "color": "",
    "profile": null,
-   "archived": false,
+   "archived": true,
    "builtin": true
   },
   {
@@ -440,7 +440,7 @@
    "icon": "cart",
    "color": "",
    "profile": null,
-   "archived": false,
+   "archived": true,
    "builtin": true
   },
   {
@@ -450,7 +450,7 @@
    "icon": "car",
    "color": "",
    "profile": null,
-   "archived": false,
+   "archived": true,
    "builtin": true
   }
  ],
@@ -571,8 +571,24 @@
    "nutrition"
   ],
   [
+   "dq_calories",
+   "nutrition"
+  ],
+  [
+   "dq_water",
+   "nutrition"
+  ],
+  [
    "wq_workouts",
    "fitness"
+  ],
+  [
+   "wq_routine_week",
+   "discipline"
+  ],
+  [
+   "wq_sleep_week",
+   "sleep"
   ],
   [
    "wq_tasks",
@@ -648,6 +664,16 @@
     {}
    ],
    [
+    "wq_routine_week",
+    {
+     "habit": "h_water"
+    }
+   ],
+   [
+    "wq_sleep_week",
+    {}
+   ],
+   [
     "wq_tasks",
     {}
    ],
@@ -699,8 +725,8 @@
   "dq_plan_all": {
    "id": "dq_plan_all",
    "core": true,
-   "title": "Complete today's planned blocks",
-   "cs": "Dokonči plánované bloky dne",
+   "title": "Complete all of today's planned blocks",
+   "cs": "Dokonči všechny dnešní plánované bloky",
    "xp": 35,
    "attr": "plan",
    "icon": "clock"
@@ -709,7 +735,7 @@
    "id": "dq_habits",
    "core": true,
    "title": "Complete all of today's habits",
-   "cs": "Splň všechny dnešní návyky",
+   "cs": "Splň všechny dnešní rutiny",
    "xp": 40,
    "attr": "discipline",
    "icon": "flame"
@@ -731,7 +757,7 @@
   "dq_streak": {
    "id": "dq_streak",
    "title": "Keep a habit streak going",
-   "cs": "Udrž streak návyku",
+   "cs": "Udrž streak rutiny",
    "xp": 25,
    "attr": "discipline",
    "icon": "flame"
@@ -767,6 +793,22 @@
    "xp": 15,
    "attr": "nutrition",
    "icon": "apple"
+  },
+  "dq_calories": {
+   "id": "dq_calories",
+   "title": "Hit your calorie target (90–110 %)",
+   "cs": "Splň kalorický cíl (90–110 %)",
+   "xp": 30,
+   "attr": "nutrition",
+   "icon": "apple"
+  },
+  "dq_water": {
+   "id": "dq_water",
+   "title": "Drink your daily water target",
+   "cs": "Vypij denní cíl vody",
+   "xp": 20,
+   "attr": "nutrition",
+   "icon": "drop"
   }
  },
  "weeklyQuests": {
@@ -778,6 +820,22 @@
    "attr": "fitness",
    "icon": "dumbbell"
   },
+  "wq_routine_week": {
+   "id": "wq_routine_week",
+   "title": "Keep a routine all week",
+   "cs": "Splň rutinu celý týden",
+   "xp": 120,
+   "attr": "discipline",
+   "icon": "flame"
+  },
+  "wq_sleep_week": {
+   "id": "wq_sleep_week",
+   "title": "Sleep 7–9 h every night this week",
+   "cs": "Spi 7–9 h každou noc v týdnu",
+   "xp": 120,
+   "attr": "sleep",
+   "icon": "moon"
+  },
   "wq_tasks": {
    "id": "wq_tasks",
    "title": "Complete your weekly task target",
@@ -788,7 +846,7 @@
   "wq_streak": {
    "id": "wq_streak",
    "title": "Maintain a 7-day habit streak",
-   "cs": "Udrž 7denní streak návyku",
+   "cs": "Udrž 7denní streak rutiny",
    "xp": 150,
    "attr": "discipline",
    "icon": "flame"
@@ -796,7 +854,7 @@
   "wq_goal": {
    "id": "wq_goal",
    "title": "Move a goal forward",
-   "cs": "Posuň cíl: milník nebo propojený úkol",
+   "cs": "Posuň projekt: milník nebo propojený úkol",
    "xp": 100,
    "attr": "WIS",
    "icon": "target"
@@ -948,7 +1006,9 @@
    "greet_evening",
    "greet_morning",
    "import_label",
+   "nav_calendar",
    "nav_character",
+   "nav_goals",
    "nav_habits",
    "nav_home",
    "nav_more",
@@ -993,7 +1053,9 @@
    "greet_evening",
    "greet_morning",
    "import_label",
+   "nav_calendar",
    "nav_character",
+   "nav_goals",
    "nav_habits",
    "nav_home",
    "nav_more",
@@ -1577,12 +1639,12 @@
     }
    },
    "xp": {
-    "xpEarned": 824,
-    "xpTodayVal": 624,
-    "xpThisWeek": 824,
-    "xpThisMonth": 1824,
+    "xpEarned": 674,
+    "xpTodayVal": 474,
+    "xpThisWeek": 674,
+    "xpThisMonth": 1674,
     "level": 5,
-    "into": 378,
+    "into": 228,
     "need": 878
    },
    "fitness": {
@@ -1679,12 +1741,12 @@
     }
    },
    "xp": {
-    "xpEarned": 1824,
-    "xpTodayVal": 624,
-    "xpThisWeek": 824,
-    "xpThisMonth": 1824,
+    "xpEarned": 1674,
+    "xpTodayVal": 474,
+    "xpThisWeek": 674,
+    "xpThisMonth": 1674,
     "level": 5,
-    "into": 378,
+    "into": 228,
     "need": 878
    },
    "fitness": {
@@ -1781,12 +1843,12 @@
     }
    },
    "xp": {
-    "xpEarned": 1824,
-    "xpTodayVal": 624,
-    "xpThisWeek": 824,
-    "xpThisMonth": 1824,
+    "xpEarned": 1674,
+    "xpTodayVal": 474,
+    "xpThisWeek": 674,
+    "xpThisMonth": 1674,
     "level": 5,
-    "into": 378,
+    "into": 228,
     "need": 878
    },
    "fitness": {
@@ -1883,12 +1945,12 @@
     }
    },
    "xp": {
-    "xpEarned": 1824,
-    "xpTodayVal": 624,
-    "xpThisWeek": 824,
-    "xpThisMonth": 1824,
+    "xpEarned": 1674,
+    "xpTodayVal": 474,
+    "xpThisWeek": 674,
+    "xpThisMonth": 1674,
     "level": 5,
-    "into": 378,
+    "into": 228,
     "need": 878
    },
    "fitness": {
@@ -1952,6 +2014,7 @@
   "longest": 8,
   "consistency": 93,
   "avgQuality": 3.5,
+  "avgQualityPct": null,
   "entries": [
    {
     "notes": "",
@@ -1995,6 +2058,7 @@
     "longest": 8,
     "consistency": 93,
     "avgQuality": 3.5,
+    "avgQualityPct": null,
     "entries": [
      {
       "notes": "",
@@ -2171,6 +2235,7 @@
     "longest": 8,
     "consistency": 93,
     "avgQuality": 3.5,
+    "avgQualityPct": null,
     "entries": [
      {
       "notes": "",
@@ -2347,6 +2412,7 @@
     "longest": 8,
     "consistency": 93,
     "avgQuality": 3.5,
+    "avgQualityPct": null,
     "entries": [
      {
       "notes": "",
@@ -2523,6 +2589,7 @@
     "longest": 8,
     "consistency": 93,
     "avgQuality": 3.5,
+    "avgQualityPct": null,
     "entries": [
      {
       "notes": "",
@@ -2715,10 +2782,10 @@
  },
  "level": {
   "level": 5,
-  "into": 378,
+  "into": 228,
   "need": 878
  },
- "xpToday": 624,
+ "xpToday": 474,
  "finance": 40380,
  "fuel": {
   "intervals": [
@@ -2780,12 +2847,6 @@
    "text": "🔥 Habit: Drink water (08:00)"
   },
   {
-   "prefType": "car",
-   "navType": "vehicle",
-   "id": "v1",
-   "text": "📋 STK/inspection due in 20d"
-  },
-  {
    "prefType": "quest",
    "navType": "quest",
    "id": "dq_priority",
@@ -2795,7 +2856,7 @@
    "prefType": "quest",
    "navType": "quest",
    "id": "dq_plan_all",
-   "text": "📜 Quest: Complete today's planned blocks"
+   "text": "📜 Quest: Complete all of today's planned blocks"
   }
  ],
  "search": [
@@ -3526,56 +3587,6 @@
    ]
   ],
   [
-   "Vehicles",
-   "🚗",
-   "vehicle",
-   [
-    {
-     "title": "Octavia",
-     "meta": "Škoda Octavia",
-     "obj": {
-      "vin": "",
-      "regExpiry": "2026-10-13",
-      "insuranceExpiry": "2027-04-11",
-      "createdAt": "<time>",
-      "id": "v1",
-      "name": "Octavia",
-      "brand": "Škoda",
-      "model": "Octavia",
-      "year": "2019",
-      "mileage": "84000"
-     }
-    }
-   ]
-  ],
-  [
-   "Car Services",
-   "🔧",
-   "carService",
-   [
-    {
-     "title": "Oil change",
-     "meta": "14.08.2026",
-     "obj": {
-      "notes": "",
-      "createdAt": "<time>",
-      "id": "cs1",
-      "vehicleId": "v1",
-      "type": "Oil change",
-      "date": "2026-08-14",
-      "mileage": "80000",
-      "cost": "2500"
-     }
-    }
-   ]
-  ],
-  [
-   "Fuel Entries",
-   "⛽",
-   "fuel",
-   []
-  ],
-  [
    "Quests",
    "📜",
    "quest",
@@ -3619,26 +3630,26 @@
      }
     },
     {
-     "title": "Dokonči plánované bloky dne",
+     "title": "Dokonči všechny dnešní plánované bloky",
      "meta": "+35 XP",
      "obj": {
       "id": "dq_plan_all",
       "core": true,
-      "title": "Complete today's planned blocks",
-      "cs": "Dokonči plánované bloky dne",
+      "title": "Complete all of today's planned blocks",
+      "cs": "Dokonči všechny dnešní plánované bloky",
       "xp": 35,
       "attr": "plan",
       "icon": "clock"
      }
     },
     {
-     "title": "Splň všechny dnešní návyky",
+     "title": "Splň všechny dnešní rutiny",
      "meta": "+40 XP",
      "obj": {
       "id": "dq_habits",
       "core": true,
       "title": "Complete all of today's habits",
-      "cs": "Splň všechny dnešní návyky",
+      "cs": "Splň všechny dnešní rutiny",
       "xp": 40,
       "attr": "discipline",
       "icon": "flame"
@@ -3667,12 +3678,12 @@
      }
     },
     {
-     "title": "Udrž streak návyku",
+     "title": "Udrž streak rutiny",
      "meta": "+25 XP",
      "obj": {
       "id": "dq_streak",
       "title": "Keep a habit streak going",
-      "cs": "Udrž streak návyku",
+      "cs": "Udrž streak rutiny",
       "xp": 25,
       "attr": "discipline",
       "icon": "flame"
@@ -3727,6 +3738,30 @@
      }
     },
     {
+     "title": "Splň kalorický cíl (90–110 %)",
+     "meta": "+30 XP",
+     "obj": {
+      "id": "dq_calories",
+      "title": "Hit your calorie target (90–110 %)",
+      "cs": "Splň kalorický cíl (90–110 %)",
+      "xp": 30,
+      "attr": "nutrition",
+      "icon": "apple"
+     }
+    },
+    {
+     "title": "Vypij denní cíl vody",
+     "meta": "+20 XP",
+     "obj": {
+      "id": "dq_water",
+      "title": "Drink your daily water target",
+      "cs": "Vypij denní cíl vody",
+      "xp": 20,
+      "attr": "nutrition",
+      "icon": "drop"
+     }
+    },
+    {
      "title": "Odtrénuj svůj tréninkový týden",
      "meta": "+150 XP",
      "obj": {
@@ -3736,6 +3771,30 @@
       "xp": 150,
       "attr": "fitness",
       "icon": "dumbbell"
+     }
+    },
+    {
+     "title": "Splň rutinu celý týden",
+     "meta": "+120 XP",
+     "obj": {
+      "id": "wq_routine_week",
+      "title": "Keep a routine all week",
+      "cs": "Splň rutinu celý týden",
+      "xp": 120,
+      "attr": "discipline",
+      "icon": "flame"
+     }
+    },
+    {
+     "title": "Spi 7–9 h každou noc v týdnu",
+     "meta": "+120 XP",
+     "obj": {
+      "id": "wq_sleep_week",
+      "title": "Sleep 7–9 h every night this week",
+      "cs": "Spi 7–9 h každou noc v týdnu",
+      "xp": 120,
+      "attr": "sleep",
+      "icon": "moon"
      }
     },
     {
@@ -3750,24 +3809,24 @@
      }
     },
     {
-     "title": "Udrž 7denní streak návyku",
+     "title": "Udrž 7denní streak rutiny",
      "meta": "+150 XP",
      "obj": {
       "id": "wq_streak",
       "title": "Maintain a 7-day habit streak",
-      "cs": "Udrž 7denní streak návyku",
+      "cs": "Udrž 7denní streak rutiny",
       "xp": 150,
       "attr": "discipline",
       "icon": "flame"
      }
     },
     {
-     "title": "Posuň cíl: milník nebo propojený úkol",
+     "title": "Posuň projekt: milník nebo propojený úkol",
      "meta": "+100 XP",
      "obj": {
       "id": "wq_goal",
       "title": "Move a goal forward",
-      "cs": "Posuň cíl: milník nebo propojený úkol",
+      "cs": "Posuň projekt: milník nebo propojený úkol",
       "xp": 100,
       "attr": "WIS",
       "icon": "target"
@@ -4089,7 +4148,27 @@
    1
   ],
   [
+   "dq_calories",
+   false,
+   0
+  ],
+  [
+   "dq_water",
+   false,
+   500
+  ],
+  [
    "wq_workouts",
+   false,
+   2
+  ],
+  [
+   "wq_routine_week",
+   false,
+   0
+  ],
+  [
+   "wq_sleep_week",
    false,
    2
   ],
@@ -4218,7 +4297,7 @@
   [
    "quest_5",
    false,
-   40
+   20
   ]
  ]
 }

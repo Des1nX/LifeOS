@@ -21,11 +21,12 @@ const GOLDEN = path.join(here, 'baseline', 'golden.json');
 const args = process.argv.slice(2);
 
 export const VIEWS = ['home', 'tasks', 'habits', 'goals', 'character', 'more', 'finance', 'fitness', 'nutrition', 'notes',
-  'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner', 'week', 'intel'];
-const NAV = ['home', 'tasks', 'habits', 'character', 'more'];
-const MORE_ITEMS = ['week', 'intel', 'planner', 'goals', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests',
-  'statistics', 'search', 'health', 'character', 'settings'];
-const QUICK_ADD = ['task', 'habit', 'goal', 'expense', 'income', 'workout', 'meal', 'note', 'journal', 'event', 'water', 'fuel', 'planner'];
+  'journal', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner', 'week', 'intel']; // Reality QA: no Car screen (its data stays)
+const NAV = ['home', 'calendar', 'tasks', 'habits', 'more']; // Reality QA: the phone bottom bar; the desktop sidebar adds NAV_ALL
+const NAV_ALL = ['home', 'calendar', 'tasks', 'habits', 'goals', 'character', 'finance', 'fitness', 'nutrition', 'health', 'notes', 'journal', 'quests', 'statistics', 'more'];
+const MORE_ITEMS = ['calendar', 'goals', 'week', 'intel', 'quests', 'notes', 'journal', 'search', 'fitness', 'nutrition', 'health', 'finance',
+  'statistics', 'character', 'settings']; // Reality QA: Planner = Calendar, Subscriptions inside Finance, no Car
+const QUICK_ADD = ['task', 'habit', 'goal', 'event', 'planner', 'expense', 'income', 'workout', 'meal', 'water', 'note', 'journal']; // Reality QA: no Car fuel entry
 
 // ---------- harness ----------
 // Serves the app like a static host: the PWA files next to LifeOS.html (sw.js, manifest.json, icons/, index.html) by
@@ -108,7 +109,7 @@ test('boot: fresh install shows onboarding, schemaVersion 8, no errors', async (
 
 test('shell: stable DOM hooks the JS relies on are present', async ({ page }) => {
   for (const id of ['app', 'toasts', 'fabBtn', 'settingsBtn', 'themeBtn', 'manifestLink']) assert.equal(await page.locator('#' + id).count(), 1, '#' + id);
-  assert.deepEqual(await page.$$eval('nav.bottom button', bs => bs.map(b => b.dataset.v)), NAV);
+  assert.deepEqual(await page.$$eval('nav.bottom button', bs => bs.map(b => b.dataset.v)), NAV_ALL);
 });
 
 test('onboarding: full 6-step wizard via UI persists answers', async ({ page }) => {
@@ -174,7 +175,7 @@ test('navigation: bottom nav, More grid, settings button and detail links', asyn
 test('sub-navigation: health tabs, statistics periods', async ({ page }) => {
   await go(page, 'health');
   const n = await page.locator('#hTabs > *').count();
-  assert.equal(n, 5, 'five health tabs');
+  assert.equal(n, 3, 'Reality QA: sleep, weight, active kcal (steps / heart rate are not entered by hand any more)');
   for (let i = 0; i < n; i++) { await page.locator('#hTabs > *').nth(i).click(); assert.ok((await appText(page)).length > 20); }
   await go(page, 'statistics');
   const p = await page.locator('#spTabs button').count();
@@ -182,10 +183,10 @@ test('sub-navigation: health tabs, statistics periods', async ({ page }) => {
   for (let i = 0; i < p; i++) { await page.locator('#spTabs button').nth(i).click(); assert.equal(await page.locator('#spTabs button').nth(i).getAttribute('class'), 'on'); }
 }, { state: fixtureState() });
 
-test('quick add: all 13 entries open their form (water logs directly; Phase 10 adds Planner block; Weekly Planner adds a 14th entry that opens the week)', async ({ page }) => {
+test('quick add: all 12 entries open their form (water logs directly; Phase 10 adds Planner block; Weekly Planner adds an entry that opens the week; Reality QA: no Car fuel)', async ({ page }) => {
   for (const t of QUICK_ADD) {
     await page.click('#fabBtn');
-    assert.equal(await page.locator('.sheet .qopt[data-t]').count(), 14, '13 forms + "Naplánovat týden"');
+    assert.equal(await page.locator('.sheet .qopt[data-t]').count(), 13, '12 forms + "Naplánovat týden"');
     const water = (await stateOf(page)).waterLog.length;
     await page.click(`.sheet .qopt[data-t="${t}"]`);
     if (t === 'water') assert.equal((await stateOf(page)).waterLog.length, water + 1);
@@ -492,8 +493,7 @@ test('8B CRUD: every create form saves exactly one record through the redesigned
   const forms = [
     ['openFinanceForm("expense")', 'expenses'], ['openFinanceForm("income")', 'income'], ['openHabitForm()', 'habits'], ['openGoalForm()', 'goals'],
     ['openWorkoutForm()', 'workouts'], ['openMealForm()', 'meals'], ['openNoteForm()', 'notes'], ['openJournalForm()', 'journal'], ['openEventForm()', 'events'],
-    ['openSleepForm()', 'sleepLog'], ['openWeightForm()', 'weightLog'], ['openStepsForm()', 'stepsLog'], ['openHeartRateForm()', 'heartRateLog'],
-    ['openActiveCaloriesForm()', 'activeCaloriesLog'], ['openVehicleForm()', 'vehicles'], ['openServiceForm("v1")', 'carServices'], ['openFuelForm("v1")', 'fuelEntries'],
+    ['openSleepForm()', 'sleepLog'], ['openWeightForm()', 'weightLog'], ['openActiveCaloriesForm()', 'activeCaloriesLog'], // Reality QA: no steps / heart-rate / car forms (data kept, RQ19/RQ20/RQ26)
     ['openSubForm()', 'subscriptions'], ['openBudgetForm()', 'budgets'], ['openMilestoneForm("g_fit")', 'milestones'], ['openForm("task")', 'tasks'],
   ];
   const failures = [];
@@ -534,7 +534,7 @@ const dayOff = n => { const x = new Date(`${TODAY}T00:00`); x.setDate(x.getDate(
 
 test('9 Daily Score: empty day has no score (never 0/100) and every area is N/A', async ({ page }) => {
   const r = await dsRun(page, {});
-  assert.equal(r.score, null); assert.equal(r.label, null); assert.equal(r.relevant, 0); assert.equal(r.algo, 2); // polish pass: algo 2 adds training days
+  assert.equal(r.score, null); assert.equal(r.label, null); assert.equal(r.relevant, 0); assert.equal(r.algo, 3); // polish pass: algo 2 adds training days; Reality QA: algo 3 adds sleep quality %
   for (const k of ['tasks', 'habits', 'nutrition', 'sleep', 'fitness', 'goals']) assert.equal(r.areas[k].score, null, k);
 });
 
@@ -642,7 +642,7 @@ test('9 Stravování: a snapshot of a finished day uses the closed-day band', as
   assert.equal(live, 48);
   await page.clock.setFixedTime(NOW + 86400000); await page.evaluate(() => render());
   const snap = (await stateOf(page)).dailyScores[TODAY];
-  assert.equal(snap.areas.nutrition.mode, 'closed'); assert.equal(snap.areas.nutrition.parts.calories, 0); assert.equal(snap.algo, 2);
+  assert.equal(snap.areas.nutrition.mode, 'closed'); assert.equal(snap.areas.nutrition.parts.calories, 0); assert.equal(snap.algo, 3); // Reality QA: algo 3
 }, { state: fixtureState() });
 
 test('9 UI: Stravování detail lists calories/protein/water and "nesledováno" for untracked water', async ({ page }) => {
@@ -723,7 +723,7 @@ test('9 history: a finished day is snapshotted once, immutable, and XP/RPG data 
   // The snapshot is the closed-day result (live and finished day may differ by design: calories
   // are live progress during the day, the 90-110 % band once the day is over).
   const closed = await page.evaluate(d => dailyScore(d), TODAY);
-  assert.equal(snap.score, closed.score); assert.equal(snap.algo, 2); assert.equal(snap.label, closed.label);
+  assert.equal(snap.score, closed.score); assert.equal(snap.algo, 3); assert.equal(snap.label, closed.label);
   for (const k of ['tasks', 'habits', 'sleep', 'fitness']) assert.deepEqual(snap.areas[k], live.areas[k], `${k} unchanged between live and closed`);
   assert.deepEqual(Object.keys(snap.areas).sort(), ['fitness', 'habits', 'nutrition', 'sleep', 'tasks']);
   // Only the new day's quest/achievement checks may run on boot of a new day - render() alone must not
@@ -949,15 +949,15 @@ test('10 UI: Quick Add -> Planner block creates a real block that appears in the
   const s = await stateOf(page);
   const b = s.plannerBlocks.find(x => x.title === 'Učení angličtiny');
   assert.ok(b && b.date === TODAY && b.startTime === '19:00' && b.endTime === '20:00' && b.category === 'Learning' && b.completed === false);
-  assert.equal(await page.evaluate(() => view), 'planner');
-  assert.equal(await page.locator(`#plTimeline [data-block="${b.id}"]`).count(), 1, 'visible on the timeline');
+  assert.equal(await page.evaluate(() => [view, uiCalMode].join()), 'calendar,today', 'Reality QA: the unified Calendar (day view) replaces the Planner screen');
+  assert.equal(await page.locator(`.cg-it[data-kind="block"][data-id="${b.id}"]`).count(), 1, 'visible on the timeline');
   assert.equal(await untouchable(page), before, 'no XP/RPG/Daily Score change');
 }, { state: fixtureState() });
 
 test('10 UI: invalid or equal times show an error and save nothing; overlap is allowed', async ({ page }) => {
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
   const n0 = (await stateOf(page)).plannerBlocks.length;
-  await page.click('#uiAddBlock');
+  await page.click('#calAdd'); await page.click('[data-add="block"]');
   await page.fill('#pb_title', 'X'); await page.fill('#pb_start', '15:00'); await page.fill('#pb_end', '15:00');
   await page.click('#pb_save');
   assert.equal(await page.locator('[data-err="endTime"]').isVisible(), true);
@@ -965,26 +965,26 @@ test('10 UI: invalid or equal times show an error and save nothing; overlap is a
   assert.equal(await page.getAttribute('#pb_end', 'aria-invalid'), 'true');
   assert.equal((await stateOf(page)).plannerBlocks.length, n0, 'nothing saved');
   await page.fill('#pb_end', '16:00'); await page.click('#pb_save');          // overlaps Matematika + Konzultace
-  const lefts = await page.$$eval('#plTimeline [data-block]', ns => ns.filter(n => n.style.top === ns.find(m => m.dataset.block === 'pb_math').style.top).map(n => n.style.left));
+  const lefts = await page.$$eval('.cg-it[data-kind="block"]', ns => ns.filter(n => n.style.top === ns.find(m => m.dataset.id === 'pb_math').style.top).map(n => n.style.left));
   assert.equal(new Set(lefts).size, lefts.length, 'same-time blocks are side by side');
   assert.equal((await stateOf(page)).plannerBlocks.length, n0 + 1);
 }, { state: fixtureState() });
 
 test('10 UI: edit and delete a block through the sheet; the timeline check toggles only the block', async ({ page }) => {
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  await page.click('[data-block="pb_call"] .pl-open');
+  await page.click('.cg-it[data-kind="block"][data-id="pb_call"]');
   await page.fill('#pb_title', 'Konzultace s učitelem'); await page.fill('#pb_end', '17:00'); await page.click('#pb_save');
   let s = await stateOf(page);
   assert.deepEqual([s.plannerBlocks.find(b => b.id === 'pb_call').title, s.plannerBlocks.find(b => b.id === 'pb_call').endTime], ['Konzultace s učitelem', '17:00']);
   const taskBefore = JSON.stringify(s.tasks.find(t => t.id === 't_open'));
-  await page.click('[data-block="pb_math"] .plCheck');
+  await page.click('.cg-it[data-kind="block"][data-id="pb_math"] .cg-chk');
   s = await stateOf(page);
   assert.equal(s.plannerBlocks.find(b => b.id === 'pb_math').completed, true);
   assert.equal(JSON.stringify(s.tasks.find(t => t.id === 't_open')), taskBefore, 'linked task untouched');
   page.on('dialog', d => d.accept());
-  await page.click('[data-block="pb_call"] .pl-open'); await page.click('#pb_delete'); await page.click('#cf_ok');
+  await page.click('.cg-it[data-kind="block"][data-id="pb_call"]'); await page.click('#pb_delete'); await page.click('#cf_ok');
   assert.ok(!(await stateOf(page)).plannerBlocks.some(b => b.id === 'pb_call'));
-  assert.equal(await page.locator('[data-block="pb_call"]').count(), 0);
+  assert.equal(await page.locator('.cg-it[data-id="pb_call"]').count(), 0);
 }, { state: fixtureState() });
 
 test('10 UI: Task -> Naplánovat creates a linked block, the task itself stays unchanged, links work both ways', async ({ page }) => {
@@ -998,20 +998,20 @@ test('10 UI: Task -> Naplánovat creates a linked block, the task itself stays u
   const s = await stateOf(page);
   const b = s.plannerBlocks.find(x => x.taskId === 't_med');
   assert.ok(b); assert.equal(JSON.stringify(s.tasks.find(t => t.id === 't_med')), taskBefore, 'task unchanged');
-  assert.match(await page.locator(`[data-block="${b.id}"]`).innerText(), /Buy groceries/);
+  assert.match(await page.locator(`.cg-it[data-id="${b.id}"]`).innerText(), /Buy groceries/);
   // task side: chip on the row opens the planner day
   await page.click('nav.bottom button[data-v="tasks"]');
   await page.locator('.item', { hasText: 'Buy groceries' }).locator('.planLink').click();
-  assert.equal(await page.evaluate(() => [view, uiPlannerDay].join()), `planner,${TODAY}`);
+  assert.equal(await page.evaluate(() => [view, uiCalMode, uiCalDay].join()), `calendar,today,${TODAY}`);
   // block side: shows the task and its done state after the task is completed
   await page.click('nav.bottom button[data-v="tasks"]');
   await page.locator('.item', { hasText: 'Buy groceries' }).locator('.check').click();
   await page.waitForTimeout(700);
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  const blk = page.locator(`[data-block="${b.id}"]`);
-  assert.match(await blk.locator('.pl-open').getAttribute('aria-label'), /úkol hotový/);
-  // review: a block with link chips is drawn tall enough for them -> the done state shows as the chip (compact blocks keep the icon)
-  assert.equal(await blk.locator('[title="úkol hotový"] svg').count() + await blk.locator('.pl-chips .chip.is-success').count(), 1, 'the block shows the linked task is done');
+  const blk = page.locator(`.cg-it[data-id="${b.id}"]`);
+  assert.match(await blk.getAttribute('aria-label'), /úkol hotový/);
+  // Reality QA: the calendar item says it in its label; a 30 min item is short, so the link line is hidden (the label keeps it)
+  assert.equal(await blk.locator('.cg-lk').count(), 1, 'the block carries the linked task state');
   assert.equal((await stateOf(page)).plannerBlocks.find(x => x.id === b.id).completed, false, 'block keeps its own completed flag');
 }, { state: fixtureState() });
 
@@ -1020,7 +1020,7 @@ test('10 UI: deleting the linked task does not crash the planner', async ({ page
   await page.locator('.item', { hasText: 'Write report' }).locator('.delbtn').click(); await page.click('#cf_ok');
   assert.ok(!(await stateOf(page)).tasks.some(t => t.id === 't_open'));
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  assert.match(await page.locator('[data-block="pb_math"]').innerText(), /smazáno/);
+  assert.match(await page.locator('.cg-it[data-id="pb_math"]').innerText(), /smazáno/);
 }, { state: fixtureState() });
 
 test('10 UI: Home shows Today\'s plan (polish pass: its own widget right after the Daily Score) and opens the day overview / planner', async ({ page }) => {
@@ -1035,7 +1035,7 @@ test('10 UI: Home shows Today\'s plan (polish pass: its own widget right after t
   assert.equal(await ov.count(), 1, 'day overview sheet');
   assert.equal(await ov.locator('.plan-row').count(), 4);
   await page.click('#dovPlanner');
-  assert.equal(await page.evaluate(() => [view, uiPlannerDay].join()), `planner,${TODAY}`);
+  assert.equal(await page.evaluate(() => [view, uiCalMode, uiCalDay].join()), `calendar,today,${TODAY}`);
   await page.evaluate(() => { S.settings.widgets.tasks = false; view = 'home'; render(); });
   assert.equal(await page.locator('[data-plan="home"]').count(), 1, 'independent of the tasks widget');
   await page.evaluate(() => { S.settings.widgets.planner = false; view = 'home'; render(); });
@@ -1045,12 +1045,12 @@ test('10 UI: Home shows Today\'s plan (polish pass: its own widget right after t
 test('10 UI: day navigation (prev/next/Today) and read-only calendar events (never copied)', async ({ page }) => {
   const events = JSON.stringify((await stateOf(page)).events);
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  assert.equal(await page.locator('[data-event="ev1"]').count(), 1, "today's timed event shown as context");
-  await page.click('#plNext');
-  assert.equal(await page.evaluate(() => uiPlannerDay), dayOff(1));
-  assert.match(await page.locator('#plTimeline').innerText(), /Učení/);
-  await page.click('#plToday'); assert.equal(await page.evaluate(() => uiPlannerDay), TODAY);
-  await page.click('#plPrev'); assert.equal(await page.evaluate(() => uiPlannerDay), dayOff(-1));
+  assert.equal(await page.locator('.cg-it[data-kind="event"][data-id="ev1"]').count(), 1, "today's timed event shown in the day");
+  await page.click('#calNextD');
+  assert.equal(await page.evaluate(() => uiCalDay), dayOff(1));
+  assert.match(await page.locator('#calDayPanel .cg').innerText(), /Učení/);
+  await page.click('#calMode [data-m="today"]'); assert.equal(await page.evaluate(() => uiCalDay), TODAY);
+  await page.click('#calPrevD'); assert.equal(await page.evaluate(() => uiCalDay), dayOff(-1));
   assert.equal(JSON.stringify((await stateOf(page)).events), events, 'calendar events untouched');
   assert.equal((await stateOf(page)).plannerBlocks.length, 5, 'events were not copied into blocks');
 }, { state: fixtureState() });
@@ -1063,7 +1063,7 @@ test('10 Search: planner blocks are found by title, description and notes and op
   }
   await page.fill('#gs', 'Kapitola');
   await page.locator('#gsRes .search-hit', { hasText: 'Matematika' }).click();
-  assert.equal(await page.evaluate(() => [view, uiPlannerDay].join()), `planner,${TODAY}`);
+  assert.equal(await page.evaluate(() => [view, uiCalDay].join()), `calendar,${TODAY}`);
   assert.equal(await page.inputValue('#pb_title'), 'Matematika', 'block opened for editing');
 }, { state: fixtureState() });
 
@@ -1083,7 +1083,7 @@ test('10 data: planner blocks survive reload + export/import; reset removes them
   await page.waitForFunction(() => Array.isArray(S.plannerBlocks) && S.plannerBlocks.length === 0);
   assert.equal((await stateOf(page)).schemaVersion, 8);
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  assert.equal(await page.locator('#plTimeline [data-block]').count(), 0);
+  assert.equal(await page.locator('.cg-it[data-kind="block"]').count(), 0);
   page.on('dialog', d => d.accept());
   await page.evaluate(() => { S.plannerBlocks = [{ id: 'x', date: todayStr(), startTime: '10:00', endTime: '11:00', title: 'x' }]; });
   await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
@@ -1094,14 +1094,14 @@ test('10 invariants: a full planner session changes no XP/log/level/attributes/p
   const other = () => page.evaluate(() => JSON.stringify([S.tasks, S.events, S.goals, S.workouts, S.habits]));
   const [u0, o0] = [await untouchable(page), await other()];
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  await page.click('#uiAddBlock'); await page.fill('#pb_title', 'Test'); await page.fill('#pb_start', '11:00'); await page.fill('#pb_end', '11:45');
+  await page.click('#calAdd'); await page.click('[data-add="block"]'); await page.fill('#pb_title', 'Test'); await page.fill('#pb_start', '11:00'); await page.fill('#pb_end', '11:45');
   await page.click('#pb_link'); await page.click('[data-lk-type="task"][data-lk-id="t_open"]'); await page.click('#pb_save');
   const id = (await stateOf(page)).plannerBlocks.find(b => b.title === 'Test').id;
-  await page.click(`[data-block="${id}"] .plCheck`); await page.click(`[data-block="pb_math"] .plCheck`); await page.click(`[data-block="pb_math"] .plCheck`);
-  await page.click(`[data-block="${id}"] .pl-open`); await page.fill('#pb_title', 'Test 2'); await page.click('#pb_save');
+  await page.click(`.cg-it[data-kind="block"][data-id="${id}"] .cg-chk`); await page.click(`.cg-it[data-kind="block"][data-id="pb_math"] .cg-chk`); await page.click(`.cg-it[data-kind="block"][data-id="pb_math"] .cg-chk`);
+  await page.click(`.cg-it[data-kind="block"][data-id="${id}"]`); await page.fill('#pb_title', 'Test 2'); await page.click('#pb_save');
   page.on('dialog', d => d.accept());
-  await page.click(`[data-block="${id}"] .pl-open`); await page.click('#pb_delete'); await page.click('#cf_ok');
-  await page.click('#plNext'); await page.click('#plToday');
+  await page.click(`.cg-it[data-kind="block"][data-id="${id}"]`); await page.click('#pb_delete'); await page.click('#cf_ok');
+  await page.click('#calNextD'); await page.click('#calMode [data-m="today"]');
   assert.equal(await untouchable(page), u0, 'XP / RPG / Daily Score unchanged');
   assert.equal(await other(), o0, 'tasks, events, goals, workouts, habits unchanged');
 }, { state: fixtureState() });
@@ -2587,7 +2587,7 @@ test('11A planner: Start creates one standard active workout (plan snapshot, pla
   const { tid, bid } = await plSetup(page);
   const u0 = await untouchable(page);
   await plView(page);
-  await page.click(`[data-block="${bid}"] .plWkStart`);
+  await page.click(`.cg-it[data-kind="block"][data-id="${bid}"] .cg-wk`);
   assert.equal(await page.locator('#wkLive').count(), 1, 'live workout screen');
   const w = await active(page);
   assert.deepEqual([w.templateId, w.plannerBlockId, w.status, w.date], [tid, bid, 'active', TODAY]);
@@ -2601,7 +2601,7 @@ test('11A planner: Start creates one standard active workout (plan snapshot, pla
   assert.deepEqual(await active(page), w, 'template/block edits do not touch the active workout');
   // second Start from the same block: continue, no second workout
   await plView(page);
-  await page.click(`[data-block="${bid}"] .plWkStart`);
+  await page.click(`.cg-it[data-kind="block"][data-id="${bid}"] .cg-wk`);
   assert.equal(await page.evaluate(() => S.workouts.filter(x => x.status === 'active').length), 1);
   assert.equal(await page.locator('#wkLive').count(), 1);
 }, { state: fixtureState() });
@@ -2610,11 +2610,11 @@ test('11A planner: an active workout from elsewhere is offered for continuation,
   const { bid } = await plSetup(page);
   await page.evaluate(() => workoutStart({ name: 'Spontaneous' }));
   await plView(page);
-  await page.click(`[data-block="${bid}"] .plWkStart`);
+  await page.click(`.cg-it[data-kind="block"][data-id="${bid}"] .cg-wk`);
   assert.match(await page.locator('.cf-sheet').innerText(), /Trénink už probíhá[\s\S]*Máš rozpracovaný trénink „Spontaneous“/);
   await page.click('#cf_cancel');
   assert.equal(await page.evaluate(() => S.workouts.filter(x => x.status === 'active').length), 1);
-  await page.click(`[data-block="${bid}"] .plWkStart`); await page.click('#cf_ok');
+  await page.click(`.cg-it[data-kind="block"][data-id="${bid}"] .cg-wk`); await page.click('#cf_ok');
   assert.equal((await active(page)).name, 'Spontaneous', 'continues the existing workout');
   assert.equal(await page.evaluate(() => S.workouts.filter(x => x.status === 'active').length), 1);
   assert.deepEqual(await page.evaluate(id => [S.plannerBlocks.find(x => x.id === id).workoutId, plannerBlockWorkoutState(S.plannerBlocks.find(x => x.id === id))], bid), ['', null], 'the block is not linked to someone else\'s workout');
@@ -2651,11 +2651,11 @@ test('11A planner: a deleted or unknown template never breaks the planner - "Ša
   await page.evaluate(id => templateDelete(id), tid);
   await plView(page);
   for (const id of [bid, unknown]) {
-    assert.match(await page.locator(`[data-block="${id}"]`).innerText(), /Šablona není dostupná/);
-    assert.equal(await page.locator(`[data-block="${id}"] .plWkStart`).count(), 0, 'no Start without a template');
+    assert.match(await page.locator(`.cg-it[data-id="${id}"]`).innerText(), /Šablona není dostupná/);
+    assert.equal(await page.locator(`.cg-it[data-kind="block"][data-id="${id}"] .cg-wk`).count(), 0, 'no Start without a template');
   }
   assert.deepEqual(await page.evaluate(id => plannerStartWorkout(id), bid), { ok: false, reason: 'no_template' });
-  await page.click(`[data-block="${bid}"] .pl-open`);
+  await page.click(`.cg-it[data-kind="block"][data-id="${bid}"]`);
   assert.match(await page.innerText('#pb_link'), /Šablona není dostupná/, 'the missing template stays the Linked item (never auto-replaced)');
   await page.fill('#pb_notes', 'still here'); await page.click('#pb_save');
   assert.deepEqual([(await blk(page, bid)).workoutTemplateId, (await blk(page, bid)).notes], [tid, 'still here']);
@@ -2784,7 +2784,7 @@ test('11A final: full lifecycle Planner -> Start -> reload -> continue -> sets -
   const { tid, bid } = await plSetup(page);
   const u0 = await untouchable(page);
   await plView(page);
-  await page.click(`[data-block="${bid}"] .plWkStart`);
+  await page.click(`.cg-it[data-kind="block"][data-id="${bid}"] .cg-wk`);
   await setRow(page, 'Bench press', 0).locator('.ws-done').click();
   assert.equal(await untouchable(page), u0, 'nothing granted before Finish');
   assert.equal(await page.evaluate(() => S.muscleProgress.log.length), 0);
@@ -3457,13 +3457,13 @@ test('P4 attributes: grow automatically by the category profile (deterministic s
   for (const k of ['INT', 'FOC', 'SOC']) assert.equal(s.attrs[k] - a0[k], e.attrs[k], k);
   assert.equal(s.attrs.STR, a0.STR);
   // Character: automatic attributes explained, no + buttons, no points, no Skill Tree, no Settings shortcut
-  await page.click('nav.bottom button[data-v="character"]');
+  await page.click('nav.bottom button[data-v="more"]'); await page.click('#moreGrid [data-v="character"]'); // Reality QA: Character sits in More on phones (sidebar on desktop)
   const txt = await appText(page);
   assert.match(txt, /rostou automaticky/);
   for (const re of [/Strom dovedností/i, /Skill Tree/i, /bodů atributů/i, /Skill body/i, /Body atributů/i, /Nastavení/]) assert.doesNotMatch(txt, re);
   assert.equal(await page.locator('.spendAttrBtn, .unlockSkillBtn, .skill-node').count(), 0);
   assert.match(await page.locator('.attr-row[data-attr="STR"] .attr-src').innerText(), /Fitness/);
-  assert.match(await page.locator('.attr-row[data-attr="INT"] .attr-src').innerText(), /Učení[\s\S]*Práce/);
+  assert.match(await page.locator('.attr-row[data-attr="INT"] .attr-src').innerText(), /Studium[\s\S]*Práce/, 'Reality QA: the Learning category reads Studium');
   // stored Skill Tree / points data is not deleted (export keeps it)
   assert.ok(s.rpg.skillTree && Array.isArray(s.rpg.skillTree.unlocked));
 }, { state: fixtureState() });
@@ -3539,7 +3539,11 @@ test('P6 categories: create a custom category in Settings, use it for a task/hab
   // notes scope
   await page.evaluate(() => { const r = catSave({ name: 'Recepty', icon: 'apple' }, 'notes'); window.__nk = r.category.key; openNoteForm(); });
   assert.equal(await page.locator(`#n_cat option[value="${await page.evaluate(() => window.__nk)}"]`).count(), 1);
-  assert.equal(await page.locator('#n_cat option[value="School"]').count(), 1, 'default note categories kept');
+  // Reality QA: defaults are Osobní / Práce; the other built-in note categories are archived (not offered, still resolvable)
+  assert.deepEqual(await page.$$eval('#n_cat option', os => ['Personal', 'Work'].map(k => os.some(o => o.value === k))), [true, true], 'Osobní / Práce offered');
+  assert.equal(await page.locator('#n_cat option[value="School"]').count(), 0, 'other built-ins archived: not offered for a new note');
+  await page.evaluate(() => { closeSheets(); S.notes.push({ id: 'n_school', title: 'Old', content: 'x', category: 'School', tags: [], pinned: false, favorite: true, createdAt: 1, updatedAt: 1 }); openNoteForm(S.notes.find(n => n.id === 'n_school')); });
+  assert.equal(await page.inputValue('#n_cat'), 'School', 'an old note keeps its built-in category');
 }, { state: fixtureState() });
 
 test('P6 categories: reload, export/import, old backup and reset', async ({ page }) => {
@@ -3559,7 +3563,7 @@ test('P6 categories: reload, export/import, old backup and reset', async ({ page
   await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => Array.isArray(S.lifeCategories) && S.lifeCategories.length === 0);
   assert.equal(await page.evaluate(() => catList('life').length), 8, 'an old backup gets the built-ins');
-  assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Učení');
+  assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Studium', 'Reality QA: built-in label Učení -> Studium (key unchanged)');
   page.on('dialog', d => d.accept());
   await page.evaluate(() => { S.lifeCategories = [{ key: 'cat_x', scope: 'life', name: 'x', icon: 'tag' }]; S.profile.photo = 'data:image/jpeg;base64,xx'; });
   await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
@@ -3569,13 +3573,17 @@ test('P6 categories: reload, export/import, old backup and reset', async ({ page
 
 test('P7 planner: one Linked field (tasks blue, goals red, workouts purple); a changed link replaces the others, an untouched one keeps old multi-links and the description', async ({ page }) => {
   await page.evaluate(() => { const bench = exerciseFind('Bench press') || exerciseAddPreset('Bench Press'); templateSave({ name: 'Push A', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 3, repsMin: 8 }] }); uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  await page.click('#uiAddBlock');
+  await page.click('#calAdd'); await page.click('[data-add="block"]');
   const labels = await page.locator('.pl-form label').allInnerTexts();
-  assert.deepEqual(labels.map(l => l.trim()), ['Název', 'Datum', 'Začátek', 'Konec', 'Kategorie', 'Propojeno', 'Poznámky']);
+  // Reality QA: multi-day end date and repeat (with an optional end) join the form; the rest is unchanged
+  assert.deepEqual(labels.map(l => l.trim()), ['Název', 'Datum', 'Začátek', 'Datum konce', 'Konec', 'Opakování', 'Opakovat do (nepovinné)', 'Kategorie', 'Propojeno', 'Poznámky']);
   await page.click('#pb_link');
   const groups = await page.$$eval('#pb_linkList .lk-group', gs => gs.map(g => [g.className.split(' ')[1], getComputedStyle(g.querySelector('.lk-gh i')).backgroundColor]));
-  assert.deepEqual(groups.map(g => g[0]), ['lk-task', 'lk-goal', 'lk-workout']);
-  assert.deepEqual(groups.map(g => g[1]), ['rgb(96, 165, 250)', 'rgb(248, 113, 113)', 'rgb(167, 139, 250)'], 'blue / red / purple (dark theme)');
+  // Reality QA: a block can also be a planned Rutina (its own group, between projects and workouts)
+  assert.deepEqual(groups.map(g => g[0]), ['lk-task', 'lk-goal', 'lk-habit', 'lk-workout']);
+  const col = Object.fromEntries(groups);
+  assert.deepEqual([col['lk-task'], col['lk-goal'], col['lk-workout']], ['rgb(96, 165, 250)', 'rgb(248, 113, 113)', 'rgb(167, 139, 250)'], 'blue / red / purple (dark theme)');
+  assert.ok(![col['lk-task'], col['lk-goal'], col['lk-workout']].includes(col['lk-habit']), 'routines have their own colour');
   assert.ok(await page.locator('#pb_linkList [data-lk-type="task"] .lk-main small').first().innerText(), 'items carry a small detail');
   await page.fill('#pb_linkFilter', 'report');
   assert.equal(await page.locator('#pb_linkList [data-lk-type]').count(), 1, 'filter');
@@ -3586,19 +3594,19 @@ test('P7 planner: one Linked field (tasks blue, goals red, workouts purple); a c
   assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['t_open', '', '', '']);
   // old block with several links + description: an untouched Linked field keeps all of them
   await page.evaluate(() => { const x = S.plannerBlocks.find(b => b.id === 'pb_push'); x.taskId = 't_med'; x.description = 'old description'; render(); });
-  await page.click('[data-block="pb_push"] .pl-open');
+  await page.click('.cg-it[data-kind="block"][data-id="pb_push"]');
   assert.match(await page.innerText('#pb_link'), /Buy groceries/, 'primary link shown');
   await page.fill('#pb_notes', 'n'); await page.click('#pb_save');
   b = await blk(page, 'pb_push');
   assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.description, b.notes], ['t_med', 'g_fit', 'w2', 'old description', 'n'], 'nothing lost');
   // choosing a workout replaces the other links; removing the link clears it
-  await page.click('[data-block="pb_push"] .pl-open'); await page.click('#pb_link');
+  await page.click('.cg-it[data-kind="block"][data-id="pb_push"]'); await page.click('#pb_link');
   const tid = await page.evaluate(() => S.workoutTemplates[0].id);
   await page.click(`[data-lk-type="workout"][data-lk-id="${tid}"]`); await page.click('#pb_save');
   b = await blk(page, 'pb_push');
   assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['', '', '', tid]);
-  assert.equal(await page.locator('[data-block="pb_push"] .plWkStart').count(), 1, 'a linked workout can be started');
-  await page.click('[data-block="pb_push"] .pl-open'); await page.click('#pb_link'); await page.click('[data-lk-clear]'); await page.click('#pb_save');
+  assert.equal(await page.locator('.cg-it[data-kind="block"][data-id="pb_push"] .cg-wk').count(), 1, 'a linked workout can be started');
+  await page.click('.cg-it[data-kind="block"][data-id="pb_push"]'); await page.click('#pb_link'); await page.click('[data-lk-clear]'); await page.click('#pb_save');
   b = await blk(page, 'pb_push');
   assert.deepEqual([b.taskId, b.goalId, b.workoutId, b.workoutTemplateId], ['', '', '', '']);
 }, { state: fixtureState() });
@@ -3717,7 +3725,7 @@ test('P11 design: no Apple emoji in the UI chrome of the main screens and sheets
   }
   assert.deepEqual(bad, []);
   await page.evaluate(() => { closeSheets(); view = 'more'; render(); });
-  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 18, 'Weekly Planner adds the 17th destination, Intelligence the 18th');
+  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 15, 'Weekly Planner adds the 17th destination, Intelligence the 18th; Reality QA: Planner is part of the Calendar, Subscriptions sit in Finance, Car is out of the UI (18 - 3)');
 }, { state: fixtureState() });
 
 test('P12 layout: new screens and sheets fit 320-1440 px in dark + light, no duplicate ids, no console errors', async ({ page }) => {
@@ -3807,7 +3815,9 @@ test('B3 balancing: quests keep their XP, grow attributes at 30 % of it, by the 
     };
   });
   assert.deepEqual(r.xp, [['dq_priority', 40], ['dq_workout', 40], ['dq_workout_pr', 60], ['dq_plan_all', 35], ['dq_habits', 40], ['dq_category', 20], ['dq_tasks', 30], ['dq_streak', 25], ['dq_score', 40],
-    ['dq_plan_morning', 25], ['dq_sleep', 15], ['dq_nutrition', 15], ['wq_workouts', 150], ['wq_tasks', 150], ['wq_streak', 150], ['wq_goal', 100], ['wq_score', 120], ['wq_planner', 100]], 'quest XP unchanged');
+    ['dq_plan_morning', 25], ['dq_sleep', 15], ['dq_nutrition', 15], ['dq_calories', 30], ['dq_water', 20],
+    ['wq_workouts', 150], ['wq_routine_week', 120], ['wq_sleep_week', 120], ['wq_tasks', 150], ['wq_streak', 150], ['wq_goal', 100], ['wq_score', 120], ['wq_planner', 100]],
+    'quest XP unchanged; Reality QA [XP-impacting, intended]: 4 behaviour quests join the pools (the board still holds 3 daily + 3 weekly, XP once per quest)');
   assert.equal(r.priority, r.work, 'the only priority task today is a Work task -> work profile');
   assert.deepEqual(r.plan, Array(3).fill('{"FOC":0.5,"DEX":0.5}'), 'planner -> FOC + DEX');
   assert.deepEqual(r.category, ['{"INT":0.6,"FOC":0.4}', '{"SOC":1}'], 'category quest -> that category');
@@ -3909,7 +3919,7 @@ test('Q3 Home: quest board shows progress pips and XP still to earn from the rea
   assert.equal(await row.locator('.prio[data-p="High"]').count(), 1);
   assert.equal(await row.locator('.meta-link.linkGoal, .meta-link.planLink').count(), 2);
   await row.locator('.planLink').click();
-  assert.equal(await page.evaluate(() => view), 'planner', 'inline link still navigates');
+  assert.equal(await page.evaluate(() => view), 'calendar', 'inline link still navigates (Reality QA: to the Calendar day)');
   assert.equal(await page.locator('[data-ds="card"] .ds-counts').count(), 0, 'no duplicated counts under the score');
 }, { state: classicState() });
 
@@ -4088,21 +4098,17 @@ test('R3 deletes: task, goal, milestone and goal-detail habit ask in an app shee
 test('R4 deletes: every other delete path and Reset use the app sheet (Czech, danger, cancel keeps), never confirm()', async ({ page }) => {
   const dialogs = []; page.on('dialog', d => { dialogs.push(d.message()); d.dismiss(); });
   await page.evaluate(() => { exerciseAddPreset('Plank'); exerciseAddPreset('Bench Press'); templateSave({ name: 'QA plan', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 2, repsMin: 5, weight: 50 }] }); S.profile.photo = 'data:image/png;base64,iVBORw0KGgo='; S.profile.avatar = 'photo'; });
+  // Reality QA: Car, steps and heart rate have no UI any more (their data stays), so their delete paths are gone
   const cases = [
     ['habits list', "view='habits';render()", '#hlist .delbtn', 'S.habits.length', /Smazat rutinu\?/],
     ['workout', "fitnessTab='workouts';uiWorkoutView=null;view='fitness';render()", '#app .delbtn[aria-label^="Smazat: "]', 'S.workouts.length', /Smazat trénink\?[\s\S]*rekordy se přepočítají/],
     ['meal', "view='nutrition';render()", '#app .meal-item .delbtn, #app .item .delbtn', 'S.meals.length', /Smazat jídlo\?/],
     ['note', "view='notes';render()", '#app .delbtn', 'S.notes.length', /Smazat poznámku\?/],
     ['journal', "view='journal';render()", '#app .delbtn', 'S.journal.length', /Smazat zápis\?/],
-    ['service', "view='car';render()", '[id^="svc-"] .delbtn', 'S.carServices.length', /Smazat servisní záznam\?/],
-    ['fuel', "view='car';render()", '[id^="fuel-"] .delbtn, [id^="fu-"] .delbtn', 'S.fuelEntries.length', /Smazat tankování\?/],
-    ['vehicle', "view='car';render()", '#app .delbtn[aria-label^="Smazat: "]', 'S.vehicles.length', /Smazat vozidlo\?[\s\S]*servis \(\d+\) a tankování \(\d+\)/],
     ['subscription', "view='subscriptions';render()", '#app .item .delbtn', 'S.subscriptions.length', /Smazat předplatné\?/],
-    ['event', "view='calendar';render()", '#app .delbtn', 'S.events.length', /Smazat událost\?/],
+    ['event', "uiCalMode='month';view='calendar';render()", '#evList .delbtn', 'S.events.length', /Smazat událost\?/],
     ['sleep', "healthTab='sleep';view='health';render()", '#app .item .delbtn', 'S.sleepLog.length', /Záznam spánku z/],
     ['weight', "healthTab='weight';view='health';render()", '#app .item .delbtn', 'S.weightLog.length', /Záznam hmotnosti z/],
-    ['steps', "healthTab='steps';view='health';render()", '#app .item .delbtn', 'S.stepsLog.length', /Záznam kroků z/],
-    ['heart', "healthTab='heartrate';view='health';render()", '#app .item .delbtn', 'S.heartRateLog.length', /Záznam tepu z/],
     ['active', "healthTab='activecal';view='health';render()", '#app .item .delbtn', 'S.activeCaloriesLog.length', /Záznam aktivních kalorií z/],
     ['planner block', "closeSheets();openPlannerForm(S.plannerBlocks.find(b=>b.id==='pb_call'))", '#pb_delete', 'S.plannerBlocks.length', /Smazat blok\?[\s\S]*se nesmažou/],
     ['exercise', "closeSheets();openExerciseForm(exerciseFind('Plank'))", '#ex_delete', 'S.exerciseLibrary.filter(x=>!x.archived).length', /Smazat cvik\?[\s\S]*jen se archivuje/],
@@ -4192,10 +4198,10 @@ test('R6 minute tick: no full render; search, focus, typing, workout, sheet, scr
   // Planner: scroll position kept, now-line moves with the clock (10:00 -> 10:30)
   await page.setViewportSize({ width: 390, height: 500 });
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); }); await runTick(0);
-  await page.evaluate(() => window.scrollTo(0, 300)); const top0 = await page.evaluate(() => parseInt(document.querySelector('#plTimeline .pl-now').style.top)); await mark();
+  await page.evaluate(() => window.scrollTo(0, 300)); const top0 = await page.evaluate(() => parseInt(document.querySelector('#calDayPanel .cg-now').style.top)); await mark();
   await runTick(30 * 60000);
   assert.ok(await same()); assert.equal(await page.evaluate(() => window.scrollY), 300, 'scroll kept');
-  assert.equal(await page.evaluate(() => parseInt(document.querySelector('#plTimeline .pl-now').style.top)) - top0, Math.round(30 * 1.1), 'now-line moved 30 min');
+  assert.equal(await page.evaluate(() => parseInt(document.querySelector('#calDayPanel .cg-now').style.top)) - top0, Math.round(30 * 1), 'now-line moved 30 min (Reality QA: calendar grid, 1 px / min)');
   // Home: greeting follows the hour, Today's plan card follows the clock; the rest of Home is the same nodes
   await page.evaluate(() => { view = 'home'; render(); }); await runTick(0); await mark();
   const g0 = await page.locator('.hud-greet').innerText();
@@ -4528,7 +4534,7 @@ test('P3-A5 sleep: one reward per night - edit, re-save, delete + log the same n
   await logSleep('2026-09-20'); assert.equal(await xpOf(page) - x0, 10, 'new night: 10 XP');
   for (let i = 0; i < 5; i++) { // delete + log the same night again
     await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(s => s.date !== '2026-09-20'); }); await logSleep('2026-09-20'); }
-  await page.evaluate(() => { closeSheets(); openSleepForm(S.sleepLog.find(s => s.date === '2026-09-20')); }); await page.fill('#sl_q', '5'); await page.click('#sl_save');
+  await page.evaluate(() => { closeSheets(); openSleepForm(S.sleepLog.find(s => s.date === '2026-09-20')); }); await page.fill('#sl_qp', '80'); /* Reality QA: quality in % */ await page.click('#sl_save');
   assert.equal(await xpOf(page) - x0, 10, 'edit / delete+recreate the same night: nothing more');
   await persist(page); await reload(page); await logSleep('2026-09-20');
   assert.equal(await xpOf(page) - x0, 10, 'after reload too');
@@ -4674,23 +4680,25 @@ const overlapDay = page => page.evaluate(() => { const D = todayStr();
     .map(([id, title, st, en]) => ({ id: 'ov' + id, title, date: D, startTime: st, endTime: en, category: 'Work', completed: false, createdAt: 1 }));
   S.plannerBlocks[0].taskId = 't_open'; uiOpenPlanner(D); });
 
-test('P3-C1 Planner and Calendar say what each is for and link to each other', async ({ page }) => {
+test('P3-C1 (Reality QA) Planner and Calendar are one Kalendář: the old planner entry opens its day view; Den / Týden / Měsíc switch in place', async ({ page }) => {
   await page.evaluate(() => uiOpenPlanner(todayStr()));
-  assert.match(await page.locator('.planner .page-head .sub').innerText(), /Časový plán dne/);
-  await page.click('#plCal'); assert.equal(await page.evaluate(() => view), 'calendar');
-  assert.match(await page.locator('.page-head .sub').innerText(), /Přehled dnů a měsíců/);
-  await page.click('#agendaPlan'); assert.equal(await page.evaluate(() => [view, uiPlannerDay === todayStr()].join()), 'planner,true');
+  assert.equal(await page.evaluate(() => [view, uiCalMode, uiCalDay === todayStr()].join()), 'calendar,today,true');
+  assert.equal(await page.locator('#calDayPanel').count(), 1);
+  await page.click('#calMode [data-m="week"]'); assert.equal(await page.evaluate(() => [view, uiCalMode].join()), 'calendar,week');
+  await page.click('#calMode [data-m="month"]'); assert.equal(await page.evaluate(() => [view, uiCalMode].join()), 'calendar,month');
+  assert.equal(await page.locator('#calDayPanel').count(), 1, 'the month shows the selected day\'s plan below it');
+  await page.click('#calMode [data-m="today"]'); assert.equal(await page.evaluate(() => [view, uiCalMode, uiCalDay === todayStr()].join()), 'calendar,today,true');
 }, { state: fixtureState() });
 
 test('P3-C2 "Teď" scrolls the current time into view; the now-line stays; other days offer "Dnes"', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 640 });
   await page.clock.setFixedTime(new Date(`${TODAY}T13:30:00`).getTime());
   await page.evaluate(() => { uiOpenPlanner(todayStr()); window.scrollTo(0, 0); });
-  assert.equal(await page.locator('#plTimeline .pl-now').count(), 1);
-  await page.click('#plNow'); await page.waitForTimeout(700);
-  const r = await page.evaluate(() => { const b = document.querySelector('#plTimeline .pl-now').getBoundingClientRect(); return { top: b.top, h: innerHeight, y: scrollY }; });
+  assert.equal(await page.locator('#calDayPanel .cg-now').count(), 1);
+  await page.click('#calNow'); await page.waitForTimeout(700);
+  const r = await page.evaluate(() => { const b = document.querySelector('#calDayPanel .cg-now').getBoundingClientRect(); return { top: b.top, h: innerHeight, y: scrollY }; });
   assert.ok(r.y > 0 && r.top > 0 && r.top < r.h * 0.6, `now-line in view (${Math.round(r.top)} of ${r.h})`);
-  await page.click('#plNext'); assert.equal(await page.locator('#plNow').count(), 0); assert.equal(await page.locator('#plToday').count(), 1);
+  await page.click('#calNextD'); assert.equal(await page.locator('#calNow').count(), 0); assert.equal(await page.locator('#calMode [data-m="today"]').count(), 1);
 }, { state: fixtureState() });
 
 test('P3-C3 overlapping and short blocks: each tap opens its own block, titles readable, no overflow at 320-430; linked task/workout blocks still work', async ({ page }) => {
@@ -4698,10 +4706,10 @@ test('P3-C3 overlapping and short blocks: each tap opens its own block, titles r
   for (const width of [320, 375, 390, 430, 768, 1440]) {
     await page.setViewportSize({ width, height: 800 }); await overlapDay(page);
     const r = await page.evaluate(() => { const out = [];
-      document.querySelectorAll('#plTimeline .pl-block[data-block]').forEach(n => { n.scrollIntoView({ block: 'center' }); const b = n.getBoundingClientRect(); const t = n.querySelector('.pl-t');
-        const hit = document.elementFromPoint(b.left + b.width / 2, b.top + Math.min(b.height / 2, 20)); const own = hit && hit.closest('.pl-block') === n;
-        const tb = t.getBoundingClientRect(); const ck = n.querySelector('.check').getBoundingClientRect();
-        out.push({ id: n.dataset.block, own, titleH: Math.round(tb.height), titleVisible: tb.height >= 12 && tb.width >= 30, checkIn: ck.bottom <= b.bottom + 1 }); });
+      document.querySelectorAll('.cg-it[data-kind="block"]').forEach(n => { n.scrollIntoView({ block: 'center' }); const b = n.getBoundingClientRect(); const t = n.querySelector('.cg-t');
+        const hit = document.elementFromPoint(b.left + Math.min(b.width / 2, 20), b.top + Math.min(b.height / 2, 20)); const own = hit && hit.closest('.cg-it') === n;
+        const tb = t.getBoundingClientRect(); const c = n.querySelector('.cg-chk'), ck = c.getBoundingClientRect(), ckShown = getComputedStyle(c).display !== 'none';
+        out.push({ id: n.dataset.id, own, titleH: Math.round(tb.height), titleVisible: tb.height >= 12 && tb.width >= 30, checkIn: !ckShown || ck.bottom <= b.bottom + 1 }); });
       return { out, over: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
     if (r.over > 0) bad.push(`${width}: overflow ${r.over}`);
     r.out.forEach(x => { if (!x.own) bad.push(`${width}: tap on ${x.id} hits another block`); if (!x.titleVisible) bad.push(`${width}: ${x.id} title hidden`); if (!x.checkIn) bad.push(`${width}: ${x.id} check clipped`); });
@@ -4709,15 +4717,15 @@ test('P3-C3 overlapping and short blocks: each tap opens its own block, titles r
   assert.deepEqual(bad, []);
   // clicking opens the right block's form
   await page.setViewportSize({ width: 320, height: 800 }); await overlapDay(page);
-  await page.locator('[data-block="ovb"] .pl-open').click(); assert.equal(await page.inputValue('#pb_title'), 'Hovor s klientem');
+  await page.locator('.cg-it[data-kind="block"][data-id="ovb"]').click(); assert.equal(await page.inputValue('#pb_title'), 'Hovor s klientem');
   await page.evaluate(() => closeSheets());
   // the check still completes only the block
-  await page.locator('[data-block="ove"] .plCheck').click(); assert.deepEqual(await page.evaluate(() => [S.plannerBlocks.find(b => b.id === 'ove').completed, S.tasks.find(t => t.id === 't_open').done]), [true, false]);
+  await page.locator('.cg-it[data-kind="block"][data-id="ove"] .cg-chk').click(); assert.deepEqual(await page.evaluate(() => [S.plannerBlocks.find(b => b.id === 'ove').completed, S.tasks.find(t => t.id === 't_open').done]), [true, false]);
   // linked task chip / workout block on a wide screen
   await page.setViewportSize({ width: 1024, height: 800 }); await overlapDay(page);
-  assert.match(await page.locator('[data-block="ova"]').innerText(), /Porada týmu kvartální/);
+  assert.match(await page.locator('.cg-it[data-id="ova"]').innerText(), /Porada týmu kvartální/);
   await page.evaluate(() => { exerciseAddPreset('Bench Press'); const t = templateSave({ name: 'Pl', exercises: [{ exerciseId: exerciseFind('Bench press').id, sets: 1, repsMin: 5, weight: 50 }] }).template.id; S.plannerBlocks.push({ id: 'ovw', title: 'Trénink', date: todayStr(), startTime: '17:00', endTime: '18:00', category: 'Health', workoutTemplateId: t, completed: false, createdAt: 1 }); uiOpenPlanner(todayStr()); });
-  await page.locator('[data-block="ovw"] .plWkStart').click();
+  await page.locator('.cg-it[data-kind="block"][data-id="ovw"] .cg-wk').click();
   assert.ok(await page.evaluate(() => !!activeWorkout() && activeWorkout().plannerBlockId === 'ovw'), 'linked workout starts from its block');
 }, { state: fixtureState() });
 
@@ -4955,7 +4963,7 @@ test('P3-F2 deletes leave no broken reference: task/goal/habit/workout/template/
   await del("fitnessTab='workouts';uiWorkoutView=null;view='fitness';render()", '#app .delbtn[aria-label^="Smazat: "]');
   await del("openTemplateForm(S.workoutTemplates.find(t=>t.id===window.__tpl))", '#tp_delete');
   await del("view='subscriptions';render()", '#app .item .delbtn');
-  await del("view='car';render()", '#app .delbtn[aria-label^="Smazat: "]');
+  // Reality QA: no Car UI any more (its data stays), so no vehicle delete path
   await del("view='nutrition';render()", '#app .meal-item .delbtn, #app .item .delbtn');
   await del("healthTab='sleep';view='health';render()", '#app .item .delbtn');
   const st = await stateOf(page);
@@ -4972,7 +4980,7 @@ test('P3-F2 deletes leave no broken reference: task/goal/habit/workout/template/
   assert.deepEqual(bad, []);
   assert.equal(await page.evaluate(() => { currentGoalId = 'g_fit'; view = 'goalDetail'; render(); return view; }), 'goals', 'a stale goal detail falls back to the goal list');
   await page.evaluate(() => { uiPlannerDay = todayStr(); view = 'planner'; render(); });
-  assert.match(await page.locator('[data-block="refb"]').innerText(), /smazáno|missing/i, 'the block says its task is gone instead of linking to it');
+  assert.match(await page.locator('.cg-it[data-id="refb"]').innerText(), /smazáno|missing/i, 'the block says its task is gone instead of linking to it');
 }, { state: fixtureState() });
 
 // ---------- Polish pass 3: G performance (realistic year) ----------
@@ -5074,9 +5082,9 @@ test('RV5 Planner: blocks with link chips are tall enough - nothing clipped at t
   for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 800 });
     await page.evaluate(() => { S.plannerBlocks.push({ id: 'lk2', title: 'Druhý s odkazem', date: todayStr(), startTime: '15:10', endTime: '15:50', category: 'Work', taskId: 't_med', goalId: 'g_fit', completed: false, createdAt: 1 }); uiOpenPlanner(todayStr()); });
-    const r = await page.evaluate(() => [...document.querySelectorAll('#plTimeline .pl-block[data-block]')].flatMap(n => { n.scrollIntoView({ block: 'center' }); const nb = n.getBoundingClientRect();
-      const cut = [...n.querySelectorAll('.pl-t,.pl-m,.pl-chips .chip,.check,.plWkStart')].filter(e => { const b = e.getBoundingClientRect(); return b.height && getComputedStyle(e).display !== 'none' && b.bottom > nb.bottom + 0.5; }).map(e => n.dataset.block + ' cut ' + e.className.split(' ')[0]);
-      const hit = document.elementFromPoint(nb.left + nb.width / 2, nb.top + Math.min(20, nb.height / 2)); if (!hit || hit.closest('.pl-block') !== n) cut.push(n.dataset.block + ' tap hits another block');
+    const r = await page.evaluate(() => [...document.querySelectorAll('.cg-it[data-kind="block"]')].flatMap(n => { n.scrollIntoView({ block: 'center' }); const nb = n.getBoundingClientRect();
+      const cut = [...n.querySelectorAll('.cg-t,.cg-m,.cg-lk,.cg-chk,.cg-wk')].filter(e => { const b = e.getBoundingClientRect(); return b.height && getComputedStyle(e).display !== 'none' && b.bottom > nb.bottom + 0.5; }).map(e => n.dataset.id + ' cut ' + e.className.split(' ')[0]);
+      const hit = document.elementFromPoint(nb.left + nb.width / 2, nb.top + Math.min(20, nb.height / 2)); if (!hit || hit.closest('.cg-it') !== n) cut.push(n.dataset.id + ' tap hits another block');
       return cut; }));
     r.forEach(x => bad.push(width + ': ' + x));
     await page.evaluate(() => { S.plannerBlocks = S.plannerBlocks.filter(b => b.id !== 'lk2'); });
@@ -5446,7 +5454,11 @@ test('CC12 quick actions open the existing forms; attention follows the notifica
   await page.evaluate(() => { S.settings.notifications = Object.assign({}, S.settings.notifications, { task: false, event: false }); }); await ccHome(page);
   attn = await page.$$eval('#ccAttn .cc-attn-row', ns => ns.map(n => n.innerText));
   assert.ok(!attn.some(t => /po termínu|Team meeting/.test(t)), 'switched-off kinds are not shown');
-  await page.click('#ccAttn .cc-attn-row[data-attn="car"]'); assert.equal(await page.evaluate(() => view), 'car');
+  // Reality QA: no Car attention any more (Car is out of the UI); the subscription row opens it in Finance
+  assert.equal(await page.locator('#ccAttn .cc-attn-row[data-attn="car"]').count(), 0);
+  await page.click('#ccAttn .cc-attn-row[data-attn="sub"]'); assert.equal(await page.evaluate(() => [view, finView].join()), 'finance,subs');
+  assert.ok(await page.locator('.sheet #su_name').isVisible(), 'the subscription opens for editing');
+  await page.evaluate(() => closeSheets());
   // a user with only a task: status tiles say "Žádná data"
   await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; S.tasks.push({ id: 'x1', title: 'Jediný úkol', priority: 'Medium', dueDate: todayStr(), done: false, category: '', createdAt: 1 }); });
   await ccHome(page);
@@ -6785,7 +6797,7 @@ test('WP29 Calendar coexists unchanged: same events on its dates; the week lists
   assert.deepEqual(await page.evaluate(() => uiEventsOn('2026-09-25').map(e => e.id)), ['eW1']);
   await wpGo(page, 0); assert.equal(await page.evaluate(() => JSON.stringify(S.events)), ev0);
   await page.evaluate(() => { view = 'more'; render(); });
-  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 4)), ['week', 'intel', 'planner', 'calendar']);
+  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 4)), ['calendar', 'goals', 'week', 'intel'], 'Reality QA: Kalendář (with the planner) and Projekty lead the productivity group');
 }, { state: fixtureState() });
 
 test('WP30 Quick Add "Naplánovat týden" opens the current week; the other entries still open their forms', async ({ page }) => {
@@ -7339,10 +7351,399 @@ test('IN30 navigation + existing views untouched: More -> Intelligence; Weekly P
     anAnalyze(getAnalyticsRange('week', todayStr())).planner]); });
   const a = await snap(); await inGo(page, 'intel'); await inGo(page, 'home'); assert.equal(await snap(), a);
   await page.evaluate(() => { view = 'more'; render(); });
-  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 3)), ['week', 'intel', 'planner']);
+  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 4)), ['calendar', 'goals', 'week', 'intel'], 'Reality QA: Kalendář (with the planner) and Projekty lead the group');
   await page.click('.more-section [data-v="intel"]'); assert.equal(await page.evaluate(() => view), 'intel');
   await page.evaluate(() => { view = 'tasks'; render(); openPlannerForm(null, { date: todayStr(), title: 'Z úkolů' }); }); await page.fill('#pb_start', '20:00'); await page.fill('#pb_end', '21:00'); await page.click('#pb_save');
-  assert.equal(await page.evaluate(() => view), 'planner', 'outside Intelligence the existing behaviour is kept');
+  assert.equal(await page.evaluate(() => [view, uiCalMode].join()), 'calendar,today', 'outside Intelligence the existing behaviour is kept (Reality QA: the planner is the Calendar day)');
+}, { state: fixtureState() });
+
+
+// ---------- Reality QA pass (RQ) ----------
+// fixture day 2026-09-23 (Wednesday); the calendar helpers are checked with fixed dates
+const rqState = page => page.evaluate(() => JSON.stringify(S));
+const rqClean = page => page.evaluate(() => { const t = document.getElementById('app').innerText, ids = {}; document.querySelectorAll('[id]').forEach(n => ids[n.id] = (ids[n.id] || 0) + 1);
+  return { bad: /undefined|NaN|Infinity|\[object/.test(t), dup: Object.keys(ids).filter(k => ids[k] > 1), overflow: document.documentElement.scrollWidth - innerWidth }; });
+const rqCal = (page, mode, day) => page.evaluate(([m, d]) => { closeSheets(); uiCalMode = m; uiCalDay = d || todayStr(); calOffset = 0; view = 'calendar'; render(); window.scrollTo(0, 0); }, [mode, day || null]);
+const rqBlocks = page => page.evaluate(() => {
+  const B = (id, o) => Object.assign({ id, date: '2026-09-23', startTime: '09:00', endTime: '10:00', title: id, category: 'Work', taskId: '', goalId: '', notes: '', completed: false, createdAt: 1 }, o);
+  S.plannerBlocks = [B('b1', { title: 'Workout', category: 'Fitness' }), B('b2', { title: 'Doktor', startTime: '09:00', endTime: '09:30', category: 'Health' }), B('b3', { title: 'Projekt', startTime: '09:15', endTime: '10:15', goalId: 'g1' }),
+    B('trip', { title: 'Výlet', date: '2026-09-25', endDate: '2026-09-27', startTime: '18:00', endTime: '10:00', category: 'Personal' })];
+});
+
+test('RQ1 multi-day block: one record from start to end, a part on every day it covers; duration over days; month and week show it', async ({ page }) => {
+  const r = await page.evaluate(() => { S.plannerBlocks = [];
+    const res = plannerSaveBlock({ title: 'Výlet', date: '2026-09-25', endDate: '2026-09-27', startTime: '18:00', endTime: '10:00', category: 'Personal' });
+    return { ok: res.ok, n: S.plannerBlocks.length, rec: [res.block.date, res.block.endDate, res.block.startTime, res.block.endTime], dur: plannerDuration(res.block),
+      days: ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28'].map(D => plannerBlocksOn(D).map(b => `${b.startTime}-${b.endTime}${b._occ && !b._occ.first ? '<' : ''}${b._occ && !b._occ.last ? '>' : ''}`).join()) }; });
+  assert.deepEqual(r, { ok: true, n: 1, rec: ['2026-09-25', '2026-09-27', '18:00', '10:00'], dur: 40 * 60, days: ['', '18:00-24:00>', '00:00-24:00<>', '00:00-10:00<', ''] });
+  await rqCal(page, 'month', '2026-09-26');
+  assert.equal(await page.locator('.mc-day[data-day="2026-09-26"] .mc.is-cont').count(), 1, 'the month shows the continuing day');
+  await page.setViewportSize({ width: 1280, height: 900 }); await rqCal(page, 'week', '2026-09-25');
+  assert.equal(await page.locator('.cg-it[data-id="' + (await page.evaluate(() => S.plannerBlocks[0].id)) + '"]').count(), 3, 'three parts in the week grid');
+}, { state: fixtureState() });
+
+test('RQ2 across midnight + validation: 22:00 -> 06:00 next day is valid; same-day end before start and an end date before the start are refused', async ({ page }) => {
+  const r = await page.evaluate(() => { S.plannerBlocks = [];
+    const ok = plannerSaveBlock({ title: 'Noc', date: '2026-09-23', endDate: '2026-09-24', startTime: '22:00', endTime: '06:00' });
+    const bad1 = plannerSaveBlock({ title: 'X', date: '2026-09-23', startTime: '10:00', endTime: '09:00' });
+    const bad2 = plannerSaveBlock({ title: 'X', date: '2026-09-23', endDate: '2026-09-22', startTime: '10:00', endTime: '11:00' });
+    const bad3 = plannerSaveBlock({ title: 'X', date: '2026-09-23', startTime: '24:00', endTime: '24:00' });
+    return [ok.ok, plannerDuration(ok.block), plannerBlocksOn('2026-09-24').map(b => b.startTime + '-' + b.endTime).join(), bad1.errors, bad2.errors, !!bad3.errors.startTime, S.plannerBlocks.length]; });
+  assert.deepEqual(r, [true, 480, '00:00-06:00', { endTime: 'end_before_start' }, { endDate: 'end_before_start' }, true, 1]);
+  await page.evaluate(() => { view = 'calendar'; render(); openPlannerForm(null, { date: '2026-09-23' }); });
+  await page.fill('#pb_title', 'Směna'); await page.fill('#pb_start', '22:00'); await page.fill('#pb_enddate', '2026-09-24'); await page.fill('#pb_end', '06:00'); await page.click('#pb_save');
+  assert.deepEqual(await page.evaluate(() => { const b = S.plannerBlocks.find(x => x.title === 'Směna'); return [b.date, b.endDate, b.startTime, b.endTime]; }), ['2026-09-23', '2026-09-24', '22:00', '06:00']);
+}, { state: fixtureState() });
+
+test('RQ3 + RQ4 drag & drop: move by time and to another day, resize the end (5-min snap); links and category stay; saved once on release', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1000 }); await rqBlocks(page);
+  await page.evaluate(() => { S.plannerBlocks.find(b => b.id === 'b3').taskId = 't1'; }); await persist(page);
+  await rqCal(page, 'today', '2026-09-23');
+  const it = page.locator('.cg-it[data-id="b3"]'), bb = await it.boundingBox();
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + 12); await page.mouse.down();
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + 12 + 20, { steps: 3 });
+  assert.equal(await page.evaluate(() => S.plannerBlocks.find(b => b.id === 'b3').startTime), '09:15', 'nothing is written while dragging');
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + 12 + 45, { steps: 3 }); await page.mouse.up();
+  assert.deepEqual(await page.evaluate(() => { const b = S.plannerBlocks.find(x => x.id === 'b3'); return [b.startTime, b.endTime, b.taskId, b.goalId, b.category]; }), ['10:00', '11:00', 't1', 'g1', 'Work']);
+  const rs = page.locator('.cg-it[data-id="b3"] .cg-rs'), rb = await rs.boundingBox();
+  await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2); await page.mouse.down(); await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2 + 30, { steps: 4 }); await page.mouse.up();
+  assert.deepEqual(await page.evaluate(() => { const b = S.plannerBlocks.find(x => x.id === 'b3'); return [b.startTime, b.endTime]; }), ['10:00', '11:30']);
+  await rqCal(page, 'week', '2026-09-23');
+  await page.locator('.cg-it[data-id="b3"]').scrollIntoViewIfNeeded();
+  const w = page.locator('.cg-it[data-id="b3"]'), wb = await w.boundingBox(), col = await page.locator('.cg-col[data-day="2026-09-24"]').boundingBox();
+  await page.mouse.move(wb.x + wb.width / 2, wb.y + 10); await page.mouse.down(); await page.mouse.move(col.x + col.width / 2, wb.y + 10, { steps: 8 }); await page.mouse.up();
+  assert.deepEqual(await page.evaluate(() => { const b = S.plannerBlocks.find(x => x.id === 'b3'); return [b.date, b.startTime, b.endTime]; }), ['2026-09-24', '10:00', '11:30']);
+  await settle(page); assert.equal((await idbState(page)).plannerBlocks.find(b => b.id === 'b3').date, '2026-09-24', 'saved');
+  // the whole multi-day block moves by the same shift when a middle part is dragged
+  const t = page.locator('.cg-it[data-id="trip"][data-day="2026-09-26"]'), tb = await t.boundingBox();
+  await page.mouse.move(tb.x + tb.width / 2, tb.y + 200); await page.mouse.down(); await page.mouse.move(tb.x + tb.width / 2, tb.y + 260, { steps: 6 }); await page.mouse.up();
+  assert.deepEqual(await page.evaluate(() => { const b = S.plannerBlocks.find(x => x.id === 'trip'); return [b.date, b.startTime, b.endDate, b.endTime]; }), ['2026-09-25', '19:00', '2026-09-27', '11:00']);
+}, { state: fixtureState() });
+
+test('RQ5 overlapping items: several at the same time are allowed, shown side by side and listed as overlaps; nothing refuses the save', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 }); await rqBlocks(page); await rqCal(page, 'today', '2026-09-23');
+  const lefts = await page.$$eval('.cg-col .cg-it[data-kind="block"]', ns => ns.filter(n => ['b1', 'b2', 'b3'].includes(n.dataset.id)).map(n => Math.round(n.getBoundingClientRect().left)));
+  assert.equal(new Set(lefts).size, 3, 'three columns');
+  assert.equal(await page.evaluate(() => wpWeek(0).days.find(d => d.date === '2026-09-23').conflicts.length), 3);
+  assert.equal(await page.evaluate(() => plannerSaveBlock({ title: 'Další', date: '2026-09-23', startTime: '09:00', endTime: '10:00' }).ok), true);
+}, { state: fixtureState() });
+
+test('RQ6 repeating blocks: daily / weekdays / weekly / chosen days / monthly / until; each occurrence completed on its own', async ({ page }) => {
+  const r = await page.evaluate(() => { S.plannerBlocks = [];
+    const mk = (title, repeat) => plannerSaveBlock({ title, date: '2026-09-21', startTime: '07:00', endTime: '07:30', repeat }).block.id;
+    const ids = { d: mk('D', { freq: 'daily', until: '2026-09-24' }), wd: mk('WD', { freq: 'weekdays' }), w: mk('W', { freq: 'weekly' }), days: mk('DAYS', { freq: 'days', days: [2, 4] }), m: mk('M', { freq: 'monthly' }) };
+    const on = D => plannerBlocksOn(D).map(b => b.title).sort().join('');
+    const bad = plannerSaveBlock({ title: 'X', date: '2026-09-21', startTime: '07:00', endTime: '07:30', repeat: { freq: 'days', days: [] } }).errors;
+    plannerToggleCompleted(ids.d, '2026-09-22');
+    return { mon: on('2026-09-21'), tue: on('2026-09-22'), thu: on('2026-09-24'), fri: on('2026-09-25'), sat: on('2026-09-26'), next: on('2026-09-28'), month: on('2026-10-21'), bad,
+      done: ['2026-09-21', '2026-09-22'].map(D => plannerBlocksOn(D).find(b => b.title === 'D').completed), rec: S.plannerBlocks.find(b => b.title === 'D').doneDates }; });
+  assert.deepEqual(r, { mon: 'DMWWD', tue: 'DDAYSWD', thu: 'DDAYSWD', fri: 'WD', sat: '', next: 'WWD', month: 'MWD', bad: { repeat: 'required' }, done: [false, true], rec: ['2026-09-22'] });
+}, { state: fixtureState() });
+
+test('RQ7 routine into the calendar: + -> Rutina plans an occurrence (block with habitId); the routine itself is not copied or checked', async ({ page }) => {
+  const h0 = await page.evaluate(() => JSON.stringify(S.habits));
+  await rqCal(page, 'today', '2026-09-23'); await page.click('#calAdd'); await page.click('[data-add="routine"]');
+  const h = await page.evaluate(() => S.habits.find(x => x.active !== false && x.type !== 'bad'));
+  await page.click(`.cal-pick[data-h="${h.id}"]`);
+  assert.equal(await page.inputValue('#pb_title'), h.name);
+  await page.fill('#pb_start', '07:00'); await page.fill('#pb_end', '07:30'); await page.click('#pb_save');
+  const b = await page.evaluate(id => S.plannerBlocks.find(x => x.habitId === id), h.id);
+  assert.deepEqual([b.date, b.startTime, b.endTime, b.title], ['2026-09-23', '07:00', '07:30', h.name]);
+  assert.equal(await page.evaluate(() => JSON.stringify(S.habits)), h0, 'the routine definition and its check-ins are unchanged');
+  assert.match(await page.locator('#calDayPanel .cal-rout').innerText(), new RegExp(`${h.name}[\\s\\S]*naplánováno 07:00`));
+}, { state: fixtureState() });
+
+test('RQ8 task into the calendar: + -> Úkol opens the task form with that day; a block can link a task (planner form)', async ({ page }) => {
+  await rqCal(page, 'today', '2026-09-25'); await page.click('#calAdd'); await page.click('[data-add="task"]');
+  assert.equal(await page.inputValue('.sheet #f_due'), '2026-09-25');
+  await page.fill('.sheet #f_title', 'Z kalendáře'); await page.click('.sheet .btn:not(.ghost):not(.danger)');
+  assert.equal(await page.evaluate(() => S.tasks.find(t => t.title === 'Z kalendáře').dueDate), '2026-09-25');
+  const t = await page.evaluate(() => S.tasks.find(t => !t.done).id);
+  await page.evaluate(id => { openPlannerForm(null, { date: '2026-09-25', taskId: id }); }, t);
+  await page.fill('#pb_title', 'Práce na úkolu'); await page.click('#pb_save');
+  assert.equal(await page.evaluate(() => S.plannerBlocks.find(b => b.title === 'Práce na úkolu').taskId), t);
+}, { state: fixtureState() });
+
+test('RQ9 events: old recurring events keep their dates; new weekdays / chosen days / until; every occurrence in the month; a dragged event moves its series', async ({ page }) => {
+  const r = await page.evaluate(() => { S.events = [migrateEvent({ id: 'old', title: 'Old weekly', date: '2026-09-02', start: '08:00', end: '09:00', recurring: 'weekly' }),
+      migrateEvent({ id: 'wd', title: 'Weekdays', date: '2026-09-21', start: '12:00', end: '12:30', recurring: 'weekdays', recurUntil: '2026-09-24' }),
+      migrateEvent({ id: 'ds', title: 'Days', date: '2026-09-21', start: '18:00', recurring: 'days', recurDays: [1, 3] })];
+    const on = D => calEventsOn(D).map(e => e.id).sort().join();
+    return [on('2026-09-23'), on('2026-09-24'), on('2026-09-25'), on('2026-09-28'), eventUpcomingDate(S.events[0]), eventUpcomingDate(S.events[2])]; });
+  assert.deepEqual(r, ['ds,old,wd', 'wd', '', 'ds', '2026-09-23', '2026-09-23']);
+  await page.setViewportSize({ width: 1280, height: 900 }); await rqCal(page, 'month', '2026-09-23');
+  assert.equal(await page.locator('.mc-grid .mc.is-event', { hasText: 'Old weekly' }).count(), 5, 'every Wednesday of September');
+  await rqCal(page, 'today', '2026-09-23');
+  await page.focus('.cg-it[data-id="old"]'); await page.keyboard.press('Alt+ArrowDown');
+  assert.deepEqual(await page.evaluate(() => { const e = S.events.find(x => x.id === 'old'); return [e.date, e.start, e.end, e.recurring]; }), ['2026-09-02', '08:15', '09:15', 'weekly']);
+}, { state: fixtureState() });
+
+test('RQ10 one Calendar: Dnes / Týden / Měsíc; a day picked in the month shows its whole plan below; the Planner route opens the day view', async ({ page }) => {
+  await rqCal(page, 'month');
+  await page.click('.mc-day[data-day="2026-09-24"]');
+  assert.match(await page.locator('#calDayPanel').innerText(), /Čtvrtek 24\. 9\./);
+  await page.evaluate(() => uiOpenPlanner('2026-09-22'));
+  assert.deepEqual(await page.evaluate(() => [view, uiCalMode, uiCalDay, !!document.querySelector('#calDayPanel .cg, #calDayPanel .card')]), ['calendar', 'today', '2026-09-22', true]);
+  await page.evaluate(() => { view = 'planner'; render(); }); assert.equal(await page.evaluate(() => view), 'calendar');
+  await page.click('#calAdd'); assert.deepEqual(await page.$$eval('.cal-add [data-add]', ns => ns.map(n => n.dataset.add)), ['event', 'block', 'task', 'routine', 'workout']);
+}, { state: fixtureState() });
+
+test('RQ11 Projects: goals shown as Projekty everywhere; the data stays S.goals (deadline, progress, milestones, task and block links); a task picks its Projekt', async ({ page }) => {
+  const g0 = await page.evaluate(() => JSON.stringify([S.goals, S.milestones, S.tasks.map(t => [t.id, t.goalId]), (S.plannerBlocks || []).map(b => [b.id, b.goalId])]));
+  await page.evaluate(() => { view = 'goals'; render(); });
+  assert.match(await page.locator('#app h2').first().innerText(), /Projekty/);
+  assert.doesNotMatch(await page.locator('#app').innerText(), /\bCíle\b|\bcíl\b/);
+  await page.evaluate(() => { openForm('task'); });
+  assert.match(await page.locator('.sheet').innerText(), /Projekt/);
+  assert.equal(await page.evaluate(() => JSON.stringify([S.goals, S.milestones, S.tasks.map(t => [t.id, t.goalId]), (S.plannerBlocks || []).map(b => [b.id, b.goalId])])), g0);
+}, { state: fixtureState() });
+
+test('RQ12 Routines: habits are "Rutiny" in the nav, screens and quests; check-ins and streaks are the same records', async ({ page }) => {
+  const h0 = await page.evaluate(() => JSON.stringify(S.habits.map(h => [h.id, h.completions, currentStreak(h)])));
+  await page.setViewportSize({ width: 390, height: 900 });
+  assert.deepEqual(await page.$$eval('nav.bottom button', ns => ns.filter(n => n.offsetParent).map(n => n.innerText.trim())), ['Domů', 'Kalendář', 'Úkoly', 'Rutiny', 'Více']);
+  for (const v of ['habits', 'quests', 'home', 'statistics']) { await page.evaluate(v => { view = v; render(); }, v); assert.doesNotMatch(await page.locator('#app').innerText(), /[Nn]ávyk|[Vv]ýprav/, v); }
+  assert.equal(await page.evaluate(() => JSON.stringify(S.habits.map(h => [h.id, h.completions, currentStreak(h)]))), h0);
+}, { state: fixtureState() });
+
+test('RQ13 Nutrition history: ‹ / Dnes / › days; a meal and water logged for yesterday keep their date; only a meal dated today pays XP', async ({ page }) => {
+  const xp0 = await xpOf(page);
+  await page.evaluate(() => { nutriDay = null; view = 'nutrition'; render(); });
+  await page.click('#nuPrev'); assert.match(await page.locator('.nu-day').innerText(), /Úterý 22\. září[\s\S]*zpětný zápis/);
+  await page.click('#addMeal'); assert.equal(await page.inputValue('#m_date'), '2026-09-22');
+  await page.fill('#m_name', 'Včerejší oběd'); await page.fill('#m_cal', '700'); await page.click('#m_save');
+  await page.click('#addWater');
+  assert.deepEqual(await page.evaluate(() => [S.meals.find(m => m.name === 'Včerejší oběd').date, waterOnDate('2026-09-22')]), ['2026-09-22', 250]);
+  assert.equal(await xpOf(page), xp0, 'no XP for a back-dated meal');
+  await page.click('#nuToday'); await page.click('#nuNext'); assert.match(await page.locator('.nu-day').innerText(), /budoucí den/);
+  await page.click('#nuToday'); await page.click('#addMeal'); await page.fill('#m_name', 'Dnešní svačina'); await page.selectOption('#m_type', 'Snack'); await page.fill('#m_cal', '200'); await page.click('#m_save');
+  assert.ok((await xpOf(page)) >= xp0, 'today still pays as before');
+}, { state: fixtureState() });
+
+test('RQ14 favourite foods: create, edit, delete and use one for the shown day; existing saved foods are kept', async ({ page }) => {
+  await page.evaluate(() => { S.customFoods = [{ id: 'cf_old', name: 'Starý shake', calories: 200, protein: 30, carbs: 8, fat: 3, favorite: true, createdAt: 1 }]; nutriDay = null; view = 'nutrition'; render(); });
+  assert.equal(await page.locator('.food-item').count(), 1);
+  await page.click('#addFood'); await page.fill('#fd_name', 'Ovesná kaše'); await page.fill('#fd_cal', '350'); await page.fill('#fd_p', '12'); await page.click('#fd_save');
+  await page.locator('.food-item', { hasText: 'Ovesná kaše' }).locator('.editBtn').click(); await page.fill('#fd_cal', '380'); await page.click('#fd_save');
+  assert.equal(await page.evaluate(() => S.customFoods.find(f => f.name === 'Ovesná kaše').calories), 380);
+  await page.click('#nuPrev'); await page.locator('.food-item', { hasText: 'Ovesná kaše' }).locator('.useFood').click();
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('#m_name').value, document.querySelector('#m_cal').value, document.querySelector('#m_date').value]), ['Ovesná kaše', '380', '2026-09-22']);
+  await page.click('#m_save'); assert.equal(await page.evaluate(() => S.meals.filter(m => m.name === 'Ovesná kaše' && m.date === '2026-09-22').length), 1);
+  await page.locator('.food-item', { hasText: 'Starý shake' }).locator('.delbtn').click(); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => S.customFoods.map(f => f.name)), ['Ovesná kaše']);
+}, { state: fixtureState() });
+
+test('RQ15 sleep quality 0-100 %: 0 / 50 / 100 save, invalid values are refused, Daily Score uses it (70 % duration + 30 % quality), old 1-5 ratings are untouched', async ({ page }) => {
+  const save = async v => { await page.evaluate(() => { closeSheets(); view = 'health'; render(); openSleepForm(); }); await page.fill('#sl_date', '2026-09-23'); await page.fill('#sl_bed', '23:00'); await page.fill('#sl_wake', '06:00');
+    await page.fill('#sl_qp', String(v)); await page.click('#sl_save'); return page.evaluate(() => { const e = document.querySelector('#sl_qp_err'); return [!!document.querySelector('.sheet'), !!(e && !e.hidden)]; }); };
+  await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(x => x.date !== '2026-09-23'); });
+  for (const v of ['150', '-1', '50.5', '101']) assert.deepEqual(await save(v), [true, true], v);
+  for (const v of [0, 50, 100]) {
+    await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(x => x.date !== '2026-09-23'); });
+    assert.deepEqual(await save(v), [false, false]);
+    const r = await page.evaluate(() => { const a = dailyScoreSleep('2026-09-23'); return [S.sleepLog.find(x => x.date === '2026-09-23').qualityPct, a.band, a.qualityPct, a.score]; });
+    assert.deepEqual(r, [v, 100, v, Math.round(0.7 * 100 + 0.3 * v)], String(v)); // 23:00-06:00 = 7 h (duration band 100)
+  }
+  const legacy = await page.evaluate(() => { S.sleepLog.push(migrateSleepEntry({ id: 'old', date: '2026-09-10', bedtime: '23:00', wake: '07:00', quality: 4 })); const a = dailyScoreSleep('2026-09-10'); return [a.score, a.qualityPct, S.sleepLog.find(x => x.id === 'old').quality, sleepQualityText(S.sleepLog.find(x => x.id === 'old'))]; });
+  assert.deepEqual(legacy, [100, null, 4, '4/5']);
+  assert.equal(await page.evaluate(() => DAILY_SCORE_ALGO), 3);
+}, { state: fixtureState() });
+
+test('RQ16 investments: edit the name and the initial amount, delete one entry, delete the investment; deactivate still works', async ({ page }) => {
+  await page.evaluate(() => { S.investments = [migrateInvestment({ id: 'inv1', name: 'ETF', contributions: [{ id: 'c1', amount: 10000, date: '2026-01-10' }], valuations: [{ id: 'v1', value: 12000, date: '2026-09-01' }] })]; finView = 'invest'; finKeepView = true; view = 'finance'; render(); });
+  await page.click('[data-investment="inv1"]'); await page.click('#i_edit'); await page.fill('#i_name', 'ETF World'); await page.click('#i_save');
+  await page.click('[data-investment="inv1"]'); await page.click('[data-inv-edit="c:c1"]'); await page.fill('#ie_amt', '9000'); await page.click('#ie_save');
+  assert.deepEqual(await page.evaluate(() => { const i = S.investments[0]; return [i.name, i.contributions[0].amount, financeInvestmentPerformance(i).invested]; }), ['ETF World', 9000, 9000]);
+  await page.click('[data-inv-edit="v:v1"]'); await page.click('#ie_del'); assert.equal(await page.evaluate(() => S.investments[0].valuations.length), 0);
+  await page.click('#i_act'); assert.equal(await page.evaluate(() => S.investments[0].active), false);
+  await page.click('[data-investment="inv1"]'); await page.click('#i_del'); await page.click('#cf_ok');
+  assert.equal(await page.evaluate(() => S.investments.length), 0);
+}, { state: fixtureState() });
+
+test('RQ17 subscriptions in Finance: weekly / every 14 days / monthly / yearly, the paying account, next payment, monthly total and expected payments', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    S.accounts = [migrateAccount({ id: 'a1', name: 'ČSOB', type: 'bank', openingBalance: 25000, openingDate: '2026-01-01' })];
+    S.subscriptions = [migrateSub({ id: 'w', name: 'W', price: 70, period: 'Weekly', nextPayment: '2026-09-01', accountId: 'a1' }), migrateSub({ id: 'b', name: 'B', price: 260, period: 'Biweekly', nextPayment: '2026-09-01' }),
+      migrateSub({ id: 'm', name: 'M', price: 200, period: 'Monthly', nextPayment: '2026-09-01' }), migrateSub({ id: 'y', name: 'Y', price: 1200, period: 'Yearly', nextPayment: '2026-09-01' })];
+    const nx = S.subscriptions.map(nextPaymentDate), mo = Math.round(S.subscriptions.reduce((a, s) => a + subMonthly(s), 0));
+    const ex = financeExpectedInRange('2026-10-01', '2026-10-31').filter(x => x.source === 'subscription').map(x => x.id + x.date.slice(8)).join();
+    return { nx, mo, ex }; });
+  assert.deepEqual(r, { nx: ['2026-09-29', '2026-09-29', '2026-10-01', '2027-09-01'], mo: 1167, ex: 'm01,w06,b13,w13,w20,b27,w27' }); // mo = 70*52/12 + 260*26/12 + 200 + 1200/12
+  await page.evaluate(() => { view = 'subscriptions'; render(); });
+  assert.deepEqual(await page.evaluate(() => [view, finView]), ['finance', 'subs']);
+  await page.click('#addSub'); await page.fill('#su_name', 'Spotify'); await page.fill('#su_price', '169'); await page.selectOption('#su_period', 'Biweekly'); await page.selectOption('#su_acc', 'a1'); await page.click('#su_save');
+  assert.deepEqual(await page.evaluate(() => { const s = S.subscriptions.find(x => x.name === 'Spotify'); return [s.period, s.accountId]; }), ['Biweekly', 'a1']);
+  assert.match(await page.locator('#app').innerText(), /Spotify[\s\S]*169[\s\S]*14 dní[\s\S]*ČSOB/);
+}, { state: fixtureState() });
+
+test('RQ18 total balance: every account now (latest real balance or calculated), separate from the month cash flow and investments; old finance data unchanged', async ({ page }) => {
+  const before = await page.evaluate(() => JSON.stringify([S.expenses, S.income, S.budgets, S.subscriptions, S.investments, S.recurringFinance]));
+  await page.evaluate(() => { S.accounts = [migrateAccount({ id: 'a1', name: 'ČSOB', openingBalance: 25000, openingDate: '2026-01-01' }), migrateAccount({ id: 'a2', name: 'Revolut', openingBalance: 5000, openingDate: '2026-01-01' }),
+    migrateAccount({ id: 'a3', name: 'Hotovost', openingBalance: 2000, openingDate: '2026-01-01' })]; finView = 'dashboard'; view = 'finance'; render(); });
+  assert.match(await page.locator('#finBalance').innerText(), /Celkový zůstatek[\s\S]*32\s000[\s\S]*ČSOB[\s\S]*25\s000[\s\S]*Revolut[\s\S]*5\s000[\s\S]*Hotovost[\s\S]*2\s000/iu);
+  assert.equal(await page.evaluate(() => JSON.stringify([S.expenses, S.income, S.budgets, S.subscriptions, S.investments, S.recurringFinance])), before);
+}, { state: fixtureState() });
+
+test('RQ19 migration of an old state: every existing record survives unchanged (tasks, goals, habits, events, blocks, meals, water, foods, sleep, finance, notes, car); idempotent; schemaVersion 8', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const legacy = { schemaVersion: 6, totalXp: 1234, xpLog: [{ id: 'x1', amount: 30, reason: 'Task: A', ts: 1, key: 'task:t1:2026-09-01' }], attrs: { STR: 5, INT: 3, DEX: 2, VIT: 1, WIS: 0, FOC: 4, SOC: 0 },
+      tasks: [{ id: 't1', title: 'A', done: true, goalId: 'g1', dueDate: '2026-09-01', priority: 'High', category: 'Work', createdAt: 1 }],
+      goals: [{ id: 'g1', title: 'Web', status: 'Active', targetDate: '2026-12-01', mode: 'manual', manualProgress: 40, createdAt: 1 }],
+      milestones: [{ id: 'm1', goalId: 'g1', title: 'Logo', completed: false, createdAt: 1 }],
+      habits: [{ id: 'h1', name: 'Vitamíny', completions: ['2026-09-20', '2026-09-21', '2026-09-22'], active: true, createdAt: 1 }],
+      events: [{ id: 'e1', title: 'Porada', date: '2026-09-02', time: '10:00', recurring: 'weekly' }],
+      plannerBlocks: [{ id: 'b1', date: '2026-09-23', startTime: '09:00', endTime: '10:00', title: 'Web', goalId: 'g1', taskId: 't1', category: 'Work', completed: false, createdAt: 1 }],
+      meals: [{ id: 'ml1', name: 'Oběd', date: '2026-09-20', calories: 600 }], waterLog: [{ id: 'w1', date: '2026-09-20', amount: 500 }],
+      customFoods: [{ id: 'cf1', name: 'Shake', calories: 200, favorite: true }], sleepLog: [{ id: 's1', date: '2026-09-20', bedtime: '23:00', wake: '07:00', quality: 3 }],
+      expenses: [{ id: 'ex1', amount: 100, category: 'Food', date: '2026-09-01' }], income: [{ id: 'in1', amount: 1000, category: 'Salary', date: '2026-09-01' }],
+      subscriptions: [{ id: 'su1', name: 'Netflix', price: 299, period: 'Monthly', nextPayment: '2026-09-15' }], investments: [{ id: 'iv1', name: 'ETF', contributions: [{ id: 'c1', amount: 100, date: '2026-01-01' }] }],
+      notes: [{ id: 'n1', title: 'Pozn', body: 'x', category: 'Ideas', pinned: true, favorite: true, tags: ['a'] }],
+      vehicles: [{ id: 'v1', name: 'Octavia' }], fuelEntries: [{ id: 'f1', vehicleId: 'v1', liters: 40, date: '2026-09-01' }], stepsLog: [{ id: 'st1', date: '2026-09-01', steps: 8000 }], heartRateLog: [{ id: 'hr1', date: '2026-09-01', value: 60 }] };
+    const a = migrate(JSON.parse(JSON.stringify(legacy))), b = migrate(JSON.parse(JSON.stringify(a)));
+    const srt = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
+    const kept = Object.keys(legacy).filter(k => Array.isArray(legacy[k])).every(k => legacy[k].every(rec => { const m = a[k].find(x => x.id === rec.id); return m && Object.keys(rec).every(f => JSON.stringify(m[f]) === JSON.stringify(rec[f])); }));
+    return [a.schemaVersion, kept, srt(a) === srt(b), a.totalXp, a.xpLog.length, JSON.stringify(a.attrs) === JSON.stringify(legacy.attrs)]; });
+  assert.deepEqual(r, [8, true, true, 1234, 1, true]);
+}, { state: fixtureState() });
+
+test('RQ20 export -> import: the backup round-trips exactly (new optional fields included, car / steps / heart-rate / favourite flags kept)', async ({ page }) => {
+  await page.evaluate(() => { S.plannerBlocks.push({ id: 'mb', date: '2026-09-25', endDate: '2026-09-26', startTime: '18:00', endTime: '08:00', title: 'Výlet', repeat: null, completed: false, createdAt: 1 });
+    S.sleepLog.push({ id: 'sq', date: '2026-09-21', bedtime: '23:00', wake: '07:00', qualityPct: 87, quality: null });
+    S.vehicles = [{ id: 'v1', name: 'Octavia' }]; S.stepsLog = [{ id: 's1', date: '2026-09-01', steps: 9000 }]; S.notes.push({ id: 'nf', title: 'Fav', body: '', favorite: true, pinned: false, tags: [], createdAt: 1, updatedAt: 1 }); });
+  await page.evaluate(() => { S = migrate(JSON.parse(JSON.stringify(S))); }); // records as the app stores them (defaults filled like any import)
+  await persist(page); await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.deepEqual(exported, await stateOf(page)); assert.equal(exported.schemaVersion, 8);
+  await page.evaluate(() => { S.plannerBlocks = []; S.vehicles = []; }); await importFile(page, await dl.path()); await settle(page);
+  assert.deepEqual(await stateOf(page), exported);
+  assert.deepEqual(await page.evaluate(() => [S.plannerBlocks.find(b => b.id === 'mb').endDate, S.sleepLog.find(x => x.id === 'sq').qualityPct, S.vehicles.length, S.stepsLog.length, S.notes.find(n => n.id === 'nf').favorite]), ['2026-09-26', 87, 1, 1, true]);
+}, { state: fixtureState() });
+
+test('RQ21 XP: opening every screen, planning, dragging, favourites and categories change no XP; built-in category mapping unchanged; a custom attribute mix splits evenly', async ({ page }) => {
+  await page.evaluate(() => { view = 'home'; render(); }); await persist(page);
+  const x0 = await page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.quests.length]));
+  const prof = await page.evaluate(() => CAT_LIST.map(k => catProfile(k)));
+  assert.deepEqual(prof, ['fitness', 'health', 'learning', 'discipline', 'finance', 'work', 'social', 'personal']);
+  for (const v of ['calendar', 'goals', 'habits', 'quests', 'nutrition', 'health', 'finance', 'notes', 'settings', 'more']) await page.evaluate(v => { view = v; render(); }, v);
+  await page.evaluate(() => { plannerSaveBlock({ title: 'Plán', date: todayStr(), startTime: '20:00', endTime: '21:00' }); calShiftBlock(S.plannerBlocks[S.plannerBlocks.length - 1].id, 1, 30, 30);
+    S.customFoods.push({ id: 'ff', name: 'F', calories: 1 }); catSave({ name: 'Coding', icon: 'code', profile: 'personal', attrMix: { INT: 1, FOC: 1 } }, 'life'); });
+  assert.equal(await page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.quests.length])), x0);
+  const k = await page.evaluate(() => S.lifeCategories.find(c => c.name === 'Coding').key);
+  assert.deepEqual(await page.evaluate(k => [catProfile(k), rpgAttrGains(12, catProfile(k))], k), [{ INT: 1, FOC: 1 }, { INT: 6, FOC: 6 }]);
+}, { state: fixtureState() });
+
+test('RQ22 quests: the day plan needs every block (repeating occurrences too); all routines; calories 90-110 % (boundaries); water; routine all week; sleep 7-9 h all week', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const q = id => [...DAILY_QUESTS, ...WEEKLY_QUESTS].find(x => x.id === id), T = todayStr();
+    S.plannerBlocks = [{ id: 'p1', date: T, startTime: '08:00', endTime: '09:00', title: 'A', completed: true }, { id: 'p2', date: '2026-09-21', startTime: '18:00', endTime: '18:30', title: 'R', repeat: { freq: 'daily', days: [], until: '' }, doneDates: [] }];
+    const plan = [questVal(q('dq_plan_all'), {}), questMax(q('dq_plan_all'), {})]; plannerToggleCompleted('p2', T); const plan2 = q('dq_plan_all').check(S, {});
+    S.nutritionTargets.calories = 2000; S.meals = S.meals.filter(m => m.date !== T);
+    const cal = [1799, 1800, 2200, 2201].map(c => { S.meals = S.meals.filter(m => m.date !== T); S.meals.push({ id: 'mm', name: 'x', date: T, calories: c, servings: 1 }); return questVal(q('dq_calories'), {}); });
+    S.nutritionTargets.water = 2000; S.waterLog = S.waterLog.filter(w => w.date !== T); S.waterLog.push({ id: 'w1', date: T, amount: 1500 }); const water = [questVal(q('dq_water'), {}), questMax(q('dq_water'), {})];
+    S.sleepLog = ['2026-09-21', '2026-09-22', '2026-09-23'].map((d, i) => ({ id: 's' + i, date: d, bedtime: '23:00', wake: i === 1 ? '05:00' : '07:00' }));
+    const sleep = [questVal(q('wq_sleep_week'), {}), questMax(q('wq_sleep_week'), {})];
+    S.habits = [migrateHabit({ id: 'hA', name: 'A ranní hygiena', frequency: 'daily', completions: ['2026-09-21', '2026-09-22'], startDate: '2026-01-01' })];
+    const p = q('wq_routine_week').params(S); const rw = [p.habit, questVal(q('wq_routine_week'), p), questMax(q('wq_routine_week'), p)];
+    return { plan, plan2, cal, water, sleep, rw, tol: QUEST_TOLERANCE.calories, habitsAll: q('dq_habits').check.toString().includes('max') };
+  });
+  assert.deepEqual(r, { plan: [1, 2], plan2: true, cal: [0, 1, 1, 0], water: [1500, 2000], sleep: [2, 7], rw: ['hA', 2, 7], tol: [0.9, 1.1], habitsAll: true });
+  assert.equal(await page.evaluate(() => { const q = DAILY_QUESTS.find(x => x.id === 'dq_habits'); return q.max(S, {}) === Math.max(1, dailyScoreHabits(todayStr()).total || 0); }), true, 'all of today\'s routines');
+}, { state: fixtureState() });
+
+test('RQ23 navigation: desktop sidebar with every main module, phone bottom bar of five; no Car or Subscriptions entry; Quick Add uses the new names', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 }); await page.evaluate(() => { view = 'home'; render(); });
+  assert.deepEqual(await page.$$eval('nav.bottom button', ns => ns.filter(n => n.offsetParent).map(n => n.dataset.v)), ['home', 'calendar', 'tasks', 'habits', 'goals', 'character', 'finance', 'fitness', 'nutrition', 'health', 'notes', 'journal', 'quests', 'statistics', 'more']);
+  await page.click('nav.bottom button[data-v="goals"]'); assert.equal(await page.evaluate(() => view), 'goals');
+  await page.setViewportSize({ width: 390, height: 900 });
+  assert.deepEqual(await page.$$eval('nav.bottom button', ns => ns.filter(n => n.offsetParent).map(n => n.dataset.v)), ['home', 'calendar', 'tasks', 'habits', 'more']);
+  await page.evaluate(() => { view = 'more'; render(); });
+  const more = await page.$$eval('#moreGrid [data-v]', ns => ns.map(n => n.dataset.v));
+  assert.ok(!more.includes('car') && !more.includes('subscriptions') && !more.includes('planner'), more.join());
+  await page.click('#fabBtn'); const qa = await page.$$eval('.sheet .qopt', ns => ns.map(n => [n.dataset.t, n.innerText.trim()]));
+  assert.ok(!qa.some(([t]) => t === 'fuel'), 'no car quick add');
+  assert.deepEqual(qa.filter(([t]) => ['habit', 'goal'].includes(t)).map(x => x[1]), ['Rutina', 'Projekt']);
+}, { state: fixtureState() });
+
+test('RQ24 date / time pickers: a LifeOS picker for every date and time field; keyboard, Escape; the stored values stay ISO; typing still works', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 }); await page.evaluate(() => { view = 'calendar'; render(); openPlannerForm(null, { date: '2026-09-23' }); });
+  assert.equal(await page.locator('.sheet .pk-btn').count(), 5, 'date, start, end date, end, repeat until');
+  await page.click('.sheet #pb_date + .pk-btn'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter');
+  assert.equal(await page.inputValue('#pb_date'), '2026-09-24');
+  assert.equal(await page.inputValue('#pb_enddate'), '2026-09-24', 'the end date follows');
+  await page.click('.sheet #pb_start + .pk-btn'); await page.click('.pk-pop [data-h="7"]'); await page.click('.pk-pop [data-mi="45"]');
+  assert.equal(await page.inputValue('#pb_start'), '07:45');
+  await page.click('.sheet #pb_end + .pk-btn'); await page.keyboard.press('Escape');
+  assert.deepEqual(await page.evaluate(() => [!!document.querySelector('.pk-pop'), document.activeElement.id]), [false, 'pb_end']);
+  await page.fill('#pb_end', '08:30'); assert.equal(await page.inputValue('#pb_end'), '08:30');
+  assert.match(await page.locator('.sheet #pb_start ~ .pk-show').innerText(), /07:45/);
+  const ind = await page.evaluate(() => [...document.styleSheets].some(ss => [...ss.cssRules].some(r => r.selectorText && r.selectorText.includes('::-webkit-calendar-picker-indicator') && r.style.display === 'none'))); assert.equal(ind, true, 'the native picker icon is hidden');
+}, { state: fixtureState() });
+
+test('RQ25 categories: a custom category with icon, colour and chosen attributes; note categories Osobní + Práce by default (others kept for existing notes); no favourites in Notes', async ({ page }) => {
+  await page.evaluate(() => { view = 'settings'; render(); }); await page.click('[data-addcat="life"]');
+  await page.fill('#cf_name', 'Skin care'); await page.click('.cf-ic[data-icon="heart"]'); await page.selectOption('#cf_profile', '__mix');
+  await page.click('.cf-attr[data-attr="VIT"]'); await page.click('.cf-attr[data-attr="FOC"]'); await page.click('#cf_save');
+  const c = await page.evaluate(() => S.lifeCategories.find(x => x.name === 'Skin care'));
+  assert.deepEqual([c.icon, c.attrMix], ['heart', { VIT: 1, FOC: 1 }]);
+  assert.deepEqual(await page.evaluate(() => catList('notes').filter(x => !x.archived).map(x => x.key)), ['Personal', 'Work']);
+  await page.evaluate(() => { S.notes.push({ id: 'ni', title: 'Starý nápad', body: '', category: 'Ideas', tags: [], pinned: false, favorite: true, createdAt: 1, updatedAt: 1 }); view = 'notes'; render(); });
+  assert.match(await page.locator('#app').innerText(), /Starý nápad[\s\S]*Nápady|Starý nápad[\s\S]*Ideas/);
+  assert.equal(await page.locator('.favB').count(), 0);
+  await page.evaluate(() => openNoteForm()); assert.equal(await page.locator('#n_fav').count(), 0);
+  await page.click('#n_newcat'); await page.fill('#cf_name', 'Recepty'); await page.click('#cf_save');
+  assert.equal(await page.evaluate(() => catLabel(document.querySelector('#n_cat').value, 'notes')), 'Recepty');
+}, { state: fixtureState() });
+
+test('RQ26 health: sleep, weight, active kcal only (no manual steps / heart rate); old steps and heart-rate records stay in the data', async ({ page }) => {
+  await page.evaluate(() => { S.stepsLog = [{ id: 's1', date: '2026-09-01', steps: 5000 }]; S.heartRateLog = [{ id: 'h1', date: '2026-09-01', value: 60 }]; healthTab = 'steps'; view = 'health'; render(); });
+  assert.deepEqual(await page.$$eval('#hTabs [data-k]', ns => ns.map(n => n.dataset.k)), ['sleep', 'weight', 'activecal']);
+  assert.deepEqual(await page.evaluate(() => [healthTab, S.stepsLog.length, S.heartRateLog.length, typeof openStepsForm]), ['sleep', 1, 1, 'undefined']);
+}, { state: fixtureState() });
+
+test('RQ27 320-1440 px, light + dark: Calendar (month / week / day), Projects, Routines, Quests, Nutrition, Health, Finance, Notes and the add / picker sheets render cleanly', async ({ page }) => {
+  await rqBlocks(page); const bad = [];
+  for (const w of [320, 360, 390, 430, 768, 1024, 1280, 1440]) for (const theme of ['light', 'dark']) {
+    await page.setViewportSize({ width: w, height: 900 });
+    for (const [v, pre] of [['calendar', "uiCalMode='month'"], ['calendar', "uiCalMode='week'"], ['calendar', "uiCalMode='today'"], ['goals', ''], ['habits', ''], ['quests', ''], ['nutrition', ''], ['health', ''], ['finance', ''], ['notes', '']]) {
+      await page.evaluate(([v, pre, theme]) => { closeSheets(); S.settings.theme = theme; applyTheme(); uiCalDay = '2026-09-23'; if (pre) eval(pre); view = v; render(); }, [v, pre, theme]);
+      const c = await rqClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${w}/${theme}/${v} ${pre}: ${JSON.stringify(c)}`);
+    }
+    if (theme === 'dark' && (w === 320 || w === 1440)) { await page.evaluate(() => { view = 'calendar'; render(); uiCalAddMenu(todayStr()); }); const c = await rqClean(page); if (c.overflow > 0) bad.push(`${w} add menu`); }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('RQ28 performance: the Calendar with 400 blocks (repeating and multi-day included) and 200 events renders fast; a drag does not rebuild or save until release', async ({ page }) => {
+  const r = await page.evaluate(() => { const T = todayStr();
+    for (let i = 0; i < 400; i++) S.plannerBlocks.push({ id: 'pp' + i, date: addDays(T, (i % 60) - 30), startTime: String(6 + i % 14).padStart(2, '0') + ':00', endTime: String(7 + i % 14).padStart(2, '0') + ':30', title: 'Blok ' + i, category: 'Work',
+      completed: false, createdAt: 1, ...(i % 40 === 0 ? { repeat: { freq: 'daily', days: [], until: '' } } : {}), ...(i % 50 === 1 ? { endDate: addDays(T, (i % 60) - 28) } : {}) });
+    for (let i = 0; i < 200; i++) S.events.push({ id: 'pe' + i, title: 'Událost ' + i, date: addDays(T, (i % 120) - 90), start: String(8 + i % 10).padStart(2, '0') + ':00', end: String(9 + i % 10).padStart(2, '0') + ':00', recurring: ['none', 'weekly', 'none', 'monthly'][i % 4] });
+    const m = f => { f(); const ts = []; for (let i = 0; i < 5; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[2]; };
+    return { month: m(() => { uiCalMode = 'month'; view = 'calendar'; render(); }), week: m(() => { uiCalMode = 'week'; render(); }), day: m(() => { uiCalMode = 'today'; render(); }), home: m(() => { view = 'home'; render(); }) }; });
+  console.log('      RQ28 ' + Object.entries(r).map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', '));
+  assert.ok(r.month < 150 && r.week < 150 && r.day < 100 && r.home < 120, JSON.stringify(r));
+  await page.setViewportSize({ width: 1280, height: 900 }); await rqBlocks(page); await rqCal(page, 'today', '2026-09-23');
+  await page.evaluate(() => { window.__renders = 0; const r0 = window.render; window.render = function () { window.__renders++; return r0.apply(this, arguments); }; });
+  const bb = await page.locator('.cg-it[data-id="b1"]').boundingBox(); const s0 = await rqState(page);
+  await page.mouse.move(bb.x + 10, bb.y + 10); await page.mouse.down(); for (let i = 1; i <= 20; i++) await page.mouse.move(bb.x + 10, bb.y + 10 + i * 3);
+  assert.deepEqual(await page.evaluate(() => window.__renders), 0); assert.equal(await rqState(page), s0, 'no save while dragging');
+  await page.mouse.up(); assert.equal(await page.evaluate(() => window.__renders), 1, 'one render on release');
+}, { state: fixtureState() });
+
+test('RQ29 accessibility: calendar items are focusable buttons with names, keyboard move / resize, the pickers and the 0-100 % field have labels; nothing animates with reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 }); await rqBlocks(page); await rqCal(page, 'today', '2026-09-23');
+  const r = await page.evaluate(() => ({ unnamed: [...document.querySelectorAll('.cal button, .cal [role="button"]')].filter(n => !(n.getAttribute('aria-label') || n.textContent).trim()).length,
+    items: [...document.querySelectorAll('.cg-it')].every(n => n.tabIndex === 0 && n.getAttribute('aria-label')),
+    moving: [...document.querySelectorAll('.cal, .cal *')].filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).length }));
+  assert.deepEqual(r, { unnamed: 0, items: true, moving: 0 });
+  await page.focus('.cg-it[data-id="b2"]'); await page.keyboard.press('Alt+Shift+ArrowDown');
+  assert.equal(await page.evaluate(() => S.plannerBlocks.find(b => b.id === 'b2').endTime), '09:45');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.id), 'b2', 'focus stays on the item');
+  await page.keyboard.press('Enter'); assert.equal(await page.inputValue('#pb_title'), 'Doktor');
+  assert.ok(await page.evaluate(() => [...document.querySelectorAll('.sheet .pk-btn')].every(b => /Vybrat (datum|čas)/.test(b.getAttribute('aria-label')))));
+  await page.evaluate(() => { closeSheets(); openSleepForm(); });
+  assert.deepEqual(await page.evaluate(() => [!!document.querySelector('label[for="sl_qp"]'), document.querySelector('#sl_qp_r').getAttribute('aria-label')]), [true, 'Kvalita spánku']);
 }, { state: fixtureState() });
 
 // ---------- screenshots ----------

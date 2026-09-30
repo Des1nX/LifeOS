@@ -1618,15 +1618,22 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .cg-it.is-done{opacity:.7}.cg-it.is-done .cg-tt{text-decoration:line-through}
 .cg-it.is-cont{border-top-left-radius:2px;border-top-right-radius:2px}.cg-it.is-more{border-bottom-left-radius:2px;border-bottom-right-radius:2px}
 .cg-it.is-drag{z-index:6;box-shadow:var(--shadow-card);opacity:.92;cursor:grabbing}
-.cg-it .cg-chk{position:absolute;right:4px;top:4px;width:26px;height:26px;min-height:26px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;padding:0;cursor:pointer;color:var(--text)}
+.cg-it .cg-chk{position:absolute;right:4px;top:4px;width:36px;height:36px;min-height:36px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;padding:0;cursor:pointer;color:var(--text)}
 .cg-it .cg-chk.done{background:var(--success,var(--accent2));border-color:transparent;color:#fff}
-.cg-it.is-block .cg-t,.cg-it.is-block .cg-m{padding-right:30px}
+.cg-it.is-block .cg-t,.cg-it.is-block .cg-m{padding-right:40px}
 .cg-t{font-weight:700;display:flex;align-items:center;gap:4px;min-width:0}.cg-tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .cg-m{color:var(--color-text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cg-it.is-short{flex-direction:row;align-items:center;gap:6px}.cg-it.is-short .cg-m{flex:none}
 .cg-it.is-narrow .cg-m,.cg-it.is-narrow .cg-chk{display:none}.cg-it.is-narrow .cg-t,.cg-it.is-narrow .cg-m{padding-right:0}.cg-it.is-narrow{padding:4px 4px 4px 6px}
 @media(min-width:700px){.cal-wstrip{display:none}}
 .cg-rs{position:absolute;left:0;right:0;bottom:0;height:10px;cursor:ns-resize}
+.cg-lk{font-size:11px;color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:40px}
+.cg-it .cg-wk{position:absolute;right:44px;top:4px;width:36px;height:36px;min-height:36px;border-radius:8px;border:none;background:var(--accent-grad);color:#fff;display:grid;place-items:center;padding:0;cursor:pointer}
+.cg-it.is-short .cg-lk,.cg-it.is-narrow .cg-lk,.cg-it.is-narrow .cg-wk{display:none}
+.cg-it.is-tight{padding:4px 4px 4px 6px}.cg-it.is-tight .cg-m,.cg-it.is-tight .cg-lk{display:none}.cg-it.is-tight .cg-t{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.cg-it.is-tight .cg-wk{display:none}.cg-it.is-tight.is-workout-b .cg-t{padding-right:40px}
+.cg-it.is-tight .cg-tt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.cg-it.is-tight .cg-t>svg{display:none}
+.cg-it.is-workout-b .cg-t,.cg-it.is-workout-b .cg-m{padding-right:82px}
 .cg-rs::after{content:'';position:absolute;left:50%;bottom:3px;width:22px;height:3px;margin-left:-11px;border-radius:2px;background:color-mix(in srgb,var(--pl-c) 60%,transparent)}
 @media(pointer:coarse){.cg-rs{display:none}.cg-it{cursor:pointer}}
 .cal-rout{padding:4px 12px}
@@ -1643,6 +1650,7 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .pl-dow{min-width:44px;min-height:44px;justify-content:center;cursor:pointer}
 .pl-dow.on{background:var(--accent-strong);color:#fff;border-color:transparent}
 .chip.is-accent{background:var(--color-accent-muted);color:var(--accent)}
+:root[data-theme="light"] .chip.is-accent{color:#4a2dc2}
 @media(min-width:900px){.cal .cg-card{padding:12px 12px 16px 6px}}
 
 /* ---- Reality QA: LifeOS date / time pickers (the native field keeps the value; no browser chrome) ---- */
@@ -2818,6 +2826,7 @@ function render(){
   // Polish pass: quests complete automatically after any action (idempotent, ledger-keyed).
   if(S.settings.onboarded!==false && checkQuests()) scheduleSave();
   uiPickerClose(false);
+  if(!map[view]) view='home'; // Reality QA: a removed screen (e.g. the old Car view) never breaks rendering
   app.appendChild(map[view]());
   uiIconize(app);
   uiEnhancePickers(app);
@@ -8946,7 +8955,7 @@ function uiDayAgenda(ds,host){
    calShiftEvent (validation). Keyboard / no-drag alternatives: Alt+arrows on a focused item, Edit, "Přesunout". */
 const UI_CAL={
   cs:{title:'Kalendář',sub:'Měsíc, týden a den v jednom — události, bloky, úkoly, rutiny a tréninky.',add:'Přidat',add_t:'Přidat do kalendáře',
-    today:'Dnes',day:'Den',week:'Týden',month:'Měsíc',prev:'Předchozí',next:'Další',prev_d:'Předchozí den',next_d:'Další den',
+    today:'Dnes',day:'Den',week:'Týden',month:'Měsíc',prev:'Předchozí',next:'Další',prev_d:'Předchozí den',next_d:'Další den',now:'Teď',now_l:'Přejít na aktuální čas',
     k_event:'Událost',k_block:'Blok',k_task:'Úkol',k_routine:'Rutina',k_workout:'Trénink',
     d_event:'Schůzka, narozeniny, termín',d_block:'Čas na práci, učení, cokoliv',d_task:'Úkol s termínem na tento den',d_routine:'Naplánovat rutinu na čas',d_workout:'Trénink ze šablony',
     allday:'celý den',tasks:'Úkoly na tento den',routines:'Rutiny dne',plan_it:'Naplánovat',planned_at:'naplánováno',done:'splněno',open:'zatím ne',
@@ -8957,7 +8966,7 @@ const UI_CAL={
     no_tpls:'Zatím nemáš šablonu — blok bude obecný trénink.',training_day:'Tréninkový den',week_overview:'Týdenní přehled',workout_done:'dokončený trénink',routine:'Rutina',
     complete:'Označit jako splněné',uncomplete:'Zrušit splnění',overlap:'překrývá se'},
   en:{title:'Calendar',sub:'Month, week and day in one — events, blocks, tasks, routines and workouts.',add:'Add',add_t:'Add to calendar',
-    today:'Today',day:'Day',week:'Week',month:'Month',prev:'Previous',next:'Next',prev_d:'Previous day',next_d:'Next day',
+    today:'Today',day:'Day',week:'Week',month:'Month',prev:'Previous',next:'Next',prev_d:'Previous day',next_d:'Next day',now:'Now',now_l:'Scroll to the current time',
     k_event:'Event',k_block:'Block',k_task:'Task',k_routine:'Routine',k_workout:'Workout',
     d_event:'A meeting, a birthday, a deadline',d_block:'Time for work, study, anything',d_task:'A task due this day',d_routine:'Plan a routine at a time',d_workout:'A workout from a template',
     allday:'all day',tasks:'Tasks for this day',routines:'Routines of the day',plan_it:'Plan',planned_at:'planned',done:'done',open:'not yet',
@@ -8997,13 +9006,23 @@ function uiCalItemHtml(x,D,L,top,h,multiDay){
   const time=`${plannerMinToTime(x.s)}–${plannerMinToTime(x.e)}`;
   const ic=x.kind==='event'?'calendar':x.kind==='workout'?'dumbbell':x.habitId?'habits':x.b&&x.b.workoutTemplateId?'dumbbell':x.b&&x.b.category&&catInfo(x.b.category,'life')?catIconName(x.b.category,'life'):'clock';
   const color=x.kind==='block'?uiPlColor(x.b.category):x.kind==='event'?'var(--info)':'var(--accent2)';
-  const edit=x.kind!=='workout', label=`${x.title}, ${time}${x.cont?', '+T('cont'):''}${x.repeat?', '+(cs?'opakuje se':'repeats'):''}${x.done?', '+T('done'):''}`;
+  // a block's links (task / project / workout template) as in the old planner timeline: in the label and as a short line
+  let lkTxt='', lkLine='', wk='';
+  if(x.kind==='block'){
+    const b=x.b, lk=plannerLinks(b), wi=b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+    const parts=[lk.task?`${uiPlT('task')}: ${lk.task.title}${lk.task.done?' ('+uiPlT('task_done')+')':''}`:(b.taskId?`${uiPlT('task')}: ${uiPlT('missing')}`:''),
+      lk.goal?`${uiPlT('goal')}: ${lk.goal.title}`:'', wi?(wi.t?`${uiPlT('workout')}: ${wi.t.name}`:uiPlT('tpl_missing')):'',
+      wi&&wi.st==='active'?uiPlT('wk_active'):wi&&wi.st==='done'?uiPlT('wk_done'):''].filter(Boolean);
+    lkTxt=parts.length?', '+parts.join(', '):''; lkLine=parts.length?`<span class="cg-lk">${escapeHtml(parts.join(' · '))}</span>`:'';
+    if(wi&&wi.action&&!x.cont) wk=`<button class="cg-wk" aria-label="${escapeHtml(wi.action+': '+x.title)}">${uiIcon('play',13)}</button>`;
+  }
+  const edit=x.kind!=='workout', label=`${x.title}, ${time}${x.cont?', '+T('cont'):''}${x.repeat?', '+(cs?'opakuje se':'repeats'):''}${x.done?', '+T('done'):''}${lkTxt}`;
   const pos=`top:${top}px;height:${h}px;left:calc(100% * ${L.col} / ${L.cols});width:calc(100% / ${L.cols} - 3px)`;
-  return `<div class="cg-it is-${x.kind}${x.done?' is-done':''}${x.cont?' is-cont':''}${x.more?' is-more':''}${h<52?' is-short':''}${L.cols>2||(multiDay&&L.cols>1)?' is-narrow':''}" style="${pos};--pl-c:${color}"
+  return `<div class="cg-it is-${x.kind}${wk?' is-workout-b':''}${x.done?' is-done':''}${x.cont?' is-cont':''}${x.more?' is-more':''}${h<52?' is-short':''}${multiDay&&L.cols>1?' is-narrow':!multiDay&&L.cols>2?' is-tight':''}" style="${pos};--pl-c:${color}"
       data-kind="${x.kind}" data-id="${escapeHtml(x.id)}" data-occ="${x.occ}" data-day="${D}" data-s="${x.s}" data-e="${x.e}" tabindex="0" role="button" aria-label="${escapeHtml(label)}">
     ${x.kind==='block'?`<button class="cg-chk${x.done?' done':''}" aria-pressed="${x.done}" aria-label="${escapeHtml((x.done?T('uncomplete'):T('complete'))+': '+x.title)}">${x.done?uiIcon('check',14):''}</button>`:''}
     <span class="cg-t">${uiIcon(ic,13)} <span class="cg-tt">${escapeHtml(x.title)}</span>${x.repeat?` ${uiIcon('repeat',12)}`:''}</span>
-    <span class="cg-m">${x.cont?'↳ ':''}${time}${x.more?' →':''}</span>
+    <span class="cg-m">${x.cont?'↳ ':''}${time}${x.more?' →':''}</span>${lkLine}${wk}
     ${edit&&!x.more?'<span class="cg-rs" aria-hidden="true"></span>':''}
   </div>`;
 }
@@ -9045,9 +9064,10 @@ function uiCalWireGrid(g,from,PX){
   let st=null, suppress=false;
   g.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{ uiCalDay=b.dataset.pick; render(); });
   g.querySelectorAll('.cg-chk').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); const n=b.closest('.cg-it'); plannerToggleCompleted(n.dataset.id,n.dataset.occ); render(); });
-  g.addEventListener('click',ev=>{ if(suppress){ suppress=false; ev.stopPropagation(); ev.preventDefault(); return; } const n=ev.target.closest('.cg-it'); if(n&&!ev.target.closest('.cg-chk')) uiCalOpenItem(n); },true);
+  g.querySelectorAll('.cg-wk').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); const blk=uiCalFindBlock(b.closest('.cg-it').dataset.id); if(blk) uiPlannerStartWorkout(blk); });
+  g.addEventListener('click',ev=>{ if(suppress){ suppress=false; ev.stopPropagation(); ev.preventDefault(); return; } const n=ev.target.closest('.cg-it'); if(n&&!ev.target.closest('.cg-chk,.cg-wk')) uiCalOpenItem(n); },true);
   g.addEventListener('pointerdown',ev=>{
-    const n=ev.target.closest('.cg-it'); if(!n||ev.button!==0||ev.target.closest('.cg-chk')||n.dataset.kind==='workout') return;
+    const n=ev.target.closest('.cg-it'); if(!n||ev.button!==0||ev.target.closest('.cg-chk,.cg-wk')||n.dataset.kind==='workout') return;
     const cols=[...g.querySelectorAll('.cg-col')].map(c=>({day:c.dataset.day,r:c.getBoundingClientRect()}));
     st={n,x:ev.clientX,y:ev.clientY,mode:ev.target.closest('.cg-rs')?'resize':'move',cols,col:cols.findIndex(c=>c.day===n.dataset.day),dd:0,dm:0,moved:false,h:n.offsetHeight,
       s:+n.dataset.s,e:+n.dataset.e,label:n.querySelector('.cg-m'),text:n.querySelector('.cg-m').textContent,pid:ev.pointerId};
@@ -9120,6 +9140,7 @@ function uiCalDayPanel(D,withNav){
     <div class="cal-dayhead">${withNav?`<button class="iconbtn" id="calPrevD" aria-label="${T('prev_d')}">‹</button>`:''}
       <div class="cal-dayt"><h3 id="calDayH">${escapeHtml(uiCalDayTitle(D,true))}${D===today?` <span class="chip is-accent">${T('today')}</span>`:''}</h3>
       <span class="sub">${T('blocks')(sum.planned)} · ${uiPlDur(sum.plannedMin)} · ${sum.completed} ${uiPlT('done')}</span></div>
+      ${D===today?`<button class="btn sm ghost" id="calNow" aria-label="${T('now_l')}">${T('now')}</button>`:''}
       ${withNav?`<button class="iconbtn" id="calNextD" aria-label="${T('next_d')}">›</button>`:''}</div>
     <div class="cal-allday">${dd.allDay.map(e=>`<button class="chip mc-ev" data-ev="${escapeHtml(e.id)}">${uiIcon('calendar',13)} ${escapeHtml(e.title)} · ${T('allday')}</button>`).join('')}${dd.training?`<span class="chip">${uiIcon('dumbbell',13)} ${T('training_day')}</span>`:''}</div>
   </section>`);
@@ -9136,6 +9157,7 @@ function uiCalDayPanel(D,withNav){
     wrap.appendChild(s);
   }
   wrap.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{ const e=S.events.find(x=>x.id===b.dataset.ev); if(e) openEventForm(e); });
+  const nw=wrap.querySelector('#calNow'); if(nw) nw.onclick=()=>{ const l=document.querySelector('#calDayPanel .cg-now'); if(l) l.scrollIntoView({block:'center',behavior:animationsOn()?'smooth':'auto'}); };
   const p=wrap.querySelector('#calPrevD'); if(p) p.onclick=()=>{ uiCalDay=addDays(D,-1); render(); };
   const nx=wrap.querySelector('#calNextD'); if(nx) nx.onclick=()=>{ uiCalDay=addDays(D,1); render(); };
   return wrap;
@@ -11965,13 +11987,14 @@ function uiMinuteTick(){
   uiCcTick(app);
   const pc=app.querySelector('.plan-card.is-home');
   if(pc){ const had=document.activeElement===pc, n=uiTodaysPlanCard(); uiIconize(n); pc.replaceWith(n); if(had) n.focus({preventScroll:true}); }
-  const grid=app.querySelector('#plTimeline');
-  if(grid&&grid.dataset.day===D){
-    const from=+grid.dataset.from, to=+grid.dataset.to, PX=+grid.dataset.px, n=new Date(), nm=n.getHours()*60+n.getMinutes();
-    let line=grid.querySelector('.pl-now');
-    if(nm>=from&&nm<=to){ if(!line){ line=el(`<div class="pl-now" aria-hidden="true"></div>`); grid.insertBefore(line,grid.querySelector('.pl-block')); } line.style.top=Math.round((nm-from)*PX)+'px'; }
+  // calendar time grids: move the now-line of today's column (Reality QA: the calendar replaced the planner timeline)
+  app.querySelectorAll('.cg[data-from]').forEach(grid=>{
+    const col=grid.querySelector(`.cg-col[data-day="${D}"]`); if(!col) return;
+    const from=+grid.dataset.from, to=+grid.dataset.to, n=new Date(), nm=n.getHours()*60+n.getMinutes();
+    let line=col.querySelector('.cg-now');
+    if(nm>=from&&nm<=to){ if(!line){ line=el(`<div class="cg-now" aria-hidden="true"></div>`); col.insertBefore(line,col.firstChild); } line.style.top=Math.round((nm-from)*CAL_PX)+'px'; }
     else if(line) line.remove();
-  }
+  });
 }
 setInterval(()=>{ if(!S||!tabActive) return; uiMinuteTick(); checkBrowserNotifications(); }, 60000);
 </script>
