@@ -1548,6 +1548,26 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
   .wp-strip a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:64px;padding:6px 2px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);text-decoration:none;font-size:var(--fs-caption);text-align:center}
   .wp-strip a.is-today{border-color:var(--accent)}.wp-strip b{font-variant-numeric:tabular-nums;font-size:13px}.wp-strip small{color:var(--color-text-secondary)}}
 @media(min-width:700px){.wp-days{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3);align-items:start}}
+
+/* ---- LifeOS Intelligence 1.0: suggestion cards (existing card/btn/section tokens; the group is also said in words) ---- */
+.in-list{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-2)}
+.in-card{display:flex;gap:12px;align-items:flex-start;padding:14px;margin:0;border-left:4px solid var(--line);min-width:0}
+.in-card.is-attention{border-left-color:var(--danger)}.in-card.is-planning{border-left-color:var(--warn)}.in-card.is-goals{border-left-color:var(--info)}
+.in-ic{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:var(--card2);color:var(--text)}
+.in-card.is-attention .in-ic,.in-gh.is-attention svg{color:var(--danger)}.in-card.is-planning .in-ic,.in-gh.is-planning svg{color:var(--warn)}.in-card.is-goals .in-ic,.in-gh.is-goals svg{color:var(--info)}
+.in-main{min-width:0;flex:1}
+.in-k{margin:0 0 2px;font-size:var(--fs-caption);font-weight:650;color:var(--color-text-secondary)}
+.in-t{margin:0;font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.in-r{margin:4px 0 0;color:var(--color-text-secondary);overflow-wrap:anywhere}
+.in-why{margin:10px 0 0;padding:8px 12px;border-radius:12px;background:var(--card2)}
+.in-why-h{margin:0;font-weight:650}.in-why ul{margin:4px 0 0;padding-left:18px}.in-why li{margin:2px 0;overflow-wrap:anywhere}
+.in-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn.sm.in-btn{min-height:44px}
+.in-group{margin:var(--sp-4) 0 var(--sp-2)}.in-gh{margin:0 0 var(--sp-2)}
+.in-empty{padding:16px}.in-empty-t{margin:0}.in-empty .sub{margin:4px 0 0}
+.in-more{width:100%;min-height:44px;margin-top:var(--sp-3)}
+.in-hidden{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:var(--sp-3)}
+.in-note{margin-top:var(--sp-4)}
 </style>
 </head>
 <body>
@@ -2654,7 +2674,7 @@ function render(){
   app.innerHTML='';
   const map={home:renderHome,tasks:renderTasks,habits:renderHabits,goals:renderGoals,character:renderCharacter,
     more:renderMore,finance:renderFinance,fitness:renderFitness,nutrition:renderNutrition,notes:renderNotes,journal:renderJournal,
-    car:renderCar,subscriptions:renderSubs,planner:renderPlanner,week:renderWeek,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
+    car:renderCar,subscriptions:renderSubs,planner:renderPlanner,week:renderWeek,intel:renderIntel,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
   // Phase 9: store finished days' Daily Score snapshots (no-op unless a day has ended).
   if(finalizeDailyScores()) scheduleSave();
@@ -2984,7 +3004,7 @@ function openPlannerForm(existing,preset){
     Object.keys(idOf).forEach(k=>{ const inp=inner.querySelector('#'+idOf[k]), msg=inner.querySelector(`[data-err="${k}"]`); const code=r.errors[k];
       inp.classList.toggle('invalid',!!code); inp.setAttribute('aria-invalid',code?'true':'false'); msg.hidden=!code; msg.textContent=code?uiPlT(code==='required'?'e_required':code==='end_before_start'?'e_order':'e_invalid'):''; });
     if(!r.ok){ const first=inner.querySelector('.invalid'); if(first) first.focus(); return; }
-    closeSheets(); if(view==='goalDetail'||view==='week') render(); else uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved')); // opened from a goal: stay on it (the block shows there at once)
+    closeSheets(); if(view==='goalDetail'||view==='week'||view==='intel') render(); else uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved')); // opened from a goal: stay on it (the block shows there at once)
   };
   const del=inner.querySelector('#pb_delete');
   if(del) del.onclick=()=>uiDelConfirm('block',{name:b.title},()=>{ plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); });
@@ -3177,7 +3197,7 @@ const UI_I18N={
     more:'Více', productivity:'Produktivita', body:'Tělo', money:'Peníze', life:'Život', system:'Systém',
     m_goals:'Cíle', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Výživa', m_notes:'Poznámky', m_journal:'Deník', m_car:'Auto',
     m_subscriptions:'Předplatné', m_calendar:'Kalendář', m_quests:'Výpravy', m_statistics:'Statistiky', m_search:'Hledat', m_health:'Zdraví',
-    m_character:'Postava', m_settings:'Nastavení', m_planner:'Plánovač', m_week:'Týden',
+    m_character:'Postava', m_settings:'Nastavení', m_planner:'Plánovač', m_week:'Týden', m_intel:'Intelligence',
     // quick add
     quick_add:'Rychlé přidání', qa_task:'Úkol', qa_habit:'Návyk', qa_goal:'Cíl', qa_expense:'Výdaj', qa_income:'Příjem', qa_workout:'Trénink',
     qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování', qa_planner:'Blok plánu', qa_week:'Naplánovat týden',
@@ -3224,7 +3244,7 @@ const UI_I18N={
     more:'More', productivity:'Productivity', body:'Body', money:'Money', life:'Life', system:'System',
     m_goals:'Goals', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Nutrition', m_notes:'Notes', m_journal:'Journal', m_car:'Car',
     m_subscriptions:'Subscriptions', m_calendar:'Calendar', m_quests:'Quests', m_statistics:'Statistics', m_search:'Search', m_health:'Health',
-    m_character:'Character', m_settings:'Settings', m_planner:'Planner', m_week:'Week',
+    m_character:'Character', m_settings:'Settings', m_planner:'Planner', m_week:'Week', m_intel:'Intelligence',
     quick_add:'Quick Add', qa_task:'Task', qa_habit:'Habit', qa_goal:'Goal', qa_expense:'Expense', qa_income:'Income', qa_workout:'Workout',
     qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel', qa_planner:'Planner block', qa_week:'Plan the week',
     ob_step:'Step {n} of 6', skip:'Skip', next_btn:'Continue', back_btn:'Back', start_sample:'Start with sample data', finish:'Start with an empty profile',
@@ -4046,6 +4066,7 @@ function uiCcHome(W){
   if(W.command!==false){ const st=ccNow(ctx,ranked); wrap.appendChild(uiCcNowCard(ctx,ranked,st)); nowItem=st.item||null; }
   wrap.appendChild(uiCcQuick());
   if(W.reminders!==false){ const a=uiCcAttention(ctx); if(a) wrap.appendChild(a); }
+  if(W.intel!==false) wrap.appendChild(uiCcIntel(ctx)); // Intelligence: planning gaps, below "Co teď?" (a separate layer, not a second priority engine)
   if(W.planner!==false){ wrap.appendChild(uiCcTimeline(ctx)); wrap.appendChild(uiCcWeekCard()); }
   if(W.top3!==false) wrap.appendChild(uiCcTop3(ctx,nowItem,ranked));
   if(W.progress!==false) wrap.appendChild(uiCcDay(ctx));
@@ -4059,7 +4080,7 @@ function uiCcHome(W){
 }
 // minute tick: every Command Center section whose content depends on the clock is rebuilt from the same helpers and
 // swapped in place only when it actually changed -- never a full render. Order of the sections on Home:
-const UI_CC_ORDER=['#ccNow','.cc-quick','#ccAttn','#ccTimeline','#ccTop','#ccDay','#ccHabits','#ccGoals','#ccQuests','#ccMini'];
+const UI_CC_ORDER=['#ccNow','.cc-quick','#ccAttn','#ccIntel','#ccTimeline','#ccTop','#ccDay','#ccHabits','#ccGoals','#ccQuests','#ccMini'];
 // the focused control inside a section, as "selector + position", so the same control can be focused in its replacement
 function uiCcWireNav(root){ root.querySelectorAll('[data-nav]').forEach(n=>{ if(!n.onclick) n.onclick=()=>{view=n.dataset.nav;render();window.scrollTo(0,0);}; }); }
 // the focused control as "keyed item (data-ck) + selector + position": focus only ever moves to the same item's control
@@ -4095,6 +4116,7 @@ function uiCcTick(app){
   const q=k=>home.querySelector(':scope > '+k);
   if(W.command!==false) uiCcSwap(home,'#ccNow',q('#ccNow'),uiCcNowCard(ctx,ranked,st));
   if(W.reminders!==false) uiCcSwap(home,'#ccAttn',q('#ccAttn'),uiCcAttention(ctx));
+  if(W.intel!==false) uiCcSwap(home,'#ccIntel',q('#ccIntel'),uiCcIntel(ctx));
   if(W.planner!==false) uiCcSwap(home,'#ccTimeline',q('#ccTimeline'),uiCcTimeline(ctx));
   if(W.top3!==false) uiCcSwap(home,'#ccTop',q('#ccTop'),uiCcTop3(ctx,W.command!==false?st.item||null:null,ranked));
   if(W.progress!==false) uiCcSwap(home,'#ccDay',q('#ccDay'),uiCcDay(ctx));
@@ -4795,9 +4817,9 @@ function gpMilestone(m,ix){
     status:m.completed?'completed':m.targetDate&&m.targetDate<T?'overdue':'active'};
 }
 // "Další krok": 1. nearest open linked task, 2. nearest open milestone, 3. nearest upcoming linked planner block
-function gpNextStep(g,ix){
+function gpNextStep(g,ix,T,nm){
   ix=ix||gpIndex(); if(g.status==='Completed') return null;
-  const T=todayStr(), nm=gpNowMin();
+  T=T||todayStr(); if(nm==null) nm=gpNowMin();
   const t=ix.tasks(g.id).filter(t=>!t.done).sort(gpByDue)[0];
   if(t) return {k:'task',id:t.id,title:t.title,date:t.dueDate||null,obj:t};
   const m=ix.ms(g.id).filter(m=>!m.completed).sort(gpByMsDate)[0];
@@ -5524,7 +5546,7 @@ function renderSettings(){
   const smartOn=S.settings.widgets.smart!==false;
   const sh=el(`<section class="card set-group" id="st_smart"><h3>${cs?'Chytrý Home':'Smart Home'}</h3><div class="sub" style="margin:-2px 0 4px">${cs?'Domů jako řídicí centrum dne: co teď, plán, priority a stav. Vypnuto = klasické widgety níže.':'Home as the control centre of your day: what now, plan, priorities and status. Off = the classic widgets below.'}</div><div id="st_smart_rows"></div></section>`);
   const shr=sh.querySelector('#st_smart_rows');
-  const SMART_ROWS=[['smart',cs?'Chytrý Home':'Smart Home'],['command',cs?'Co teď?':'What now?'],['planner',cs?'Dnešek (časová osa)':'Today (timeline)'],['top3',cs?'Dnes nejdůležitější':'Most important today'],
+  const SMART_ROWS=[['smart',cs?'Chytrý Home':'Smart Home'],['command',cs?'Co teď?':'What now?'],['intel',cs?'Doporučení (Intelligence)':'Suggestions (Intelligence)'],['planner',cs?'Dnešek (časová osa)':'Today (timeline)'],['top3',cs?'Dnes nejdůležitější':'Most important today'],
     ['goals',cs?'Cíle':'Goals'],['habits',cs?'Návyky':'Habits'],['finance',cs?'Finance':'Finance'],['fitness',cs?'Fitness':'Fitness'],['health',cs?'Spánek':'Sleep']];
   SMART_ROWS.forEach(([k,lbl],i)=>{
     const on=S.settings.widgets[k]!==false, dis=i>0&&!smartOn;
@@ -5654,6 +5676,7 @@ function renderMore(){
     {v:'calendar',ic:'📅',label:'Calendar'},
     {v:'planner',ic:'🗓️',label:'Planner'},
     {v:'week',ic:'📅',label:'Weekly Planner'},
+    {v:'intel',ic:'💡',label:'Intelligence'},
     {v:'quests',ic:'📜',label:'Quests'},
     {v:'statistics',ic:'📊',label:'Statistics'},
     {v:'search',ic:'🔎',label:'Search'},
@@ -5662,7 +5685,7 @@ function renderMore(){
     {v:'settings',ic:'⚙️',label:'Settings'},
   ];
   // Phase 8B: same 15 destinations, grouped into sections.
-  const groups=[['productivity',['week','planner','calendar','goals','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
+  const groups=[['productivity',['week','intel','planner','calendar','goals','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
     ['money',['finance','subscriptions']],['life',['car']],['system',['statistics','character','settings']]];
   const g=wrap.querySelector('#moreGrid');
   groups.forEach(([gk,keys])=>{
@@ -9842,8 +9865,11 @@ function wpDayConflicts(day){
   return out;
 }
 // the whole week, built in one pass per collection
-function wpWeek(offset){
-  const T=todayStr(), r=wpRange(offset), inR=d=>d&&d>=r.from&&d<=r.to, ix=gpIndex(), doneByDay=anTaskDoneByDay();
+function wpWeek(offset){ return wpBuild(wpRange(offset),todayStr()); }
+// any 7-day range {from,to,days} seen from day T (the week view uses Mon..Sun; Intelligence uses today + 6 days
+// and passes noHabits: it does not read the day's habit list, which is the costliest part with long habit histories)
+function wpBuild(r,T,noHabits){
+  const inR=d=>d&&d>=r.from&&d<=r.to, ix=gpIndex(), doneByDay=anTaskDoneByDay();
   const days=r.days.map(d=>({date:d,dow:(new Date(d+'T00:00').getDay()+6)%7,isToday:d===T,past:d<T,blocks:[],tasksDue:[],tasksDone:[],events:[],workouts:[],habits:[],training:false}));
   const at=d=>days[ccDaysBetween(r.from,d)];
   (S.plannerBlocks||[]).forEach(b=>{ if(inR(b.date)) at(b.date).blocks.push(b); });
@@ -9856,7 +9882,7 @@ function wpWeek(offset){
   days.forEach(day=>{
     day.blocks.sort((a,b)=>(plannerTimeToMin(a.startTime)-plannerTimeToMin(b.startTime))||String(a.title).localeCompare(String(b.title),'cs'));
     day.tasksDue.sort(gpByDue); day.events.sort((a,b)=>String(a.e.start||'99').localeCompare(String(b.e.start||'99')));
-    day.habits=wpHabitsOn(day.date,T);
+    day.habits=noHabits?[]:wpHabitsOn(day.date,T);
     day.training=td.includes(new Date(day.date+'T00:00').getDay());
     day.minutes=day.blocks.reduce((a,b)=>a+plannerDuration(b),0);
     const cat={}; let goalMin=0;
@@ -9919,6 +9945,132 @@ function gpBlockDone(b,T){ if(b.date<T) return !!b.completed; if(b.date>T) retur
 function wpReschedule(b,date,startTime,endTime){
   const src=(S.plannerBlocks||[]).find(x=>x.id===b.id); if(!src) return {ok:false,errors:{date:'missing'}};
   return plannerSaveBlock(Object.assign({},src,{date,startTime,endTime}),src);
+}
+/* ================= LifeOS Intelligence 1.0 (logic) =================
+   "Co chybí v plánování?" -- a READ-ONLY, deterministic layer over existing helpers: gpIndex / gpNextStep / gpBlockUpcoming
+   (Goals), wpBuild / wpTimedItems / wpDayConflicts / wpPriorityIds (Weekly Planner), ccGoalLastActivity (Command Center),
+   anTaskIdsIn (Analytics). It never writes to S, grants XP or creates / moves anything: it only returns suggestions, and every
+   change goes through an existing form the user confirms. "Co teď?" stays the Command Center's (ccCandidates/ccRank).
+   `now` is an explicit input: same state + same now = same suggestions, ids and order. Facts only -- a day without planner
+   blocks is "bez bloků", never "free time"; a deadline is "za X dní", never a prediction. */
+const INTEL={
+  HORIZON:7,        // days looked at: today + 6
+  TASK_SOON:7,      // an open task counts as important when overdue, due within 7 days, or High / Urgent
+  URGENT_DAYS:3,    // due within 3 days ranks right after overdue items
+  GOAL_SOON:14,     // an active goal below 100 % whose deadline is within 14 days (or past)
+  IDLE_DAYS:14,     // an active goal with no recorded activity for 14 days (two full weeks)
+  // a heavily planned day: >= 10 h or >= 8 blocks; or >= 6 h / >= 5 blocks AND at least twice the average of the other 6 days
+  DAY_MIN:600, DAY_BLOCKS:8, DAY_MIN_REL:360, DAY_BLOCKS_REL:5, DAY_FACTOR:2,
+  PER_TYPE:40, MAX:100, HOME:3, SCREEN:20
+};
+// technical relevance order of the suggestions (not an evaluation): 1 overdue / conflict ... 8 informational
+const INTEL_RANK={conflict:1,deadline:2,priority_plan:3,goal_next:4,task_plan:5,reschedule:5,goal_idle:6,overload:7,window:8,priority_limit:8};
+const INTEL_TYPES=['conflict','reschedule','task_plan','deadline','priority_plan','goal_next','goal_idle','overload','window','priority_limit'];
+// actions offered per type -- each one opens an existing form or view (the user confirms every change there)
+const INTEL_ACTIONS={conflict:['move','week'],reschedule:['move','task'],task_plan:['plan','task'],deadline:['goal','week'],priority_plan:['plantime','week'],
+  goal_next:['addtask','goal'],goal_idle:['goal','plantime'],overload:['week'],window:['plan','week'],priority_limit:['week']};
+function intelDay(now){ return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0'); }
+let intelColl=null; // one Czech collator for every title comparison (localeCompare(…,'cs') builds a new one per call)
+function intelOrder(a,b){
+  if(!intelColl) intelColl=new Intl.Collator('cs');
+  return a.rank-b.rank||String(a.targetDate||'9999').localeCompare(String(b.targetDate||'9999'))||INTEL_TYPES.indexOf(a.type)-INTEL_TYPES.indexOf(b.type)||
+    intelColl.compare(String(a.title),String(b.title))||String(a.key).localeCompare(String(b.key));
+}
+function intelGroup(x){
+  if(x.type==='conflict'||x.type==='deadline') return 'attention';
+  if(x.type==='task_plan'||x.type==='reschedule') return x.rank<=2?'attention':'planning';
+  if(x.type==='overload'||x.type==='window') return 'planning';
+  return 'goals';
+}
+// the first day of the horizon (from `from`, not `skip`) where [s,e) touches no planner block, event or timed workout; today only after now
+function intelSlot(days,items,from,s,e,T,nm,skip){
+  if(s==null||e==null||e<=s) return null;
+  for(const d of days){
+    if(d.date<from||d.date===skip||(d.date===T&&s<nm)) continue;
+    if(!items.get(d.date).some(x=>x.s<e&&s<x.e)) return {date:d.date,startTime:plannerMinToTime(s),endTime:plannerMinToTime(e)};
+  }
+  return null;
+}
+function intelCompute(now){
+  const T=intelDay(now), nm=now.getHours()*60+now.getMinutes(), to=addDays(T,INTEL.HORIZON-1);
+  const wk=wpBuild({from:T,to,days:Array.from({length:INTEL.HORIZON},(_,i)=>addDays(T,i))},T,true), ix=wk.ix;
+  const items=new Map(wk.days.map(d=>[d.date,wpTimedItems(d)])), goals=new Map(S.goals.map(g=>[g.id,g])), out=[];
+  const high=t=>t.priority==='High'||t.priority==='Urgent', soonTo=addDays(T,INTEL.TASK_SOON);
+  // planner blocks per task, one pass: has an upcoming block / its latest block that ended without being marked done
+  const up=new Set(), past=new Map();
+  (S.plannerBlocks||[]).forEach(b=>{ if(!b.taskId||b.completed||!b.date) return;
+    if(gpBlockUpcoming(b,T,nm)) up.add(b.taskId);
+    else { const p=past.get(b.taskId); if(!p||(b.date+b.startTime)>(p.date+p.startTime)) past.set(b.taskId,b); } });
+  // A + J: an important open task with no upcoming block -> plan it; if its last block passed unfinished -> move that block
+  S.tasks.forEach(t=>{
+    if(t.done||up.has(t.id)) return;
+    if(!high(t)&&!(t.dueDate&&t.dueDate<=soonTo)) return; // cheap string filter first (ISO dates compare as strings)
+    const dd=t.dueDate?ccDaysBetween(T,t.dueDate):null, over=dd!=null&&dd<0, soon=dd!=null&&dd>=0&&dd<=INTEL.TASK_SOON;
+    if(!over&&!soon&&!high(t)) return;
+    const reasons=[];
+    if(over) reasons.push({r:'overdue',days:-dd,date:t.dueDate}); else if(dd===0) reasons.push({r:'due_today',date:t.dueDate}); else if(soon) reasons.push({r:'due_in',days:dd,date:t.dueDate});
+    if(high(t)) reasons.push({r:'prio',p:t.priority});
+    const g=t.goalId?goals.get(t.goalId):null; if(g&&g.status==='Active') reasons.push({r:'goal',title:g.title,id:g.id});
+    const rank=over?1:dd!=null&&dd<=INTEL.URGENT_DAYS?2:5, pb=past.get(t.id);
+    const base={entityId:t.id,key:'task:'+t.id,title:t.title,targetDate:t.dueDate||null,taskId:t.id,goalId:t.goalId||''};
+    if(pb){
+      const prop=intelSlot(wk.days,items,T,plannerTimeToMin(pb.startTime),plannerTimeToMin(pb.endTime),T,nm);
+      reasons.push({r:'past_block',date:pb.date,start:pb.startTime,end:pb.endTime}); if(prop) reasons.push({r:'slot',...prop});
+      out.push({...base,type:'reschedule',rank,entityType:'block',entityId:pb.id,blockId:pb.id,durationMinutes:plannerDuration(pb),proposal:prop,reasons});
+    } else { reasons.push({r:'no_block'}); out.push({...base,type:'task_plan',rank,entityType:'task',durationMinutes:null,proposal:null,reasons}); }
+  });
+  // B C D H: active goals -- deadline with open work, no next step, no recorded activity, weekly priority without a plan
+  const wr=wpRange(0,T), pri=wpPriorityIds(wr.from), doneW=anTaskIdsIn(wr);
+  S.goals.forEach(g=>{
+    if(g.status!=='Active') return;
+    const pct=goalProgress(g), tasks=ix.tasks(g.id), open=tasks.filter(t=>!t.done).length, ms=ix.ms(g.id).filter(m=>!m.completed).length;
+    const bl=ix.blocks(g.id), upH=bl.filter(b=>b.date<=to&&gpBlockUpcoming(b,T,nm)), upMin=upH.reduce((a,b)=>a+plannerDuration(b),0);
+    const base={entityType:'goal',entityId:g.id,key:'goal:'+g.id,title:g.title,goalId:g.id,targetDate:g.targetDate||null,durationMinutes:null,proposal:null};
+    const facts=[{r:'g_open',tasks:open,ms},{r:'g_planned',n:upH.length,min:upMin}];
+    if(g.targetDate&&pct<100){ const dd=ccDaysBetween(T,g.targetDate);
+      if(dd<=INTEL.GOAL_SOON) out.push({...base,type:'deadline',rank:dd<0?1:2,reasons:[dd<0?{r:'g_overdue',days:-dd,date:g.targetDate}:{r:'g_due',days:dd,date:g.targetDate},{r:'g_pct',pct},...facts]}); }
+    if(!gpNextStep(g,ix,T,nm)) out.push({...base,type:'goal_next',rank:4,reasons:[{r:'g_nonext'},...facts]});
+    const last=ccGoalLastActivity(g), from=last||(g.createdAt>86400000?uiIsoDate(g.createdAt):null), since=from?ccDaysBetween(from,T):null;
+    if(since!=null&&since>=INTEL.IDLE_DAYS) out.push({...base,type:'goal_idle',rank:6,reasons:[last?{r:'g_idle',days:since,date:last}:{r:'g_never',days:since,date:from},{r:'g_threshold',days:INTEL.IDLE_DAYS}]});
+    if(pri.includes(g.id)){
+      const wbl=bl.filter(b=>b.date>=wr.from&&b.date<=wr.to), act=tasks.some(t=>doneW.has(t.id)||(!t.done&&t.dueDate&&t.dueDate>=wr.from&&t.dueDate<=wr.to));
+      if(!wbl.length&&!act) out.push({...base,type:'priority_plan',rank:3,reasons:[{r:'p_week',from:wr.from,to:wr.to},{r:'p_noblock'},{r:'p_notask'}]});
+    }
+  });
+  // I: the week's priorities at / over the limit (facts only; the limit stays the Weekly Planner's)
+  const raw=S.weeklyPriorities&&typeof S.weeklyPriorities==='object'&&Array.isArray(S.weeklyPriorities[wr.from])?S.weeklyPriorities[wr.from]:[];
+  const stored=[...new Set(raw)].filter(id=>goals.has(id)).length;
+  if(stored>=WP_MAX_PRIORITIES) out.push({type:'priority_limit',rank:8,entityType:'week',entityId:wr.from,key:'week:'+wr.from,title:'',targetDate:wr.from,durationMinutes:null,proposal:null,
+    reasons:[{r:stored>WP_MAX_PRIORITIES?'p_over':'p_full',n:stored,max:WP_MAX_PRIORITIES}]});
+  // E: overlaps with a planner block in the horizon (the Weekly Planner's own detection); one card per block and day
+  wk.days.forEach(d=>d.conflicts.forEach(c=>{
+    if(d.date===T&&c.a.e<=nm&&c.b.e<=nm) return; // both already over
+    const mv=c.b.k==='block'?c.b:c.a, prop=intelSlot(wk.days,items,T,mv.s,mv.e,T,nm,d.date), side=x=>({k:x.k,title:x.title,start:x.start,end:x.end});
+    out.push({type:'conflict',rank:1,entityType:'block',entityId:mv.id,key:`conflict:${d.date}:${mv.id}`,title:mv.title,targetDate:d.date,durationMinutes:mv.e-mv.s,blockId:mv.id,proposal:prop,
+      reasons:[{r:'overlap',date:d.date,from:c.from,to:c.to,a:side(c.a),b:side(c.b)},...(prop?[{r:'slot',...prop}]:[])]});
+  }));
+  // F: a heavily planned day (thresholds above) -- planned time, blocks and overlaps as facts
+  const tot=wk.days.reduce((a,d)=>a+d.minutes,0), totB=wk.days.reduce((a,d)=>a+d.blocks.length,0), n=wk.days.length-1;
+  wk.days.forEach(d=>{
+    const m=d.minutes, k=d.blocks.length, avg=(tot-m)/n, avgB=(totB-k)/n;
+    if(m>=INTEL.DAY_MIN||k>=INTEL.DAY_BLOCKS||(m>=INTEL.DAY_MIN_REL&&m>=INTEL.DAY_FACTOR*avg)||(k>=INTEL.DAY_BLOCKS_REL&&k>=INTEL.DAY_FACTOR*avgB))
+      out.push({type:'overload',rank:7,entityType:'day',entityId:d.date,key:'day:'+d.date,title:'',targetDate:d.date,durationMinutes:m,proposal:null,
+        reasons:[{r:'d_planned',min:m,blocks:k},{r:'d_avg',min:Math.round(avg)},...(d.conflicts.length?[{r:'d_overlaps',n:d.conflicts.length}]:[])]});
+  });
+  // G: the first day after today with no planner block at all, offered for the most relevant unplanned task
+  const tk=out.filter(x=>x.type==='task_plan'), top=tk.reduce((a,x)=>!a||intelOrder(x,a)<0?x:a,null);
+  if(top){ const d=wk.days.find(d=>d.date>T&&!d.blocks.length);
+    if(d) out.push({type:'window',rank:8,entityType:'day',entityId:d.date,key:'window:'+d.date,title:top.title,targetDate:d.date,taskId:top.taskId,goalId:top.goalId,durationMinutes:null,proposal:null,
+      reasons:[{r:'w_empty',date:d.date,events:d.events.length},{r:'w_task',title:top.title,n:tk.length}]}); }
+  // one card per problem: the most relevant suggestion of a key keeps the card, the others add their facts to it
+  const byKey=new Map(), list=[];
+  out.sort(intelOrder).forEach(x=>{
+    const p=byKey.get(x.key);
+    if(p){ if(p.type===x.type){ const i=p.reasons.findIndex(r=>r.r!=='overlap'); p.reasons.splice(i<0?p.reasons.length:i,0,...x.reasons.filter(r=>r.r==='overlap')); } else p.also.push({type:x.type,reasons:x.reasons}); return; }
+    x.id=x.type+':'+x.key.replace(/^[a-z]+:/,''); x.group=intelGroup(x); x.actions=[...INTEL_ACTIONS[x.type],'dismiss']; x.also=[]; byKey.set(x.key,x); list.push(x);
+  });
+  const per={}, capped=list.filter(x=>(per[x.type]=(per[x.type]||0)+1)<=INTEL.PER_TYPE);
+  return {T,nowMin:nm,horizon:{from:T,to},total:capped.length,counts:per,suggestions:capped.slice(0,INTEL.MAX)};
 }
 /* ================= Weekly Life Planner 3.0 (presentation) =================
    Markup from wpWeek()/wpSummary()/wpGoals()/wpUnplanned(). Every change goes through an existing form or handler
@@ -10094,12 +10246,14 @@ function renderWeek(){
   return wrap;
 }
 // "Přesunout": another day, start or end -- the existing planner model and validation (plannerSaveBlock)
-function openWpMoveForm(b){
-  const T=uiWpT, cs=uiLang()==='cs';
-  const inner=el(`<div class="pl-form" id="wpMove"><h3>${T('move_t')}</h3><p class="sub" style="margin:-6px 0 12px">${escapeHtml(b.title)}</p>
-    <label for="mv_date">${uiPlT('f_date')}</label><input type="date" id="mv_date" value="${b.date}"><div class="field-error" data-err="date" hidden></div>
-    <div class="grid2"><div><label for="mv_start">${uiPlT('f_start')}</label><input type="time" id="mv_start" value="${b.startTime}" step="300"><div class="field-error" data-err="startTime" hidden></div></div>
-      <div><label for="mv_end">${uiPlT('f_end')}</label><input type="time" id="mv_end" value="${b.endTime}" step="300"><div class="field-error" data-err="endTime" hidden></div></div></div>
+// prop (optional, from Intelligence): a proposed {date,startTime,endTime} prefilled -- saved only when the user confirms
+function openWpMoveForm(b,prop){
+  const T=uiWpT, cs=uiLang()==='cs', v=prop||b;
+  const inner=el(`<div class="pl-form" id="wpMove"><h3>${T('move_t')}</h3><p class="sub" style="margin:-6px 0 12px">${escapeHtml(b.title)} · ${uiWpDayLabel(b.date)} ${b.startTime}–${b.endTime}</p>
+    ${prop?`<p class="helper-text" id="mv_prop">${cs?'Předvyplněný návrh z Intelligence: v tomto čase nejsou evidované žádné bloky, události ani tréninky. Uloží se jen po potvrzení.':'Prefilled proposal from Intelligence: no blocks, events or workouts are recorded at that time. Saved only when you confirm.'}</p>`:''}
+    <label for="mv_date">${uiPlT('f_date')}</label><input type="date" id="mv_date" value="${v.date}"><div class="field-error" data-err="date" hidden></div>
+    <div class="grid2"><div><label for="mv_start">${uiPlT('f_start')}</label><input type="time" id="mv_start" value="${v.startTime}" step="300"><div class="field-error" data-err="startTime" hidden></div></div>
+      <div><label for="mv_end">${uiPlT('f_end')}</label><input type="time" id="mv_end" value="${v.endTime}" step="300"><div class="field-error" data-err="endTime" hidden></div></div></div>
     <p class="helper-text">${cs?'Propojený úkol, cíl, kategorie i trénink zůstanou.':'The linked task, goal, category and workout stay.'}</p>
     <button class="btn" id="mv_save">${T('save')}</button></div>`);
   inner.querySelector('#mv_save').onclick=()=>{
@@ -10126,6 +10280,167 @@ function uiCcWeekCard(){
    owning module/detail screen and opens the EXACT existing record found by its id — it never
    creates a new object and never changes data, satisfying the "no dead result" requirement. */
 function searchMatch(fields,q){ return fields.filter(Boolean).join(' \u0000 ').toLowerCase().includes(q); }
+/* ================= LifeOS Intelligence 1.0 (presentation) =================
+   Home "Doporučení" (max 3, below "Co teď?") and the Intelligence screen. Words for the engine's reason codes; every action
+   opens an existing form or view (openPlannerForm, openWpMoveForm, openTaskEditForm, goal detail, uiGpAddTask, uiGpPlanTime,
+   the week). "Skrýt" only hides a card for this browser tab (sessionStorage) -- nothing in S, no XP, no export change. */
+const UI_IN={
+  cs:{title:'Intelligence',sub:'Návrhy k plánování z tvých dat · počítá se v zařízení, nic se nezmění samo',home_h:'Doporučení',all:'Vše',
+    g_attention:'Vyžaduje pozornost',g_planning:'Plánování',g_goals:'Cíle',why:'Proč:',
+    a_plan:'Naplánovat',a_move:'Přesunout',a_task:'Zobrazit úkol',a_goal:'Otevřít cíl',a_addtask:'Přidat úkol',a_plantime:'Naplánovat čas',a_week:'Zobrazit v týdnu',a_dismiss:'Skrýt',
+    dismiss_l:t=>`Skrýt doporučení: ${t}`,hidden_t:'Doporučení skryto',gone:'Tahle položka už neexistuje.',more:n=>`+ ${n} dalších`,
+    hidden_n:n=>`Skrytá doporučení: ${n}`,restore:'Znovu zobrazit',
+    empty:'Momentálně nejsou žádná doporučení.',empty_ok:'Všechno vypadá naplánované.',
+    empty_ok_d:'Důležité úkoly mají v plánovači blok, aktivní cíle mají další krok a v příštích 7 dnech nejsou překryvy.',
+    note:'Doporučení se počítají jen z dat v tomto zařízení (úkoly, cíle, milníky, plánovač, kalendář, tréninky, priority týdne) a samy nic nemění. Skrytí platí do zavření této záložky; když se data změní, doporučení se může vrátit.',
+    t_task_plan:t=>`Naplánovat „${t}“`,t_task_over:t=>`Naplánovat úkol po termínu „${t}“`,t_reschedule:t=>`Přeplánovat „${t}“`,t_conflict:t=>`Vyřešit překryv v plánu: „${t}“`,
+    t_deadline:t=>`Blíží se termín cíle „${t}“`,t_deadline_over:t=>`Cíl „${t}“ je po termínu`,t_goal_next:t=>`Určit další krok pro cíl „${t}“`,t_goal_idle:t=>`Cíl „${t}“ dlouho neměl aktivitu`,
+    t_priority_plan:t=>`Priorita týdne „${t}“ zatím nemá plánovanou aktivitu`,t_overload:d=>`${d}: výrazně vytížený den`,t_window:d=>`${d} nemá žádné bloky v plánovači`,
+    t_priority_limit:'Priority týdne jsou obsazené',t_priority_over:'Priorit týdne je uloženo víc, než se používá',
+    k_block:'blok',k_event:'událost',k_workout:'trénink',
+    days:n=>`${n} ${n===1?'den':n>=2&&n<=4?'dny':'dní'}`,blocks:n=>`${n} ${n===1?'blok':n>=2&&n<=4?'bloky':'bloků'}`},
+  en:{title:'Intelligence',sub:'Planning suggestions from your own data · computed on this device, nothing changes by itself',home_h:'Suggestions',all:'All',
+    g_attention:'Needs attention',g_planning:'Planning',g_goals:'Goals',why:'Why:',
+    a_plan:'Plan',a_move:'Move',a_task:'Open task',a_goal:'Open goal',a_addtask:'Add task',a_plantime:'Plan time',a_week:'Show in week',a_dismiss:'Hide',
+    dismiss_l:t=>`Hide suggestion: ${t}`,hidden_t:'Suggestion hidden',gone:'This item no longer exists.',more:n=>`+ ${n} more`,
+    hidden_n:n=>`Hidden suggestions: ${n}`,restore:'Show again',
+    empty:'No suggestions right now.',empty_ok:'Everything looks planned.',
+    empty_ok_d:'Important tasks have a planner block, active goals have a next step and there are no overlaps in the next 7 days.',
+    note:'Suggestions are computed only from the data on this device (tasks, goals, milestones, planner, calendar, workouts, weekly priorities) and change nothing by themselves. Hiding lasts until this tab is closed; when the data change, a suggestion can come back.',
+    t_task_plan:t=>`Plan “${t}”`,t_task_over:t=>`Plan the overdue task “${t}”`,t_reschedule:t=>`Reschedule “${t}”`,t_conflict:t=>`Resolve an overlap: “${t}”`,
+    t_deadline:t=>`Goal deadline approaching: “${t}”`,t_deadline_over:t=>`Goal “${t}” is past its deadline`,t_goal_next:t=>`Set a next step for “${t}”`,t_goal_idle:t=>`Goal “${t}” has had no activity for a long time`,
+    t_priority_plan:t=>`Weekly priority “${t}” has nothing planned yet`,t_overload:d=>`${d}: a heavily planned day`,t_window:d=>`${d} has no planner blocks`,
+    t_priority_limit:'This week’s priorities are all set',t_priority_over:'More weekly priorities are stored than are used',
+    k_block:'block',k_event:'event',k_workout:'workout',
+    days:n=>`${n} day${n===1?'':'s'}`,blocks:n=>`${n} block${n===1?'':'s'}`}
+};
+function uiInT(k){ return (UI_IN[uiLang()]||UI_IN.cs)[k]; }
+const UI_IN_ICON={conflict:'clock',reschedule:'repeat',task_plan:'tasks',deadline:'flag',priority_plan:'star',priority_limit:'star',goal_next:'target',goal_idle:'target',overload:'chart',window:'calendar'};
+const UI_IN_GROUPS=[['attention','flag'],['planning','calendar'],['goals','target']];
+function uiInDay(d){ return uiWpDayLabel(d); }
+function uiInTitle(s){
+  const T=uiInT;
+  if(s.type==='task_plan') return (s.rank===1?T('t_task_over'):T('t_task_plan'))(s.title);
+  if(s.type==='deadline') return (s.rank===1?T('t_deadline_over'):T('t_deadline'))(s.title);
+  if(s.type==='overload'||s.type==='window') return T('t_'+s.type)(uiInDay(s.targetDate));
+  if(s.type==='priority_limit') return s.reasons[0].r==='p_over'?T('t_priority_over'):T('t_priority_limit');
+  return T('t_'+s.type)(s.title);
+}
+// one reason code in words: short (the card's line) or long (a sentence of "Proč:")
+function uiInReason(r,long){
+  const cs=uiLang()==='cs', T=uiInT, D=uiInDay, dd=n=>T('days')(n), k=x=>T('k_'+x.k);
+  switch(r.r){
+    case 'overdue': return long?(cs?`Termín úkolu byl ${D(r.date)} – po termínu ${dd(r.days)}.`:`The task was due ${D(r.date)} – ${dd(r.days)} overdue.`):(cs?`Po termínu ${dd(r.days)}`:`${dd(r.days)} overdue`);
+    case 'due_today': return long?(cs?'Termín úkolu je dnes.':'The task is due today.'):(cs?'Termín dnes':'Due today');
+    case 'due_in': return long?(cs?`Termín úkolu je ${D(r.date)} (za ${dd(r.days)}).`:`The task is due ${D(r.date)} (in ${dd(r.days)}).`):(cs?`Termín za ${dd(r.days)}`:`Due in ${dd(r.days)}`);
+    case 'prio': return long?(cs?`Priorita úkolu: ${uiPrioLabel(r.p)}.`:`Task priority: ${uiPrioLabel(r.p)}.`):(cs?`Priorita: ${uiPrioLabel(r.p)}`:`Priority: ${uiPrioLabel(r.p)}`);
+    case 'goal': return long?(cs?`Úkol patří k aktivnímu cíli „${r.title}“.`:`The task belongs to the active goal “${r.title}”.`):(cs?`Cíl „${r.title}“`:`Goal “${r.title}”`);
+    case 'no_block': return long?(cs?'Od teď k úkolu není v plánovači žádný blok.':'There is no planner block for the task from now on.'):(cs?'Zatím bez plánovaného bloku':'No planner block yet');
+    case 'past_block': return long?(cs?`Blok ${D(r.date)} ${r.start}–${r.end} proběhl bez označení splnění a úkol je stále otevřený.`:`The block on ${D(r.date)} ${r.start}–${r.end} passed without being marked done and the task is still open.`):(cs?`Blok ${D(r.date)} ${r.start}–${r.end} proběhl bez splnění`:`Block ${D(r.date)} ${r.start}–${r.end} passed, not done`);
+    case 'slot': return long?(cs?`Návrh: ${D(r.date)} ${r.startTime}–${r.endTime} – v tomto čase nejsou evidované žádné bloky, události ani tréninky. Nic se nepřesune bez tvého potvrzení.`:`Proposal: ${D(r.date)} ${r.startTime}–${r.endTime} – no blocks, events or workouts are recorded at that time. Nothing moves until you confirm.`):(cs?`Návrh: ${D(r.date)} ${r.startTime}–${r.endTime}`:`Proposal: ${D(r.date)} ${r.startTime}–${r.endTime}`);
+    case 'overlap': return long?(cs?`${D(r.date)}: ${k(r.a)} „${r.a.title}“ ${r.a.start}${r.a.end?'–'+r.a.end:''} a ${k(r.b)} „${r.b.title}“ ${r.b.start}${r.b.end?'–'+r.b.end:''} se překrývají (${r.from}–${r.to}).`:`${D(r.date)}: ${k(r.a)} “${r.a.title}” ${r.a.start}${r.a.end?'–'+r.a.end:''} and ${k(r.b)} “${r.b.title}” ${r.b.start}${r.b.end?'–'+r.b.end:''} overlap (${r.from}–${r.to}).`)
+      :(cs?`${D(r.date)} ${r.from}–${r.to} překryv: ${r.a.title} × ${r.b.title}`:`${D(r.date)} ${r.from}–${r.to} overlap: ${r.a.title} × ${r.b.title}`);
+    case 'g_overdue': return long?(cs?`Termín cíle byl ${D(r.date)} – po termínu ${dd(r.days)}.`:`The goal was due ${D(r.date)} – ${dd(r.days)} ago.`):(cs?`Termín byl ${D(r.date)}`:`Was due ${D(r.date)}`);
+    case 'g_due': return long?(cs?`Termín cíle je ${D(r.date)} (${r.days?'za '+dd(r.days):'dnes'}).`:`The goal is due ${D(r.date)} (${r.days?'in '+dd(r.days):'today'}).`):(r.days?(cs?`Termín za ${dd(r.days)}`:`Due in ${dd(r.days)}`):(cs?'Termín dnes':'Due today'));
+    case 'g_pct': return long?(cs?`Postup cíle: ${r.pct} %.`:`Goal progress: ${r.pct} %.`):(cs?`Hotovo ${r.pct} %`:`${r.pct} % done`);
+    case 'g_open': return long?(cs?`Zbývá otevřených úkolů: ${r.tasks}, otevřených milníků: ${r.ms}.`:`Open tasks left: ${r.tasks}, open milestones: ${r.ms}.`):(cs?`Otevřené úkoly: ${r.tasks}`:`Open tasks: ${r.tasks}`);
+    case 'g_planned': return long?(r.n?(cs?`V příštích 7 dnech je k cíli naplánováno ${T('blocks')(r.n)} (${uiPlDur(r.min)}).`:`${T('blocks')(r.n)} (${uiPlDur(r.min)}) are planned for the goal in the next 7 days.`):(cs?'V příštích 7 dnech k cíli není naplánovaný žádný blok.':'No block is planned for the goal in the next 7 days.'))
+      :(r.n?(cs?`Naplánováno: ${uiPlDur(r.min)}`:`Planned: ${uiPlDur(r.min)}`):(cs?'Bez bloku v příštích 7 dnech':'No block in the next 7 days'));
+    case 'g_nonext': return long?(cs?'Cíl nemá otevřený úkol, otevřený milník ani nadcházející blok v plánovači.':'The goal has no open task, open milestone or upcoming planner block.'):(cs?'Bez dalšího kroku':'No next step');
+    case 'g_idle': return long?(cs?`Poslední zaznamenaná aktivita u cíle: ${D(r.date)} – od té doby ${dd(r.days)}.`:`Last recorded activity on the goal: ${D(r.date)} – ${dd(r.days)} ago.`):(cs?`Poslední aktivita ${D(r.date)}`:`Last activity ${D(r.date)}`);
+    case 'g_never': return long?(cs?`Od založení cíle (${D(r.date)}) u něj není zaznamenaná žádná aktivita – ${dd(r.days)}.`:`No activity recorded since the goal was created (${D(r.date)}) – ${dd(r.days)}.`):(cs?`Bez aktivity ${dd(r.days)}`:`No activity for ${dd(r.days)}`);
+    case 'g_threshold': return long?(cs?`Aktivitou je dokončený úkol, milník nebo blok cíle a odškrtnutý propojený návyk; upozornění se ukáže po ${r.days} dnech bez ní.`:`Activity means a completed task, milestone or block of the goal, or a linked habit ticked; this shows after ${dd(r.days)} without any.`):'';
+    case 'p_week': return long?(cs?`Cíl je označený jako priorita týdne ${D(r.from)} – ${D(r.to)}.`:`The goal is marked as a priority for the week ${D(r.from)} – ${D(r.to)}.`):(cs?'Priorita týdne':'Weekly priority');
+    case 'p_noblock': return long?(cs?'Tento týden k němu není v plánovači žádný blok.':'There is no planner block for it this week.'):(cs?'Tento týden bez bloku':'No block this week');
+    case 'p_notask': return long?(cs?'Žádný jeho úkol nemá termín v tomto týdnu ani nebyl tento týden dokončen.':'None of its tasks is due this week or was completed this week.'):(cs?'bez úkolu v týdnu':'no task this week');
+    case 'p_full': return long?(cs?`Tento týden je označeno ${r.n} z ${r.max} priorit. Další lze přidat až po odebrání některé z nich.`:`${r.n} of ${r.max} priorities are set this week. Another one can be added after removing one.`):(cs?`Priority týdne: ${r.n}/${r.max}`:`Weekly priorities: ${r.n}/${r.max}`);
+    case 'p_over': return long?(cs?`V datech je pro tento týden uloženo ${r.n} priorit; týdenní plánovač používá první ${r.max}.`:`${r.n} priorities are stored for this week; the week view uses the first ${r.max}.`):(cs?`Uloženo ${r.n} priorit, používá se ${r.max}`:`${r.n} stored, ${r.max} used`);
+    case 'd_planned': return long?(cs?`V plánovači je na tento den ${uiPlDur(r.min)} v ${r.blocks} ${r.blocks===1?'bloku':'blocích'}.`:`${uiPlDur(r.min)} in ${T('blocks')(r.blocks)} are planned that day.`)
+      :(cs?`Naplánováno ${uiPlDur(r.min)} · ${T('blocks')(r.blocks)}`:`Planned ${uiPlDur(r.min)} · ${T('blocks')(r.blocks)}`);
+    case 'd_avg': return long?(cs?`Ostatní dny v příštích 7 dnech mají průměrně ${uiWpDur(r.min)}.`:`The other days of the next 7 average ${uiWpDur(r.min)}.`):(cs?`ostatní dny průměrně ${uiWpDur(r.min)}`:`other days avg ${uiWpDur(r.min)}`);
+    case 'd_overlaps': return long?(cs?`Překryvy v plánu tento den: ${r.n}.`:`Overlaps in the plan that day: ${r.n}.`):(cs?`překryvy: ${r.n}`:`overlaps: ${r.n}`);
+    case 'w_empty': return long?(cs?`V tento den nejsou evidované žádné bloky v plánovači${r.events?` (událostí v kalendáři: ${r.events})`:''}. Jestli je čas opravdu volný, aplikace neví.`:`No planner blocks are recorded that day${r.events?` (calendar events: ${r.events})`:''}. Whether the time is really free, the app does not know.`)
+      :(cs?`Žádné bloky v plánovači${r.events?` · události: ${r.events}`:''}`:`No planner blocks${r.events?` · events: ${r.events}`:''}`);
+    case 'w_task': return long?(cs?`Důležitých úkolů bez bloku: ${r.n}; první z nich je „${r.title}“.`:`Important tasks without a block: ${r.n}; the first is “${r.title}”.`):(cs?`„${r.title}“ čeká na naplánování`:`“${r.title}” is waiting to be planned`);
+  }
+  return '';
+}
+function uiInShort(s){ return s.reasons.filter(r=>r.r!=='g_threshold'&&r.r!=='p_notask').slice(0,3).map(r=>uiInReason(r,false)).filter(Boolean).join(' · '); }
+function uiInWhy(s){ const seen=new Set(), out=[]; [...s.reasons,...s.also.flatMap(a=>a.reasons)].forEach(r=>{ const t=uiInReason(r,true); if(t&&!seen.has(t)){ seen.add(t); out.push(t); } }); return out; }
+function uiInCard(s,full){
+  const T=uiInT, title=uiInTitle(s);
+  const acts=s.actions.filter(a=>a!=='dismiss').map((a,i)=>`<button class="btn sm in-btn${i?' ghost':''}" data-in-act="${a}">${T('a_'+a)}</button>`).join('');
+  return `<li class="card in-card is-${s.group}" data-intel="${escapeHtml(s.id)}"><span class="in-ic" aria-hidden="true">${uiIcon(UI_IN_ICON[s.type]||'sparkle',18)}</span>
+    <div class="in-main">${full?'':`<p class="in-k">${T('g_'+s.group)}</p>`}<h4 class="in-t">${escapeHtml(title)}</h4><p class="in-r">${escapeHtml(uiInShort(s))}</p>
+      ${full?`<div class="in-why"><p class="in-why-h">${T('why')}</p><ul>${uiInWhy(s).map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul></div>`:''}
+      <div class="in-acts">${acts}<button class="btn sm ghost in-btn in-skip" data-in-dismiss="1" aria-label="${escapeHtml(T('dismiss_l')(title))}">${uiIcon('x',14)} ${T('a_dismiss')}</button></div></div></li>`;
+}
+// "Skrýt": per browser tab only; the signature changes when the facts behind a card change, so it can come back
+let uiInHidden=null, uiInAll=false;
+function uiInHiddenSet(){
+  if(!uiInHidden){ uiInHidden=new Set(); try{ const a=JSON.parse(sessionStorage.getItem('lifeos.intel.hidden')||'[]'); if(Array.isArray(a)) a.slice(-300).forEach(x=>{ if(typeof x==='string') uiInHidden.add(x); }); }catch(e){} }
+  return uiInHidden;
+}
+function uiInSig(s){ return [s.id,s.rank,s.targetDate||'',s.reasons.map(r=>r.r).join(',')].join('|'); }
+function uiInVisible(res){ const h=uiInHiddenSet(); return res.suggestions.filter(s=>!h.has(uiInSig(s))); }
+function uiInEmpty(res,vis){
+  const T=uiInT;
+  if(res.suggestions.length) return `<p class="sub in-empty-t">${T('empty')}</p>`;
+  const planned=(S.plannerBlocks||[]).some(b=>!b.completed&&b.date>=res.T&&b.date<=res.horizon.to);
+  return planned&&(S.tasks.some(t=>!t.done)||S.goals.some(g=>g.status==='Active'))?`<p class="in-empty-t"><b>${T('empty_ok')}</b></p><p class="sub">${T('empty_ok_d')}</p>`:`<p class="sub in-empty-t">${T('empty')}</p>`;
+}
+function uiInAct(s,k){
+  const task=s.taskId?S.tasks.find(t=>t.id===s.taskId):null, goal=s.goalId?S.goals.find(g=>g.id===s.goalId):null, block=s.blockId?(S.plannerBlocks||[]).find(b=>b.id===s.blockId):null;
+  const gone=()=>{ toast(uiInT('gone')); render(); };
+  if(k==='plan'){ if(!task) return gone(); openPlannerForm(null,{taskId:task.id,goalId:task.goalId||'',title:task.title,category:task.category||'',date:s.type==='window'?s.targetDate:todayStr()}); }
+  else if(k==='move'){ if(!block) return gone(); openWpMoveForm(block,s.proposal); }
+  else if(k==='task'){ if(!task) return gone(); openTaskEditForm(task); }
+  else if(k==='goal'){ if(!goal) return gone(); currentGoalId=goal.id; view='goalDetail'; render(); window.scrollTo(0,0); }
+  else if(k==='addtask'){ if(!goal) return gone(); uiGpAddTask(goal); }
+  else if(k==='plantime'){ if(!goal) return gone(); uiGpPlanTime(goal); }
+  else if(k==='week') uiWpOpen(wpOffsetOf(s.targetDate&&s.entityType!=='goal'?s.targetDate:todayStr()),s.entityType==='goal'?s.entityId:null);
+}
+function uiInDismiss(s,li){
+  const h=uiInHiddenSet(); h.add(uiInSig(s)); try{ sessionStorage.setItem('lifeos.intel.hidden',JSON.stringify([...h].slice(-300))); }catch(e){}
+  const scope=view==='home'?'#ccIntel':'#app', idx=[...document.querySelectorAll(scope+' [data-intel]')].indexOf(li);
+  if(view==='home'){ const old=document.querySelector('#ccIntel'), fresh=uiCcIntel(ccContext()); if(old&&fresh){ uiIconize(fresh); uiCcWireNav(fresh); old.replaceWith(fresh); } }
+  else render();
+  const cards=[...document.querySelectorAll(scope+' [data-intel]')], next=cards[Math.min(idx,cards.length-1)];
+  const f=next?next.querySelector('[data-in-act],[data-in-dismiss]'):document.querySelector(view==='home'?'#ccIntelH':'#inTitle'); if(f) f.focus({preventScroll:false});
+  toast(uiInT('hidden_t'));
+}
+function uiInWire(root,list){
+  const byId=new Map(list.map(s=>[s.id,s]));
+  root.querySelectorAll('[data-intel]').forEach(li=>{ const s=byId.get(li.dataset.intel); if(!s) return;
+    li.querySelectorAll('[data-in-act]').forEach(b=>{ b.onclick=()=>uiInAct(s,b.dataset.inAct); });
+    const d=li.querySelector('[data-in-dismiss]'); if(d) d.onclick=()=>uiInDismiss(s,li); });
+}
+// Home: under "Co teď?" -- the Command Center stays the source of "what now"; this lists planning gaps only
+function uiCcIntel(ctx){
+  const T=uiInT, res=intelCompute((ctx&&ctx.now)||new Date()), vis=uiInVisible(res);
+  const sec=el(`<section class="cc-sec" id="ccIntel" aria-labelledby="ccIntelH"><div class="section-header"><h3 id="ccIntelH" tabindex="-1">${uiIcon('sparkle',18)} ${T('home_h')}</h3><button class="action" data-nav="intel">${T('all')}${vis.length?` (${vis.length})`:''} ›</button></div>
+    ${vis.length?`<ul class="in-list">${vis.slice(0,INTEL.HOME).map(s=>uiInCard(s,false)).join('')}</ul>`:`<div class="card in-empty">${uiInEmpty(res,vis)}</div>`}</section>`);
+  uiInWire(sec,vis);
+  return sec;
+}
+function renderIntel(){
+  const t0=performance.now(), T=uiInT, res=intelCompute(new Date()), vis=uiInVisible(res), hidden=res.suggestions.length-vis.length;
+  const shown=uiInAll?vis:vis.slice(0,INTEL.SCREEN);
+  const wrap=el(`<div class="in" data-intel-view="1">${uiPageHead(T('title'),T('sub'))}</div>`); const h2=wrap.querySelector('h2'); h2.id='inTitle'; h2.tabIndex=-1;
+  if(!vis.length) wrap.appendChild(el(`<section class="card in-empty" aria-live="polite">${uiInEmpty(res,vis)}</section>`));
+  UI_IN_GROUPS.forEach(([g,ic])=>{
+    const list=shown.filter(s=>s.group===g), n=vis.filter(s=>s.group===g).length; if(!list.length) return;
+    wrap.appendChild(el(`<section class="in-group" id="inG-${g}" aria-labelledby="inGH-${g}"><h3 class="gp-h in-gh is-${g}" id="inGH-${g}">${uiIcon(ic,16)} ${T('g_'+g)} · ${n}</h3>
+      <ul class="in-list">${list.map(s=>uiInCard(s,true)).join('')}</ul></section>`));
+  });
+  if(vis.length>shown.length){ const b=el(`<button class="btn ghost in-more" id="inMore">${T('more')(vis.length-shown.length)}</button>`); b.onclick=()=>{ uiInAll=true; render(); const c=document.querySelectorAll('#app [data-intel]')[INTEL.SCREEN]; const f=c&&c.querySelector('[data-in-act],[data-in-dismiss]'); if(f) f.focus(); }; wrap.appendChild(b); }
+  if(hidden){ const r=el(`<p class="sub in-hidden">${T('hidden_n')(hidden)} <button class="btn sm ghost in-btn" id="inRestore">${T('restore')}</button></p>`);
+    r.querySelector('#inRestore').onclick=()=>{ uiInHiddenSet().clear(); try{ sessionStorage.removeItem('lifeos.intel.hidden'); }catch(e){} render(); const h=document.getElementById('inTitle'); if(h) h.focus(); }; wrap.appendChild(r); }
+  wrap.appendChild(el(`<p class="helper-text in-note">${T('note')}</p>`));
+  uiInWire(wrap,vis);
+  window.__inMs=performance.now()-t0;
+  return wrap;
+}
 function searchNavigate(type,obj){
   closeSheets();
   if(type==='task'){ view='tasks'; render(); openTaskEditForm(obj); }
