@@ -8694,6 +8694,7 @@ function questStreakHabit(D){
     .sort((a,b)=>currentStreak(b)-currentStreak(a)||a.name.localeCompare(b.name))[0]||null;
 }
 const QD=()=>todayStr();
+const QUEST_TOLERANCE={calories:[0.9,1.1]}; // accepted share of the calorie target for dq_calories
 // Task quests grow the attributes of the tasks they counted (their categories mixed; uncategorized = work).
 function questTaskProfile(tasks){ return rpgMixProfiles((tasks||[]).map(t=>catProfile(t.category)||'work'))||'work'; }
 function questAttrOf(q,p){ return typeof q.attr==='function'?q.attr(S,p||{}):q.attr; }
@@ -8711,10 +8712,12 @@ const DAILY_QUESTS=[
  {id:'dq_workout_pr',core:true,title:'Finish a workout with at least one PR',cs:'Dokonči trénink a udělej aspoň jeden osobní rekord',xp:60,attr:'fitness',icon:'trophy',
   params:(s,D)=>{ const pl=fitnessDayPlan(D); return (pl==='calendar'||pl==='training')&&questPrDay(s,D)?{}:null; },
   max:()=>1, val:(s,p,D=QD())=>completedWorkouts(s).some(w=>w.date===D&&w.result&&(w.result.prs||[]).length>0)?1:0},
- {id:'dq_plan_all',core:true,title:'Complete today\'s planned blocks',cs:'Dokonči plánované bloky dne',xp:35,attr:'plan',icon:'clock',
-  params:(s,D)=>(s.plannerBlocks||[]).some(b=>b.date===D)?{}:null,
-  max:(s,p,D=QD())=>Math.max(1,(s.plannerBlocks||[]).filter(b=>b.date===D).length),
-  val:(s,p,D=QD())=>(s.plannerBlocks||[]).filter(b=>b.date===D&&b.completed).length},
+ // Reality QA: the whole plan of the day as the Calendar shows it (repeating / multi-day blocks included, each occurrence
+ // completed on its own) -- complete when EVERY block of the day is marked done, never by one block
+ {id:'dq_plan_all',core:true,title:'Complete all of today\'s planned blocks',cs:'Dokonči všechny dnešní plánované bloky',xp:35,attr:'plan',icon:'clock',
+  params:(s,D)=>plannerBlocksOn(D).length?{}:null,
+  max:(s,p,D=QD())=>Math.max(1,plannerBlocksOn(D).length),
+  val:(s,p,D=QD())=>plannerBlocksOn(D).filter(b=>b.completed).length},
  {id:'dq_habits',core:true,title:'Complete all of today\'s habits',cs:'Splň všechny dnešní rutiny',xp:40,attr:'discipline',icon:'flame',
   params:(s,D)=>dailyScoreHabits(D).total?{}:null,
   max:(s,p,D=QD())=>Math.max(1,dailyScoreHabits(D).total||0), val:(s,p,D=QD())=>dailyScoreHabits(D).done||0},
@@ -8731,21 +8734,41 @@ const DAILY_QUESTS=[
   params:(s,D)=>dailyScore(D).relevant>=2?{}:null,
   max:()=>75, val:(s,p,D=QD())=>Math.min(75,dailyScore(D).score||0)},
  {id:'dq_plan_morning',title:'Finish your morning block',cs:'Dokonči ranní plánovaný blok',xp:25,attr:'plan',icon:'sun',
-  params:(s,D)=>(s.plannerBlocks||[]).some(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60)?{}:null,
-  max:(s,p,D=QD())=>Math.max(1,(s.plannerBlocks||[]).filter(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60).length),
-  val:(s,p,D=QD())=>(s.plannerBlocks||[]).filter(b=>b.date===D&&plannerTimeToMin(b.startTime)<12*60&&b.completed).length},
+  params:(s,D)=>plannerBlocksOn(D).some(b=>plannerTimeToMin(b.startTime)<12*60)?{}:null,
+  max:(s,p,D=QD())=>Math.max(1,plannerBlocksOn(D).filter(b=>plannerTimeToMin(b.startTime)<12*60).length),
+  val:(s,p,D=QD())=>plannerBlocksOn(D).filter(b=>plannerTimeToMin(b.startTime)<12*60&&b.completed).length},
  {id:'dq_sleep',title:'Log last night\'s sleep',cs:'Zapiš dnešní spánek',xp:15,attr:'sleep',icon:'moon',
   params:(s,D)=>s.sleepLog.some(x=>x.date>=addDays(D,-14)&&x.date<D)?{}:null,
   max:()=>1, val:(s,p,D=QD())=>s.sleepLog.some(x=>x.date===D)?1:0},
  {id:'dq_nutrition',title:'Log today\'s meals',cs:'Zapiš dnešní stravu',xp:15,attr:'nutrition',icon:'apple',
   params:()=>({}), max:()=>1, val:(s,p,D=QD())=>s.meals.some(m=>m.date===D)?1:0},
+ // Reality QA: behaviour quests from the real logs. Calories: done when the day's logged calories are within the
+ // QUEST_TOLERANCE band of the target (90-110 %); water: the day's logged water reaches the target. Offered only to
+ // someone who has logged food / water in the 14 days before (no quest for data nobody keeps).
+ {id:'dq_calories',title:'Hit your calorie target (90–110 %)',cs:'Splň kalorický cíl (90–110 %)',xp:30,attr:'nutrition',icon:'apple',
+  params:(s,D)=>Number(s.nutritionTargets&&s.nutritionTargets.calories)>0&&s.meals.some(m=>m.date>=addDays(D,-14)&&m.date<D)?{}:null,
+  max:()=>1, val:(s,p,D=QD())=>{ const t=Number(s.nutritionTargets.calories), c=nutriTotals(D).calories, [lo,hi]=QUEST_TOLERANCE.calories; return c>=t*lo&&c<=t*hi?1:0; }},
+ {id:'dq_water',title:'Drink your daily water target',cs:'Vypij denní cíl vody',xp:20,attr:'nutrition',icon:'drop',
+  params:(s,D)=>Number(s.nutritionTargets&&s.nutritionTargets.water)>0&&s.waterLog.some(w=>w.date>=addDays(D,-14)&&w.date<D)?{}:null,
+  max:s=>Math.max(1,Math.round(Number(s.nutritionTargets.water))), val:(s,p,D=QD())=>Math.min(Math.round(Number(s.nutritionTargets.water)),Math.round(waterOnDate(D)))},
 ];
 const QW=()=>weekStart();
+function questWeekDays(W){ return Array.from({length:7},(_,i)=>addDays(W,i)); }
 const WEEKLY_QUESTS=[
  {id:'wq_workouts',title:'Complete your training week',cs:'Odtrénuj svůj tréninkový týden',xp:150,attr:'fitness',icon:'dumbbell',
   params:s=>Array.isArray(s.settings.trainingDays)&&s.settings.trainingDays.length||completedWorkouts(s).length?{}:null,
   max:s=>Math.max(1,Array.isArray(s.settings.trainingDays)&&s.settings.trainingDays.length?s.settings.trainingDays.length:Number(s.dailyTargets.workoutsPerWeek)||3),
   val:(s,p,W=QW())=>completedWorkouts(s).filter(w=>w.date>=W&&w.date<=addDays(W,6)).length},
+ // Reality QA: a chosen routine done on every day it was scheduled this week (the routine rotates by week among the
+ // active daily / weekday routines, alphabetically -- deterministic); and sleep 7-9 h on all 7 nights of the week.
+ {id:'wq_routine_week',title:'Keep a routine all week',cs:'Splň rutinu celý týden',xp:120,attr:'discipline',icon:'flame',
+  params:(s,W=QW())=>{ const hs=s.habits.filter(h=>h.active!==false&&h.type!=='bad'&&(h.frequency==='daily'||h.frequency==='weekdays')).sort((a,b)=>a.name.localeCompare(b.name)||String(a.id).localeCompare(String(b.id)));
+    if(!hs.length) return null; const h=hs[Math.round(new Date(W+'T00:00').getTime()/604800000)%hs.length]; return {habit:h.id}; },
+  max:(s,p,W=QW())=>{ const h=p&&s.habits.find(x=>x.id===p.habit); return h?Math.max(1,questWeekDays(W).filter(d=>(!h.startDate||d>=h.startDate)&&isScheduledDate(h,d)).length):1; },
+  val:(s,p,W=QW())=>{ const h=p&&s.habits.find(x=>x.id===p.habit); return h?questWeekDays(W).filter(d=>(!h.startDate||d>=h.startDate)&&isScheduledDate(h,d)&&isDayComplete(h,d)).length:0; }},
+ {id:'wq_sleep_week',title:'Sleep 7–9 h every night this week',cs:'Spi 7–9 h každou noc v týdnu',xp:120,attr:'sleep',icon:'moon',
+  params:s=>s.sleepLog.some(x=>x.date>=addDays(todayStr(),-14))?{}:null, max:()=>7,
+  val:(s,p,W=QW())=>questWeekDays(W).filter(d=>s.sleepLog.some(x=>x.date===d&&sleepDuration(x)>=7&&sleepDuration(x)<=9)).length},
  {id:'wq_tasks',title:'Complete your weekly task target',cs:'Splň týdenní počet úkolů',xp:150,attr:(s,p,W=QW())=>questTaskProfile(tasksDoneBetween(W,addDays(W,6))),icon:'check',
   params:s=>s.tasks.length?{}:null, max:s=>Math.max(5,Math.round((Number(s.dailyTargets.tasksPerDay)||3)*5)),
   val:(s,p,W=QW())=>tasksDoneBetween(W,addDays(W,6)).length},
@@ -8813,6 +8836,7 @@ function questTitle(q,p,lang){
   const cs=(lang||uiLang())==='cs'; p=p||{};
   let t=cs?q.cs:q.title;
   if(q.id==='dq_category'&&p.cat) t+=(cs?': ':': ')+catLabel(p.cat,'life');
+  if(q.id==='wq_routine_week'&&p.habit){ const h=S.habits.find(x=>x.id===p.habit); if(h) t+=`: ${h.name}`; }
   if(q.id==='dq_streak'&&p.habit){ const h=S.habits.find(x=>x.id===p.habit); if(h) t+=`: ${h.name} (${currentStreak(h)} ${cs?'dní':'days'})`; }
   if(q.id==='wq_workouts'||q.id==='wq_tasks') t+=` (${questMax(q,p)}×)`;
   return t;
