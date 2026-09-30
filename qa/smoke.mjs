@@ -21,9 +21,9 @@ const GOLDEN = path.join(here, 'baseline', 'golden.json');
 const args = process.argv.slice(2);
 
 export const VIEWS = ['home', 'tasks', 'habits', 'goals', 'character', 'more', 'finance', 'fitness', 'nutrition', 'notes',
-  'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner', 'week'];
+  'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner', 'week', 'intel'];
 const NAV = ['home', 'tasks', 'habits', 'character', 'more'];
-const MORE_ITEMS = ['week', 'planner', 'goals', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests',
+const MORE_ITEMS = ['week', 'intel', 'planner', 'goals', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests',
   'statistics', 'search', 'health', 'character', 'settings'];
 const QUICK_ADD = ['task', 'habit', 'goal', 'expense', 'income', 'workout', 'meal', 'note', 'journal', 'event', 'water', 'fuel', 'planner'];
 
@@ -145,7 +145,7 @@ test('onboarding: Skip finishes immediately and never re-traps', async ({ page }
   assert.equal(await page.locator('.sheet').count(), 0);
 });
 
-test('views: all 23 screens render with data and without errors (Phase 10 adds Planner, Weekly Planner adds the week)', async ({ page }, ctx) => {
+test('views: all 24 screens render with data and without errors (Phase 10 adds Planner, Weekly Planner adds the week, Intelligence its screen)', async ({ page }, ctx) => {
   await page.evaluate(() => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; });
   for (const v of VIEWS) {
     await go(page, v);
@@ -3717,7 +3717,7 @@ test('P11 design: no Apple emoji in the UI chrome of the main screens and sheets
   }
   assert.deepEqual(bad, []);
   await page.evaluate(() => { closeSheets(); view = 'more'; render(); });
-  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 17, 'Weekly Planner adds the 17th destination');
+  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 18, 'Weekly Planner adds the 17th destination, Intelligence the 18th');
 }, { state: fixtureState() });
 
 test('P12 layout: new screens and sheets fit 320-1440 px in dark + light, no duplicate ids, no console errors', async ({ page }) => {
@@ -6785,7 +6785,7 @@ test('WP29 Calendar coexists unchanged: same events on its dates; the week lists
   assert.deepEqual(await page.evaluate(() => uiEventsOn('2026-09-25').map(e => e.id)), ['eW1']);
   await wpGo(page, 0); assert.equal(await page.evaluate(() => JSON.stringify(S.events)), ev0);
   await page.evaluate(() => { view = 'more'; render(); });
-  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 3)), ['week', 'planner', 'calendar']);
+  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 4)), ['week', 'intel', 'planner', 'calendar']);
 }, { state: fixtureState() });
 
 test('WP30 Quick Add "Naplánovat týden" opens the current week; the other entries still open their forms', async ({ page }) => {
@@ -6947,6 +6947,402 @@ test('WP44 + WP45 Web Locks / multi-tab: a second tab stays blocked (never loads
   assert.deepEqual(await B.evaluate(() => { wpOffset = 0; view = 'week'; render(); return [S.weeklyPriorities, document.querySelector('#wpPriorities').innerText.includes('1/3')]; }), [{ '2026-09-21': ['gW2'] }, true], 'the next owner reads the saved priority');
   await B.close();
   assert.deepEqual(errs, []);
+}, { state: fixtureState() });
+
+// ---------- LifeOS Intelligence 1.0 (IN) ----------
+// fixture day 2026-09-23 (Wednesday); engine tests pass an explicit now (12:00 that day), UI tests use the app clock
+const IN_NOW = 'new Date("2026-09-23T12:00:00")';
+const inRun = (page, now) => page.evaluate(n => { const r = intelCompute(new Date(n)); return JSON.parse(JSON.stringify(r)); }, now || '2026-09-23T12:00:00');
+const inState = page => page.evaluate(() => JSON.stringify(S));
+const inClean = page => page.evaluate(() => { const t = document.getElementById('app').innerText, ids = {}; document.querySelectorAll('[id]').forEach(n => ids[n.id] = (ids[n.id] || 0) + 1);
+  return { bad: /undefined|NaN|Infinity|\[object/.test(t), dup: Object.keys(ids).filter(k => ids[k] > 1), overflow: document.documentElement.scrollWidth - innerWidth }; });
+const inGo = (page, v) => page.evaluate(v => { closeSheets(); uiInAll = false; view = v || 'intel'; render(); window.scrollTo(0, 0); }, v);
+// one state with every suggestion type (dates relative to today 2026-09-23)
+const inSeed = page => page.evaluate(() => {
+  const T = todayStr(), D = n => addDays(T, n), ts = d => new Date(d + 'T09:00').getTime();
+  S = defaultState(); S.settings.onboarded = true;
+  S.goals = [
+    { id: 'gA', title: 'Web', category: 'Work', status: 'Active', targetDate: D(3), mode: 'auto', createdAt: ts(D(-2)) },
+    { id: 'gB', title: 'Kniha', category: 'Learning', status: 'Active', targetDate: '', mode: 'auto', createdAt: ts(D(-30)) },
+    { id: 'gC', title: 'Jazyk', category: 'Learning', status: 'Active', targetDate: '', mode: 'auto', createdAt: ts(D(-40)) },
+    { id: 'gD', title: 'Běh', category: 'Fitness', status: 'Active', targetDate: '', mode: 'auto', createdAt: ts(D(-2)) },
+    { id: 'gE', title: 'Hotovo', category: 'Work', status: 'Completed', targetDate: D(1), mode: 'auto', createdAt: ts(D(-50)) },
+    { id: 'gO', title: 'Starý projekt', category: 'Work', status: 'Active', targetDate: D(-2), mode: 'auto', createdAt: ts(D(-5)) }];
+  S.milestones = [{ id: 'mD1', goalId: 'gD', title: 'Půlmaraton', targetDate: '', completed: false, completedAt: null, createdAt: ts(D(-2)) }];
+  const tk = (id, title, o) => Object.assign({ id, title, description: '', category: 'Work', priority: 'Medium', dueDate: '', done: false, goalId: '', createdAt: ts(D(-3)) }, o);
+  S.tasks = [tk('tA0', 'Rešerše', { goalId: 'gA', done: true }), tk('tA1', 'Návrh', { goalId: 'gA', dueDate: D(1) }), tk('tOver', 'Faktura', { dueDate: D(-3), priority: 'High' }),
+    tk('tPast', 'Report', { dueDate: D(5) }), tk('tPlanned', 'Plánovaný', { dueDate: D(2), priority: 'High' }), tk('tLow', 'Nedůležitý', { priority: 'Low' }),
+    tk('tFar', 'Daleko', { dueDate: D(20) }), tk('tUrg', 'Hoří', { priority: 'Urgent' }), tk('tO1', 'Dokončit', { goalId: 'gO' }),
+    tk('tC0', 'Lekce 1', { goalId: 'gC', done: true, category: 'Learning' }), tk('tC1', 'Lekce 2', { goalId: 'gC', priority: 'Low', category: 'Learning' })];
+  const B = (id, d, s, e, o) => Object.assign({ id, date: d, startTime: s, endTime: e, title: id, category: 'Work', taskId: '', goalId: '', notes: '', completed: false, createdAt: 1 }, o);
+  S.plannerBlocks = [B('pPast', D(-1), '09:00', '10:00', { title: 'Report', taskId: 'tPast' }), B('pPl', D(1), '14:00', '15:00', { title: 'Plánovaný', taskId: 'tPlanned' }),
+    B('pX1', D(2), '10:00', '11:00', { title: 'Porada blok' }), B('pX2', D(2), '10:30', '11:30', { title: 'Sprint' }), B('pX3', D(2), '11:30', '12:00', { title: 'Navazuje' }),
+    B('pX4', D(3), '18:30', '19:00', { title: 'Běh venku', category: 'Fitness' }),
+    ...Array.from({ length: 8 }, (_, i) => B('pO' + i, D(4), String(6 + i).padStart(2, '0') + ':00', String(7 + i).padStart(2, '0') + ':00', { title: 'Blok ' + (i + 1) }))];
+  S.events = [{ id: 'eX', title: 'Trénink tým', date: D(3), start: '18:00', end: '19:00', recurring: 'none' }];
+  S.xpLog = [{ id: 'x1', amount: 20, reason: 'Task: Lekce 1', ts: ts(D(-20)), key: `task:tC0:${D(-20)}` }, { id: 'x2', amount: 20, reason: 'Task: Rešerše', ts: ts(D(-1)), key: `task:tA0:${D(-1)}` }];
+  S.totalXp = 40; S.weeklyPriorities = { '2026-09-21': ['gD'] }; S.dailyScoresSince = T; S.achievementsUnlocked = ACHV.map(a => a.id);
+  S = migrate(JSON.parse(JSON.stringify(S)));
+  ['daily', 'weekly'].forEach(p => questBoardFor(p).forEach(({ q }) => { const k = questKey(q.id, p); if (!S.quests.some(x => x.key === k)) S.quests.push({ key: k, questId: q.id, date: todayStr(), period: p, rewarded: true }); }));
+  try { sessionStorage.removeItem('lifeos.intel.hidden'); } catch (e) {} uiInHidden = null;
+  closeSheets(); view = 'home'; render();
+});
+const IN_ORDER = ['task_plan:tOver', 'deadline:gO', 'conflict:2026-09-25:pX2', 'conflict:2026-09-26:pX4', 'task_plan:tA1', 'deadline:gA', 'priority_plan:gD', 'goal_next:gB',
+  'reschedule:tPast', 'task_plan:tUrg', 'goal_idle:gC', 'overload:2026-09-27', 'window:2026-09-28'];
+
+test('IN1 unplanned important task: overdue / due within 7 days / High-Urgent without an upcoming block -> "Naplánovat"; unimportant or planned tasks are left out; nothing is created', async ({ page }) => {
+  await inSeed(page); const before = await inState(page);
+  const r = await inRun(page), by = id => r.suggestions.find(s => s.id === id);
+  assert.deepEqual(['tOver', 'tA1', 'tUrg'].map(id => by('task_plan:' + id).reasons.map(x => x.r)), [['overdue', 'prio', 'no_block'], ['due_in', 'goal', 'no_block'], ['prio', 'no_block']]);
+  assert.deepEqual([by('task_plan:tOver').rank, by('task_plan:tA1').rank, by('task_plan:tUrg').rank, by('task_plan:tOver').reasons[0].days], [1, 2, 5, 3]);
+  assert.ok(!r.suggestions.some(s => ['tPlanned', 'tLow', 'tFar', 'tO1', 'tC1', 'tA0'].includes(s.taskId) && s.type !== 'window'), 'planned / low / far / done tasks are not suggested');
+  await inGo(page, 'intel');
+  const card = page.locator('[data-intel="task_plan:tOver"]');
+  assert.match(await card.innerText(), /Naplánovat úkol po termínu „Faktura“[\s\S]*Po termínu 3 dny · Priorita: Vysoká · Zatím bez plánovaného bloku[\s\S]*Proč:[\s\S]*Termín úkolu byl Ne 20\. 9\. – po termínu 3 dny\./);
+  await card.locator('[data-in-act="plan"]').click();
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('#pb_title').value, !!document.querySelector('.sheet'), S.plannerBlocks.length]), ['Faktura', true, 14], 'the existing planner form, prefilled; nothing saved yet');
+  await page.evaluate(() => closeSheets()); assert.equal(await inState(page), before);
+}, { state: fixtureState() });
+
+test('IN2 deadline risk: facts only (deadline in X days, open tasks / milestones, planned blocks) for active goals below 100 % within 14 days or past; no prediction', async ({ page }) => {
+  await inSeed(page);
+  const r = await inRun(page), gO = r.suggestions.find(s => s.id === 'deadline:gO'), gA = r.suggestions.find(s => s.id === 'deadline:gA');
+  assert.deepEqual([gO.rank, gO.group, gO.reasons[0]], [1, 'attention', { r: 'g_overdue', days: 2, date: '2026-09-21' }]);
+  assert.deepEqual([gA.rank, gA.reasons], [2, [{ r: 'g_due', days: 3, date: '2026-09-26' }, { r: 'g_pct', pct: 50 }, { r: 'g_open', tasks: 1, ms: 0 }, { r: 'g_planned', n: 0, min: 0 }]]);
+  assert.ok(!r.suggestions.some(s => s.goalId === 'gE'), 'completed goals are left out');
+  await inGo(page, 'intel'); const t = await page.locator('[data-intel="deadline:gA"]').innerText();
+  assert.match(t, /Blíží se termín cíle „Web“[\s\S]*Termín cíle je So 26\. 9\. \(za 3 dny\)\.[\s\S]*Postup cíle: 50 %\.[\s\S]*Zbývá otevřených úkolů: 1, otevřených milníků: 0\.[\s\S]*V příštích 7 dnech k cíli není naplánovaný žádný blok\./);
+  assert.doesNotMatch(await page.locator('#app').innerText(), /nestihneš|nestihnete|riziko selhání|špatně/i);
+  await page.evaluate(() => { S.tasks.find(t => t.id === 'tA1').done = true; });
+  assert.ok(!(await inRun(page)).suggestions.some(s => s.id === 'deadline:gA'), 'at 100 % there is nothing left to point at');
+}, { state: fixtureState() });
+
+test('IN3 goal without a next step: "Určit další krok" opens the existing task form with the goal chosen; nothing is saved until the user saves', async ({ page }) => {
+  await inSeed(page); const before = await inState(page);
+  const s = (await inRun(page)).suggestions.find(x => x.id === 'goal_next:gB');
+  assert.deepEqual([s.rank, s.group, s.reasons.map(r => r.r), s.actions], [4, 'goals', ['g_nonext', 'g_open', 'g_planned'], ['addtask', 'goal', 'dismiss']]);
+  await inGo(page, 'intel'); await page.locator('[data-intel="goal_next:gB"] [data-in-act="addtask"]').click();
+  assert.deepEqual(await page.evaluate(() => [!!document.querySelector('.sheet #f_title'), document.querySelector('.sheet #f_goal').value]), [true, 'gB']);
+  await page.evaluate(() => closeSheets()); assert.equal(await inState(page), before);
+  await page.locator('[data-intel="goal_next:gB"] [data-in-act="goal"]').click();
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gB']);
+  await page.evaluate(() => S.tasks.push({ id: 'tB1', title: 'Osnova', goalId: 'gB', done: false, priority: 'Low', dueDate: '', category: 'Learning', createdAt: 1 }));
+  assert.ok(!(await inRun(page)).suggestions.some(x => x.type === 'goal_next' && x.goalId === 'gB'), 'an open task is a next step');
+}, { state: fixtureState() });
+
+test('IN4 inactive goal: no recorded activity for 14 days (documented threshold) -> "dlouho neměl aktivitu"; 13 days is not enough', async ({ page }) => {
+  await inSeed(page);
+  const s = (await inRun(page)).suggestions.find(x => x.id === 'goal_idle:gC');
+  assert.deepEqual([s.rank, s.reasons], [6, [{ r: 'g_idle', days: 20, date: '2026-09-03' }, { r: 'g_threshold', days: 14 }]]);
+  assert.equal(await page.evaluate(() => INTEL.IDLE_DAYS), 14);
+  for (const [d, on] of [[-13, false], [-14, true]]) {
+    await page.evaluate(d => { S.xpLog[0].key = `task:tC0:${addDays(todayStr(), d)}`; S.xpLog = S.xpLog.slice(); }, d);
+    assert.equal((await inRun(page)).suggestions.some(x => x.id === 'goal_idle:gC'), on, String(d));
+  }
+  await inGo(page, 'intel');
+  assert.match(await page.locator('[data-intel="goal_idle:gC"]').innerText(), /Cíl „Jazyk“ dlouho neměl aktivitu[\s\S]*Poslední zaznamenaná aktivita u cíle: Čt 9\. 9\.|Cíl „Jazyk“ dlouho neměl aktivitu[\s\S]*po 14 dnech bez ní/);
+}, { state: fixtureState() });
+
+test('IN5 planner conflicts: block x block and block x event from the Weekly Planner detection (no second engine), touching blocks are not a conflict; nothing moves', async ({ page }) => {
+  await inSeed(page); const before = await inState(page);
+  const r = await inRun(page), c = r.suggestions.filter(s => s.type === 'conflict');
+  assert.deepEqual(c.map(s => [s.id, s.blockId, s.reasons.filter(x => x.r === 'overlap').map(x => `${x.a.k}:${x.a.title}|${x.b.k}:${x.b.title}|${x.from}-${x.to}`)]),
+    [['conflict:2026-09-25:pX2', 'pX2', ['block:Porada blok|block:Sprint|10:30-11:00']], ['conflict:2026-09-26:pX4', 'pX4', ['event:Trénink tým|block:Běh venku|18:30-19:00']]]);
+  const wpCount = await page.evaluate(() => { const T = todayStr(); return wpBuild({ from: T, to: addDays(T, 6), days: Array.from({ length: 7 }, (_, i) => addDays(T, i)) }, T).days.reduce((a, d) => a + d.conflicts.length, 0); });
+  assert.equal(wpCount, 2, 'the same pairs as the Weekly Planner');
+  assert.ok(await page.evaluate(() => intelCompute.toString().includes('d.conflicts') && !/function\s+intel\w*Overlap/.test(document.documentElement.innerHTML)), 'reuses wpBuild/wpDayConflicts');
+  assert.equal(c[0].proposal.startTime + '-' + c[0].proposal.endTime, '10:30-11:30');
+  assert.equal(await inState(page), before, 'nothing moved');
+}, { state: fixtureState() });
+
+test('IN6 heavily planned day: >= 10 h / >= 8 blocks, or >= 6 h / >= 5 blocks at twice the other days (tested thresholds); facts: planned time, blocks, average, overlaps', async ({ page }) => {
+  await inSeed(page);
+  const s = (await inRun(page)).suggestions.find(x => x.type === 'overload');
+  assert.deepEqual([s.id, s.rank, s.group, s.reasons], ['overload:2026-09-27', 7, 'planning', [{ r: 'd_planned', min: 480, blocks: 8 }, { r: 'd_avg', min: 40 }]]);
+  assert.deepEqual(await page.evaluate(() => [INTEL.DAY_MIN, INTEL.DAY_BLOCKS, INTEL.DAY_MIN_REL, INTEL.DAY_BLOCKS_REL, INTEL.DAY_FACTOR]), [600, 8, 360, 5, 2]);
+  const heavy = async n => { await page.evaluate(n => { S.plannerBlocks = S.plannerBlocks.filter(b => !/^pO/.test(b.id) || +b.id.slice(2) < n); }, n); return (await inRun(page)).suggestions.some(x => x.type === 'overload'); };
+  assert.equal(await heavy(5), true, '5 blocks, more than twice the others'); assert.equal(await heavy(4), false, '4 h / 4 blocks');
+  await inSeed(page); await inGo(page, 'intel');
+  const t = await page.locator('[data-intel="overload:2026-09-27"]').innerText();
+  assert.match(t, /Ne 27\. 9\.: výrazně vytížený den[\s\S]*V plánovači je na tento den 8 h v 8 blocích\.[\s\S]*Ostatní dny v příštích 7 dnech mají průměrně 40 min\./);
+  assert.doesNotMatch(t, /špatně|přetížen|nezdrav|selh/i);
+}, { state: fixtureState() });
+
+test('IN7 empty planning window: the first day after today without planner blocks, offered for the most relevant unplanned task; never called free time', async ({ page }) => {
+  await inSeed(page);
+  const s = (await inRun(page)).suggestions.find(x => x.type === 'window');
+  assert.deepEqual([s.id, s.taskId, s.reasons], ['window:2026-09-28', 'tOver', [{ r: 'w_empty', date: '2026-09-28', events: 0 }, { r: 'w_task', title: 'Faktura', n: 3 }]]);
+  await inGo(page, 'intel'); const card = page.locator('[data-intel="window:2026-09-28"]'), t = await card.innerText();
+  assert.match(t, /Po 28\. 9\. nemá žádné bloky v plánovači[\s\S]*nejsou evidované žádné bloky v plánovači\. Jestli je čas opravdu volný, aplikace neví\./);
+  assert.doesNotMatch(await page.locator('#app').innerText(), /máš (volno|volný čas|čas)|volný čas je/i);
+  await card.locator('[data-in-act="plan"]').click();
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('#pb_title').value, document.querySelector('#pb_date').value]), ['Faktura', '2026-09-28']);
+  await page.evaluate(() => { closeSheets(); S.tasks.forEach(t => { if (!t.done) t.priority = 'Low'; t.dueDate = ''; }); });
+  assert.ok(!(await inRun(page)).suggestions.some(x => x.type === 'window'), 'no important unplanned task = no window');
+}, { state: fixtureState() });
+
+test('IN8 weekly priority without a plan: a priority goal with no block and no task activity this week; a block in the week clears it; no XP', async ({ page }) => {
+  await inSeed(page); const xp0 = await xpOf(page);
+  const s = (await inRun(page)).suggestions.find(x => x.id === 'priority_plan:gD');
+  assert.deepEqual([s.rank, s.group, s.reasons.map(r => r.r), s.actions], [3, 'goals', ['p_week', 'p_noblock', 'p_notask'], ['plantime', 'week', 'dismiss']]);
+  await inGo(page, 'intel'); await page.locator('[data-intel="priority_plan:gD"] [data-in-act="plantime"]').click();
+  await page.fill('#pb_start', '07:00'); await page.fill('#pb_end', '08:00'); await page.click('#pb_save'); await settle(page);
+  assert.equal(await page.evaluate(() => view), 'intel', 'stays on Intelligence after saving');
+  assert.ok(!(await inRun(page)).suggestions.some(x => x.id === 'priority_plan:gD'));
+  assert.equal(await xpOf(page), xp0, 'no XP for planning');
+  assert.deepEqual(await page.evaluate(() => S.weeklyPriorities), { '2026-09-21': ['gD'] }, 'priorities untouched');
+}, { state: fixtureState() });
+
+test('IN9 weekly priorities at / over the limit: facts only ("3/3", "4 uloženo, používá se 3"); the Weekly Planner limit stays the only rule', async ({ page }) => {
+  await inSeed(page);
+  const pl = async ids => { await page.evaluate(ids => { S.weeklyPriorities = { '2026-09-21': ids }; }, ids); const s = (await inRun(page)).suggestions.find(x => x.type === 'priority_limit'); return s ? [s.id, s.rank, s.reasons[0]] : null; };
+  assert.equal(await pl(['gA', 'gD']), null);
+  assert.deepEqual(await pl(['gA', 'gD', 'gB']), ['priority_limit:2026-09-21', 8, { r: 'p_full', n: 3, max: 3 }]);
+  assert.deepEqual(await pl(['gA', 'gD', 'gB', 'gC']), ['priority_limit:2026-09-21', 8, { r: 'p_over', n: 4, max: 3 }]);
+  assert.deepEqual(await page.evaluate(() => [wpPriorityIds('2026-09-21'), wpTogglePriority('2026-09-21', 'gO').reason]), [['gA', 'gD', 'gB'], 'max']);
+  await inGo(page, 'intel');
+  assert.match(await page.locator('[data-intel="priority_limit:2026-09-21"]').innerText(), /Priorit týdne je uloženo víc, než se používá[\s\S]*V datech je pro tento týden uloženo 4 priorit; týdenní plánovač používá první 3\./);
+}, { state: fixtureState() });
+
+test('IN10 reschedule: a task whose block passed unfinished gets a proposed day / time with nothing recorded; "Přesunout" opens the existing move form prefilled; saved only on confirm, links kept', async ({ page }) => {
+  await inSeed(page);
+  const s = (await inRun(page)).suggestions.find(x => x.id === 'reschedule:tPast');
+  assert.deepEqual([s.entityType, s.blockId, s.rank, s.proposal, s.reasons.map(r => r.r)], ['block', 'pPast', 5, { date: '2026-09-24', startTime: '09:00', endTime: '10:00' }, ['due_in', 'past_block', 'slot']]);
+  await inGo(page, 'intel'); const before = await inState(page);
+  await page.locator('[data-intel="reschedule:tPast"] [data-in-act="move"]').click();
+  const prop = await page.evaluate(() => { const s = intelCompute(new Date()).suggestions.find(x => x.id === 'reschedule:tPast'); return s.proposal; });
+  assert.deepEqual(await page.evaluate(() => ['#mv_date', '#mv_start', '#mv_end'].map(q => document.querySelector(q).value).concat(!!document.querySelector('#mv_prop'))), [prop.date, prop.startTime, prop.endTime, true]);
+  assert.equal(await inState(page), before, 'nothing moved before confirming');
+  await page.click('#mv_save'); await settle(page);
+  const b = await page.evaluate(() => S.plannerBlocks.find(x => x.id === 'pPast'));
+  assert.deepEqual([b.date, b.startTime, b.endTime, b.taskId, b.title, b.completed], [prop.date, '09:00', '10:00', 'tPast', 'Report', false]);
+  assert.ok(!(await inRun(page)).suggestions.some(x => x.taskId === 'tPast'), 'planned again');
+  assert.equal((await idbState(page)).plannerBlocks.find(x => x.id === 'pPast').date, prop.date, 'saved through the existing persistence');
+}, { state: fixtureState() });
+
+test('IN11 duplicate suppression: one card per task / goal / block-day; the other facts join it (overdue + High + unplanned = one card; deadline + no next step + idle = one card)', async ({ page }) => {
+  await inSeed(page);
+  await page.evaluate(() => { S.goals.find(g => g.id === 'gB').targetDate = addDays(todayStr(), 5); S.plannerBlocks.push({ id: 'pX5', date: addDays(todayStr(), 2), startTime: '11:00', endTime: '11:45', title: 'Hovor', category: 'Work', completed: false, createdAt: 1 }); });
+  const r = await inRun(page), gB = r.suggestions.filter(s => s.goalId === 'gB'), tOver = r.suggestions.filter(s => s.taskId === 'tOver' && s.type !== 'window');
+  assert.deepEqual(gB.map(s => [s.type, s.also.map(a => a.type)]), [['deadline', ['goal_next', 'goal_idle']]]);
+  assert.equal(tOver.length, 1);
+  const pX2 = r.suggestions.filter(s => s.blockId === 'pX2');
+  assert.deepEqual(pX2.map(s => s.reasons.filter(x => x.r === 'overlap').length), [1]);
+  const keys = r.suggestions.map(s => s.key); assert.equal(new Set(keys).size, keys.length);
+  await inGo(page, 'intel');
+  assert.match(await page.locator('[data-intel="deadline:gB"]').innerText(), /Termín cíle je Po 28\. 9\.[\s\S]*Cíl nemá otevřený úkol, otevřený milník ani nadcházející blok[\s\S]*Od založení cíle/);
+}, { state: fixtureState() });
+
+test('IN12 + IN13 deterministic ids and order: type:entity[:date]; the same order whatever the input order', async ({ page }) => {
+  await inSeed(page);
+  const ids = (await inRun(page)).suggestions.map(s => s.id);
+  assert.deepEqual(ids, IN_ORDER);
+  await page.evaluate(() => { S.tasks.reverse(); S.goals.reverse(); S.plannerBlocks.reverse(); S.events.reverse(); });
+  assert.deepEqual((await inRun(page)).suggestions.map(s => s.id), IN_ORDER, 'input order does not matter');
+  assert.deepEqual(await page.evaluate(() => INTEL_RANK), { conflict: 1, deadline: 2, priority_plan: 3, goal_next: 4, task_plan: 5, reschedule: 5, goal_idle: 6, overload: 7, window: 8, priority_limit: 8 });
+}, { state: fixtureState() });
+
+test('IN14 Home "Doporučení": at most 3 cards below "Co teď?", group in words, "Vše (n)" opens Intelligence; hiding a card shows the next one', async ({ page }) => {
+  await inSeed(page); await page.evaluate(() => { view = 'home'; render(); });
+  const r = await page.evaluate(() => ({ n: document.querySelectorAll('#ccIntel [data-intel]').length, order: [...document.querySelectorAll('.cc-home > *')].map(n => n.id || n.className).join(','),
+    all: document.querySelector('#ccIntel [data-nav="intel"]').textContent, first: document.querySelector('#ccIntel [data-intel]').innerText }));
+  assert.equal(r.n, 3); assert.match(r.all, /Vše \(13\)/); assert.ok(r.order.indexOf('ccNow') < r.order.indexOf('ccIntel') && r.order.indexOf('ccIntel') < r.order.indexOf('ccTimeline'), r.order);
+  assert.match(r.first, /Vyžaduje pozornost[\s\S]*Naplánovat úkol po termínu „Faktura“[\s\S]*Naplánovat[\s\S]*Zobrazit úkol[\s\S]*Skrýt/);
+  const before = await inState(page);
+  await page.click('#ccIntel [data-intel="task_plan:tOver"] [data-in-dismiss]');
+  assert.deepEqual(await page.$$eval('#ccIntel [data-intel]', ns => ns.map(n => n.dataset.intel)), ['deadline:gO', 'conflict:2026-09-25:pX2', 'conflict:2026-09-26:pX4']);
+  assert.equal(await page.evaluate(() => document.activeElement.closest('[data-intel]') && document.activeElement.closest('[data-intel]').dataset.intel), 'deadline:gO', 'focus moves to the next card');
+  assert.equal(await inState(page), before, 'hiding writes nothing to S');
+  await page.click('#ccIntel [data-nav="intel"]'); assert.equal(await page.evaluate(() => view), 'intel');
+}, { state: fixtureState() });
+
+test('IN15 Intelligence screen: groups Vyžaduje pozornost / Plánování / Cíle, at most 20 cards + "+ N dalších"; the engine caps 40 per type and 100 in total', async ({ page }) => {
+  await inSeed(page); await inGo(page, 'intel');
+  assert.deepEqual(await page.$$eval('.in-group h3', hs => hs.map(h => h.textContent.trim())), ['Vyžaduje pozornost · 6', 'Plánování · 4', 'Cíle · 3']);
+  await page.evaluate(() => { for (let i = 0; i < 150; i++) S.tasks.push({ id: 'tz' + String(i).padStart(3, '0'), title: 'Úkol ' + i, priority: 'Urgent', dueDate: addDays(todayStr(), -1 - (i % 9)), done: false, category: 'Work', createdAt: 1 }); });
+  const r = await inRun(page);
+  assert.deepEqual([r.counts.task_plan > 40, r.suggestions.filter(s => s.type === 'task_plan').length, r.suggestions.length <= 100], [true, 40, true]);
+  await inGo(page, 'intel');
+  assert.equal(await page.locator('#app [data-intel]').count(), 20);
+  assert.match(await page.locator('#inMore').innerText(), new RegExp(`\\+ ${r.suggestions.length - 20} dalších`));
+  await page.click('#inMore'); assert.equal(await page.locator('#app [data-intel]').count(), r.suggestions.length);
+}, { state: fixtureState() });
+
+test('IN16 no mutation: computing, opening Intelligence / Home, the minute tick, hiding and a reload change nothing in S or IndexedDB', async ({ page }) => {
+  await inSeed(page); await persist(page);
+  const a0 = await inState(page), idb0 = await idbState(page);
+  for (let i = 0; i < 3; i++) await inRun(page);
+  await inGo(page, 'intel'); await inGo(page, 'home'); await page.evaluate(() => { uiMinuteTick(); uiCcTick(document.getElementById('app')); });
+  await page.click('#ccIntel [data-in-dismiss]'); await inGo(page, 'intel'); await settle(page);
+  assert.equal(await inState(page), a0); assert.deepEqual(await idbState(page), idb0);
+  await page.reload(); await ownerReady(page); await page.evaluate(() => { closeSheets(); view = 'intel'; render(); }); await settle(page);
+  await injectRawIdb(page); assert.deepEqual(await idbState(page), idb0, 'after a reload IndexedDB is the same');
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#app [data-intel]').length), IN_ORDER.length - 1, 'the hidden card stays hidden in this tab after a reload');
+  // the hide list lives only in this tab's sessionStorage: not in localStorage, not in the stored state, not in a new tab (a new session)
+  assert.deepEqual(await page.evaluate(() => [JSON.parse(sessionStorage.getItem('lifeos.intel.hidden')).length, localStorage.length, /intel/i.test(Object.keys(S).join())]), [1, 0, false]);
+  const errs = [], B = await extraTab(page, errs);
+  assert.equal(await B.evaluate(() => sessionStorage.getItem('lifeos.intel.hidden')), null, 'a new session starts with nothing hidden');
+  await B.close();
+}, { state: fixtureState() });
+
+test('IN17-IN20 XP, level, attributes, Daily Score and quests stay the same when suggestions are computed, hidden, opened and accepted', async ({ page }) => {
+  await inSeed(page); await persist(page);
+  const snap = () => page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.rpg, S.quests, S.achievementsUnlocked, S.dailyScores, dailyScore(todayStr()), document.querySelector('.hud-lvl, .lvl') ? 1 : 0]));
+  const s0 = await snap();
+  await inGo(page, 'intel'); await page.click('[data-intel="window:2026-09-28"] [data-in-dismiss]');
+  await page.click('[data-intel="task_plan:tOver"] [data-in-act="plan"]'); await page.fill('#pb_start', '08:00'); await page.fill('#pb_end', '09:00'); await page.click('#pb_save'); await settle(page);
+  await page.click('[data-intel="goal_idle:gC"] [data-in-act="goal"]'); await inGo(page, 'home'); await page.evaluate(() => uiCcTick(document.getElementById('app'))); await settle(page);
+  assert.equal(await snap(), s0);
+  assert.equal(await page.evaluate(() => S.plannerBlocks.filter(b => b.taskId === 'tOver').length), 1, 'the only change: the block the user saved');
+}, { state: fixtureState() });
+
+test('IN21 export / import unchanged: no new key, hidden suggestions are not in the backup, a round trip restores exactly and the suggestions are the same', async ({ page }) => {
+  await inSeed(page); await persist(page); await inGo(page, 'intel'); await page.click('[data-intel="goal_idle:gC"] [data-in-dismiss]');
+  const ids0 = (await inRun(page)).suggestions.map(s => s.id);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.deepEqual(exported, await stateOf(page)); assert.equal(exported.schemaVersion, 8);
+  assert.deepEqual(Object.keys(exported).filter(k => /intel|suggest|dismiss|hidden/i.test(k)), []);
+  assert.deepEqual(Object.keys(exported).sort(), Object.keys(await page.evaluate(() => defaultState())).sort(), 'the same top-level keys as before');
+  await page.evaluate(() => { S.tasks = []; }); await importFile(page, await dl.path()); await settle(page);
+  assert.deepEqual(await stateOf(page), exported);
+  assert.deepEqual((await inRun(page)).suggestions.map(s => s.id), ids0);
+}, { state: fixtureState() });
+
+test('IN22 old state compatibility: a schemaVersion-4 state (no plannerBlocks, weeklyPriorities, goal fields) computes cleanly; broken references are ignored', async ({ page }) => {
+  const r = await page.evaluate(() => { S = migrate({ tasks: [{ id: 'lt', title: 'Starý', dueDate: '2026-09-20', done: false, priority: 'High', goalId: 'nope' }, { id: 'lt2', title: 'Bez data' }],
+    goals: [{ id: 'lg', title: 'Starý cíl', status: 'Active', targetDate: '2026-09-30' }], habits: [], xpLog: [], totalXp: 0, schemaVersion: 4 }); S.settings.onboarded = true;
+    S.plannerBlocks.push({ id: 'lb', date: '2026-09-24', startTime: 'xx', endTime: '', title: 'Rozbitý', taskId: 'missing' });
+    const res = intelCompute(new Date('2026-09-23T12:00')); return [S.schemaVersion, res.suggestions.map(s => s.id), JSON.stringify(res).includes('NaN')]; });
+  assert.equal(r[0], 8); assert.equal(r[2], false); assert.ok(r[1].includes('task_plan:lt') && r[1].includes('deadline:lg'), r[1].join());
+  await page.evaluate(() => { view = 'intel'; render(); }); assert.deepEqual(await inClean(page), { bad: false, dup: [], overflow: 0 });
+}, { state: fixtureState() });
+
+test('IN23 no duplicate suggestions and no duplicate DOM ids: fixture, seed, empty state and a large state', async ({ page }) => {
+  const check = async label => { const r = await inRun(page), ids = r.suggestions.map(s => s.id); assert.equal(new Set(ids).size, ids.length, label);
+    for (const v of ['intel', 'home']) { await inGo(page, v); assert.deepEqual(await inClean(page), { bad: false, dup: [], overflow: 0 }, label + '/' + v); } };
+  await check('fixture'); await inSeed(page); await check('seed');
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; }); await check('empty');
+  await inGo(page, 'intel'); assert.match(await page.locator('#app').innerText(), /Momentálně nejsou žádná doporučení\./);
+  await withGen(page); await page.evaluate(() => { Object.assign(S, window.__gen(1500, 25000, 3)); }); await check('large');
+}, { state: fixtureState() });
+
+test('IN24 exact dates: due today / in 7 days counts, in 8 days not; a goal deadline in 14 days counts, 15 not; a block ending exactly now has passed; month boundary', async ({ page }) => {
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; const T = '2026-09-23', D = n => addDays(T, n);
+    S.tasks = [{ id: 'd0', title: 'Dnes', dueDate: T, done: false, priority: 'Low' }, { id: 'd7', title: 'Za 7', dueDate: D(7), done: false, priority: 'Low' }, { id: 'd8', title: 'Za 8', dueDate: D(8), done: false, priority: 'Low' },
+      { id: 'dn', title: 'Blok končí teď', dueDate: D(1), done: false, priority: 'Low' }];
+    S.goals = [{ id: 'g14', title: 'G14', status: 'Active', targetDate: D(14), mode: 'manual', manualProgress: 10, createdAt: new Date(T + 'T08:00').getTime() }, { id: 'g15', title: 'G15', status: 'Active', targetDate: D(15), mode: 'manual', manualProgress: 10, createdAt: new Date(T + 'T08:00').getTime() }];
+    S.plannerBlocks = [{ id: 'bn', date: T, startTime: '11:00', endTime: '12:00', title: 'Blok končí teď', taskId: 'dn', completed: false }]; });
+  const r = await inRun(page), has = id => r.suggestions.some(s => s.id === id);
+  assert.deepEqual(['task_plan:d0', 'task_plan:d7', 'task_plan:d8', 'deadline:g14', 'deadline:g15', 'reschedule:dn'].map(has), [true, true, false, true, false, true]);
+  assert.deepEqual(r.suggestions.find(s => s.id === 'task_plan:d0').reasons[0], { r: 'due_today', date: '2026-09-23' });
+  const at1159 = await inRun(page, '2026-09-23T11:59:00'); assert.ok(!at1159.suggestions.some(s => s.taskId === 'dn'), 'at 11:59 the block is still upcoming');
+  const m = await inRun(page, '2026-09-30T08:00:00'); assert.deepEqual([m.T, m.horizon], ['2026-09-30', { from: '2026-09-30', to: '2026-10-06' }]);
+}, { state: fixtureState() });
+
+test('IN25 fixed now: the same state + the same now give identical results; the engine reads no clock of its own', async ({ page }) => {
+  await inSeed(page);
+  const a = JSON.stringify(await inRun(page)), b = JSON.stringify(await inRun(page));
+  assert.equal(a, b);
+  assert.notEqual(JSON.stringify(await inRun(page, '2026-09-24T12:00:00')), a, 'another day, other facts');
+  const src = await page.evaluate(() => [intelCompute, intelSlot, intelDay, intelOrder, intelGroup].map(f => f.toString()).join('\n'));
+  assert.doesNotMatch(src, /todayStr\(|Date\.now|new Date\(\s*\)|Math\.random|performance\.now/);
+}, { state: fixtureState() });
+
+test('IN26 performance: 1 500 tasks, 25 000 XP, 40 habits, 25 goals, 100 milestones, 400 blocks, 300 meals, 300 sleep records, 150 workouts, 200 events', async ({ page }) => {
+  const small = await page.evaluate(() => { const m = []; for (let i = 0; i < 7; i++) { const t = performance.now(); intelCompute(new Date()); m.push(performance.now() - t); } return m.sort((a, b) => a - b)[3]; });
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3)); const T = todayStr();
+    for (let i = 0; i < 25; i++) S.goals.push({ id: 'pg' + i, title: 'Cíl ' + i, category: ['Work', 'Fitness', ''][i % 3], status: i % 5 ? 'Active' : 'Completed', targetDate: i % 4 ? addDays(T, i * 7 - 30) : '', mode: 'auto', createdAt: Date.now() - 200 * 86400000 });
+    for (let i = 0; i < 100; i++) S.milestones.push({ id: 'pm' + i, goalId: 'pg' + (i % 25), title: 'M' + i, targetDate: addDays(T, i - 50), completed: i % 3 === 0, completedAt: i % 3 === 0 ? Date.now() - i * 86400000 : null, createdAt: 1 });
+    S.tasks.forEach((t, i) => { if (i % 5 === 0) t.goalId = 'pg' + (i % 25); if (i % 7 === 0) { t.done = false; t.dueDate = addDays(T, (i % 20) - 10); } });
+    for (let i = 0; i < 40; i++) S.habits.push({ id: 'ph' + i, name: 'Návyk ' + i, type: i % 9 ? 'good' : 'bad', frequency: ['daily', 'weekdays', 'weekly'][i % 3], weekdays: [1, 3, 5], target: 1, goalId: i % 4 ? '' : 'pg' + (i % 25), completions: [], brokenDates: [], active: true, startDate: addDays(T, -300) });
+    for (let i = 0; i < 400; i++) S.plannerBlocks.push({ id: 'pp' + i, date: addDays(T, (i % 60) - 30), startTime: String(6 + i % 14).padStart(2, '0') + ':00', endTime: String(7 + i % 14).padStart(2, '0') + ':30', title: 'Blok ' + i, category: 'Work', taskId: i % 3 ? '' : S.tasks[i * 3].id, goalId: i % 4 ? '' : 'pg' + (i % 25), completed: i % 2 === 0 });
+    for (let i = 0; i < 300; i++) { const d = addDays(T, -i); S.meals.push({ id: 'pm' + i, name: 'J', date: d, type: 'Lunch', calories: 500, servings: 1 }); S.sleepLog.push({ id: 'ps' + i, date: d, bedtime: '23:00', wake: '07:00' }); }
+    for (let i = 0; i < 150; i++) S.workouts.push({ id: 'pw' + i, name: 'Push', date: addDays(T, -i * 2), status: 'done', startedAt: new Date(addDays(T, -i * 2) + 'T17:00').getTime(), finishedAt: new Date(addDays(T, -i * 2) + 'T18:00').getTime(), entries: [] });
+    for (let i = 0; i < 200; i++) S.events.push({ id: 'pe' + i, title: 'Událost ' + i, date: addDays(T, (i % 120) - 90), start: String(8 + i % 10).padStart(2, '0') + ':00', end: String(9 + i % 10).padStart(2, '0') + ':00', recurring: ['none', 'weekly', 'none', 'monthly'][i % 4] });
+    S.weeklyPriorities = { [weekStartOf(T)]: ['pg1', 'pg2'] };
+    const m = (f, n) => { f(); const ts = []; for (let i = 0; i < n; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[Math.floor(n / 2)]; };
+    const res = intelCompute(new Date());
+    const out = { intel: m(() => intelCompute(new Date()), 7), homeIntel: m(() => { S.settings.widgets.intel = true; view = 'home'; render(); }, 5), homeNoIntel: m(() => { S.settings.widgets.intel = false; view = 'home'; render(); }, 5),
+      screen: m(() => { view = 'intel'; render(); }, 5), week: m(() => { wpOffset = 0; view = 'week'; render(); }, 5), analytics: m(() => { statsPeriod = 'month'; view = 'statistics'; render(); }, 3) };
+    S.settings.widgets.intel = true; out.n = res.suggestions.length; out.bad = (view = 'intel', render(), /undefined|NaN/.test(document.getElementById('app').innerText)); return out; });
+  console.log(`      IN26 intel small ${small.toFixed(1)} ms, ` + Object.entries(r).filter(([k]) => !['bad', 'n'].includes(k)).map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', ') + `, suggestions ${r.n}`);
+  assert.ok(!r.bad); assert.ok(r.n > 0 && r.n <= 100);
+  assert.ok(small < 20 && r.intel < 30, 'intelligence well under 50 ms');
+  assert.ok(r.homeIntel - r.homeNoIntel < 30 && r.screen < 80 && r.week < 80, 'Home / screen / week stay fast');
+}, { state: fixtureState() });
+
+test('IN27 Command Center stays the source of "Co teď?": its ranking and card are identical with Intelligence on and off; no weeklyPriorities / intel input in it', async ({ page }) => {
+  await inSeed(page);
+  const cc = on => page.evaluate(on => { S.settings.widgets.intel = on; view = 'home'; render(); return JSON.stringify(ccRank(ccCandidates(ccContext())).map(c => [c.kind, c.id, c.score])) + document.querySelector('#ccNow').outerHTML; }, on);
+  const a = await cc(true), b = await cc(false);
+  assert.equal(a, b);
+  assert.equal(await page.evaluate(() => /intel/i.test(ccCandidates.toString() + ccRank.toString() + ccNow.toString())), false);
+  assert.equal(await page.locator('#ccIntel').count(), 0, 'Settings -> Doporučení off hides the section');
+  await page.click('#settingsBtn');
+  const row = page.locator('[data-smart="intel"]'); assert.equal(await row.count(), 1);
+  await row.click(); assert.equal(await page.evaluate(() => S.settings.widgets.intel), true);
+}, { state: fixtureState() });
+
+test('IN28 320-1440 px, light + dark: no horizontal scroll, full-width cards, 44 px targets, WCAG AA text, SVG icons (no emoji); Home, Intelligence and the move sheet', async ({ page }) => {
+  await inSeed(page); const bad = [];
+  for (const w of [320, 360, 375, 390, 430, 768, 1024, 1280, 1440]) for (const theme of ['light', 'dark']) {
+    await page.setViewportSize({ width: w, height: 900 });
+    for (const v of ['intel', 'home']) {
+      await page.evaluate(([v, theme]) => { closeSheets(); S.settings.theme = theme; applyTheme(); uiInAll = false; view = v; render(); }, [v, theme]);
+      const c = await inClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${w}/${theme}/${v}: ${JSON.stringify(c)}`);
+      const r = await page.evaluate(() => { const out = [];
+        const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+        const lum = c => { const f = x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }; return .2126 * f(c.r) + .7152 * f(c.g) + .0722 * f(c.b); };
+        const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+        const bgOf = el => { const st = []; for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e); if (/gradient/.test(cs.backgroundImage) && e.matches('.btn:not(.ghost):not(.danger)')) return { r: 110, g: 80, b: 240, a: 1 }; const c = parse(cs.backgroundColor); if (c && c.a > 0) { st.push(c); if (c.a >= 1) break; } } let bg = parse(getComputedStyle(document.body).backgroundColor); for (let i = st.length - 1; i >= 0; i--) bg = blend(st[i], bg); return bg; };
+        const root = document.querySelector('.in') || document.querySelector('#ccIntel');
+        root.querySelectorAll('*').forEach(e => { if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return; const cs = getComputedStyle(e); if (cs.display === 'none' || e.closest('[aria-hidden="true"],.hide,[hidden]')) return;
+          const fg0 = parse(cs.color); if (!fg0) return; const bg = bgOf(e), fg = blend(fg0, bg), L1 = lum(fg), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05), size = parseFloat(cs.fontSize), need = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700) ? 3 : 4.5;
+          if (ratio < need) out.push(`contrast "${e.textContent.trim().slice(0, 20)}" ${ratio.toFixed(2)}`); });
+        root.querySelectorAll('button, a').forEach(n => { const b = n.getBoundingClientRect(); if (n.offsetParent && (b.height < 44 || b.width < 44)) out.push(`small ${n.className} ${Math.round(b.width)}x${Math.round(b.height)}`); });
+        root.querySelectorAll('h3, h4, button, .in-k').forEach(n => { if (/\p{Extended_Pictographic}/u.test(n.textContent)) out.push('emoji ' + n.textContent.trim().slice(0, 20)); });
+        const cards = [...root.querySelectorAll('.in-card')]; const wr = root.getBoundingClientRect(); if (cards.some(c => c.getBoundingClientRect().width < wr.width - 2)) out.push('card not full width');
+        return out; });
+      r.slice(0, 3).forEach(x => bad.push(`${w}/${theme}/${v}: ${x}`));
+    }
+    if (w === 320 || w === 1440) { await page.evaluate(() => { view = 'intel'; render(); }); await page.click('[data-intel="reschedule:tPast"] [data-in-act="move"]');
+      const o = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); if (o > 0) bad.push(`${w}/${theme} move sheet overflow ${o}`); await page.evaluate(() => closeSheets()); }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('IN29 accessibility: named sections and lists, semantic buttons with names, "Skrýt" names its card, keyboard use, visible focus, no hover-only actions, reduced motion', async ({ page }) => {
+  await inSeed(page); await inGo(page, 'intel');
+  const r = await page.evaluate(() => ({ secs: [...document.querySelectorAll('.in section[aria-labelledby]')].filter(s => !document.getElementById(s.getAttribute('aria-labelledby'))).length,
+    groups: document.querySelectorAll('.in-group > ul.in-list > li.in-card').length, unnamed: [...document.querySelectorAll('.in button')].filter(n => !(n.getAttribute('aria-label') || n.textContent).trim()).length,
+    skip: document.querySelector('[data-intel="goal_idle:gC"] [data-in-dismiss]').getAttribute('aria-label'), divBtn: document.querySelectorAll('.in [onclick]:not(button)').length,
+    hover: [...document.styleSheets].flatMap(s => { try { return [...s.cssRules]; } catch (e) { return []; } }).filter(r => /\.in[-\w]*:hover[^{]*\{[^}]*(display|visibility|opacity)/.test(r.cssText)).length,
+    moving: [...document.querySelectorAll('.in, .in *')].filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).length }));
+  assert.deepEqual([r.secs, r.groups, r.unnamed, r.divBtn, r.hover, r.moving], [0, 13, 0, 0, 0, 0]);
+  assert.equal(r.skip, 'Skrýt doporučení: Cíl „Jazyk“ dlouho neměl aktivitu');
+  await page.focus('[data-intel="goal_idle:gC"] [data-in-act="goal"]');
+  const ring = await page.evaluate(() => { const cs = getComputedStyle(document.activeElement); return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0 || cs.boxShadow !== 'none'; });
+  assert.ok(ring, 'visible focus');
+  await page.keyboard.press('Enter'); assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gC']);
+  await inGo(page, 'intel'); await page.focus('[data-intel="goal_idle:gC"] [data-in-dismiss]'); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => document.activeElement.closest('[data-intel]') ? document.activeElement.closest('[data-intel]').dataset.intel : document.activeElement.id), 'goal_next:gB', 'the hidden card was the last one: focus goes to the card now in its place (the last)');
+  await page.click('#inRestore'); assert.equal(await page.locator('[data-intel="goal_idle:gC"]').count(), 1, 'hidden cards can be shown again');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'inTitle');
+}, { state: fixtureState() });
+
+test('IN30 navigation + existing views untouched: More -> Intelligence; Weekly Planner, Goals, Planner and Analytics read the same; the planner form still opens the Planner from elsewhere', async ({ page }) => {
+  await inSeed(page);
+  const snap = () => page.evaluate(() => { const w = wpWeek(0); return JSON.stringify([wpSummary(w), wpGoals(w).map(x => [x.g.id, x.blocks, x.minutes]), wpUnplanned(w).list.map(t => t.id), gpOverview('All').cards.map(c => [c.g.id, c.next && c.next.id]),
+    anAnalyze(getAnalyticsRange('week', todayStr())).planner]); });
+  const a = await snap(); await inGo(page, 'intel'); await inGo(page, 'home'); assert.equal(await snap(), a);
+  await page.evaluate(() => { view = 'more'; render(); });
+  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 3)), ['week', 'intel', 'planner']);
+  await page.click('.more-section [data-v="intel"]'); assert.equal(await page.evaluate(() => view), 'intel');
+  await page.evaluate(() => { view = 'tasks'; render(); openPlannerForm(null, { date: todayStr(), title: 'Z úkolů' }); }); await page.fill('#pb_start', '20:00'); await page.fill('#pb_end', '21:00'); await page.click('#pb_save');
+  assert.equal(await page.evaluate(() => view), 'planner', 'outside Intelligence the existing behaviour is kept');
 }, { state: fixtureState() });
 
 // ---------- screenshots ----------
