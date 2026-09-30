@@ -1631,7 +1631,7 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .cg-it .cg-wk{position:absolute;right:44px;top:4px;width:36px;height:36px;min-height:36px;border-radius:8px;border:none;background:var(--accent-grad);color:#fff;display:grid;place-items:center;padding:0;cursor:pointer}
 .cg-it.is-short .cg-lk,.cg-it.is-narrow .cg-lk,.cg-it.is-narrow .cg-wk{display:none}
 .cg-it.is-tight{padding:4px 4px 4px 6px}.cg-it.is-tight .cg-m,.cg-it.is-tight .cg-lk{display:none}.cg-it.is-tight .cg-t{font-size:12px;white-space:normal;overflow-wrap:anywhere}
-.cg-it.is-tight .cg-wk{display:none}.cg-it.is-tight.is-workout-b .cg-t{padding-right:40px}
+.cg-it.is-tight .cg-wk{display:none}.cg-it.is-tight .cg-chk{top:auto;bottom:4px;right:auto;left:4px}.cg-it.is-tight.is-block .cg-t,.cg-it.is-tight.is-workout-b .cg-t{padding-right:0}
 .cg-it.is-tight .cg-tt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.cg-it.is-tight .cg-t>svg{display:none}
 .cg-it.is-workout-b .cg-t,.cg-it.is-workout-b .cg-m{padding-right:82px}
 .cg-rs::after{content:'';position:absolute;left:50%;bottom:3px;width:22px;height:3px;margin-left:-11px;border-radius:2px;background:color-mix(in srgb,var(--pl-c) 60%,transparent)}
@@ -9035,8 +9035,13 @@ function uiCalGrid(days,opts){
   const PX=CAL_PX, H=Math.round((to-from)*PX), today=todayStr(), n=new Date(), nm=n.getHours()*60+n.getMinutes();
   const hours=[]; for(let h=from;h<=to;h+=60) hours.push(`<span class="cg-hr" style="top:${Math.round((h-from)*PX)}px">${plannerMinToTime(h)}</span>`);
   const cols=days.map((D,i)=>{
-    const its=per[i], lay=plannerLayout(its.map(x=>({id:x.key,start:x.s,end:Math.max(x.e,x.s+Math.ceil(44/PX))})));
-    const items=its.map(x=>{ const top=Math.round((x.s-from)*PX), h=Math.max(44,Math.round((x.e-x.s)*PX)); return uiCalItemHtml(x,D,lay[x.key],top,h,days.length>1); }).join('');
+    // a single day: items in 3+ side-by-side columns stack the title over the check, so they get a taller minimum
+    // (re-laid out until stable, as the old planner timeline did); the week grid keeps 44 px
+    const its=per[i], multi=days.length>1, minH=(x,L)=>!multi&&L&&L.cols>2?84:44;
+    const place=prev=>plannerLayout(its.map(x=>({id:x.key,start:x.s,end:Math.max(x.e,x.s+Math.ceil(minH(x,prev&&prev[x.key])/PX))})));
+    let lay=place(null);
+    for(let pass=0;pass<3;pass++){ const nx=place(lay); const same=its.every(x=>(nx[x.key].cols>2)===(lay[x.key].cols>2)); lay=nx; if(same) break; }
+    const items=its.map(x=>{ const top=Math.round((x.s-from)*PX), h=Math.max(minH(x,lay[x.key]),Math.round((x.e-x.s)*PX)); return uiCalItemHtml(x,D,lay[x.key],top,h,multi); }).join('');
     const now=D===today&&nm>=from&&nm<=to?`<div class="cg-now" style="top:${Math.round((nm-from)*PX)}px" aria-hidden="true"></div>`:'';
     return `<div class="cg-col${D===today?' is-today':''}" data-day="${D}" role="group" aria-label="${escapeHtml(uiCalDayTitle(D,true))}">${now}${items}</div>`;
   }).join('');
