@@ -5338,7 +5338,7 @@ test('CC6 goals on Home: percent, this week, the next real step or "Další krok
   const before = await ccData(page);
   await ccHome(page);
   const fit = await page.locator('#ccGoals .cc-goal[data-goal="g_fit"]').innerText();
-  assert.match(fit, /Tento týden: 2\/3 tréninky/); assert.match(fit, /Blok: Matematika · Dnes 15:00/);
+  assert.match(fit, /Tento týden: 2\/3 tréninky/); assert.match(fit, /Úkol: Write report · Dnes/, 'the Goal system\'s next step: the nearest open linked task first');
   assert.match(await page.locator('#ccGoals .cc-goal[data-goal="g_new"]').innerText(), /40\s*%[\s\S]*Další krok není naplánován\./);
   assert.equal(await ccData(page), before, 'rendering goals creates nothing');
   await page.evaluate(() => { S.milestones.push({ id: 'ms_cc', goalId: 'g_new', title: 'První krok', completed: false, createdAt: Date.now() }); }); await ccHome(page);
@@ -5497,14 +5497,14 @@ test('FP2 minute tick 14:59 -> 15:00: Co teď?, Dnešek and Top 3 follow the clo
 test('FP3 minute tick 15:59 -> 16:00: progress context ("Ještě můžeš"), goal next step and missed blocks update under an open form without touching the typed text', async ({ page }) => {
   await page.clock.setFixedTime(at('15:59')); await ccHome(page);
   assert.match(await page.locator('#ccDay .cc-miss').innerText(), /3 bloky v plánu/);
-  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Blok: Matematika · Dnes 15:00/);
+  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Úkol: Write report · Dnes/);
   const before = await ccData(page);
   await page.click('.cc-q[data-q="task"]'); await page.fill('.sheet #f_title', 'Rozepsaný úkol'); await page.focus('.sheet #f_title');
   await page.evaluate(() => { const i = document.querySelector('.sheet #f_title'); i.setSelectionRange(3, 3); });
   await ccTickTo(page, '16:00');
   assert.deepEqual(await page.evaluate(() => { const i = document.querySelector('.sheet #f_title'); return [!!i, i && i.value, document.activeElement === i, i && i.selectionStart]; }), [true, 'Rozepsaný úkol', true, 3], 'form, text, focus and caret survive');
   assert.match(await page.locator('#ccDay .cc-miss').innerText(), /2 bloky v plánu/, 'Matematika ended: the day context follows');
-  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Blok: PUSH A · Dnes 17:00/, 'the goal next step skips the missed block');
+  assert.match(await page.locator('#ccGoals [data-goal="g_fit"]').innerText(), /Úkol: Write report · Dnes/, 'goal next step (task first) is unchanged by the tick; missed blocks are covered in GP3');
   assert.equal(await page.locator('#ccTimeline [data-ck="tl:block:pb_math"].is-missed').count(), 1);
   const n = await ccNowOf(page); assert.deepEqual([n.mode, n.title], ['now', 'Konzultace']);
   await page.evaluate(() => closeSheets()); await settle(page);
@@ -6012,6 +6012,464 @@ test('AN24 + AN25 no duplicate ids, no NaN / undefined / Infinity in any period,
   await withGen(page); await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; Object.assign(S, window.__gen(300, 4000, 7)); }); await sweep('year');
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
+
+// ---------- Advanced Goals & Planning 2.0 ----------
+// Goals + Tasks + Planner + Habits as one linked system. A read-only organisation layer (gp* helpers) over the existing
+// links, plus two optional fields entered in the existing forms (milestone.targetDate, task.milestoneId). The tests pin
+// the facts shown (status, next step, roadmap, pace, week, timeline, capacity, conflicts, review), the entry points to the
+// existing forms, the integrations, XP anti-farming, legacy data, export/import, no writes, performance, layout and a11y.
+const gpGo = (page, v, extra) => page.evaluate(([v, extra]) => { closeSheets(); Object.assign(window, extra || {}); if (extra && extra.goalFilter) goalFilter = extra.goalFilter; if (extra && extra.currentGoalId) currentGoalId = extra.currentGoalId; view = v; render(); }, [v, extra || null]);
+const gpClean = page => page.evaluate(() => { const t = document.getElementById('app').innerText, ids = {}; document.querySelectorAll('[id]').forEach(n => ids[n.id] = (ids[n.id] || 0) + 1);
+  return { bad: /undefined|NaN|Infinity|\[object/.test(t), dup: Object.keys(ids).filter(k => ids[k] > 1), overflow: document.documentElement.scrollWidth - innerWidth }; });
+// fixture day 2026-09-23 (Wednesday), 12:00; this week 2026-09-21..27
+const gpSeed = page => page.evaluate(() => {
+  const T = todayStr(), D = n => addDays(T, n), ts = (d, h) => new Date(d + 'T' + String(h || 12).padStart(2, '0') + ':00').getTime();
+  S = defaultState(); S.settings.onboarded = true;
+  S.goals = [
+    { id: 'gA', title: 'Maraton', description: 'Doběhnout 42 km', category: 'Fitness', targetDate: D(30), status: 'Active', mode: 'auto', manualProgress: 0, createdAt: ts(D(-30)) },
+    { id: 'gB', title: 'Kniha', description: '', category: 'Learning', targetDate: '', status: 'Active', mode: 'manual', manualProgress: 40, createdAt: ts(D(-40)) },
+    { id: 'gC', title: 'Stará', description: '', category: '', targetDate: D(-3), status: 'Active', mode: 'manual', manualProgress: 0, createdAt: ts(D(-60)) },
+    { id: 'gD', title: 'Hotová', description: '', category: 'Work', targetDate: D(-5), status: 'Completed', mode: 'manual', manualProgress: 100, createdAt: ts(D(-90)) },
+    { id: 'gE', title: 'Pauza', description: '', category: '', targetDate: '', status: 'Paused', mode: 'manual', manualProgress: 10, createdAt: ts(D(-10)) }];
+  S.milestones = [
+    { id: 'mA1', goalId: 'gA', title: 'Půlmaraton', description: '', targetDate: D(-2), completed: false, completedAt: null, createdAt: ts(D(-20)) },
+    { id: 'mA2', goalId: 'gA', title: '30 km', description: '', targetDate: D(10), completed: false, completedAt: null, createdAt: ts(D(-10)) },
+    { id: 'mA3', goalId: 'gA', title: '10 km', description: '', completed: true, completedAt: ts(D(-5)), createdAt: ts(D(-15)) }];
+  S.tasks = [
+    { id: 'tA1', title: 'Běh 10 km', priority: 'High', category: 'Fitness', goalId: 'gA', milestoneId: 'mA1', dueDate: D(1), done: false, createdAt: ts(D(-6)) },
+    { id: 'tA2', title: 'Běh 15 km', priority: 'Medium', category: 'Fitness', goalId: 'gA', milestoneId: 'mA1', dueDate: D(-1), done: true, createdAt: ts(D(-6)) },
+    { id: 'tA3', title: 'Boty', priority: 'Low', category: 'Personal', goalId: 'gA', dueDate: D(3), done: false, createdAt: ts(D(-4)) },
+    { id: 'tA4', title: 'Strečink', priority: 'Low', category: 'Fitness', goalId: 'gA', dueDate: '', done: false, createdAt: ts(D(-4)) },
+    { id: 'tX', title: 'Bez cíle', priority: 'Medium', category: '', goalId: '', dueDate: D(0), done: false, createdAt: ts(D(-1)) }];
+  S.xpLog = [{ id: 'x1', amount: 20, reason: 'Task: Běh 15 km', ts: ts(D(-1)), key: `task:tA2:${D(-1)}` }, { id: 'x2', amount: 200, reason: 'Goal: Hotová', ts: ts(D(-2)), key: 'goal:gD:complete' },
+    { id: 'x3', amount: 25, reason: 'Milestone: 10 km', ts: ts(D(-5)), key: 'milestone:mA3' }];
+  S.totalXp = 245;
+  const B = (id, date, s, e, extra) => ({ id, date, startTime: s, endTime: e, title: id, description: '', category: '', taskId: '', goalId: '', workoutId: '', notes: '', workoutTemplateId: '', completed: false, createdAt: 1, updatedAt: 1, ...extra });
+  S.plannerBlocks = [B('pA1', D(0), '06:00', '07:00', { goalId: 'gA', title: 'Ranní běh', category: 'Fitness', completed: true }), B('pA2', D(1), '06:00', '07:30', { taskId: 'tA1', title: 'Běh 10 km', category: 'Fitness' }),
+    B('pA3', D(2), '18:00', '19:00', { goalId: 'gA', title: 'Intervaly', category: 'Fitness' }), B('pX', D(2), '18:30', '19:30', { title: 'Schůzka', category: 'Work' }),
+    B('pB1', D(5), '20:00', '21:00', { goalId: 'gB', title: 'Čtení', category: 'Learning' })];
+  S.habits = [{ id: 'hA', name: 'Běhání', type: 'good', frequency: 'daily', target: 1, goalId: 'gA', completions: [D(0), D(-1), D(-3)], active: true, createdAt: ts(D(-30)) },
+    { id: 'hN', name: 'Nepropojený', type: 'good', frequency: 'daily', target: 1, goalId: '', completions: [D(0)], active: true, createdAt: ts(D(-30)) }];
+  S.dailyScoresSince = T; S.achievementsUnlocked = ACHV.map(a => a.id);
+  S = migrate(JSON.parse(JSON.stringify(S)));
+  ['daily', 'weekly'].forEach(p => questBoardFor(p).forEach(({ q }) => { const k = questKey(q.id, p); if (!S.quests.some(x => x.key === k)) S.quests.push({ key: k, questId: q.id, date: todayStr(), period: p }); }));
+  view = 'home'; render();
+});
+const gpState = page => page.evaluate(() => JSON.stringify(S));
+
+test('GP1 Goals overview: filters, active cards by deadline with next step / milestones / open tasks, completed apart, weekly review, capacity, conflicts, nearest deadlines, goals without a next step', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goals', { goalFilter: 'Active' });
+  assert.deepEqual(await page.$$eval('#gf [data-f]', ns => ns.map(n => [n.dataset.f, n.getAttribute('aria-selected')])), [['All', 'false'], ['Active', 'true'], ['Completed', 'false'], ['Overdue', 'false'], ['NoNext', 'false']]);
+  assert.deepEqual(await page.$$eval('.goal-card', ns => ns.map(n => n.dataset.goal)), ['gC', 'gA', 'gB'], 'sorted by deadline, undated last');
+  const a = await page.locator('.goal-card[data-goal="gA"]').innerText();
+  assert.match(a, /Maraton[\s\S]*25%[\s\S]*Aktivní[\s\S]*23\.10\.2026[\s\S]*1\/3[\s\S]*3 otevřené úkoly[\s\S]*Úkol: Běh 10 km · 24\.09\.2026/);
+  assert.match(await page.locator('.goal-card[data-goal="gB"]').innerText(), /Bez termínu[\s\S]*Blok: Čtení · 28\.09\.2026 20:00–21:00/);
+  assert.match(await page.locator('.goal-card[data-goal="gC"]').innerText(), /Po termínu[\s\S]*Další krok není naplánován\./);
+  for (const id of ['gpReview', 'gpCapacity', 'gpConflicts', 'gpDeadlines', 'gpNoNext']) assert.equal(await page.locator('#' + id).count(), 1, id);
+  assert.deepEqual(await page.$$eval('#gpDeadlines .gp-row', ns => ns.map(n => n.dataset.goal)), ['gC', 'gA']);
+  assert.deepEqual(await page.$$eval('#gpNoNext .gp-row', ns => ns.map(n => n.dataset.goal)), ['gC']);
+  await gpGo(page, 'goals', { goalFilter: 'All' });
+  assert.deepEqual(await page.$$eval('.gp-group h3', ns => ns.map(n => n.textContent)), ['Aktivní · 3', 'Dokončené · 1', 'Pozastavené a archivované · 1']);
+  await page.locator('.goal-card[data-goal="gA"] .goal-top').click();
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gA']);
+}, { state: fixtureState() });
+
+test('GP2 Goal detail: header (category, title, progress, status, deadline, XP) and all sections', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  const h = await page.locator('.gp-head').innerText();
+  assert.match(h, /Fitness[\s\S]*Maraton[\s\S]*Doběhnout 42 km[\s\S]*25%[\s\S]*Aktivní[\s\S]*do 23\.10\.2026[\s\S]*\+200 XP/i);
+  assert.equal(await page.locator('.gp-head [role="progressbar"]').getAttribute('aria-valuenow'), String(await page.evaluate(() => goalProgress(S.goals[0]))));
+  for (const id of ['gpNext', 'gpPace', 'gpWeek', 'gpRoadmap', 'gpHabits', 'gpTimeline', 'msList', 'ltList', 'lhList']) assert.equal(await page.locator('#' + id).count(), 1, id);
+  const st = await page.evaluate(() => S.goals.map(g => [g.id, gpStatus(g)]));
+  assert.deepEqual(st, [['gA', 'active'], ['gB', 'nodeadline'], ['gC', 'overdue'], ['gD', 'completed'], ['gE', 'paused']]);
+  assert.doesNotMatch(await page.locator('#app').innerText(), /good|bad|healthy|failing|poor|dobrý|špatný|nestíháš/i, 'factual statuses only');
+}, { state: fixtureState() });
+
+test('GP3 next step: task -> milestone -> upcoming block (done or ended blocks skipped) -> "Další krok není naplánován." with "+ Naplánovat další krok" opening the existing form; nothing created', async ({ page }) => {
+  await gpSeed(page);
+  const r = await page.evaluate(() => { const ix = gpIndex(); const n = id => { const x = gpNextStep(S.goals.find(g => g.id === id), ix); return x ? [x.k, x.id] : null; };
+    const out = { A: n('gA'), B: n('gB'), C: n('gC'), D: n('gD') };
+    S.tasks.filter(t => t.goalId === 'gA').forEach(t => { t.done = true; }); out.A2 = gpNextStep(S.goals[0]).id; // no open task -> nearest open milestone
+    S.milestones.filter(m => m.goalId === 'gA').forEach(m => { m.completed = true; }); out.A3 = gpNextStep(S.goals[0]).id; // -> nearest upcoming block (pA1 done, pA2 tomorrow)
+    S.plannerBlocks.find(b => b.id === 'pA2').completed = true; S.plannerBlocks.push({ id: 'pEnded', date: todayStr(), startTime: '08:00', endTime: '09:00', title: 'Ended', goalId: 'gA', completed: false });
+    out.A4 = gpNextStep(S.goals[0]).id; // pA2 done, pEnded ended at 09:00 -> pA3
+    return out; });
+  assert.deepEqual([r.A, r.B, r.C, r.D], [['task', 'tA1'], ['block', 'pB1'], null, null]);
+  assert.deepEqual([r.A2, r.A3, r.A4], ['mA1', 'pA2', 'pA3']);
+  await gpSeed(page); const before = await gpState(page);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gC' });
+  assert.match(await page.locator('#gpNext').innerText(), /Další krok není naplánován\./);
+  await page.click('#gpPlanNext');
+  assert.ok(await page.locator('.sheet .pl-form').isVisible(), 'the existing Planner form');
+  assert.match(await page.locator('.sheet #pb_link').innerText(), /Stará/, 'the goal is preselected');
+  await page.evaluate(() => closeSheets());
+  assert.equal(await gpState(page), before, 'opening the form creates nothing');
+}, { state: fixtureState() });
+
+test('GP4 roadmap and milestones 2.0: goal -> milestones (status, deadline, linked tasks, next task) -> tasks without a milestone -> planner blocks; the optional fields come from the existing forms', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.deepEqual(await page.$$eval('#msList .gp-ms', ns => ns.map(n => n.dataset.ms)), ['mA1', 'mA2', 'mA3'], 'milestones by deadline, undated last');
+  const m1 = await page.locator('.gp-ms[data-ms="mA1"]').innerText();
+  assert.match(m1, /Půlmaraton[\s\S]*Po termínu[\s\S]*21\.09\.2026[\s\S]*1\/2 úkolů[\s\S]*Další úkol: Běh 10 km/);
+  assert.deepEqual(await page.$$eval('.gp-ms[data-ms="mA1"] .task-item .item-title', ns => ns.map(n => n.textContent.trim())), ['Běh 10 km', 'Běh 15 km']);
+  assert.equal(await page.locator('.gp-ms[data-ms="mA1"] [role="progressbar"]').getAttribute('aria-valuenow'), '50');
+  assert.match(await page.locator('.gp-ms[data-ms="mA3"]').innerText(), /Dokončeno/);
+  assert.deepEqual(await page.$$eval('#ltList .task-item .item-title', ns => ns.map(n => n.textContent.trim())), ['Boty', 'Strečink']);
+  assert.match(await page.locator('#gpBlocks').innerText(), /Intervaly[\s\S]*Běh 10 km[\s\S]*Ranní běh/);
+  const mi = await page.evaluate(() => { const x = gpMilestone(S.milestones[0]); return [x.done, x.remaining, x.progress, x.status, x.next.id]; });
+  assert.deepEqual(mi, [1, 1, 50, 'overdue', 'tA1']);
+  // milestone form: optional deadline
+  await page.locator('.gp-ms[data-ms="mA2"] .editMs').click();
+  await page.fill('#ms_due', '2026-10-15'); await page.click('#ms_save');
+  assert.equal(await page.evaluate(() => S.milestones.find(m => m.id === 'mA2').targetDate), '2026-10-15');
+  // task form: milestone select offers only this goal's milestones and stores task.milestoneId
+  await page.evaluate(() => openTaskEditForm(S.tasks.find(t => t.id === 'tA3')));
+  assert.deepEqual(await page.$$eval('#f_ms option', ns => ns.map(o => o.value)), ['', 'mA1', 'mA2', 'mA3']);
+  await page.selectOption('#f_ms', 'mA2'); await page.click('#f_save');
+  assert.equal(await page.evaluate(() => S.tasks.find(t => t.id === 'tA3').milestoneId), 'mA2');
+  await page.evaluate(() => openTaskEditForm(S.tasks.find(t => t.id === 'tX')));
+  assert.equal(await page.locator('#f_msWrap').isHidden(), true, 'no goal -> no milestone field');
+  await page.selectOption('#f_goal', 'gA'); assert.equal(await page.locator('#f_msWrap').isVisible(), true);
+  await page.evaluate(() => closeSheets());
+  assert.equal(await page.evaluate(() => 'milestoneId' in S.tasks.find(t => t.id === 'tX')), false, 'untouched until saved');
+}, { state: fixtureState() });
+
+test('GP5 pace: progress, time share, days left and the required pace from the creation day, deadline and goalProgress; otherwise "Tempo nelze vypočítat."', async ({ page }) => {
+  await gpSeed(page);
+  const p = await page.evaluate(() => ['gA', 'gB', 'gC', 'gD'].map(id => { const x = gpPace(S.goals.find(g => g.id === id)); return x.ok ? [x.total, x.elapsed, x.remaining, x.timePct, x.progress, x.perDay, x.past] : false; }));
+  assert.deepEqual(p, [[60, 30, 30, 50, 25, 2.5, false], false, [57, 57, 0, 100, 0, null, true], false]);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.match(await page.locator('#gpPace').innerText(), /Progress\s*25 %[\s\S]*Podle času\s*50 %[\s\S]*Čas do termínu\s*30 dní[\s\S]*Potřebné tempo\s*\+2,5 % \/ den/);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gB' });
+  assert.match(await page.locator('#gpPace').innerText(), /Tempo nelze vypočítat\./);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gC' });
+  assert.match(await page.locator('#gpPace').innerText(), /Termín už uplynul/);
+  assert.doesNotMatch(await page.locator('#gpPace').innerText(), /nestíháš|stíháš|pozadu|skvěl|should/i);
+}, { state: fixtureState() });
+
+test('GP6 ahead / behind: progress vs elapsed time share in percentage points, only when both are known', async ({ page }) => {
+  await gpSeed(page);
+  const r = await page.evaluate(() => { const T = todayStr(), mk = (p, c, d) => ({ id: 'x', title: 'x', status: 'Active', mode: 'manual', manualProgress: p, createdAt: new Date(addDays(T, c) + 'T12:00').getTime(), targetDate: addDays(T, d) });
+    return [gpPace(mk(80, -10, 10)).diff, gpPace(mk(30, -10, 10)).diff, gpPace(mk(50, -10, 10)).diff, gpPace(mk(50, 0, 10)).diff]; });
+  assert.deepEqual(r, [30, -20, 0, null], 'ahead 30, behind 20, even, not shown on the first day');
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.match(await page.locator('#gpPace [data-pace]').innerText(), /Progress je o 25 procentních bodů za časovým podílem\./);
+  await page.evaluate(() => { S.goals.push({ id: 'gAh', title: 'Náskok', status: 'Active', mode: 'manual', manualProgress: 80, createdAt: new Date(addDays(todayStr(), -10) + 'T12:00').getTime(), targetDate: addDays(todayStr(), 10) }); currentGoalId = 'gAh'; render(); });
+  assert.match(await page.locator('#gpPace [data-pace="ahead"]').innerText(), /o 30 procentních bodů před časovým podílem\./);
+}, { state: fixtureState() });
+
+test('GP7 weekly goal plan: tasks, milestones, blocks and linked habits this week - planned / done / left from the real records', async ({ page }) => {
+  await gpSeed(page);
+  const w = await page.evaluate(() => { const x = gpWeek(S.goals[0]); return { t: [x.tasks.planned, x.tasks.done, x.tasks.remaining], m: [x.milestones.planned, x.milestones.done, x.milestones.remaining], b: [x.blocks.planned, x.blocks.done, x.blocks.remaining, x.blocks.min], h: x.habits }; });
+  assert.deepEqual(w, { t: [3, 1, 2], m: [1, 0, 1], b: [3, 1, 2, 210], h: [{ id: 'hA', name: 'Běhání', done: 2, expected: 3 }] });
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.deepEqual(await page.$$eval('#gpWeek tbody tr', rs => rs.map(r => [...r.children].map(c => c.textContent.trim()))),
+    [['Úkoly', '3', '1', '2'], ['Milníky', '1', '0', '1'], ['Bloky', '3 3 h 30 min', '1 1 h', '2'], ['Běhání', '3', '2', '1']]);
+}, { state: fixtureState() });
+
+test('GP8 Goal -> Planner: "Naplánovat čas" opens the existing Planner form with the goal preselected; the saved block is a normal block linked to the goal and shows on the goal at once', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  const n0 = await page.evaluate(() => S.plannerBlocks.length);
+  await page.click('#gpPlan');
+  assert.match(await page.locator('.sheet #pb_link').innerText(), /Maraton/);
+  await page.fill('#pb_title', 'Tempo běh'); await page.fill('#pb_date', '2026-09-25'); await page.fill('#pb_start', '07:00'); await page.fill('#pb_end', '08:00');
+  await page.click('#pb_save'); await settle(page);
+  const b = await page.evaluate(() => S.plannerBlocks[S.plannerBlocks.length - 1]);
+  assert.equal(await page.evaluate(() => S.plannerBlocks.length), n0 + 1);
+  assert.deepEqual([b.title, b.goalId, b.taskId, b.date, b.startTime, b.endTime, b.category], ['Tempo běh', 'gA', '', '2026-09-25', '07:00', '08:00', 'Fitness']);
+  assert.deepEqual(Object.keys(b).sort(), Object.keys((await page.evaluate(() => S.plannerBlocks.find(x => x.id === 'pA1')))).sort().filter(k => k !== 'nothing'), 'the same planner model');
+  assert.equal(await page.evaluate(() => view), 'goalDetail', 'stays on the goal');
+  assert.match(await page.locator('#gpBlocks').innerText(), /Tempo běh[\s\S]*25\.09\.2026 · 07:00–08:00/);
+  assert.equal((await idbState(page)).plannerBlocks.some(x => x.title === 'Tempo běh'), true, 'saved');
+}, { state: fixtureState() });
+
+test('GP9 Goal -> Task: "+ Úkol" opens the existing task form with the goal linked and its category prefilled; the user saves; XP untouched', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  const xp0 = await xpOf(page), n0 = await page.evaluate(() => S.tasks.length);
+  await page.click('#gpAddTask');
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('#f_goal').value, document.querySelector('#f_cat').value, [...document.querySelectorAll('#f_ms option')].map(o => o.value)]), ['gA', 'Fitness', ['', 'mA1', 'mA2', 'mA3']]);
+  assert.equal(await page.evaluate(() => S.tasks.length), n0, 'nothing created before saving');
+  await page.fill('#f_title', 'Nový úkol cíle'); await page.selectOption('#f_ms', 'mA2'); await page.click('#f_save'); await settle(page);
+  const t = await page.evaluate(() => S.tasks[S.tasks.length - 1]);
+  assert.deepEqual([t.title, t.goalId, t.category, t.milestoneId, t.done], ['Nový úkol cíle', 'gA', 'Fitness', 'mA2', false]);
+  assert.equal(await page.evaluate(() => view), 'goalDetail');
+  assert.match(await page.locator('.gp-ms[data-ms="mA2"]').innerText(), /Nový úkol cíle/);
+  assert.equal(await xpOf(page), xp0);
+  // from a milestone: "+ Úkol" preselects the milestone too
+  await page.evaluate(() => { S.tasks = S.tasks.filter(t => t.milestoneId !== 'mA2'); render(); });
+  await page.locator('.gp-ms[data-ms="mA2"] .gpMsTask').click();
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('#f_goal').value, document.querySelector('#f_ms').value]), ['gA', 'mA2']);
+}, { state: fixtureState() });
+
+test('GP10 Task <-> Goal both ways: the task row links its goal, the goal lists and opens its task', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'tasks', { taskFilter: 'All' });
+  await page.evaluate(() => { taskFilter = 'All'; render(); });
+  await page.locator('.task-item', { hasText: 'Boty' }).locator('.linkGoal').click();
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gA']);
+  await page.locator('#ltList .task-item', { hasText: 'Boty' }).locator('.editBtn').click();
+  assert.equal(await page.locator('.sheet #f_goal').inputValue(), 'gA');
+  assert.equal(await page.locator('.sheet #f_title').inputValue(), 'Boty');
+}, { state: fixtureState() });
+
+test('GP11 Habit -> Goal: only habits really linked to the goal are shown (today state, streak) and counted in the week', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.deepEqual(await page.$$eval('#lhList .habit-item .item-title', ns => ns.map(n => n.textContent.trim())), ['Běhání']);
+  assert.match(await page.locator('#lhList').innerText(), /2 dní v řadě|dní v řadě/);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gB' });
+  assert.equal(await page.locator('#gpHabits').count(), 0, 'no linked habit -> no section, nothing invented');
+}, { state: fixtureState() });
+
+test('GP12 planning conflicts: overlapping blocks listed with both titles, times and date; nothing is moved', async ({ page }) => {
+  await gpSeed(page);
+  const before = await page.evaluate(() => JSON.stringify(S.plannerBlocks));
+  const c = await page.evaluate(() => gpConflicts(todayStr(), addDays(todayStr(), 30)).map(x => [x.date, x.a.id, x.b.id]));
+  assert.deepEqual(c, [['2026-09-25', 'pA3', 'pX']]);
+  const touching = await page.evaluate(() => { S.plannerBlocks.push({ id: 'pTouch', date: addDays(todayStr(), 2), startTime: '19:30', endTime: '20:00', title: 't' }); const n = gpConflicts(todayStr(), addDays(todayStr(), 30)).length; S.plannerBlocks = S.plannerBlocks.filter(b => b.id !== 'pTouch'); return n; });
+  assert.equal(touching, 1, 'a block starting when another ends is not a conflict');
+  await gpGo(page, 'goals', { goalFilter: 'Active' });
+  assert.match(await page.locator('#gpConflicts').innerText(), /25\.09\.2026[\s\S]*Intervaly\s*18:00–19:00[\s\S]*Schůzka\s*18:30–19:30/);
+  assert.equal(await page.evaluate(() => JSON.stringify(S.plannerBlocks)), before);
+  await page.locator('#gpConflicts .gp-conf-b[data-block="pX"]').click();
+  assert.equal(await page.locator('.sheet #pb_title').inputValue(), 'Schůzka', 'opens the existing block');
+}, { state: fixtureState() });
+
+test('GP13 goal filters: Vše / Aktivní / Dokončené / Po termínu / Bez dalšího kroku', async ({ page }) => {
+  await gpSeed(page);
+  const r = {};
+  for (const f of ['All', 'Active', 'Completed', 'Overdue', 'NoNext']) { await gpGo(page, 'goals', { goalFilter: 'Active' }); await page.click(`#gf [data-f="${f}"]`);
+    r[f] = await page.$$eval('.goal-card', ns => ns.map(n => n.dataset.goal)); assert.equal(await page.evaluate(() => document.activeElement.dataset.f), f, 'focus stays on the filter'); }
+  assert.deepEqual(r, { All: ['gC', 'gA', 'gB', 'gD', 'gE'], Active: ['gC', 'gA', 'gB'], Completed: ['gD'], Overdue: ['gC'], NoNext: ['gC'] });
+  await page.evaluate(() => { goalFilter = 'Paused'; view = 'goals'; render(); });
+  assert.equal(await page.evaluate(() => goalFilter), 'All', 'an old filter value falls back safely');
+}, { state: fixtureState() });
+
+test('GP14 search finds goal, milestone, task and planner block and opens the right place', async ({ page }) => {
+  await gpSeed(page);
+  const g = await page.evaluate(() => Object.fromEntries(['Maraton', 'Půlmaraton', 'Strečink', 'Intervaly'].map(q => [q, searchGroups(q.toLowerCase()).filter(x => x[3].length).map(x => x[2])])));
+  assert.deepEqual(g, { Maraton: ['goal', 'milestone'], 'Půlmaraton': ['milestone'], 'Strečink': ['task'], Intervaly: ['plannerBlock'] });
+  await page.evaluate(() => searchNavigate('milestone', S.milestones.find(m => m.id === 'mA1')));
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId, document.querySelector('.sheet #ms_title').value]), ['goalDetail', 'gA', 'Půlmaraton']);
+}, { state: fixtureState() });
+
+test('GP15 Command Center integration: its goal cards show the Goal system next step; its own priority engine and reasons are reused, not duplicated', async ({ page }) => {
+  await gpSeed(page);
+  const r = await page.evaluate(() => { const ctx = ccContext(); return S.goals.filter(g => g.status === 'Active').map(g => { const a = ccGoalNextSteps(g, ctx).next, b = gpNextStep(g); return [g.id, a && a.k, a && a.title, b && b.k, b && b.title]; }); });
+  for (const [id, ak, at, bk, bt] of r) assert.deepEqual([ak, at], [bk, bt], id);
+  await gpGo(page, 'home');
+  assert.match(await page.locator('#ccGoals .cc-goal[data-goal="gA"]').innerText(), /Úkol: Běh 10 km/);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gC' });
+  assert.match(await page.locator('#gpNext .gp-why').innerText(), /Proč je tento cíl dnes relevantní[\s\S]*Termín cíle minul před 3 d/i, 'the Command Center reason for the goal');
+  const same = await page.evaluate(() => { const c = ccCandidates(ccContext()).find(x => x.kind === 'goal' && x.id === 'gC'); return JSON.stringify(c.reasons) === JSON.stringify(gpRelevance(S.goals.find(g => g.id === 'gC')).filter(x => x.src === 'cc').map(({ src, ...x }) => x)); });
+  assert.ok(same);
+}, { state: fixtureState() });
+
+test('GP16 Analytics integration: goal tasks completed in the period, milestones and deadlines - read-only, from the existing records', async ({ page }) => {
+  await gpSeed(page);
+  const m = await page.evaluate(() => { const t = getGoalTrend(getAnalyticsRange('week')); return [t.metrics.tasks.current, t.metrics.milestones.current, t.deadline.overdue, t.active]; });
+  assert.deepEqual(m, [1, 1, 1, 3]);
+  const before = await gpState(page);
+  await page.evaluate(() => { statsPeriod = 'week'; view = 'statistics'; render(); });
+  assert.match(await page.locator('#anGoals').innerText(), /Úkoly cílů dokončené v období\s*1/i);
+  assert.equal(await gpState(page), before);
+}, { state: fixtureState() });
+
+test('GP17 goal timeline: creation, milestones, task completion records, done blocks and closing - chronological, only recorded events', async ({ page }) => {
+  await gpSeed(page);
+  const t = await page.evaluate(() => gpTimeline(S.goals[0]).map(e => [e.d, e.k, e.title]));
+  assert.deepEqual(t, [['2026-08-24', 'goal_created', 'Maraton'], ['2026-09-03', 'ms_created', 'Půlmaraton'], ['2026-09-08', 'ms_created', '10 km'], ['2026-09-13', 'ms_created', '30 km'],
+    ['2026-09-18', 'ms_done', '10 km'], ['2026-09-22', 'task_done', 'Běh 15 km'], ['2026-09-23', 'block_done', 'Ranní běh']]);
+  assert.deepEqual(await page.evaluate(() => gpTimeline(S.goals.find(g => g.id === 'gD')).map(e => e.k)), ['goal_created', 'goal_done']);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.deepEqual(await page.$$eval('#gpTimeline time', ns => ns.map(n => n.getAttribute('datetime'))), t.map(x => x[0]));
+  assert.match(await page.locator('#gpTimeline').innerText(), /Změny progressu v čase se neukládají/);
+}, { state: fixtureState() });
+
+test('GP18 weekly review: tasks done, planned time, milestones, goals with and without activity - facts only', async ({ page }) => {
+  await gpSeed(page);
+  const r = await page.evaluate(() => { const x = gpWeekReview(); return [x.tasksDone, x.goalTasksDone, x.planned, x.blocks, x.msDone, x.active, x.idle]; });
+  assert.deepEqual(r, [1, 1, 270, 4, 0, ['gA'], ['gB', 'gC']]);
+  const c = await page.evaluate(() => { const x = gpCapacity(); return [x.count, x.min, x.byGoal, x.byCat]; });
+  assert.deepEqual(c, [4, 270, [{ k: 'gA', min: 210 }, { k: '', min: 60 }], [{ k: 'Fitness', min: 210 }, { k: 'Work', min: 60 }]]);
+  await gpGo(page, 'goals', { goalFilter: 'Active' });
+  const t = await page.locator('#gpReview').innerText();
+  assert.match(t, /Dokončené úkoly\s*1 \(z toho u cílů 1\)[\s\S]*Naplánovaný čas\s*4 h 30 min · 4 bloky[\s\S]*Cíle s aktivitou\s*1[\s\S]*Maraton[\s\S]*Cíle bez aktivity\s*2[\s\S]*Kniha, Stará/);
+  assert.match(await page.locator('#gpCapacity').innerText(), /volný čas aplikace nezná/);
+}, { state: fixtureState() });
+
+test('GP19 a goal at 100 %: "Dokončeno" + close through the existing completeGoal (200 XP once), status Completed, kept in history', async ({ page }) => {
+  await gpSeed(page);
+  await page.evaluate(() => { S.tasks.filter(t => t.goalId === 'gA').forEach(t => { t.done = true; }); });
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gA' });
+  assert.equal(await page.locator('.gp-head [data-goal-state="ready"]').count(), 1);
+  assert.equal(await page.locator('[data-goal-ready]').count(), 1);
+  const x0 = await xpOf(page);
+  await page.click('.doneBtn');
+  assert.equal(await xpOf(page) - x0, 200);
+  assert.equal(await page.evaluate(() => S.goals[0].status), 'Completed');
+  assert.match(await page.locator('.gp-head').innerText(), /Dokončeno/);
+  assert.equal(await page.locator('#gpNext').count(), 0, 'no next step on a closed goal');
+  assert.deepEqual(await page.evaluate(() => gpTimeline(S.goals[0]).slice(-1)[0].k), 'goal_done');
+}, { state: fixtureState() });
+
+test('GP20 XP anti-farming unchanged: completed-on-create, twice, reopen, delete + recreate, milestone toggles, many completions a day', async ({ page }) => {
+  await gpSeed(page);
+  const r = await page.evaluate(() => { const x0 = S.totalXp, out = {};
+    // entered as already Completed through the goal form -> a record of the past, no reward
+    openGoalForm(); document.querySelector('#g_title').value = 'Hotovo předem'; document.querySelector('#g_status').value = 'Completed'; document.querySelector('#g_save').click();
+    out.created = S.totalXp - x0;
+    const g = S.goals.find(x => x.id === 'gB'); completeGoal(g); const a = S.totalXp; completeGoal(g); g.status = 'Active'; completeGoal(g); out.twice = [a - x0, S.totalXp - a];
+    // delete + recreate with the same title: a new id; the daily goal limit still holds
+    const t0 = S.totalXp; S.goals = S.goals.filter(x => x.id !== 'gB'); const ng = { id: 'gB2', title: 'Kniha', status: 'Active', mode: 'manual', manualProgress: 100, createdAt: Date.now() }; S.goals.push(ng); completeGoal(ng); out.recreate = S.totalXp - t0;
+    const t1 = S.totalXp; const more = ['m1', 'm2'].map(id => ({ id, title: id, status: 'Active', mode: 'manual', manualProgress: 100, createdAt: Date.now() })); S.goals.push(...more); more.forEach(completeGoal); out.limit = S.totalXp - t1;
+    // milestone XP once
+    const m = S.milestones.find(x => x.id === 'mA2'), t2 = S.totalXp; toggleMilestone(m); toggleMilestone(m); toggleMilestone(m); out.ms = S.totalXp - t2;
+    const done3 = S.milestones.find(x => x.id === 'mA3'), t3 = S.totalXp; toggleMilestone(done3); toggleMilestone(done3); out.msOld = S.totalXp - t3;
+    return out; });
+  assert.equal(r.created, 0, 'a goal created as Completed pays nothing');
+  assert.deepEqual(r.twice, [200, 0], 'completing twice / reopen + complete pays once');
+  assert.equal(r.recreate + r.limit, 200, 'at most XP_DAILY_LIMIT.goal (2) goal rewards a day, also for recreated goals');
+  assert.equal(r.ms, 25, 'milestone XP once'); assert.equal(r.msOld, 0, 'an already rewarded milestone never pays again');
+}, { state: fixtureState() });
+
+test('GP21 legacy goals (no createdAt / targetDate / milestone deadlines / task.milestoneId) read cleanly, pace "not computable", nothing written', async ({ page }) => {
+  await page.evaluate(() => { const legacy = { goals: [{ id: 'lg1', title: 'Starý cíl', status: 'Active', manualProgress: 20 }, { id: 'lg2', title: 'Hotový starý', status: 'Completed' }],
+      milestones: [{ id: 'lm', goalId: 'lg1', title: 'Starý milník', completed: false }], tasks: [{ id: 'lt', title: 'Starý úkol', goalId: 'lg1', done: false, createdAt: 1, milestoneId: 'deleted-ms' }],
+      xpLog: [], totalXp: 0, schemaVersion: 4 }; S = migrate(legacy); S.settings.onboarded = true; view = 'home'; render(); });
+  assert.equal(await page.evaluate(() => S.schemaVersion), 8);
+  const before = await gpState(page);
+  for (const f of GP_FILTERS_T) { await gpGo(page, 'goals', { goalFilter: f }); assert.deepEqual(await gpClean(page), { bad: false, dup: [], overflow: 0 }, f); }
+  await gpGo(page, 'goalDetail', { currentGoalId: 'lg1' });
+  assert.deepEqual(await gpClean(page), { bad: false, dup: [], overflow: 0 });
+  assert.match(await page.locator('#gpPace').innerText(), /Tempo nelze vypočítat/);
+  assert.match(await page.locator('#ltList').innerText(), /Starý úkol/, 'a task pointing to a missing milestone is listed without one');
+  assert.match(await page.locator('#gpNext').innerText(), /Úkol: Starý úkol/);
+  await gpGo(page, 'goalDetail', { currentGoalId: 'lg2' });
+  assert.equal(await gpState(page), before, 'reading legacy goals writes nothing');
+}, { state: fixtureState() });
+
+test('GP22 export / import: the new optional fields travel inside the same backup format; an old backup without them imports unchanged', async ({ page }) => {
+  await gpSeed(page); await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.deepEqual(exported, await stateOf(page), 'export equals state');
+  assert.equal(exported.milestones.find(m => m.id === 'mA1').targetDate, '2026-09-21'); assert.equal(exported.tasks.find(t => t.id === 'tA1').milestoneId, 'mA1');
+  await page.evaluate(() => { S.goals = []; S.milestones = []; S.tasks = []; }); await importFile(page, await dl.path()); await settle(page);
+  assert.deepEqual(await stateOf(page), exported, 'import restores everything, the optional fields included');
+  const old = JSON.parse(JSON.stringify(exported)); old.milestones.forEach(m => delete m.targetDate); old.tasks.forEach(t => delete t.milestoneId);
+  const f = path.join(path.dirname(await dl.path()), 'old-backup.json'); writeFileSync(f, JSON.stringify(old));
+  await page.click('#settingsBtn'); await importFile(page, f); await settle(page);
+  const s = await stateOf(page);
+  assert.ok(s.milestones.every(m => !('targetDate' in m)) && s.tasks.every(t => !('milestoneId' in t)), 'no field is added to old data');
+  await gpGo(page, 'goalDetail', { currentGoalId: 'gA' }); assert.deepEqual(await gpClean(page), { bad: false, dup: [], overflow: 0 });
+}, { state: fixtureState() });
+
+test('GP23 no write side effects: opening Goals (every filter), a goal detail, roadmap, timeline, pace and week changes no data and pays no XP', async ({ page }) => {
+  await page.evaluate(() => { view = 'home'; render(); }); await persist(page);
+  const before = await gpState(page), idb0 = await idbState(page), xp0 = await xpOf(page);
+  for (const f of GP_FILTERS_T) await gpGo(page, 'goals', { goalFilter: f });
+  for (const id of await page.evaluate(() => S.goals.map(g => g.id))) { await gpGo(page, 'goalDetail', { currentGoalId: id }); await page.evaluate(() => { gpTimeline(S.goals[0]); gpWeek(S.goals[0]); gpPace(S.goals[0]); gpWeekReview(); gpConflicts(todayStr(), addDays(todayStr(), 30)); }); }
+  await settle(page);
+  assert.equal(await gpState(page), before, 'fixture: state unchanged'); assert.deepEqual(await idbState(page), idb0); assert.equal(await xpOf(page), xp0);
+  await gpSeed(page); await persist(page);
+  const b2 = await gpState(page), idb2 = await idbState(page);
+  for (const id of ['gA', 'gB', 'gC', 'gD', 'gE']) { await gpGo(page, 'goalDetail', { currentGoalId: id }); if (await page.locator('.an-table summary, details summary').count()) await page.locator('details summary').first().click(); }
+  for (const f of GP_FILTERS_T) await gpGo(page, 'goals', { goalFilter: f });
+  await settle(page);
+  assert.equal(await gpState(page), b2, 'seeded: state unchanged'); assert.deepEqual(await idbState(page), idb2, 'nothing saved');
+}, { state: fixtureState() });
+
+test('GP24 performance: 1 500 tasks, 25 000 XP, 40 habits, 25 goals with milestones, 400 planner blocks - overview and detail', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3)); const T = todayStr();
+    for (let i = 0; i < 25; i++) S.goals.push({ id: 'pg' + i, title: 'Cíl ' + i, category: ['Work', 'Fitness', ''][i % 3], status: i % 5 ? 'Active' : 'Completed', targetDate: i % 4 ? addDays(T, i * 7 - 30) : '', mode: 'auto', createdAt: new Date(addDays(T, -200) + 'T10:00').getTime() });
+    for (let i = 0; i < 100; i++) S.milestones.push({ id: 'pm' + i, goalId: 'pg' + (i % 25), title: 'M' + i, targetDate: i % 2 ? addDays(T, i - 50) : undefined, completed: i % 3 === 0, completedAt: i % 3 === 0 ? Date.now() - i * 86400000 : null, createdAt: Date.now() - 200 * 86400000 });
+    S.tasks.forEach((t, i) => { if (i % 5 === 0) { t.goalId = 'pg' + (i % 25); if (i % 10 === 0) t.milestoneId = 'pm' + (i % 100); } });
+    for (let i = 0; i < 40; i++) S.habits.push({ id: 'ph' + i, name: 'Návyk ' + i, type: 'good', frequency: 'daily', target: 1, goalId: i % 3 ? '' : 'pg' + (i % 25), completions: Array.from({ length: 200 }, (_, k) => addDays(T, -k)), active: true, createdAt: 1 });
+    for (let i = 0; i < 400; i++) S.plannerBlocks.push({ id: 'pp' + i, date: addDays(T, (i % 60) - 30), startTime: String(6 + i % 14).padStart(2, '0') + ':00', endTime: String(7 + i % 14).padStart(2, '0') + ':30', title: 'Blok ' + i, category: '', taskId: i % 3 ? '' : 'rt' + (i * 5), goalId: i % 4 ? '' : 'pg' + (i % 25), completed: i % 2 === 0 });
+    const m = (f, n) => { f(); const ts = []; for (let i = 0; i < n; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[Math.floor(n / 2)]; };
+    const out = { overview: m(() => { goalFilter = 'All'; view = 'goals'; render(); }, 5), overviewActive: m(() => { goalFilter = 'Active'; view = 'goals'; render(); }, 5), detail: m(() => { currentGoalId = 'pg1'; view = 'goalDetail'; render(); }, 5),
+      helpers: m(() => { const ix = gpIndex(); S.goals.forEach(g => { gpNextStep(g, ix); gpPace(g); }); gpWeekReview(ix); gpConflicts(T, addDays(T, 30)); }, 5), bad: /undefined|NaN/.test(document.getElementById('app').innerText) };
+    return out; });
+  console.log('      GP24 ' + Object.entries(r).filter(([k]) => k !== 'bad').map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', '));
+  assert.ok(!r.bad);
+  assert.ok(r.overview < 80 && r.overviewActive < 80 && r.detail < 80, 'fast (target < 50 ms each)');
+}, { state: fixtureState() });
+
+test('GP25 320-1440 px: overview and detail - no overflow, full-width cards, vertical roadmap and timeline on phones, 44 px targets', async ({ page }) => {
+  await gpSeed(page);
+  const bad = [];
+  for (const w of [320, 390, 768, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    for (const [v, extra] of [['goals', { goalFilter: 'All' }], ['goals', { goalFilter: 'Active' }], ['goalDetail', { currentGoalId: 'gA' }], ['goalDetail', { currentGoalId: 'gC' }]]) {
+      await gpGo(page, v, extra);
+      const c = await gpClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${w}/${v}: ${JSON.stringify(c)}`);
+      const small = await page.$$eval('.gp button, .gp-detail button:not(.check):not(.delbtn):not(.iconbtn), .gp-detail summary', ns => ns.filter(n => n.offsetParent && !n.closest('.task-item,.habit-item')).map(n => [n.className || n.id, n.getBoundingClientRect()]).filter(([, r]) => r.height < 44).map(([c, r]) => `${c} ${Math.round(r.width)}x${Math.round(r.height)}`));
+      if (small.length) bad.push(`${w}/${v} small: ${small.slice(0, 4).join(', ')}`);
+      if (w <= 390 && v === 'goalDetail') { const col = await page.evaluate(() => { const ns = [...document.querySelectorAll('.gp-road > li')].map(n => n.getBoundingClientRect().left); return new Set(ns.map(Math.round)).size; }); if (col !== 1) bad.push(`${w}: roadmap not vertical`); }
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('GP26 light + dark: WCAG AA text contrast on Goals and a goal detail; SVG icons, no emoji as UI icons', async ({ page }) => {
+  await gpSeed(page);
+  const bad = [];
+  for (const theme of ['light', 'dark']) for (const [v, extra] of [['goals', { goalFilter: 'All' }], ['goals', { goalFilter: 'Active' }], ['goalDetail', { currentGoalId: 'gA' }], ['goalDetail', { currentGoalId: 'gC' }]]) {
+    await gpGo(page, v, extra);
+    const r = await page.evaluate(theme => { S.settings.theme = theme; applyTheme(); render();
+      const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+      const lum = c => { const f = x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }; return .2126 * f(c.r) + .7152 * f(c.g) + .0722 * f(c.b); };
+      const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+      const bgOf = el => { const st = []; for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e); if (/gradient/.test(cs.backgroundImage) && e.matches('.btn:not(.ghost):not(.danger)')) return { r: 110, g: 80, b: 240, a: 1 }; const c = parse(cs.backgroundColor); if (c && c.a > 0) { st.push(c); if (c.a >= 1) break; } } let bg = parse(getComputedStyle(document.body).backgroundColor); for (let i = st.length - 1; i >= 0; i--) bg = blend(st[i], bg); return bg; };
+      const out = [];
+      document.querySelectorAll('.gp *, .gp-detail *').forEach(e => { if (e.closest('.task-item,.habit-item,.hud')) return; if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return; const cs = getComputedStyle(e);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || e.closest('[aria-hidden="true"],.hide,[hidden]')) return; const fg0 = parse(cs.color); if (!fg0) return; const bg = bgOf(e), fg = blend(fg0, bg);
+        const L1 = lum(fg), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05), size = parseFloat(cs.fontSize), need = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700) ? 3 : 4.5;
+        if (ratio < need) out.push(`${theme}: "${e.textContent.trim().slice(0, 24)}" ${ratio.toFixed(2)}`); });
+      [...document.querySelectorAll('.gp h3, .gp-detail h3, .gp .kicker, .gp-detail .kicker, .gp-actions button, #gf button')].forEach(n => { if (/\p{Extended_Pictographic}/u.test(n.textContent)) out.push(`${theme} emoji: ${n.textContent.trim().slice(0, 20)}`); });
+      return out; }, theme);
+    bad.push(...r.map(x => `${v}/${JSON.stringify(extra)}: ${x}`));
+  }
+  assert.deepEqual([...new Set(bad)], []);
+}, { state: fixtureState() });
+
+test('GP27 accessibility: tabs, named sections, progress values, timeline as a list with dates, named controls, keyboard to the detail, focus kept', async ({ page }) => {
+  await gpSeed(page); await gpGo(page, 'goals', { goalFilter: 'Active' });
+  const o = await page.evaluate(() => ({ tabs: [...document.querySelectorAll('#gf [role="tab"]')].length, secs: [...document.querySelectorAll('.gp section[aria-labelledby]')].filter(s => !document.getElementById(s.getAttribute('aria-labelledby'))).length,
+    bars: [...document.querySelectorAll('.gp [role="progressbar"]')].filter(b => !(+b.getAttribute('aria-valuenow') >= 0 && b.getAttribute('aria-label'))).length,
+    unnamed: [...document.querySelectorAll('.gp button, .gp [role="button"]')].filter(n => !(n.getAttribute('aria-label') || n.textContent).trim()).length }));
+  assert.deepEqual(o, { tabs: 5, secs: 0, bars: 0, unnamed: 0 });
+  await page.focus('.goal-card[data-goal="gA"] .goal-top'); await page.keyboard.press('Enter');
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gA']);
+  const d = await page.evaluate(() => ({ secs: [...document.querySelectorAll('.gp-detail section[aria-labelledby]')].filter(s => !document.getElementById(s.getAttribute('aria-labelledby'))).length, n: document.querySelectorAll('.gp-detail section[aria-labelledby]').length,
+    tl: document.querySelector('#gpTimeline ol.gp-tl') && [...document.querySelectorAll('#gpTimeline li time[datetime]')].length, road: document.querySelector('#gpRoadmap ol.gp-road') ? 1 : 0,
+    bars: [...document.querySelectorAll('.gp-detail [role="progressbar"]')].filter(b => !(+b.getAttribute('aria-valuenow') >= 0 && b.getAttribute('aria-label'))).length,
+    unnamed: [...document.querySelectorAll('.gp-detail button')].filter(n => !(n.getAttribute('aria-label') || n.textContent).trim()).length }));
+  assert.equal(d.secs, 0); assert.ok(d.n >= 5); assert.ok(d.tl >= 5); assert.equal(d.road, 1); assert.equal(d.bars, 0); assert.equal(d.unnamed, 0);
+}, { state: fixtureState() });
+
+test('GP28 reduced motion: nothing in Goals or a goal detail animates', async ({ page }) => {
+  await gpSeed(page);
+  for (const [v, extra] of [['goals', { goalFilter: 'All' }], ['goalDetail', { currentGoalId: 'gA' }]]) {
+    await gpGo(page, v, extra);
+    const moving = await page.evaluate(() => [...document.querySelectorAll('.gp, .gp *, .gp-detail, .gp-detail *')].filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).map(n => n.className));
+    assert.deepEqual(moving, [], v);
+  }
+}, { state: fixtureState() });
+
+test('GP29 + GP30 no duplicate ids, no NaN / undefined in every filter and every goal detail - fixture, seeded, empty and a year of data', async ({ page }) => {
+  const bad = [];
+  const sweep = async name => { for (const f of GP_FILTERS_T) { await gpGo(page, 'goals', { goalFilter: f }); const c = await gpClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${name}/${f}: ${JSON.stringify(c)}`); }
+    for (const id of await page.evaluate(() => S.goals.map(g => g.id))) { await gpGo(page, 'goalDetail', { currentGoalId: id }); const c = await gpClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${name}/${id}: ${JSON.stringify(c)}`); } };
+  await sweep('fixture');
+  await gpSeed(page); await sweep('seed');
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; }); await sweep('empty');
+  await withGen(page); await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; Object.assign(S, window.__gen(300, 4000, 7)); S.goals = [{ id: 'y1', title: 'Rok', status: 'Active', targetDate: addDays(todayStr(), 20), mode: 'auto', createdAt: Date.now() - 100 * 86400000 }]; S.tasks.forEach((t, i) => { if (i % 7 === 0) t.goalId = 'y1'; }); });
+  await sweep('year');
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+const GP_FILTERS_T = ['All', 'Active', 'Completed', 'Overdue', 'NoNext'];
 
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.
