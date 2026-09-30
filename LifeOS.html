@@ -1478,6 +1478,76 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .gp-tl-t{grid-column:2;color:var(--color-text-secondary);overflow-wrap:anywhere}
 @media(min-width:700px){.gp-info{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3)}.gp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3)}.gp-grid>#gpWeek{grid-column:1/-1}}
 @media(min-width:1100px){.gp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.gp-grid>#gpWeek{grid-column:auto}}
+/* ---------- Weekly Life Planner 3.0 ---------- */
+.wp-nav{display:flex;gap:8px;flex-wrap:wrap;margin:-6px 0 var(--sp-3)}
+.wp-nav .btn.sm{min-height:44px;flex:1 1 auto}
+@media(max-width:420px){.wp-nav .btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.wp-nav #wpPrev,.wp-nav #wpNext{flex:0 0 56px}}
+.wp-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin:0}
+.wp-kpis div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent);min-width:0}
+.wp-kpis dt{font-size:var(--fs-body-sm);color:var(--color-text-secondary);min-width:0}
+.wp-kpis dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wp-kpis dd small{color:var(--sub);font-weight:650}
+.wp-days{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.wp-day{min-width:0}
+.wp-day.is-drop .wp-day-c{outline:2px dashed var(--accent);outline-offset:2px}
+.wp-day.is-today .wp-day-c{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.wp-day-c{margin-bottom:var(--sp-2);min-width:0}
+.wp-day-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wp-day-h h3{margin:0;font-size:var(--fs-body);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wp-add{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);font:inherit;font-size:var(--fs-caption);font-weight:700;cursor:pointer;flex:none}
+.wp-cap{margin:4px 0 8px;font-size:var(--fs-body-sm)}
+.wp-ov{display:inline-block;font-size:var(--fs-caption);font-weight:700;padding:1px 8px;border-radius:var(--radius-pill);background:var(--card2);color:var(--text)}
+.wp-cats{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}
+.wp-list{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:6px}
+.wp-block,.wp-ev,.wp-wo{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;padding:8px 10px;border-radius:12px;background:var(--card2);font-size:var(--fs-body-sm);min-width:0}
+.wp-block[draggable="true"]{cursor:grab}
+.wp-block.is-done .wp-bt{color:var(--color-text-secondary)}
+.wp-time{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;color:var(--text);font-size:var(--fs-caption);padding-top:2px}
+.wp-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wp-bt{overflow-wrap:anywhere;min-height:24px}
+.wp-meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:var(--fs-caption);color:var(--color-text-secondary)}
+.wp-meta svg{vertical-align:-2px}
+.wp-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.wp-chip{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 10px;border-radius:var(--radius-pill);border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:var(--fs-caption);font-weight:650;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wp-link{display:inline-flex;align-items:center;gap:4px;min-height:44px;min-width:44px;padding:0;border:none;background:none;color:var(--text);font:inherit;font-weight:650;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.wp-link svg{color:var(--accent);flex:none}
+.wp-task{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 10px;font-size:var(--fs-body-sm);border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent)}
+.wp-task.is-done .wp-link{color:var(--color-text-secondary)}
+.wp-none{margin:0 0 8px}
+.wp-train{margin:0 0 8px;font-size:var(--fs-caption);color:var(--color-text-secondary)}
+.wp-habits{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:var(--fs-caption);color:var(--color-text-secondary)}
+.wp-hab.is-done{color:var(--text);font-weight:650}
+.wp-grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.wp-conf,.wp-unpl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.wp-conf li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:var(--card2);font-size:var(--fs-body-sm)}
+.wp-unpl li{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent);padding-top:4px}
+.wp-unpl li:first-child{border-top:none}
+.wp-plan{min-height:44px;flex:none}
+.wp-over{font-weight:700;color:var(--text)}
+.wp-goal-list,.wp-pri-list{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.wp-goal .bar{height:6px;margin:8px 0}
+.wp-goal.is-focus{outline:2px solid var(--accent);outline-offset:2px}
+.wp-goal.is-pri{border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
+.wp-goal-m{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 6px;font-size:var(--fs-caption);color:var(--color-text-secondary)}
+.wp-goal-n{margin:0 0 8px;font-size:var(--fs-body-sm)}
+.btn.sm.wp-pri-toggle,.btn.sm.gp-inweek,.btn.sm.wp-plan{min-height:44px}
+.gp-inweek{margin:0 0 10px}
+.wp-pri-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:8px 0}
+.wp-mini{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:var(--fs-body-sm)}
+.wp-mini .wp-link{min-height:32px}
+.wp-pri-c .wp-mini li{min-height:0}
+.wp-rtbl td,.wp-rtbl th{white-space:nowrap}
+.wp-rtbl tbody th{white-space:normal}
+.cc-week-k{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:var(--fs-body-sm);color:var(--color-text-secondary)}
+.cc-week-k b{color:var(--text);font-size:17px;font-variant-numeric:tabular-nums}
+@media(min-width:700px){.wp-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}.wp-kpis div{flex-direction:column;align-items:flex-start;border-bottom:none}.wp-kpis dd{font-size:20px}
+  .wp-grid2,.wp-goal-list,.wp-pri-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3)}.wp-pri-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* the 7 days side by side only as a compact strip; the day cards stack (2 columns on wide screens) so nothing gets cramped */
+.wp-strip{display:none}
+@media(min-width:600px){.wp-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;list-style:none;margin:0 0 var(--sp-3);padding:0}
+  .wp-strip a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:64px;padding:6px 2px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);text-decoration:none;font-size:var(--fs-caption);text-align:center}
+  .wp-strip a.is-today{border-color:var(--accent)}.wp-strip b{font-variant-numeric:tabular-nums;font-size:13px}.wp-strip small{color:var(--color-text-secondary)}}
+@media(min-width:700px){.wp-days{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3);align-items:start}}
 </style>
 </head>
 <body>
@@ -1847,6 +1917,9 @@ function defaultState(){return{
   // ---- Phase 10: Daily Planner time blocks (see plannerSaveBlock). Reaches old states/backups
   // through migrate()'s generic top-level fill-in: no schema bump. ----
   plannerBlocks:[],
+  // ---- Weekly Life Planner: the user's explicit "Priorita týdne" choices {weekStart:[goalId...]} (max 3 a week, no XP).
+  // Reaches old states/backups through migrate()'s generic top-level fill-in: no schema bump. ----
+  weeklyPriorities:{},
   // ---- Phase 11A: Fitness 2.0 exercise library (see exerciseSave). Old states/backups get it
   // in migrate(): seeded with bare names from their workout history; no schema bump. ----
   exerciseLibrary:[],
@@ -2581,7 +2654,7 @@ function render(){
   app.innerHTML='';
   const map={home:renderHome,tasks:renderTasks,habits:renderHabits,goals:renderGoals,character:renderCharacter,
     more:renderMore,finance:renderFinance,fitness:renderFitness,nutrition:renderNutrition,notes:renderNotes,journal:renderJournal,
-    car:renderCar,subscriptions:renderSubs,planner:renderPlanner,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
+    car:renderCar,subscriptions:renderSubs,planner:renderPlanner,week:renderWeek,calendar:renderCalendar,quests:renderQuests,statistics:renderStats,search:renderSearch,health:renderHealth,
     goalDetail:renderGoalDetail,habitDetail:renderHabitDetail,settings:renderSettings};
   // Phase 9: store finished days' Daily Score snapshots (no-op unless a day has ended).
   if(finalizeDailyScores()) scheduleSave();
@@ -2911,7 +2984,7 @@ function openPlannerForm(existing,preset){
     Object.keys(idOf).forEach(k=>{ const inp=inner.querySelector('#'+idOf[k]), msg=inner.querySelector(`[data-err="${k}"]`); const code=r.errors[k];
       inp.classList.toggle('invalid',!!code); inp.setAttribute('aria-invalid',code?'true':'false'); msg.hidden=!code; msg.textContent=code?uiPlT(code==='required'?'e_required':code==='end_before_start'?'e_order':'e_invalid'):''; });
     if(!r.ok){ const first=inner.querySelector('.invalid'); if(first) first.focus(); return; }
-    closeSheets(); if(view==='goalDetail') render(); else uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved')); // opened from a goal: stay on it (the block shows there at once)
+    closeSheets(); if(view==='goalDetail'||view==='week') render(); else uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved')); // opened from a goal: stay on it (the block shows there at once)
   };
   const del=inner.querySelector('#pb_delete');
   if(del) del.onclick=()=>uiDelConfirm('block',{name:b.title},()=>{ plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); });
@@ -3104,10 +3177,10 @@ const UI_I18N={
     more:'Více', productivity:'Produktivita', body:'Tělo', money:'Peníze', life:'Život', system:'Systém',
     m_goals:'Cíle', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Výživa', m_notes:'Poznámky', m_journal:'Deník', m_car:'Auto',
     m_subscriptions:'Předplatné', m_calendar:'Kalendář', m_quests:'Výpravy', m_statistics:'Statistiky', m_search:'Hledat', m_health:'Zdraví',
-    m_character:'Postava', m_settings:'Nastavení', m_planner:'Plánovač',
+    m_character:'Postava', m_settings:'Nastavení', m_planner:'Plánovač', m_week:'Týden',
     // quick add
     quick_add:'Rychlé přidání', qa_task:'Úkol', qa_habit:'Návyk', qa_goal:'Cíl', qa_expense:'Výdaj', qa_income:'Příjem', qa_workout:'Trénink',
-    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování', qa_planner:'Blok plánu',
+    qa_meal:'Jídlo', qa_note:'Poznámka', qa_journal:'Deník', qa_event:'Událost', qa_water:'Voda', qa_fuel:'Tankování', qa_planner:'Blok plánu', qa_week:'Naplánovat týden',
     // onboarding
     ob_step:'Krok {n} ze 6', skip:'Přeskočit', next_btn:'Pokračovat', back_btn:'Zpět', start_sample:'Začít s ukázkovými daty', finish:'Začít s prázdným profilem',
     // toasts
@@ -3151,9 +3224,9 @@ const UI_I18N={
     more:'More', productivity:'Productivity', body:'Body', money:'Money', life:'Life', system:'System',
     m_goals:'Goals', m_finance:'Finance', m_fitness:'Fitness', m_nutrition:'Nutrition', m_notes:'Notes', m_journal:'Journal', m_car:'Car',
     m_subscriptions:'Subscriptions', m_calendar:'Calendar', m_quests:'Quests', m_statistics:'Statistics', m_search:'Search', m_health:'Health',
-    m_character:'Character', m_settings:'Settings', m_planner:'Planner',
+    m_character:'Character', m_settings:'Settings', m_planner:'Planner', m_week:'Week',
     quick_add:'Quick Add', qa_task:'Task', qa_habit:'Habit', qa_goal:'Goal', qa_expense:'Expense', qa_income:'Income', qa_workout:'Workout',
-    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel', qa_planner:'Planner block',
+    qa_meal:'Meal', qa_note:'Note', qa_journal:'Journal', qa_event:'Event', qa_water:'Water', qa_fuel:'Fuel', qa_planner:'Planner block', qa_week:'Plan the week',
     ob_step:'Step {n} of 6', skip:'Skip', next_btn:'Continue', back_btn:'Back', start_sample:'Start with sample data', finish:'Start with an empty profile',
     toast_n_achievements:'{n} achievements unlocked', toast_n_quests:'{n} quests completed', toast_n_rewards:'{n} rewards',
     theme_to_light:'Switch to light theme', theme_to_dark:'Switch to dark theme',
@@ -3973,7 +4046,7 @@ function uiCcHome(W){
   if(W.command!==false){ const st=ccNow(ctx,ranked); wrap.appendChild(uiCcNowCard(ctx,ranked,st)); nowItem=st.item||null; }
   wrap.appendChild(uiCcQuick());
   if(W.reminders!==false){ const a=uiCcAttention(ctx); if(a) wrap.appendChild(a); }
-  if(W.planner!==false) wrap.appendChild(uiCcTimeline(ctx));
+  if(W.planner!==false){ wrap.appendChild(uiCcTimeline(ctx)); wrap.appendChild(uiCcWeekCard()); }
   if(W.top3!==false) wrap.appendChild(uiCcTop3(ctx,nowItem,ranked));
   if(W.progress!==false) wrap.appendChild(uiCcDay(ctx));
   if(W.habits!==false) wrap.appendChild(uiCcHabits(ctx));
@@ -5022,6 +5095,7 @@ function renderGoalDetail(){
           ${pace.diff!=null?`<p class="gp-pace-t" data-pace="${pace.diff>0?'ahead':pace.diff<0?'behind':'even'}">${pace.diff>0?T('ahead')(pace.diff):pace.diff<0?T('behind')(-pace.diff):T('even')}</p>`:''}`
           :`<p class="gp-pace-t" data-pace="na">${T('pace_na')}</p><p class="helper-text" style="margin:0">${T('pace_na_d')}</p>`}</section>
       <section class="card gp-week" id="gpWeek" aria-labelledby="gpWeekH"><div class="between"><h3 id="gpWeekH" class="gp-h">${uiIcon('calendar',16)} ${T('week')}</h3><span class="sub">${fmtDate(wk.range.from)} – ${fmtDate(wk.range.to)}</span></div>
+        <button class="btn sm ghost gp-inweek" id="gpInWeek">${uiIcon('calendar',15)} ${uiWpT('in_week')}</button>
         <table class="an-tbl gp-wtbl"><thead><tr><th scope="col"></th><th scope="col">${T('planned')}</th><th scope="col">${T('done')}</th><th scope="col">${T('left')}</th></tr></thead><tbody>
           <tr data-w="tasks"><th scope="row">${T('w_tasks')}</th><td>${wk.tasks.planned}</td><td>${wk.tasks.done}</td><td>${wk.tasks.remaining}</td></tr>
           <tr data-w="milestones"><th scope="row">${T('w_ms')}</th><td>${wk.milestones.planned}</td><td>${wk.milestones.done}</td><td>${wk.milestones.remaining}</td></tr>
@@ -5047,6 +5121,7 @@ function renderGoalDetail(){
   wrap.querySelector('#editGoalBtn').onclick=()=>openGoalForm(g);
   const db=wrap.querySelector('.doneBtn'); if(db) db.onclick=()=>{completeGoal(g);render();};
   wrap.querySelector('#gpAddTask').onclick=()=>uiGpAddTask(g);
+  wrap.querySelector('#gpInWeek').onclick=()=>uiWpOpen(0,g.id);
   wrap.querySelector('#gpPlan').onclick=()=>uiGpPlanTime(g);
   const pn=wrap.querySelector('#gpPlanNext'); if(pn) pn.onclick=()=>uiGpPlanTime(g);
   const no=wrap.querySelector('#gpNextOpen'); if(no) no.onclick=()=>uiGpOpenNext(next);
@@ -5578,6 +5653,7 @@ function renderMore(){
     {v:'subscriptions',ic:'💳',label:'Subscriptions'},
     {v:'calendar',ic:'📅',label:'Calendar'},
     {v:'planner',ic:'🗓️',label:'Planner'},
+    {v:'week',ic:'📅',label:'Weekly Planner'},
     {v:'quests',ic:'📜',label:'Quests'},
     {v:'statistics',ic:'📊',label:'Statistics'},
     {v:'search',ic:'🔎',label:'Search'},
@@ -5586,7 +5662,7 @@ function renderMore(){
     {v:'settings',ic:'⚙️',label:'Settings'},
   ];
   // Phase 8B: same 15 destinations, grouped into sections.
-  const groups=[['productivity',['planner','calendar','goals','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
+  const groups=[['productivity',['week','planner','calendar','goals','quests','notes','journal','search']],['body',['fitness','nutrition','health']],
     ['money',['finance','subscriptions']],['life',['car']],['system',['statistics','character','settings']]];
   const g=wrap.querySelector('#moreGrid');
   groups.forEach(([gk,keys])=>{
@@ -9708,6 +9784,342 @@ function chartValuesForNetBalance(period){
   return inc.map((v,i)=>v-exp[i]);
 }
 
+/* ================= Weekly Life Planner 3.0 (logic) =================
+   One read-only view of a week (Monday..Sunday, as weekStart()) over the existing records: planner blocks, task due
+   dates and completion records, calendar events (recurring ones expanded with stepEventDate), completed workouts
+   (startedAt/finishedAt), planned workout blocks, training days, habit occurrences (isScheduledDate/isDayComplete),
+   goals (goalProgress, gpNextStep) and milestones. Nothing here writes to S or grants XP; the only new stored state is
+   S.weeklyPriorities {weekStart:[goalId...]} (max 3), changed solely by the user's explicit toggle (wpTogglePriority).
+   Free time is never computed: only what is planned. */
+const WP_MAX_PRIORITIES=3;
+function wpRange(offset,today){
+  const ws=addDays(weekStartOf(today||todayStr()),7*(offset||0)), days=Array.from({length:7},(_,i)=>addDays(ws,i));
+  return {from:ws,to:days[6],days,offset:offset||0};
+}
+function wpOffsetOf(D){ return Math.round(ccDaysBetween(weekStartOf(todayStr()),weekStartOf(D))/7); }
+// every occurrence of every event inside [from,to] (a recurring event is stepped from its own start date)
+function wpEventsIn(from,to){
+  const out=[];
+  (S.events||[]).forEach(e=>{ if(!e||!e.date) return;
+    if(!e.recurring||e.recurring==='none'){ if(e.date>=from&&e.date<=to) out.push({e,date:e.date}); return; }
+    let d=e.date, guard=0; while(d&&d<from&&guard<4000){ d=stepEventDate(d,e.recurring); guard++; }
+    while(d&&d<=to&&guard<4000){ out.push({e,date:d}); d=stepEventDate(d,e.recurring); guard++; } });
+  return out;
+}
+function wpHm(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+// completed workouts in the range, with their real clock time when the workout was run live (startedAt/finishedAt)
+function wpWorkoutsIn(from,to){
+  return completedWorkouts(S).filter(w=>w.date>=from&&w.date<=to).map(w=>{
+    const timed=w.startedAt&&w.finishedAt&&anDay(w.startedAt)===w.date&&w.finishedAt>w.startedAt;
+    return {w,date:w.date,start:timed?wpHm(w.startedAt):null,end:timed?(anDay(w.finishedAt)===w.date?wpHm(w.finishedAt):'23:59'):null};
+  });
+}
+// the habits of one day: scheduled daily/weekday good habits (done or not yet) + weekly/custom ones on the days they were done
+function wpHabitsOn(D,T){
+  const out=[];
+  S.habits.forEach(h=>{
+    if(h.active===false||h.type==='bad') return;
+    const st=anHabitStart(h); if(st&&st>D) return;
+    const done=isDayComplete(h,D);
+    if(h.frequency==='weekly'||h.frequency==='custom'){ if(done) out.push({h,done:true,weekly:true}); return; }
+    if(!isScheduledDate(h,D)) return;
+    out.push({h,done,future:D>T});
+  });
+  return out.sort((a,b)=>(b.done-a.done)||String(a.h.reminder||'99').localeCompare(String(b.h.reminder||'99'))||a.h.name.localeCompare(b.h.name,'cs'));
+}
+// timed items of a day for overlap checks: planner blocks, timed events (no end = 60 min), timed workouts
+function wpTimedItems(day){
+  const it=[];
+  day.blocks.forEach(b=>{ const s=plannerTimeToMin(b.startTime), e=plannerTimeToMin(b.endTime); if(s!=null&&e!=null&&e>s) it.push({k:'block',id:b.id,title:b.title,start:b.startTime,end:b.endTime,s,e,obj:b}); });
+  day.events.forEach(x=>{ const s=plannerTimeToMin(x.e.start); if(s==null) return; let e=plannerTimeToMin(x.e.end); if(e==null||e<=s) e=Math.min(1440,s+60); it.push({k:'event',id:x.e.id,title:x.e.title,start:x.e.start,end:x.e.end||'',s,e,obj:x.e}); });
+  day.workouts.forEach(x=>{ if(!x.start) return; const s=plannerTimeToMin(x.start), e=plannerTimeToMin(x.end); if(s==null||e==null||e<=s) return; it.push({k:'workout',id:x.w.id,title:x.w.name,start:x.start,end:x.end,s,e,obj:x.w}); });
+  return it.sort((a,b)=>a.s-b.s||a.e-b.e||String(a.id).localeCompare(String(b.id)));
+}
+// overlaps that involve a planner block (planner vs planner / event / workout); nothing is moved
+function wpDayConflicts(day){
+  const it=wpTimedItems(day), out=[];
+  for(let i=0;i<it.length;i++) for(let j=i+1;j<it.length&&it[j].s<it[i].e;j++) if(it[i].k==='block'||it[j].k==='block') out.push({date:day.date,a:it[i],b:it[j],from:it[j].start,to:it[i].e<it[j].e?it[i].end:it[j].end});
+  return out;
+}
+// the whole week, built in one pass per collection
+function wpWeek(offset){
+  const T=todayStr(), r=wpRange(offset), inR=d=>d&&d>=r.from&&d<=r.to, ix=gpIndex(), doneByDay=anTaskDoneByDay();
+  const days=r.days.map(d=>({date:d,dow:(new Date(d+'T00:00').getDay()+6)%7,isToday:d===T,past:d<T,blocks:[],tasksDue:[],tasksDone:[],events:[],workouts:[],habits:[],training:false}));
+  const at=d=>days[ccDaysBetween(r.from,d)];
+  (S.plannerBlocks||[]).forEach(b=>{ if(inR(b.date)) at(b.date).blocks.push(b); });
+  const taskById=new Map(S.tasks.map(t=>[t.id,t]));
+  S.tasks.forEach(t=>{ if(inR(t.dueDate)) at(t.dueDate).tasksDue.push(t); });
+  days.forEach(day=>{ const s=doneByDay.get(day.date); if(s) s.forEach(id=>{ const t=taskById.get(id); if(t) day.tasksDone.push(t); }); });
+  wpEventsIn(r.from,r.to).forEach(x=>at(x.date).events.push(x));
+  wpWorkoutsIn(r.from,r.to).forEach(x=>at(x.date).workouts.push(x));
+  const td=S.settings&&Array.isArray(S.settings.trainingDays)?S.settings.trainingDays:[];
+  days.forEach(day=>{
+    day.blocks.sort((a,b)=>(plannerTimeToMin(a.startTime)-plannerTimeToMin(b.startTime))||String(a.title).localeCompare(String(b.title),'cs'));
+    day.tasksDue.sort(gpByDue); day.events.sort((a,b)=>String(a.e.start||'99').localeCompare(String(b.e.start||'99')));
+    day.habits=wpHabitsOn(day.date,T);
+    day.training=td.includes(new Date(day.date+'T00:00').getDay());
+    day.minutes=day.blocks.reduce((a,b)=>a+plannerDuration(b),0);
+    const cat={}; let goalMin=0;
+    day.blocks.forEach(b=>{ const m=plannerDuration(b); cat[b.category||'']=(cat[b.category||'']||0)+m; if(b.goalId||ix.taskGoal.get(b.taskId)) goalMin+=m; });
+    day.byCategory=Object.entries(cat).map(([c,m])=>({c,min:m})).sort((a,b)=>b.min-a.min||String(a.c).localeCompare(String(b.c),'cs'));
+    day.goalMinutes=goalMin;
+    day.conflicts=wpDayConflicts(day);
+  });
+  return {range:r,days,ix,T};
+}
+// open tasks with no planner block from today on (overdue, due up to the end of the shown week, then undated)
+function wpUnplanned(wk){
+  const T=wk.T, planned=new Set(); (S.plannerBlocks||[]).forEach(b=>{ if(b.taskId&&!b.completed&&b.date>=T) planned.add(b.taskId); });
+  const list=S.tasks.filter(t=>!t.done&&!planned.has(t.id)&&(!t.dueDate||t.dueDate<=wk.range.to)).sort(gpByDue);
+  return {total:list.length,dated:list.filter(t=>t.dueDate).length,list};
+}
+function wpPriorityIds(from){
+  const raw=S.weeklyPriorities&&typeof S.weeklyPriorities==='object'&&Array.isArray(S.weeklyPriorities[from])?S.weeklyPriorities[from]:[];
+  return raw.filter(id=>S.goals.some(g=>g.id===id)).slice(0,WP_MAX_PRIORITIES);
+}
+// the ONLY write of this layer: the user's explicit "Priorita týdne" toggle (max 3 per week, no XP)
+function wpTogglePriority(from,goalId){
+  if(!S.weeklyPriorities||typeof S.weeklyPriorities!=='object'||Array.isArray(S.weeklyPriorities)) S.weeklyPriorities={};
+  const cur=wpPriorityIds(from);
+  if(cur.includes(goalId)){ const next=cur.filter(id=>id!==goalId); if(next.length) S.weeklyPriorities[from]=next; else delete S.weeklyPriorities[from]; scheduleSave(); return {ok:true,on:false}; }
+  if(cur.length>=WP_MAX_PRIORITIES) return {ok:false,reason:'max'};
+  if(!S.goals.some(g=>g.id===goalId&&g.status==='Active')) return {ok:false,reason:'goal'};
+  S.weeklyPriorities[from]=[...cur,goalId]; scheduleSave(); return {ok:true,on:true};
+}
+// active goals in the week: progress, deadline, blocks + planned time, open / done tasks, next step, priority
+function wpGoals(wk){
+  const r=wk.range, ix=wk.ix, pri=wpPriorityIds(r.from), doneIds=anTaskIdsIn(r), T=wk.T;
+  return S.goals.filter(g=>g.status==='Active').map(g=>{
+    const bl=ix.blocks(g.id).filter(b=>b.date>=r.from&&b.date<=r.to), tasks=ix.tasks(g.id);
+    const dated=[...bl.map(b=>b.date+' '+b.startTime),...tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate>=r.from&&t.dueDate<=r.to).map(t=>t.dueDate+' 99:99')].sort();
+    return {g,priority:pri.includes(g.id),pct:goalProgress(g),blocks:bl.length,minutes:bl.reduce((a,b)=>a+plannerDuration(b),0),
+      openTasks:tasks.filter(t=>!t.done).length,doneTasks:tasks.filter(t=>doneIds.has(t.id)).length,next:gpNextStep(g,ix),first:dated[0]||null,
+      ms:ix.ms(g.id).filter(m=>!m.completed),habits:ix.habits(g.id).filter(h=>h.active!==false)};
+  }).sort((a,b)=>String(a.g.targetDate||'9999').localeCompare(String(b.g.targetDate||'9999'))||String(a.first||'9999').localeCompare(String(b.first||'9999'))||a.g.title.localeCompare(b.g.title,'cs')||String(a.g.id).localeCompare(String(b.g.id)));
+}
+// the week in numbers and plan vs actual -- only what the records hold (no measured working time)
+function wpSummary(wk){
+  const r=wk.range, T=wk.T, all=d=>wk.days.reduce((a,x)=>a+d(x),0), doneIds=anTaskIdsIn(r), xp=anXpByDay();
+  const blocks=all(d=>d.blocks.length), past=wk.days.flatMap(d=>d.blocks.filter(b=>gpBlockDone(b,T)!==null));
+  const due=wk.days.flatMap(d=>d.tasksDue);
+  const ms=S.milestones, inR=d=>d&&d>=r.from&&d<=r.to;
+  const wBlocks=wk.days.flatMap(d=>d.blocks.filter(b=>b.workoutTemplateId)), wDone=all(d=>d.workouts.length), wTraining=wk.days.filter(d=>d.training).length;
+  const habitsExp=S.habits.filter(h=>h.active!==false&&h.type!=='bad').reduce((a,h)=>{ const x=anHabitRate(h,{from:r.from,to:r.to}); return {e:a.e+x.expected,d:a.d+x.done}; },{e:0,d:0});
+  let xpSum=0; wk.days.forEach(d=>{ const e=xp.get(d.date); if(e) xpSum+=e.total; });
+  const goalsDone=new Set(); wk.days.forEach(d=>{ const e=xp.get(d.date); if(e&&e.goals) e.goals.forEach(id=>goalsDone.add(id)); });
+  return {blocks,minutes:all(d=>d.minutes),tasksDue:due.length,tasksDueDone:due.filter(t=>t.done).length,tasksDone:doneIds.size,
+    activeGoals:S.goals.filter(g=>g.status==='Active').length,msDue:ms.filter(m=>inR(m.targetDate)).length,msDone:ms.filter(m=>m.completed&&m.completedAt&&inR(anDay(m.completedAt))).length,
+    goalsDone:goalsDone.size,workouts:wDone,workoutBlocks:wBlocks.length,trainingDays:wTraining,habitsDone:habitsExp.d,habitsExpected:habitsExp.e,events:all(d=>d.events.length),
+    pastBlocks:past.length,pastMin:past.reduce((a,b)=>a+plannerDuration(b),0),doneBlocks:past.filter(b=>b.completed).length,doneMin:past.filter(b=>b.completed).reduce((a,b)=>a+plannerDuration(b),0),
+    xp:xpSum,conflicts:all(d=>d.conflicts.length),complete:r.to<T,current:r.from<=T&&T<=r.to};
+}
+// a block that has already ended (so "done or not" is a fact); null while it is still ahead
+function gpBlockDone(b,T){ if(b.date<T) return !!b.completed; if(b.date>T) return null; const e=plannerTimeToMin(b.endTime); return e!=null&&e<=gpNowMin()?!!b.completed:null; }
+// move a block: the existing planner model and validation; every other field (task, goal, category, workout) stays
+function wpReschedule(b,date,startTime,endTime){
+  const src=(S.plannerBlocks||[]).find(x=>x.id===b.id); if(!src) return {ok:false,errors:{date:'missing'}};
+  return plannerSaveBlock(Object.assign({},src,{date,startTime,endTime}),src);
+}
+/* ================= Weekly Life Planner 3.0 (presentation) =================
+   Markup from wpWeek()/wpSummary()/wpGoals()/wpUnplanned(). Every change goes through an existing form or handler
+   (openPlannerForm, openTaskEditForm, plannerSaveBlock via wpReschedule) or the explicit priority toggle. */
+const UI_WP={
+  cs:{title:'Tento týden',title_other:'Týden',prev:'Předchozí týden',next:'Další týden',today:'Dnes',week_of:'Týden',
+    summary:'Tento týden v číslech',s_blocks:'Bloky v plánovači',s_time:'Naplánováno',s_tasks:'Úkoly s termínem',s_done:'Dokončené úkoly',s_goals:'Aktivní cíle',s_ms:'Milníky s termínem',
+    s_workouts:'Tréninky',s_habits:'Návyky',s_events:'Události',s_conflicts:'Překryvy',
+    planned:'Naplánováno',goal_time:'z toho u cílů',overlap:n=>`${n} ${n===1?'překryv':n<5?'překryvy':'překryvů'} v plánu`,nothing:'Nic naplánováno',
+    add_block:'Blok',move:'Přesunout',task:'Úkol',goal:'Cíl',event:'Událost',workout:'Trénink',training:'Tréninkový den',done_mark:'splněno',due:'Termín',done_today:'Dokončeno',
+    habits:'Návyky',allday:'celý den',
+    priorities:'Priority týdne',pri_empty:'Zatím žádná priorita. U cílů níže můžeš označit až 3 jako „Priorita týdne“.',pri_on:'Priorita týdne',pri_off:'Označit jako prioritu týdne',pri_max:'Priorit týdne může být nejvýš 3.',
+    pri_hint:'Tvoje volba — aplikace ji sama nemění a nedává za ni XP.',plan_tasks:'Otevřené úkoly',plan_blocks:'Bloky tento týden',plan_ms:'Otevřené milníky',plan_habits:'Podporující návyky',none:'—',
+    goals:'Cíle tohoto týdne',goals_empty:'Žádný aktivní cíl.',g_blocks:'Bloky',g_open:'Otevřené úkoly',g_done:'Dokončeno tento týden',no_deadline:'bez termínu',
+    unplanned:'Úkoly bez plánu',unplanned_d:'Nedokončené úkoly bez bloku v plánovači (po termínu, s termínem do konce týdne a bez termínu).',plan:'Naplánovat',more_n:n=>`a dalších ${n}`,unpl_empty:'Všechny úkoly s termínem v tomto týdnu mají blok.',
+    conflicts:'Konflikty v plánu',conflicts_d:'Časy, které se překrývají s blokem v plánovači. Nic se neposouvá automaticky.',conf_empty:'Žádné překryvy.',
+    review:'Týdenní přehled',review_cur:'Týden ještě běží — čísla jsou do dneška.',plan_col:'Plán',done_col:'Dokončeno',
+    r_tasks:'Úkoly s termínem v týdnu',r_tasks_all:'Dokončené úkoly celkem',r_blocks:'Bloky (proběhlé)',r_time:'Čas bloků (proběhlé)',r_ms:'Milníky s termínem',r_goals:'Uzavřené cíle',
+    r_workouts:'Tréninky',r_habits:'Návyky (splnění)',r_events:'Události',r_xp:'XP získané v týdnu',r_note:'Hotové bloky jsou ty, které jsi v plánovači označil jako splněné; skutečně odpracovaný čas aplikace neměří.',
+    move_t:'Přesunout blok',save:'Uložit',moved:'Blok přesunut',open_week:'Zobrazit týden',week_card:'Tento týden',in_week:'Zobrazit v týdnu',tasks_ratio:'úkolů',
+    drag_hint:'Blok můžeš přetáhnout na jiný den, nebo použít „Přesunout“.',sr_day:(d)=>`${d.label}: naplánováno ${d.planned}, bloků ${d.blocks}, úkolů ${d.tasks}, událostí ${d.events}`},
+  en:{title:'This week',title_other:'Week',prev:'Previous week',next:'Next week',today:'Today',week_of:'Week',
+    summary:'This week in numbers',s_blocks:'Planner blocks',s_time:'Planned',s_tasks:'Tasks due',s_done:'Tasks completed',s_goals:'Active goals',s_ms:'Milestones due',
+    s_workouts:'Workouts',s_habits:'Habits',s_events:'Events',s_conflicts:'Overlaps',
+    planned:'Planned',goal_time:'of it for goals',overlap:n=>`${n} overlap${n===1?'':'s'} in the plan`,nothing:'Nothing planned',
+    add_block:'Block',move:'Move',task:'Task',goal:'Goal',event:'Event',workout:'Workout',training:'Training day',done_mark:'done',due:'Due',done_today:'Completed',
+    habits:'Habits',allday:'all day',
+    priorities:'Priorities of the week',pri_empty:'No priority yet. You can mark up to 3 goals below as “Priority of the week”.',pri_on:'Priority of the week',pri_off:'Mark as priority of the week',pri_max:'At most 3 priorities per week.',
+    pri_hint:'Your choice — the app never changes it and pays no XP for it.',plan_tasks:'Open tasks',plan_blocks:'Blocks this week',plan_ms:'Open milestones',plan_habits:'Supporting habits',none:'—',
+    goals:'Goals this week',goals_empty:'No active goal.',g_blocks:'Blocks',g_open:'Open tasks',g_done:'Done this week',no_deadline:'no deadline',
+    unplanned:'Unplanned tasks',unplanned_d:'Open tasks without a planner block (overdue, due by the end of the week, and undated).',plan:'Schedule',more_n:n=>`and ${n} more`,unpl_empty:'Every task due this week has a block.',
+    conflicts:'Planning conflicts',conflicts_d:'Times that overlap a planner block. Nothing is moved automatically.',conf_empty:'No overlaps.',
+    review:'Weekly review',review_cur:'The week is still running — numbers up to today.',plan_col:'Plan',done_col:'Done',
+    r_tasks:'Tasks due this week',r_tasks_all:'Tasks completed in total',r_blocks:'Blocks (past)',r_time:'Block time (past)',r_ms:'Milestones due',r_goals:'Goals closed',
+    r_workouts:'Workouts',r_habits:'Habits (check-ins)',r_events:'Events',r_xp:'XP earned this week',r_note:'Done blocks are the ones you marked as done in the Planner; the app does not measure time actually worked.',
+    move_t:'Move block',save:'Save',moved:'Block moved',open_week:'Show the week',week_card:'This week',in_week:'Show in the week',tasks_ratio:'tasks',
+    drag_hint:'Drag a block to another day, or use “Move”.',sr_day:(d)=>`${d.label}: planned ${d.planned}, ${d.blocks} blocks, ${d.tasks} tasks, ${d.events} events`},
+};
+function uiWpT(k){ return (UI_WP[uiLang()]||UI_WP.cs)[k]; }
+let wpOffset=0, wpFocusGoal=null;
+function uiWpOpen(offset,goalId){ wpOffset=offset||0; wpFocusGoal=goalId||null; closeSheets(); view='week'; render(); window.scrollTo(0,0);
+  if(goalId){ const n=document.querySelector(`#wpGoals [data-goal="${CSS.escape(goalId)}"]`); if(n){ n.scrollIntoView({block:'center'}); const b=n.querySelector('.wp-goal-t'); if(b) b.focus({preventScroll:true}); } } }
+function uiWpDayLabel(D,long){ try{ const s=uiAnIntl('d',long?{weekday:'long',day:'numeric',month:'numeric'}:{weekday:'short',day:'numeric',month:'numeric'}).format(new Date(D+'T00:00')); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return D; } }
+function uiWpDur(m){ return m?uiPlDur(m):'0 min'; }
+function uiWpCat(c){ return c?catLabel(c,'life'):uiAnT('none_cat'); }
+function uiWpBlockRow(b,wk){
+  const T=uiWpT, task=b.taskId?S.tasks.find(t=>t.id===b.taskId):null, gid=b.goalId||(task&&task.goalId), goal=gid?S.goals.find(g=>g.id===gid):null;
+  const wkI=b.workoutTemplateId?uiPlannerWorkoutInfo(b):null;
+  return `<li class="wp-block${b.completed?' is-done':''}" data-block="${escapeHtml(b.id)}" draggable="true">
+    <span class="wp-time">${b.startTime}–${b.endTime}</span>
+    <span class="wp-main"><b class="wp-bt">${b.completed?uiIcon('check',13)+' ':''}${escapeHtml(b.title)}</b>
+      <span class="wp-meta">${b.category?`<span>${escapeHtml(catLabel(b.category,'life'))}</span>`:''}${wkI?`<span>${uiIcon('dumbbell',12)} ${T('workout')}</span>`:''}</span>
+      <span class="wp-links">${task?`<button class="wp-chip" data-open-task="${escapeHtml(task.id)}">${uiIcon('tasks',13)} ${T('task')}: ${escapeHtml(task.title)}</button>`:''}${goal?`<button class="wp-chip" data-open-goal="${escapeHtml(goal.id)}">${uiIcon('target',13)} ${escapeHtml(goal.title)}</button>`:''}
+      <button class="wp-chip wp-move" data-move="${escapeHtml(b.id)}">${uiIcon('clock',13)} ${T('move')}</button></span></span></li>`;
+}
+function uiWpDay(day,wk){
+  const T=uiWpT, label=uiWpDayLabel(day.date,true), cs=uiLang()==='cs';
+  const sr=T('sr_day')({label,planned:uiWpDur(day.minutes),blocks:day.blocks.length,tasks:day.tasksDue.length,events:day.events.length});
+  const ev=day.events.map(x=>{ const s=plannerTimeToMin(x.e.start), e=plannerTimeToMin(x.e.end); const dur=s!=null&&e!=null&&e>s?uiPlDur(e-s):'';
+    return [s==null?-1:s,`<li class="wp-ev"><span class="wp-time">${x.e.start?escapeHtml(x.e.start)+(x.e.end?'–'+escapeHtml(x.e.end):''):T('allday')}</span><span class="wp-main"><button class="wp-link" data-open-event="${escapeHtml(x.e.id)}">${uiIcon('calendar',13)} ${escapeHtml(x.e.title)}</button>${dur?`<span class="wp-meta">${dur}</span>`:''}</span></li>`,e]; });
+  const wo=day.workouts.map(x=>[x.start?plannerTimeToMin(x.start):1441,`<li class="wp-wo"><span class="wp-time">${x.start?x.start+(x.end?'–'+x.end:''):''}</span><span class="wp-main"><button class="wp-link" data-open-fitness="${escapeHtml(x.w.id)}">${uiIcon('dumbbell',13)} ${escapeHtml(x.w.name||T('workout'))}</button><span class="wp-meta">${uiIcon('check',12)} ${T('done_mark')}</span></span></li>`]);
+  // one chronological list: planner blocks, events and workouts by start time (all-day events first, untimed workouts last)
+  const timeline=[...day.blocks.map(b=>[plannerTimeToMin(b.startTime),uiWpBlockRow(b,wk),plannerTimeToMin(b.endTime)]),...ev,...wo].sort((a,b)=>(a[0]-b[0])||((a[2]??1441)-(b[2]??1441))).map(x=>x[1]).join('');
+  const tasks=[...day.tasksDue.map(t=>({t,due:true})),...day.tasksDone.filter(t=>t.dueDate!==day.date).map(t=>({t,due:false}))];
+  const tk=tasks.map(({t,due})=>`<li class="wp-task${t.done?' is-done':''}"><button class="wp-link" data-open-task="${escapeHtml(t.id)}">${t.done?uiIcon('check',13):uiIcon('tasks',13)} ${escapeHtml(t.title)}</button><span class="wp-meta">${due?`${T('due')}${t.priority?' · '+escapeHtml(uiPrioLabel(t.priority)):''}`:T('done_today')}</span></li>`).join('');
+  const hb=day.habits.length?`<div class="wp-habits" aria-label="${T('habits')}">${day.habits.map(x=>`<span class="wp-hab${x.done?' is-done':''}" title="${escapeHtml(x.h.name)}"><span aria-hidden="true">${x.done?'✓':'○'}</span> ${escapeHtml(x.h.name)}<span class="hide"> ${x.done?(cs?'splněno':'done'):(cs?'nesplněno':'not done')}</span></span>`).join('')}</div>`:'';
+  const cats=day.byCategory.length?`<div class="wp-cats">${day.byCategory.map(c=>`<span class="chip is-muted">${escapeHtml(uiWpCat(c.c))} ${uiWpDur(c.min)}</span>`).join('')}</div>`:'';
+  return `<li class="wp-day${day.isToday?' is-today':''}${day.past?' is-past':''}" data-day="${day.date}"><article class="card wp-day-c" aria-labelledby="wpd-${day.date}">
+    <header class="wp-day-h"><h3 id="wpd-${day.date}">${escapeHtml(label)}${day.isToday?` <span class="chip">${T('today')}</span>`:''}</h3><span class="hide">${escapeHtml(sr)}</span>
+      <button class="wp-add" data-add-block="${day.date}" aria-label="${T('add_block')} · ${escapeHtml(label)}">＋ ${T('add_block')}</button></header>
+    <p class="wp-cap" data-minutes="${day.minutes}"><b>${T('planned')}: ${uiWpDur(day.minutes)}</b>${day.goalMinutes?` <span class="sub">· ${T('goal_time')} ${uiWpDur(day.goalMinutes)}</span>`:''}${day.conflicts.length?` <span class="wp-ov" data-overlaps="${day.conflicts.length}">${T('overlap')(day.conflicts.length)}</span>`:''}</p>
+    ${cats}
+    ${day.blocks.length?'':`<p class="sub wp-none">${T('nothing')}</p>`}
+    ${timeline?`<ul class="wp-list wp-blocks">${timeline}</ul>`:''}
+    ${day.training&&!day.workouts.length&&!day.blocks.some(b=>b.workoutTemplateId)?`<p class="wp-train">${uiIcon('dumbbell',13)} ${T('training')}</p>`:''}
+    ${tk?`<ul class="wp-list wp-tasks">${tk}</ul>`:''}
+    ${hb}
+  </article></li>`;
+}
+function renderWeek(){
+  const T=uiWpT, cs=uiLang()==='cs', t0=performance.now();
+  const wk=wpWeek(wpOffset), r=wk.range, sm=wpSummary(wk), goals=wpGoals(wk), un=wpUnplanned(wk), pri=wpPriorityIds(r.from);
+  const conflicts=wk.days.flatMap(d=>d.conflicts);
+  const title=wpOffset===0?T('title'):`${T('title_other')} ${uiWpDayLabel(r.from)} – ${uiWpDayLabel(r.to)}`;
+  const wrap=el(`<div class="wp" data-week="${r.from}">${uiPageHead(escapeHtml(title),`${fmtDate(r.from)} – ${fmtDate(r.to)}`)}
+    <nav class="wp-nav" aria-label="${cs?'Výběr týdne':'Week'}"><button class="btn sm ghost" id="wpPrev" aria-label="${T('prev')}">‹ <span>${T('prev')}</span></button>
+      <button class="btn sm ${wpOffset===0?'':'ghost'}" id="wpToday" ${wpOffset===0?'aria-current="true"':''}>${T('today')}</button>
+      <button class="btn sm ghost" id="wpNext" aria-label="${T('next')}"><span>${T('next')}</span> ›</button></nav>
+    <section class="card wp-sum" id="wpSummary" aria-labelledby="wpSumH"><h3 id="wpSumH" class="gp-h">${uiIcon('chart',16)} ${T('summary')}</h3>
+      <dl class="wp-kpis">
+        <div><dt>${T('s_time')}</dt><dd>${uiWpDur(sm.minutes)}</dd></div><div><dt>${T('s_blocks')}</dt><dd>${sm.blocks}</dd></div>
+        <div><dt>${T('s_tasks')}</dt><dd>${sm.tasksDueDone}/${sm.tasksDue}</dd></div><div><dt>${T('s_done')}</dt><dd>${sm.tasksDone}</dd></div>
+        <div><dt>${T('s_goals')}</dt><dd>${sm.activeGoals}</dd></div><div><dt>${T('s_ms')}</dt><dd>${sm.msDue}</dd></div>
+        <div><dt>${T('s_workouts')}</dt><dd>${sm.workouts}${sm.workoutBlocks?` <small>/ ${sm.workoutBlocks}</small>`:''}</dd></div><div><dt>${T('s_habits')}</dt><dd>${sm.habitsDone}${sm.habitsExpected?` <small>/ ${sm.habitsExpected}</small>`:''}</dd></div>
+        <div><dt>${T('s_events')}</dt><dd>${sm.events}</dd></div><div><dt>${T('s_conflicts')}</dt><dd>${sm.conflicts}</dd></div>
+      </dl></section>
+    <section class="wp-pri" id="wpPriorities" aria-labelledby="wpPriH"><div class="section-header"><h3 id="wpPriH">${uiIcon('star',18)} ${T('priorities')} · ${pri.length}/${WP_MAX_PRIORITIES}</h3></div><div class="wp-pri-list"></div><p class="helper-text">${T('pri_hint')}</p></section>
+    <section class="wp-week" id="wpDays" aria-labelledby="wpDaysH"><div class="section-header"><h3 id="wpDaysH">${uiIcon('calendar',18)} ${cs?'Dny týdne':'Days of the week'}</h3></div>
+      <ol class="wp-strip" aria-label="${cs?'Přehled dnů':'Days at a glance'}">${wk.days.map(d=>`<li><a href="#wpd-${d.date}" class="${d.isToday?'is-today':''}" data-jump-day="${d.date}" aria-label="${escapeHtml(uiWpDayLabel(d.date,true))}: ${T('planned')} ${uiWpDur(d.minutes)}"><span>${escapeHtml(uiWpDayLabel(d.date))}</span><b>${uiWpDur(d.minutes)}</b><small>${d.blocks.length} · ${d.tasksDue.length}</small></a></li>`).join('')}</ol>
+      <p class="helper-text wp-drag-hint">${T('drag_hint')}</p><ol class="wp-days">${wk.days.map(d=>uiWpDay(d,wk)).join('')}</ol></section>
+    <div class="wp-grid2">
+      <section class="card" id="wpConflicts" aria-labelledby="wpConfH"><h3 id="wpConfH" class="gp-h">${uiIcon('clock',16)} ${T('conflicts')}</h3><p class="helper-text" style="margin:0 0 8px">${T('conflicts_d')}</p>
+        ${conflicts.length?`<ul class="wp-conf">${conflicts.map(c=>`<li data-conf="${escapeHtml(c.a.id)}|${escapeHtml(c.b.id)}"><b>${uiWpDayLabel(c.date)}</b> <span class="sub">${c.from}–${c.to}</span><span>${uiWpT(c.a.k==='block'?'add_block':c.a.k)}: ${escapeHtml(c.a.title)} <span class="sub">${c.a.start}–${c.a.end}</span></span><span>${uiWpT(c.b.k==='block'?'add_block':c.b.k)}: ${escapeHtml(c.b.title)} <span class="sub">${c.b.start}${c.b.end?'–'+c.b.end:''}</span></span></li>`).join('')}</ul>`:`<p class="sub" style="margin:0">${T('conf_empty')}</p>`}</section>
+      <section class="card" id="wpUnplanned" aria-labelledby="wpUnH"><h3 id="wpUnH" class="gp-h">${uiIcon('tasks',16)} ${T('unplanned')} · ${un.total}</h3><p class="helper-text" style="margin:0 0 8px">${T('unplanned_d')}</p>
+        ${un.list.length?`<ul class="wp-unpl">${un.list.slice(0,15).map(t=>{ const g=t.goalId?S.goals.find(x=>x.id===t.goalId):null; return `<li data-task="${escapeHtml(t.id)}"><span class="wp-main"><button class="wp-link" data-open-task="${escapeHtml(t.id)}">${escapeHtml(t.title)}</button>
+          <span class="wp-meta">${t.priority?`<span>${escapeHtml(uiPrioLabel(t.priority))}</span>`:''}${t.dueDate?`<span class="${t.dueDate<wk.T?'wp-over':''}">${uiIcon('calendar',12)} ${fmtDate(t.dueDate)}</span>`:''}${g?`<span>${uiIcon('target',12)} ${escapeHtml(g.title)}</span>`:''}${t.category?`<span>${escapeHtml(catLabel(t.category,'life'))}</span>`:''}</span></span>
+          <button class="btn sm ghost wp-plan" data-plan-task="${escapeHtml(t.id)}">${uiIcon('clock',14)} ${T('plan')}</button></li>`; }).join('')}</ul>${un.total>15?`<p class="sub" style="margin:8px 0 0">${T('more_n')(un.total-15)}</p>`:''}`:`<p class="sub" style="margin:0">${T('unpl_empty')}</p>`}</section>
+    </div>
+    <section class="wp-goals" id="wpGoals" aria-labelledby="wpGoalsH"><div class="section-header"><h3 id="wpGoalsH">${uiIcon('target',18)} ${T('goals')}</h3></div><div class="wp-goal-list"></div></section>
+    <section class="card wp-review" id="wpReview" aria-labelledby="wpRevH"><h3 id="wpRevH" class="gp-h">${uiIcon('activity',16)} ${T('review')}</h3>${sm.current?`<p class="helper-text" style="margin:0 0 8px">${T('review_cur')}</p>`:''}
+      <table class="an-tbl wp-rtbl"><thead><tr><th scope="col"></th><th scope="col">${T('plan_col')}</th><th scope="col">${T('done_col')}</th></tr></thead><tbody>
+        <tr data-r="tasks"><th scope="row">${T('r_tasks')}</th><td>${sm.tasksDue}</td><td>${sm.tasksDueDone}</td></tr>
+        <tr data-r="tasks_all"><th scope="row">${T('r_tasks_all')}</th><td>—</td><td>${sm.tasksDone}</td></tr>
+        <tr data-r="blocks"><th scope="row">${T('r_blocks')}</th><td>${sm.pastBlocks}</td><td>${sm.doneBlocks}</td></tr>
+        <tr data-r="time"><th scope="row">${T('r_time')}</th><td>${uiWpDur(sm.pastMin)}</td><td>${uiWpDur(sm.doneMin)}</td></tr>
+        <tr data-r="ms"><th scope="row">${T('r_ms')}</th><td>${sm.msDue}</td><td>${sm.msDone}</td></tr>
+        <tr data-r="goals"><th scope="row">${T('r_goals')}</th><td>—</td><td>${sm.goalsDone}</td></tr>
+        <tr data-r="workouts"><th scope="row">${T('r_workouts')}</th><td>${sm.workoutBlocks||sm.trainingDays||'—'}</td><td>${sm.workouts}</td></tr>
+        <tr data-r="habits"><th scope="row">${T('r_habits')}</th><td>${sm.habitsExpected||'—'}</td><td>${sm.habitsDone}</td></tr>
+        <tr data-r="events"><th scope="row">${T('r_events')}</th><td>${sm.events}</td><td>—</td></tr>
+        <tr data-r="xp"><th scope="row">${T('r_xp')}</th><td>—</td><td>${uiAnNum(sm.xp)}</td></tr>
+      </tbody></table><p class="helper-text" style="margin:8px 0 0">${T('r_note')}</p></section>
+  </div>`);
+  // priorities: the chosen goals with their tasks, blocks, milestones and habit support
+  const pl=wrap.querySelector('.wp-pri-list'), byId=new Map(goals.map(x=>[x.g.id,x]));
+  if(!pri.length) pl.appendChild(el(`<p class="sub" style="margin:0 0 8px">${T('pri_empty')}</p>`));
+  pri.map(id=>byId.get(id)||(()=>{ const g=S.goals.find(x=>x.id===id); return g?{g,pct:goalProgress(g),blocks:0,minutes:0,openTasks:0,doneTasks:0,next:null,ms:[],habits:[]}:null; })()).filter(Boolean).forEach(x=>{
+    const tasks=wk.ix.tasks(x.g.id).filter(t=>!t.done).sort(gpByDue).slice(0,5), bl=wk.ix.blocks(x.g.id).filter(b=>b.date>=r.from&&b.date<=r.to).sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
+    pl.appendChild(el(`<article class="card wp-pri-c" data-goal="${escapeHtml(x.g.id)}" aria-label="${escapeHtml(x.g.title)}">
+      <div class="between"><button class="wp-link wp-goal-t" data-open-goal="${escapeHtml(x.g.id)}"><b>${escapeHtml(x.g.title)}</b></button><span class="goal-pct">${x.pct}<small>%</small></span></div>
+      <div class="wp-pri-grid">
+        <div><div class="kicker">${T('plan_tasks')}</div>${tasks.length?`<ul class="wp-mini">${tasks.map(t=>`<li><button class="wp-link" data-open-task="${escapeHtml(t.id)}">${escapeHtml(t.title)}</button>${t.dueDate?` <span class="sub">${fmtDate(t.dueDate)}</span>`:''}</li>`).join('')}</ul>`:`<p class="sub">${T('none')}</p>`}</div>
+        <div><div class="kicker">${T('plan_blocks')}</div>${bl.length?`<ul class="wp-mini">${bl.map(b=>`<li>${escapeHtml(b.title)} <span class="sub">${uiWpDayLabel(b.date)} ${b.startTime}–${b.endTime}</span></li>`).join('')}</ul>`:`<p class="sub">${T('none')}</p>`}</div>
+        <div><div class="kicker">${T('plan_ms')}</div>${x.ms.length?`<ul class="wp-mini">${x.ms.slice(0,4).map(m=>`<li>${escapeHtml(m.title)}${m.targetDate?` <span class="sub">${fmtDate(m.targetDate)}</span>`:''}</li>`).join('')}</ul>`:`<p class="sub">${T('none')}</p>`}</div>
+        <div><div class="kicker">${T('plan_habits')}</div>${x.habits.length?`<ul class="wp-mini">${x.habits.map(h=>`<li>${escapeHtml(h.name)} <span class="sub">${currentStreak(h)}</span></li>`).join('')}</ul>`:`<p class="sub">${T('none')}</p>`}</div>
+      </div>
+      <button class="btn sm ghost wp-pri-toggle" data-pri="${escapeHtml(x.g.id)}" aria-pressed="true">${uiIcon('star',14)} ${T('pri_on')}</button></article>`));
+  });
+  // goals of the week
+  const gl=wrap.querySelector('.wp-goal-list');
+  if(!goals.length) gl.appendChild(el(`<p class="sub">${T('goals_empty')}</p>`));
+  goals.forEach(x=>gl.appendChild(el(`<article class="card wp-goal${x.priority?' is-pri':''}" data-goal="${escapeHtml(x.g.id)}" aria-label="${escapeHtml(x.g.title)}">
+    <div class="between"><button class="wp-link wp-goal-t" data-open-goal="${escapeHtml(x.g.id)}"><b>${escapeHtml(x.g.title)}</b></button><span class="goal-pct">${x.pct}<small>%</small></span></div>
+    <div class="bar" role="progressbar" aria-valuenow="${x.pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(x.g.title)}"><i style="width:${x.pct}%"></i></div>
+    <p class="wp-goal-m"><span>${uiIcon('calendar',13)} ${x.g.targetDate?fmtDate(x.g.targetDate):T('no_deadline')}</span><span data-goal-min="${x.minutes}">${T('planned')}: ${uiWpDur(x.minutes)}</span><span>${T('g_blocks')}: ${x.blocks}</span><span>${T('g_open')}: ${x.openTasks}</span><span>${T('g_done')}: ${x.doneTasks}</span></p>
+    <p class="wp-goal-n">${uiGpNextHtml(x.next)}</p>
+    <button class="btn sm ${x.priority?'':'ghost'} wp-pri-toggle" data-pri="${escapeHtml(x.g.id)}" aria-pressed="${x.priority}">${uiIcon('star',14)} ${x.priority?T('pri_on'):T('pri_off')}</button></article>`)));
+  // wiring: every action is an existing form / handler
+  const findB=id=>(S.plannerBlocks||[]).find(b=>b.id===id);
+  wrap.querySelector('#wpPrev').onclick=()=>{ wpOffset--; render(); document.getElementById('wpPrev').focus({preventScroll:true}); };
+  wrap.querySelector('#wpNext').onclick=()=>{ wpOffset++; render(); document.getElementById('wpNext').focus({preventScroll:true}); };
+  wrap.querySelector('#wpToday').onclick=()=>{ wpOffset=0; render(); document.getElementById('wpToday').focus({preventScroll:true}); };
+  wrap.querySelectorAll('[data-open-task]').forEach(b=>b.onclick=()=>{ const t=S.tasks.find(x=>x.id===b.dataset.openTask); if(t) openTaskEditForm(t); });
+  wrap.querySelectorAll('[data-open-goal]').forEach(b=>b.onclick=()=>{ currentGoalId=b.dataset.openGoal; view='goalDetail'; render(); window.scrollTo(0,0); });
+  wrap.querySelectorAll('[data-open-event]').forEach(b=>b.onclick=()=>{ const e=S.events.find(x=>x.id===b.dataset.openEvent); if(e) openEventForm(e); });
+  wrap.querySelectorAll('[data-open-fitness]').forEach(b=>b.onclick=()=>{ const w=S.workouts.find(x=>x.id===b.dataset.openFitness); if(w) searchNavigate('workout',w); else { view='fitness'; render(); } });
+  wrap.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>{ const x=findB(b.dataset.move); if(x) openWpMoveForm(x); });
+  wrap.querySelectorAll('.wp-block .wp-bt').forEach(n=>{ n.style.cursor='pointer'; n.onclick=()=>{ const x=findB(n.closest('[data-block]').dataset.block); if(x) openPlannerForm(x); }; });
+  wrap.querySelectorAll('[data-add-block]').forEach(b=>b.onclick=()=>openPlannerForm(null,{date:b.dataset.addBlock}));
+  wrap.querySelectorAll('[data-jump-day]').forEach(a=>a.onclick=e=>{ e.preventDefault(); const h=document.getElementById('wpd-'+a.dataset.jumpDay); if(h){ h.scrollIntoView({block:'start'}); h.tabIndex=-1; h.focus({preventScroll:true}); } });
+  wrap.querySelectorAll('[data-plan-task]').forEach(b=>b.onclick=()=>{ const t=S.tasks.find(x=>x.id===b.dataset.planTask); if(!t) return;
+    const T0=todayStr(), date=t.dueDate&&t.dueDate>=T0&&t.dueDate>=r.from&&t.dueDate<=r.to?t.dueDate:(T0>=r.from&&T0<=r.to?T0:(r.from>T0?r.from:T0));
+    openPlannerForm(null,{taskId:t.id,goalId:t.goalId||'',title:t.title,category:t.category||'',date}); });
+  wrap.querySelectorAll('[data-pri]').forEach(b=>b.onclick=()=>{ const id=b.dataset.pri, res=wpTogglePriority(r.from,id); if(!res.ok){ toast(res.reason==='max'?T('pri_max'):''); return; }
+    render(); const nb=document.querySelector(`#wpGoals [data-pri="${CSS.escape(id)}"]`); if(nb) nb.focus({preventScroll:true}); });
+  // drag & drop: a block onto another day keeps its times, links and category (the same save as "Přesunout")
+  wrap.querySelectorAll('.wp-block[draggable]').forEach(li=>li.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',li.dataset.block); e.dataTransfer.effectAllowed='move'; }));
+  wrap.querySelectorAll('.wp-day').forEach(d=>{ d.addEventListener('dragover',e=>{ e.preventDefault(); d.classList.add('is-drop'); }); d.addEventListener('dragleave',()=>d.classList.remove('is-drop'));
+    d.addEventListener('drop',e=>{ e.preventDefault(); d.classList.remove('is-drop'); const b=findB(e.dataTransfer.getData('text/plain')); if(!b||b.date===d.dataset.day) return;
+      const res=wpReschedule(b,d.dataset.day,b.startTime,b.endTime); if(res.ok){ toast(T('moved')); render(); } }); });
+  if(wpFocusGoal){ const n=wrap.querySelector(`#wpGoals [data-goal="${CSS.escape(wpFocusGoal)}"]`); if(n) n.classList.add('is-focus'); }
+  window.__wpMs=performance.now()-t0;
+  return wrap;
+}
+// "Přesunout": another day, start or end -- the existing planner model and validation (plannerSaveBlock)
+function openWpMoveForm(b){
+  const T=uiWpT, cs=uiLang()==='cs';
+  const inner=el(`<div class="pl-form" id="wpMove"><h3>${T('move_t')}</h3><p class="sub" style="margin:-6px 0 12px">${escapeHtml(b.title)}</p>
+    <label for="mv_date">${uiPlT('f_date')}</label><input type="date" id="mv_date" value="${b.date}"><div class="field-error" data-err="date" hidden></div>
+    <div class="grid2"><div><label for="mv_start">${uiPlT('f_start')}</label><input type="time" id="mv_start" value="${b.startTime}" step="300"><div class="field-error" data-err="startTime" hidden></div></div>
+      <div><label for="mv_end">${uiPlT('f_end')}</label><input type="time" id="mv_end" value="${b.endTime}" step="300"><div class="field-error" data-err="endTime" hidden></div></div></div>
+    <p class="helper-text">${cs?'Propojený úkol, cíl, kategorie i trénink zůstanou.':'The linked task, goal, category and workout stay.'}</p>
+    <button class="btn" id="mv_save">${T('save')}</button></div>`);
+  inner.querySelector('#mv_save').onclick=()=>{
+    const res=wpReschedule(b,inner.querySelector('#mv_date').value,inner.querySelector('#mv_start').value,inner.querySelector('#mv_end').value);
+    const ids={date:'mv_date',startTime:'mv_start',endTime:'mv_end'};
+    Object.keys(ids).forEach(k=>{ const code=res.errors&&res.errors[k], inp=inner.querySelector('#'+ids[k]), msg=inner.querySelector(`[data-err="${k}"]`);
+      inp.setAttribute('aria-invalid',code?'true':'false'); msg.hidden=!code; msg.textContent=code?uiPlT(code==='required'?'e_required':code==='end_before_start'?'e_order':'e_invalid'):''; });
+    if(!res.ok){ const f=inner.querySelector('[aria-invalid="true"]'); if(f) f.focus(); return; }
+    closeSheets(); render(); toast(T('moved'));
+  };
+  openSheet(inner);
+}
+// Home card: this week at a glance (Command Center stays "Co teď?"; this only links to the week)
+function uiCcWeekCard(){
+  const T=uiWpT, wk=wpWeek(0), sm=wpSummary(wk);
+  const sec=el(`<section class="cc-sec" id="ccWeek" aria-labelledby="ccWeekH"><div class="section-header"><h3 id="ccWeekH">${uiIcon('calendar',18)} ${T('week_card')}</h3><button class="action" data-cc-week="1">${T('open_week')} ›</button></div>
+    <div class="card cc-week"><div class="cc-week-k"><span><b>${uiWpDur(sm.minutes)}</b> ${T('planned').toLowerCase()}</span><span><b>${sm.tasksDueDone}/${sm.tasksDue}</b> ${T('tasks_ratio')}</span><span><b>${sm.activeGoals}</b> ${T('s_goals').toLowerCase()}</span></div></div></section>`);
+  sec.querySelector('[data-cc-week]').onclick=()=>uiWpOpen(0);
+  return sec;
+}
 /* ---- Global Search ---- */
 /* ---- Global Search (Phase 4) ----
    Reads only from S (real data), never mutates anything. Clicking a result navigates to the
@@ -10465,7 +10877,7 @@ function uiBindXpHint(root,selId,hintId,xpOf,done){
 }
 
 function openQuickAdd(){
-  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽'],['planner','🗓️']];
+  const opts=[['task','✅'],['habit','🔥'],['goal','🎯'],['expense','💸'],['income','💵'],['workout','🏋️'],['meal','🍽️'],['note','📝'],['journal','📔'],['event','📅'],['water','💧'],['fuel','⛽'],['planner','🗓️'],['week','📅']];
   const content=el(`<div>
     <h3>${uiT('quick_add')}</h3>
     <div class="qgrid">${opts.map(([t,ic])=>`<button class="qopt" data-t="${t}"><span class="ic" aria-hidden="true">${ic}</span>${uiT('qa_'+t)}</button>`).join('')}</div>
@@ -10485,6 +10897,7 @@ function openQuickAdd(){
     else if(t==='water') quickAddWater();
     else if(t==='fuel') openFuelQuickAdd();
     else if(t==='planner') openPlannerForm(null,{date:todayStr()});
+    else if(t==='week') uiWpOpen(0);
     else openForm(t);
   });
 }

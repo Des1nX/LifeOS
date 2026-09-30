@@ -1111,6 +1111,7 @@
   "dailyScores": {},
   "dailyScoresSince": null,
   "plannerBlocks": [],
+  "weeklyPriorities": {},
   "exerciseLibrary": [],
   "workoutTemplates": [],
   "muscleProgress": {
@@ -1343,6 +1344,7 @@
   "dailyScores": {},
   "dailyScoresSince": null,
   "plannerBlocks": [],
+  "weeklyPriorities": {},
   "exerciseLibrary": [
    {
     "name": "Squat",

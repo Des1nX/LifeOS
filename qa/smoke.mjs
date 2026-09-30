@@ -21,9 +21,9 @@ const GOLDEN = path.join(here, 'baseline', 'golden.json');
 const args = process.argv.slice(2);
 
 export const VIEWS = ['home', 'tasks', 'habits', 'goals', 'character', 'more', 'finance', 'fitness', 'nutrition', 'notes',
-  'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner'];
+  'journal', 'car', 'subscriptions', 'calendar', 'quests', 'statistics', 'search', 'health', 'goalDetail', 'habitDetail', 'settings', 'planner', 'week'];
 const NAV = ['home', 'tasks', 'habits', 'character', 'more'];
-const MORE_ITEMS = ['planner', 'goals', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests',
+const MORE_ITEMS = ['week', 'planner', 'goals', 'finance', 'fitness', 'nutrition', 'notes', 'journal', 'car', 'subscriptions', 'calendar', 'quests',
   'statistics', 'search', 'health', 'character', 'settings'];
 const QUICK_ADD = ['task', 'habit', 'goal', 'expense', 'income', 'workout', 'meal', 'note', 'journal', 'event', 'water', 'fuel', 'planner'];
 
@@ -145,7 +145,7 @@ test('onboarding: Skip finishes immediately and never re-traps', async ({ page }
   assert.equal(await page.locator('.sheet').count(), 0);
 });
 
-test('views: all 22 screens render with data and without errors (Phase 10 adds Planner)', async ({ page }, ctx) => {
+test('views: all 23 screens render with data and without errors (Phase 10 adds Planner, Weekly Planner adds the week)', async ({ page }, ctx) => {
   await page.evaluate(() => { currentHabitId = 'h_read'; currentGoalId = 'g_fit'; });
   for (const v of VIEWS) {
     await go(page, v);
@@ -182,10 +182,10 @@ test('sub-navigation: health tabs, statistics periods', async ({ page }) => {
   for (let i = 0; i < p; i++) { await page.locator('#spTabs button').nth(i).click(); assert.equal(await page.locator('#spTabs button').nth(i).getAttribute('class'), 'on'); }
 }, { state: fixtureState() });
 
-test('quick add: all 13 entries open their form (water logs directly; Phase 10 adds Planner block)', async ({ page }) => {
+test('quick add: all 13 entries open their form (water logs directly; Phase 10 adds Planner block; Weekly Planner adds a 14th entry that opens the week)', async ({ page }) => {
   for (const t of QUICK_ADD) {
     await page.click('#fabBtn');
-    assert.equal(await page.locator('.sheet .qopt[data-t]').count(), 13);
+    assert.equal(await page.locator('.sheet .qopt[data-t]').count(), 14, '13 forms + "Naplánovat týden"');
     const water = (await stateOf(page)).waterLog.length;
     await page.click(`.sheet .qopt[data-t="${t}"]`);
     if (t === 'water') assert.equal((await stateOf(page)).waterLog.length, water + 1);
@@ -3717,7 +3717,7 @@ test('P11 design: no Apple emoji in the UI chrome of the main screens and sheets
   }
   assert.deepEqual(bad, []);
   await page.evaluate(() => { closeSheets(); view = 'more'; render(); });
-  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 16);
+  assert.equal(await page.locator('#moreGrid .qopt .ic svg').count(), 17, 'Weekly Planner adds the 17th destination');
 }, { state: fixtureState() });
 
 test('P12 layout: new screens and sheets fit 320-1440 px in dark + light, no duplicate ids, no console errors', async ({ page }) => {
@@ -6470,6 +6470,484 @@ test('GP29 + GP30 no duplicate ids, no NaN / undefined in every filter and every
   assert.deepEqual(bad, []);
 }, { state: fixtureState() });
 const GP_FILTERS_T = ['All', 'Active', 'Completed', 'Overdue', 'NoNext'];
+
+// ---------- Weekly Life Planner 3.0 ----------
+// One read-only view of a week over the existing records (planner blocks, task due dates + completion records, events
+// with their recurring occurrences, workouts, habits, goals, milestones). Changes happen only through the existing
+// planner/task forms, "Přesunout" (plannerSaveBlock) and the explicit "Priorita týdne" toggle (S.weeklyPriorities).
+const wpGo = (page, offset, extra) => page.evaluate(([o, extra]) => { closeSheets(); wpOffset = o || 0; wpFocusGoal = null; Object.assign(window, extra || {}); view = 'week'; render(); }, [offset || 0, extra || null]);
+const wpClean = page => page.evaluate(() => { const t = document.getElementById('app').innerText, ids = {}; document.querySelectorAll('[id]').forEach(n => ids[n.id] = (ids[n.id] || 0) + 1);
+  return { bad: /undefined|NaN|Infinity|\[object/.test(t), dup: Object.keys(ids).filter(k => ids[k] > 1), overflow: document.documentElement.scrollWidth - innerWidth }; });
+const wpState = page => page.evaluate(() => JSON.stringify(S));
+// fixture day 2026-09-23 (Wednesday) 12:00; this week 21..27, previous 14..20, next 28..4.10
+const wpSeed = page => page.evaluate(() => {
+  const T = todayStr(), D = n => addDays(T, n), ts = (d, h, m) => new Date(d + 'T' + String(h == null ? 12 : h).padStart(2, '0') + ':' + String(m || 0).padStart(2, '0')).getTime();
+  S = defaultState(); S.settings.onboarded = true; S.settings.trainingDays = [1, 3, 5];
+  S.goals = [
+    { id: 'gW1', title: 'Web', category: 'Work', targetDate: D(10), status: 'Active', mode: 'auto', createdAt: ts(D(-20)) },
+    { id: 'gW2', title: 'Běh', category: 'Fitness', targetDate: D(40), status: 'Active', mode: 'manual', manualProgress: 30, createdAt: ts(D(-20)) },
+    { id: 'gW3', title: 'Jazyk', category: 'Learning', targetDate: '', status: 'Active', mode: 'manual', manualProgress: 10, createdAt: ts(D(-20)) },
+    { id: 'gW4', title: 'Kniha', category: '', targetDate: D(3), status: 'Active', mode: 'manual', manualProgress: 80, createdAt: ts(D(-20)) },
+    { id: 'gDone', title: 'Hotovo', category: '', targetDate: D(-1), status: 'Completed', mode: 'manual', manualProgress: 100, createdAt: ts(D(-60)) }];
+  S.milestones = [{ id: 'mW1', goalId: 'gW1', title: 'Beta', targetDate: D(2), completed: false, completedAt: null, createdAt: ts(D(-10)) },
+    { id: 'mW2', goalId: 'gW1', title: 'Alfa', completed: true, completedAt: ts(D(-1)), createdAt: ts(D(-15)) }];
+  S.tasks = [
+    { id: 'tW1', title: 'Návrh', priority: 'High', category: 'Work', goalId: 'gW1', dueDate: D(1), done: false, createdAt: ts(D(-5)) },
+    { id: 'tW2', title: 'Kód', priority: 'Medium', category: 'Work', goalId: 'gW1', dueDate: D(-1), done: true, createdAt: ts(D(-5)) },
+    { id: 'tW3', title: 'Test', priority: 'Low', category: 'Work', goalId: 'gW1', dueDate: D(2), done: false, createdAt: ts(D(-5)) },
+    { id: 'tW4', title: 'Nákup', priority: 'Medium', category: 'Personal', goalId: '', dueDate: D(0), done: false, createdAt: ts(D(-2)) },
+    { id: 'tW5', title: 'Starý', priority: 'Urgent', category: 'Work', goalId: '', dueDate: D(-5), done: false, createdAt: ts(D(-9)) },
+    { id: 'tW6', title: 'Budoucí', priority: 'Low', category: '', goalId: '', dueDate: D(10), done: false, createdAt: ts(D(-2)) },
+    { id: 'tW7', title: 'Bez data', priority: 'Low', category: '', goalId: 'gW3', dueDate: '', done: false, createdAt: ts(D(-2)) },
+    { id: 'tW8', title: 'Minule', priority: 'Low', category: '', goalId: '', dueDate: D(-8), done: true, createdAt: ts(D(-12)) }];
+  const B = (id, date, s, e, extra) => ({ id, date, startTime: s, endTime: e, title: id, description: '', category: '', taskId: '', goalId: '', workoutId: '', notes: '', workoutTemplateId: '', completed: false, createdAt: 1, updatedAt: 1, ...extra });
+  S.plannerBlocks = [B('pW1', D(1), '09:00', '11:00', { title: 'Návrh', taskId: 'tW1', category: 'Work' }), B('pW2', D(0), '06:00', '07:00', { title: 'Ranní běh', goalId: 'gW2', category: 'Fitness', completed: true }),
+    B('pW3', D(0), '18:00', '19:30', { title: 'Intervaly', goalId: 'gW2', category: 'Fitness' }), B('pW4', D(2), '10:00', '11:00', { title: 'Zubař', category: 'Personal' }),
+    B('pW5', D(2), '10:30', '12:00', { title: 'Sprint', goalId: 'gW1', category: 'Work' }), B('pW6', D(-2), '08:00', '09:00', { title: 'Pondělní', category: 'Work' }),
+    B('pW7', D(-1), '17:30', '18:30', { title: 'Běh venku', goalId: 'gW2', category: 'Fitness', completed: true }),
+    B('pPrev', D(-7), '08:00', '10:00', { title: 'Minulý týden', category: 'Work' }), B('pNext', D(7), '08:00', '09:00', { title: 'Příští týden', category: 'Work' })];
+  S.events = [{ id: 'eW1', title: 'Porada', date: D(2), start: '11:30', end: '12:30', recurring: 'none' }, { id: 'eW2', title: 'Trénink tým', date: D(-14), start: '18:00', end: '19:00', recurring: 'weekly' },
+    { id: 'eAll', title: 'Svátek', date: D(3), start: '', end: '', recurring: 'none' }];
+  S.workouts = [{ id: 'wW1', name: 'Push', date: D(-1), status: 'done', startedAt: ts(D(-1), 17), finishedAt: ts(D(-1), 18), duration: '60', entries: [] },
+    { id: 'wOld', name: 'Staré', date: D(-9), exercises: [{ id: 'x', name: 'Dřep', sets: 3, reps: 5, weight: 80 }] }];
+  S.habits = [{ id: 'hW', name: 'Voda', type: 'good', frequency: 'daily', target: 1, completions: [D(0), D(-1), D(-2)], active: true, startDate: D(-30), createdAt: ts(D(-30)) },
+    { id: 'hWk', name: 'Plavání', type: 'good', frequency: 'weekly', target: 2, completions: [D(-1)], active: true, startDate: D(-30), createdAt: ts(D(-30)) },
+    { id: 'hDay', name: 'Čtení', type: 'good', frequency: 'weekdays', weekdays: [1, 3, 5], target: 1, completions: [D(0)], active: true, startDate: D(-30), createdAt: ts(D(-30)) },
+    { id: 'hBad', name: 'Kouření', type: 'bad', frequency: 'daily', target: 1, completions: [D(0)], brokenDates: [], active: true, startDate: D(-30), createdAt: ts(D(-30)) }];
+  S.xpLog = [{ id: 'x1', amount: 30, reason: 'Task: Kód', ts: ts(D(-1)), key: `task:tW2:${D(-1)}` }, { id: 'x2', amount: 20, reason: 'Task: Minule', ts: ts(D(-8)), key: `task:tW8:${D(-8)}` },
+    { id: 'x3', amount: 200, reason: 'Goal: Hotovo', ts: ts(D(-1)), key: 'goal:gDone:complete' }, { id: 'x4', amount: 80, reason: 'Workout: Push', ts: ts(D(-1), 18), key: `workout:wW1:${D(-1)}` }];
+  S.totalXp = 330; S.dailyScoresSince = T; S.achievementsUnlocked = ACHV.map(a => a.id);
+  S = migrate(JSON.parse(JSON.stringify(S)));
+  ['daily', 'weekly'].forEach(p => questBoardFor(p).forEach(({ q }) => { const k = questKey(q.id, p); if (!S.quests.some(x => x.key === k)) S.quests.push({ key: k, questId: q.id, date: todayStr(), period: p }); }));
+  view = 'home'; render();
+});
+const wpDays = page => page.$$eval('#wpDays .wp-day', ns => ns.map(n => n.dataset.day));
+
+test('WP1 Week Overview: 7 days Po..Ne, each with planned time, blocks, tasks, events, workouts and habits; reachable from More', async ({ page }) => {
+  await wpSeed(page);
+  await page.evaluate(() => { view = 'more'; render(); }); await page.click('#moreGrid [data-v="week"]');
+  assert.equal(await page.evaluate(() => view), 'week');
+  assert.deepEqual(await wpDays(page), ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27']);
+  assert.match(await page.locator('#wpDays .wp-day').first().innerText(), /^Pondělí 21\. 9\./);
+  assert.match(await page.locator('#wpDays .wp-day').last().innerText(), /^Neděle 27\. 9\./);
+  const wed = await page.locator('.wp-day[data-day="2026-09-23"]').innerText();
+  assert.match(wed, /Středa 23\. 9\.[\s\S]*Dnes[\s\S]*Naplánováno: 2 h 30 min[\s\S]*06:00–07:00[\s\S]*Ranní běh[\s\S]*18:00–19:00[\s\S]*Trénink tým[\s\S]*18:00–19:30[\s\S]*Intervaly[\s\S]*Nákup[\s\S]*Čtení[\s\S]*Voda/);
+  assert.equal(await page.locator('.wp-day[data-day="2026-09-23"] article[aria-labelledby="wpd-2026-09-23"] h3#wpd-2026-09-23').count(), 1);
+  assert.deepEqual(await wpClean(page), { bad: false, dup: [], overflow: 0 });
+}, { state: fixtureState() });
+
+test('WP2 current week is the default: Monday..Sunday around today, "Tento týden"', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  assert.equal(await page.locator('.wp').getAttribute('data-week'), '2026-09-21');
+  assert.match(await page.locator('.page-head').innerText(), /Tento týden[\s\S]*21\.09\.2026 – 27\.09\.2026/);
+  assert.equal(await page.locator('#wpToday').getAttribute('aria-current'), 'true');
+  assert.deepEqual(await page.evaluate(() => { const r = wpRange(0); return [r.from, r.to, r.days.length, wpOffsetOf('2026-09-30'), wpOffsetOf('2026-09-13')]; }), ['2026-09-21', '2026-09-27', 7, 1, -2]);
+}, { state: fixtureState() });
+
+test('WP3 previous week: 14..20 with its own blocks, tasks, events and workouts', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0); await page.click('#wpPrev');
+  assert.equal(await page.locator('.wp').getAttribute('data-week'), '2026-09-14');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'wpPrev', 'focus kept');
+  assert.match(await page.locator('.page-head').innerText(), /Týden Po 14\. 9\. – Ne 20\. 9\./);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-16"]').innerText(), /Naplánováno: 2 h[\s\S]*Minulý týden[\s\S]*Trénink tým/);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-15"]').innerText(), /Minule/);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-14"]').innerText(), /Staré[\s\S]*splněno/);
+}, { state: fixtureState() });
+
+test('WP4 next week: 28..4.10, the recurring event continues, only its own blocks', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0); await page.click('#wpNext');
+  assert.equal(await page.locator('.wp').getAttribute('data-week'), '2026-09-28');
+  assert.match(await page.locator('.wp-day[data-day="2026-09-30"]').innerText(), /Příští týden[\s\S]*Trénink tým/);
+  assert.equal(await page.locator('.wp-block[data-block="pW1"]').count(), 0);
+}, { state: fixtureState() });
+
+test('WP5 "Dnes" returns to the current week', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, -3);
+  assert.equal(await page.locator('.wp').getAttribute('data-week'), '2026-08-31');
+  await page.click('#wpToday');
+  assert.equal(await page.locator('.wp').getAttribute('data-week'), '2026-09-21');
+  assert.equal(await page.locator('.wp-day.is-today').getAttribute('data-day'), '2026-09-23');
+}, { state: fixtureState() });
+
+test('WP6 week summary: blocks, planned time, tasks, completed tasks, goals, milestones, workouts, habits, events - facts', async ({ page }) => {
+  await wpSeed(page);
+  const s = await page.evaluate(() => { const x = wpSummary(wpWeek(0)); return [x.blocks, x.minutes, x.tasksDue, x.tasksDueDone, x.tasksDone, x.activeGoals, x.msDue, x.msDone, x.workouts, x.habitsDone, x.habitsExpected, x.events, x.conflicts, x.goalsDone, x.xp]; });
+  assert.deepEqual(s, [7, 540, 4, 1, 1, 4, 1, 1, 1, 5, 6, 3, 4, 1, 310]);
+  await wpGo(page, 0);
+  assert.match(await page.locator('#wpSummary').innerText(), /Naplánováno\s*9 h[\s\S]*Bloky v plánovači\s*7[\s\S]*Úkoly s termínem\s*1\/4[\s\S]*Dokončené úkoly\s*1[\s\S]*Aktivní cíle\s*4[\s\S]*Tréninky\s*1[\s\S]*Návyky\s*5 \/ 6[\s\S]*Události\s*3/);
+  assert.doesNotMatch(await page.locator('#app').innerText(), /volný čas:|free time:|přetížen|overloaded|unhealthy|failed|špatn/i);
+}, { state: fixtureState() });
+
+test('WP7 daily capacity: planned time per day, by existing category and goal share; overlaps as a fact; no free time', async ({ page }) => {
+  await wpSeed(page);
+  const d = await page.evaluate(() => wpWeek(0).days.map(x => [x.date.slice(8), x.minutes, x.goalMinutes, x.byCategory.map(c => c.c + ':' + c.min).join(','), x.conflicts.length]));
+  assert.deepEqual(d, [['21', 60, 0, 'Work:60', 0], ['22', 60, 60, 'Fitness:60', 1], ['23', 150, 150, 'Fitness:150', 1], ['24', 120, 120, 'Work:120', 0], ['25', 150, 90, 'Work:90,Personal:60', 2], ['26', 0, 0, '', 0], ['27', 0, 0, '', 0]]);
+  await wpGo(page, 0);
+  const fri = await page.locator('.wp-day[data-day="2026-09-25"]').innerText();
+  assert.match(fri, /Naplánováno: 2 h 30 min · z toho u cílů 1 h 30 min[\s\S]*2 překryvy v plánu[\s\S]*Práce 1 h 30 min[\s\S]*Osobní 1 h/);
+}, { state: fixtureState() });
+
+test('WP8 goal capacity + goals of the week: progress, deadline, blocks, planned time, open / done tasks, next step, sorted by deadline', async ({ page }) => {
+  await wpSeed(page);
+  const g = await page.evaluate(() => wpGoals(wpWeek(0)).map(x => [x.g.id, x.blocks, x.minutes, x.openTasks, x.doneTasks, x.next && x.next.id]));
+  assert.deepEqual(g, [['gW4', 0, 0, 0, 0, null], ['gW1', 2, 210, 2, 1, 'tW1'], ['gW2', 3, 210, 0, 0, 'pW3'], ['gW3', 0, 0, 1, 0, 'tW7']]);
+  await wpGo(page, 0);
+  assert.match(await page.locator('#wpGoals [data-goal="gW1"]').innerText(), /Web[\s\S]*03\.10\.2026[\s\S]*Naplánováno: 3 h 30 min[\s\S]*Bloky: 2[\s\S]*Otevřené úkoly: 2[\s\S]*Dokončeno tento týden: 1[\s\S]*Úkol: Návrh/);
+}, { state: fixtureState() });
+
+test('WP9 unplanned tasks: open, no block from today on, overdue / due this week / undated; with priority, deadline, goal, category', async ({ page }) => {
+  await wpSeed(page);
+  assert.deepEqual(await page.evaluate(() => wpUnplanned(wpWeek(0)).list.map(t => t.id)), ['tW5', 'tW4', 'tW3', 'tW7']);
+  await wpGo(page, 0);
+  assert.match(await page.locator('#wpUnplanned').innerText(), /Úkoly bez plánu · 4[\s\S]*Starý[\s\S]*Urgentní[\s\S]*18\.09\.2026[\s\S]*Práce[\s\S]*Test[\s\S]*Web/);
+}, { state: fixtureState() });
+
+test('WP10 task -> planner: "Naplánovat" opens the existing planner form prefilled (task, goal, category, title); nothing saved before the user saves; then the task is in the week', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  const before = await wpState(page);
+  await page.click('#wpUnplanned [data-plan-task="tW3"]');
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('#pb_title').value, document.querySelector('#pb_date').value, document.querySelector('#pb_cat').value]), ['Test', '2026-09-25', 'Work']);
+  assert.match(await page.locator('.sheet #pb_link').innerText(), /Test/);
+  assert.equal(await wpState(page), before, 'nothing created yet');
+  await page.fill('#pb_start', '14:00'); await page.fill('#pb_end', '15:00'); await page.click('#pb_save'); await settle(page);
+  const b = await page.evaluate(() => S.plannerBlocks[S.plannerBlocks.length - 1]);
+  assert.deepEqual([b.taskId, b.goalId, b.category, b.date, b.startTime], ['tW3', 'gW1', 'Work', '2026-09-25', '14:00']);
+  assert.equal(await page.evaluate(() => view), 'week', 'stays on the week');
+  assert.equal(await page.locator(`.wp-day[data-day="2026-09-25"] .wp-block[data-block="${b.id}"]`).count(), 1);
+  assert.equal(await page.locator('#wpUnplanned [data-plan-task="tW3"]').count(), 0, 'no longer unplanned');
+}, { state: fixtureState() });
+
+test('WP11 planner -> task: a block linked to a task shows "Úkol" and opens the existing task editor', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  await page.locator('.wp-block[data-block="pW1"] [data-open-task="tW1"]').click();
+  assert.equal(await page.locator('.sheet #f_title').inputValue(), 'Návrh');
+  assert.equal(await page.locator('.sheet #f_goal').inputValue(), 'gW1');
+}, { state: fixtureState() });
+
+test('WP12 goal -> week: the goal detail has "Zobrazit v týdnu", opening this week with the goal marked', async ({ page }) => {
+  await wpSeed(page); await page.evaluate(() => { currentGoalId = 'gW1'; view = 'goalDetail'; render(); });
+  await page.click('#gpInWeek');
+  assert.deepEqual(await page.evaluate(() => [view, wpOffset, document.querySelector('.wp').dataset.week]), ['week', 0, '2026-09-21']);
+  assert.equal(await page.locator('#wpGoals .wp-goal.is-focus').getAttribute('data-goal'), 'gW1');
+  assert.equal(await page.evaluate(() => document.activeElement.closest('[data-goal]').dataset.goal), 'gW1');
+}, { state: fixtureState() });
+
+test('WP13 week -> goal: a goal (card or block chip) opens the goal detail', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  await page.locator('#wpGoals [data-goal="gW2"] .wp-goal-t').click();
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gW2']);
+  await wpGo(page, 0); await page.locator('.wp-block[data-block="pW5"] [data-open-goal="gW1"]').click();
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId]), ['goalDetail', 'gW1']);
+}, { state: fixtureState() });
+
+test('WP14 habits: only real occurrences (scheduled day, done or not; weekly ones on the days done); nothing written', async ({ page }) => {
+  await wpSeed(page); const before = await wpState(page);
+  const h = await page.evaluate(() => Object.fromEntries(wpWeek(0).days.map(d => [d.date.slice(8), d.habits.map(x => (x.done ? '✓' : '○') + x.h.name).join(' ')])));
+  assert.deepEqual(h, { '21': '✓Voda ○Čtení', '22': '✓Plavání ✓Voda', '23': '✓Čtení ✓Voda', '24': '○Voda', '25': '○Čtení ○Voda', '26': '○Voda', '27': '○Voda' });
+  await wpGo(page, 0);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-23"] .wp-habits').innerText(), /✓ Čtení[\s\S]*✓ Voda/);
+  assert.doesNotMatch(await page.locator('#wpDays').innerText(), /Kouření/, 'bad habits are not listed as occurrences');
+  assert.equal(await wpState(page), before);
+}, { state: fixtureState() });
+
+test('WP15 fitness: done workouts with their clock time, planned workout blocks, training days; click opens Fitness', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-22"]').innerText(), /17:00–18:00[\s\S]*Push[\s\S]*splněno/);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-25"]').innerText(), /Tréninkový den/);
+  await page.locator('.wp-day[data-day="2026-09-22"] [data-open-fitness="wW1"]').click();
+  assert.equal(await page.evaluate(() => view), 'fitness');
+}, { state: fixtureState() });
+
+test('WP16 events: time, title and length; all-day ones; recurring occurrences in the week; never turned into tasks', async ({ page }) => {
+  await wpSeed(page); const n0 = await page.evaluate(() => S.tasks.length);
+  assert.deepEqual(await page.evaluate(() => wpEventsIn('2026-09-21', '2026-09-27').map(x => [x.e.id, x.date])), [['eW1', '2026-09-25'], ['eW2', '2026-09-23'], ['eAll', '2026-09-26']]);
+  await wpGo(page, 0);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-25"]').innerText(), /11:30–12:30[\s\S]*Porada[\s\S]*1 h/);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-26"]').innerText(), /celý den[\s\S]*Svátek/);
+  await page.locator('[data-open-event="eW1"]').click(); assert.equal(await page.locator('.sheet #e_title, .sheet input').first().count(), 1);
+  await page.evaluate(() => closeSheets());
+  assert.equal(await page.evaluate(() => S.tasks.length), n0);
+}, { state: fixtureState() });
+
+test('WP17 planner conflicts: overlapping blocks with date, time and both items; touching blocks are not a conflict; nothing moved', async ({ page }) => {
+  await wpSeed(page); const before = await page.evaluate(() => JSON.stringify(S.plannerBlocks));
+  const c = await page.evaluate(() => wpWeek(0).days.flatMap(d => d.conflicts).map(x => [x.date.slice(8), x.a.k + ':' + x.a.id, x.b.k + ':' + x.b.id, x.from, x.to]));
+  assert.deepEqual(c, [['22', 'workout:wW1', 'block:pW7', '17:30', '18:00'], ['23', 'event:eW2', 'block:pW3', '18:00', '19:00'], ['25', 'block:pW4', 'block:pW5', '10:30', '11:00'], ['25', 'block:pW5', 'event:eW1', '11:30', '12:00']]);
+  await page.evaluate(() => { S.plannerBlocks.push({ id: 'pT', date: '2026-09-25', startTime: '12:30', endTime: '13:00', title: 'Navazuje' }); });
+  assert.equal(await page.evaluate(() => wpWeek(0).days[4].conflicts.length), 2, '12:30 right after an event ending 12:30 is not a conflict');
+  await page.evaluate(() => { S.plannerBlocks = S.plannerBlocks.filter(b => b.id !== 'pT'); });
+  await wpGo(page, 0);
+  assert.match(await page.locator('#wpConflicts').innerText(), /Pá 25\. 9\.[\s\S]*10:30–11:00[\s\S]*Blok: Zubař 10:00–11:00[\s\S]*Blok: Sprint 10:30–12:00/);
+  assert.equal(await page.evaluate(() => JSON.stringify(S.plannerBlocks)), before);
+}, { state: fixtureState() });
+
+test('WP18 event and workout conflicts: planner vs event and planner vs a timed workout are listed', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  const t = await page.locator('#wpConflicts').innerText();
+  assert.match(t, /Út 22\. 9\.[\s\S]*Trénink: Push 17:00–18:00[\s\S]*Blok: Běh venku 17:30–18:30/);
+  assert.match(t, /St 23\. 9\.[\s\S]*Událost: Trénink tým 18:00–19:00[\s\S]*Blok: Intervaly 18:00–19:30/);
+  assert.match(t, /Blok: Sprint 10:30–12:00[\s\S]*Událost: Porada 11:30–12:30/);
+}, { state: fixtureState() });
+
+test('WP19 reschedule: "Přesunout" changes day / start / end through the existing validation; the week is recomputed', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  await page.locator('.wp-block[data-block="pW4"] .wp-move').click();
+  await page.fill('#mv_date', '2026-09-26'); await page.fill('#mv_start', '09:00'); await page.fill('#mv_end', '08:00'); await page.click('#mv_save');
+  assert.equal(await page.locator('#mv_end').getAttribute('aria-invalid'), 'true', 'end before start is refused'); assert.equal(await page.evaluate(() => S.plannerBlocks.find(b => b.id === 'pW4').date), '2026-09-25');
+  await page.fill('#mv_end', '10:30'); await page.click('#mv_save'); await settle(page);
+  const b = await page.evaluate(() => S.plannerBlocks.find(b => b.id === 'pW4'));
+  assert.deepEqual([b.date, b.startTime, b.endTime, b.title, b.category, b.completed], ['2026-09-26', '09:00', '10:30', 'Zubař', 'Personal', false]);
+  assert.equal(await page.locator('.wp-day[data-day="2026-09-26"] .wp-block[data-block="pW4"]').count(), 1);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-25"]').innerText(), /Naplánováno: 1 h 30 min/);
+  assert.equal((await idbState(page)).plannerBlocks.find(x => x.id === 'pW4').date, '2026-09-26', 'saved');
+  // drag & drop onto another day keeps the times (the same save)
+  // (HTML5 drag events dispatched directly: a real mouse drag across a scrolled page is not reliable in headless runs)
+  await page.evaluate(() => { const dt = new DataTransfer(), src = document.querySelector('.wp-block[data-block="pW6"]'), dst = document.querySelector('.wp-day[data-day="2026-09-24"] .wp-day-c');
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt })); dst.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt })); dst.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); });
+  assert.deepEqual(await page.evaluate(() => { const x = S.plannerBlocks.find(b => b.id === 'pW6'); return [x.date, x.startTime, x.endTime]; }), ['2026-09-24', '08:00', '09:00']);
+}, { state: fixtureState() });
+
+test('WP20 + WP21 moving a block keeps its goal link, task link, category and workout template', async ({ page }) => {
+  await wpSeed(page);
+  await page.evaluate(() => { S.plannerBlocks.find(b => b.id === 'pW1').workoutTemplateId = ''; S.plannerBlocks.find(b => b.id === 'pW5').notes = 'poznámka'; });
+  const keep = await page.evaluate(() => ['pW1', 'pW5'].map(id => { const b = S.plannerBlocks.find(x => x.id === id); return JSON.stringify([b.id, b.taskId, b.goalId, b.category, b.title, b.notes, b.workoutTemplateId, b.completed, b.createdAt]); }));
+  await wpGo(page, 0);
+  for (const [id, d] of [['pW1', '2026-09-27'], ['pW5', '2026-09-24']]) { await page.locator(`.wp-block[data-block="${id}"] .wp-move`).click(); await page.fill('#mv_date', d); await page.click('#mv_save'); }
+  const after = await page.evaluate(() => ['pW1', 'pW5'].map(id => { const b = S.plannerBlocks.find(x => x.id === id); return JSON.stringify([b.id, b.taskId, b.goalId, b.category, b.title, b.notes, b.workoutTemplateId, b.completed, b.createdAt]); }));
+  assert.deepEqual(after, keep);
+  assert.equal(await page.locator('.wp-day[data-day="2026-09-27"] .wp-block[data-block="pW1"] [data-open-task="tW1"]').count(), 1, 'task link');
+  assert.equal(await page.locator('.wp-day[data-day="2026-09-24"] .wp-block[data-block="pW5"] [data-open-goal="gW1"]').count(), 1, 'goal link');
+}, { state: fixtureState() });
+
+test('WP22 + WP23 weekly priorities: an explicit toggle per week, at most 3, stored in S.weeklyPriorities, no XP; the chosen goals show their tasks, blocks, milestones and habit support', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0); const xp0 = await xpOf(page);
+  assert.match(await page.locator('#wpPriorities').innerText(), /Zatím žádná priorita/);
+  for (const id of ['gW1', 'gW2', 'gW3']) { await page.locator(`#wpGoals [data-goal="${id}"] .wp-pri-toggle`).click(); assert.equal(await page.evaluate(() => document.activeElement.dataset.pri), id, 'focus stays on the toggle'); }
+  assert.deepEqual(await page.evaluate(() => S.weeklyPriorities), { '2026-09-21': ['gW1', 'gW2', 'gW3'] });
+  await page.evaluate(() => { window.__t = []; const t0 = window.toast; window.toast = m => { window.__t.push(String(m)); return t0(m); }; });
+  await page.locator('#wpGoals [data-goal="gW4"] .wp-pri-toggle').click();
+  assert.deepEqual(await page.evaluate(() => [S.weeklyPriorities['2026-09-21'].length, window.__t.join('|')]), [3, 'Priorit týdne může být nejvýš 3.'], 'max 3');
+  const pri = await page.locator('#wpPriorities').innerText();
+  assert.match(pri, /Priority týdne · 3\/3[\s\S]*Web[\s\S]*Otevřené úkoly[\s\S]*Návrh[\s\S]*Bloky tento týden[\s\S]*Sprint[\s\S]*Otevřené milníky[\s\S]*Beta/i);
+  assert.equal(await page.locator('#wpGoals [data-goal="gW1"]').getAttribute('class').then(c => c.includes('is-pri')), true);
+  await page.locator('#wpPriorities [data-goal="gW2"] .wp-pri-toggle').click();
+  assert.deepEqual(await page.evaluate(() => S.weeklyPriorities['2026-09-21']), ['gW1', 'gW3']);
+  await wpGo(page, 1); assert.match(await page.locator('#wpPriorities').innerText(), /0\/3/, 'per week');
+  await settle(page); assert.deepEqual((await idbState(page)).weeklyPriorities, { '2026-09-21': ['gW1', 'gW3'] });
+  assert.equal(await xpOf(page), xp0, 'no XP for planning');
+  assert.deepEqual(await page.evaluate(() => wpTogglePriority('2026-09-21', 'gDone')), { ok: false, reason: 'goal' }, 'only active goals');
+}, { state: fixtureState() });
+
+test('WP24 + WP25 weekly review / plan vs actual: tasks, blocks (past, marked done), milestones, goals, workouts, habits, events, XP - no measured working time', async ({ page }) => {
+  await wpSeed(page);
+  const r = await page.evaluate(() => { const x = wpSummary(wpWeek(0)); return [x.pastBlocks, x.doneBlocks, x.pastMin, x.doneMin, x.current, x.complete]; });
+  assert.deepEqual(r, [3, 2, 180, 120, true, false]);
+  await wpGo(page, 0);
+  const rows = await page.$$eval('#wpReview tbody tr', rs => rs.map(r => [...r.children].map(c => c.textContent.trim())));
+  assert.deepEqual(rows, [['Úkoly s termínem v týdnu', '4', '1'], ['Dokončené úkoly celkem', '—', '1'], ['Bloky (proběhlé)', '3', '2'], ['Čas bloků (proběhlé)', '3 h', '2 h'], ['Milníky s termínem', '1', '1'], ['Uzavřené cíle', '—', '1'],
+    ['Tréninky', '3', '1'], ['Návyky (splnění)', '6', '5'], ['Události', '3', '—'], ['XP získané v týdnu', '—', '310']]);
+  assert.match(await page.locator('#wpReview').innerText(), /Týden ještě běží[\s\S]*skutečně odpracovaný čas aplikace neměří/);
+  await wpGo(page, -1); assert.doesNotMatch(await page.locator('#wpReview').innerText(), /Týden ještě běží/, 'a finished week');
+}, { state: fixtureState() });
+
+test('WP26 Analytics stays read-only and agrees with the week (planned blocks and time, completed tasks, goal activity)', async ({ page }) => {
+  await wpSeed(page); const before = await wpState(page);
+  const r = await page.evaluate(() => { const r = getAnalyticsRange('custom', todayStr(), { from: '2026-09-21', to: '2026-09-27' }), a = anAnalyze(r), w = wpSummary(wpWeek(0));
+    // Analytics' custom range ends today, so compare with the week's days up to today
+    const upTo = wpWeek(0).days.filter(d => d.date <= todayStr()), n = upTo.reduce((s, d) => s + d.blocks.length, 0), m = upTo.reduce((s, d) => s + d.minutes, 0);
+    return [a.planner.count === n && n === 4, a.planner.planned === m && m === 270, a.tasks.metrics.done.current === w.tasksDone, a.goals.metrics.tasks.current]; });
+  assert.deepEqual(r, [true, true, true, 1]);
+  await page.evaluate(() => { statsPeriod = 'week'; view = 'statistics'; render(); });
+  assert.equal(await wpState(page), before);
+}, { state: fixtureState() });
+
+test('WP27 Command Center keeps its own engine: "Co teď?" and its ranking are identical with and without the week view', async ({ page }) => {
+  await wpSeed(page);
+  const a = await page.evaluate(() => JSON.stringify(ccRank(ccCandidates(ccContext())).map(c => [c.kind, c.id, c.score])) + JSON.stringify(ccNow().mode));
+  await wpGo(page, 0); await wpGo(page, 1);
+  const b = await page.evaluate(() => JSON.stringify(ccRank(ccCandidates(ccContext())).map(c => [c.kind, c.id, c.score])) + JSON.stringify(ccNow().mode));
+  assert.equal(a, b);
+  assert.equal(await page.evaluate(() => typeof wpPriorityIds === 'function' && !ccCandidates.toString().includes('weeklyPriorities')), true, 'weekly priorities are not a Command Center input');
+}, { state: fixtureState() });
+
+test('WP28 Home widget "Tento týden": planned time, tasks, active goals; "Zobrazit týden" opens the week', async ({ page }) => {
+  await wpSeed(page); await page.evaluate(() => { view = 'home'; render(); });
+  assert.match(await page.locator('#ccWeek').innerText(), /Tento týden[\s\S]*9 h naplánováno[\s\S]*1\/4 úkolů[\s\S]*4 aktivní cíle/i);
+  await page.click('#ccWeek [data-cc-week]');
+  assert.deepEqual(await page.evaluate(() => [view, wpOffset]), ['week', 0]);
+  await page.evaluate(() => { S.settings.widgets.planner = false; view = 'home'; render(); });
+  assert.equal(await page.locator('#ccWeek').count(), 0, 'follows the Dnešek switch');
+}, { state: fixtureState() });
+
+test('WP29 Calendar coexists unchanged: same events on its dates; the week lists every recurring occurrence without touching events', async ({ page }) => {
+  await wpSeed(page); const ev0 = await page.evaluate(() => JSON.stringify(S.events));
+  await page.evaluate(() => { view = 'calendar'; render(); }); assert.equal(await page.evaluate(() => view), 'calendar');
+  assert.deepEqual(await page.evaluate(() => uiEventsOn('2026-09-25').map(e => e.id)), ['eW1']);
+  await wpGo(page, 0); assert.equal(await page.evaluate(() => JSON.stringify(S.events)), ev0);
+  await page.evaluate(() => { view = 'more'; render(); });
+  assert.deepEqual(await page.$$eval('.more-section:first-of-type [data-v]', ns => ns.map(n => n.dataset.v).slice(0, 3)), ['week', 'planner', 'calendar']);
+}, { state: fixtureState() });
+
+test('WP30 Quick Add "Naplánovat týden" opens the current week; the other entries still open their forms', async ({ page }) => {
+  await wpSeed(page); await page.evaluate(() => { wpOffset = 2; view = 'home'; render(); });
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="week"]');
+  assert.deepEqual(await page.evaluate(() => [view, wpOffset, !!document.querySelector('.sheet')]), ['week', 0, false]);
+  await page.click('#fabBtn'); await page.click('.sheet .qopt[data-t="task"]'); assert.ok(await page.locator('.sheet #f_title').isVisible());
+}, { state: fixtureState() });
+
+const WP_WIDTHS = [320, 360, 390, 430, 768, 1024, 1280, 1440];
+test('WP31 + WP32 + WP33 320-1440 px: days stacked on phones (no horizontal scroll), 7-day strip + two columns on wide screens, full-width cards, 44 px targets; other screens too', async ({ page }) => {
+  await wpSeed(page); const bad = [];
+  for (const w of WP_WIDTHS) {
+    await page.setViewportSize({ width: w, height: 900 });
+    for (const off of [0, -1]) { await wpGo(page, off);
+      const c = await wpClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${w}/week${off}: ${JSON.stringify(c)}`);
+      const small = await page.$$eval('.wp button, .wp a, .wp summary', ns => ns.filter(n => n.offsetParent && !n.closest('.wp-mini')).map(n => [n.className || n.id, n.getBoundingClientRect()]).filter(([, r]) => r.height < 44 || r.width < 44).map(([k, r]) => `${k} ${Math.round(r.width)}x${Math.round(r.height)}`));
+      if (small.length) bad.push(`${w} small: ${small.slice(0, 4).join(', ')}`);
+      const cols = await page.evaluate(() => new Set([...document.querySelectorAll('#wpDays .wp-day')].map(n => Math.round(n.getBoundingClientRect().left))).size);
+      if ((w < 700 && cols !== 1) || (w >= 700 && cols !== 2)) bad.push(`${w}: ${cols} day columns`);
+      if (w < 600 && await page.locator('.wp-strip').isVisible()) bad.push(`${w}: strip visible`);
+    }
+    for (const v of ['home', 'goals', 'goalDetail', 'planner', 'calendar', 'tasks', 'statistics', 'settings']) { await page.evaluate(v => { currentGoalId = 'gW1'; closeSheets(); view = v; render(); }, v); const c = await wpClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${w}/${v}: ${JSON.stringify(c)}`); }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('WP34 light + dark: WCAG AA text contrast in the week; SVG icons, no emoji as UI icons', async ({ page }) => {
+  await wpSeed(page); const bad = [];
+  for (const theme of ['light', 'dark']) for (const off of [0, -1]) {
+    await wpGo(page, off);
+    const r = await page.evaluate(theme => { S.settings.theme = theme; applyTheme(); render();
+      const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+      const lum = c => { const f = x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }; return .2126 * f(c.r) + .7152 * f(c.g) + .0722 * f(c.b); };
+      const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+      const bgOf = el => { const st = []; for (let e = el; e; e = e.parentElement) { const cs = getComputedStyle(e); if (/gradient/.test(cs.backgroundImage) && e.matches('.btn:not(.ghost):not(.danger)')) return { r: 110, g: 80, b: 240, a: 1 }; const c = parse(cs.backgroundColor); if (c && c.a > 0) { st.push(c); if (c.a >= 1) break; } } let bg = parse(getComputedStyle(document.body).backgroundColor); for (let i = st.length - 1; i >= 0; i--) bg = blend(st[i], bg); return bg; };
+      const out = [];
+      document.querySelectorAll('.wp *').forEach(e => { if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return; const cs = getComputedStyle(e);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || e.closest('[aria-hidden="true"],.hide,[hidden]')) return; const fg0 = parse(cs.color); if (!fg0) return; const bg = bgOf(e), fg = blend(fg0, bg);
+        const L1 = lum(fg), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05), size = parseFloat(cs.fontSize), need = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700) ? 3 : 4.5;
+        if (ratio < need) out.push(`${theme}: "${e.textContent.trim().slice(0, 24)}" ${ratio.toFixed(2)}`); });
+      [...document.querySelectorAll('.wp h3, .wp .kicker, .wp button, .wp dt')].forEach(n => { if (/\p{Extended_Pictographic}/u.test(n.textContent)) out.push(`${theme} emoji: ${n.textContent.trim().slice(0, 20)}`); });
+      return out; }, theme);
+    bad.push(...r);
+  }
+  assert.deepEqual([...new Set(bad)], []);
+}, { state: fixtureState() });
+
+test('WP35 accessibility: named week/day structure, list of days, summary as a description list, screen-reader day summaries, named controls, keyboard + focus', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  const r = await page.evaluate(() => ({ days: document.querySelectorAll('ol.wp-days > li > article[aria-labelledby]').length,
+    heads: [...document.querySelectorAll('ol.wp-days article')].every(a => document.getElementById(a.getAttribute('aria-labelledby'))),
+    secs: [...document.querySelectorAll('.wp section[aria-labelledby]')].filter(s => !document.getElementById(s.getAttribute('aria-labelledby'))).length,
+    dl: document.querySelectorAll('#wpSummary dl dt').length, sr: document.querySelector('.wp-day[data-day="2026-09-25"] .hide').textContent,
+    unnamed: [...document.querySelectorAll('.wp button, .wp a')].filter(n => !(n.getAttribute('aria-label') || n.textContent).trim()).length,
+    bars: [...document.querySelectorAll('.wp [role="progressbar"]')].filter(b => !(+b.getAttribute('aria-valuenow') >= 0 && b.getAttribute('aria-label'))).length,
+    nav: document.querySelector('nav.wp-nav').getAttribute('aria-label') }));
+  assert.deepEqual([r.days, r.heads, r.secs, r.dl, r.unnamed, r.bars], [7, true, 0, 10, 0, 0]);
+  assert.match(r.sr, /Pátek 25\. 9\.: naplánováno 2 h 30 min, bloků 2, úkolů 1, událostí 1/);
+  assert.ok(r.nav);
+  await page.focus('#wpNext'); await page.keyboard.press('Enter');
+  assert.deepEqual(await page.evaluate(() => [document.querySelector('.wp').dataset.week, document.activeElement.id]), ['2026-09-28', 'wpNext']);
+  await page.setViewportSize({ width: 1024, height: 900 }); await wpGo(page, 0);
+  await page.click('.wp-strip [data-jump-day="2026-09-25"]');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'wpd-2026-09-25');
+}, { state: fixtureState() });
+
+test('WP36 reduced motion: nothing in the week animates', async ({ page }) => {
+  await wpSeed(page); await wpGo(page, 0);
+  const moving = await page.evaluate(() => [...document.querySelectorAll('.wp, .wp *')].filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).map(n => n.className));
+  assert.deepEqual(moving, []);
+}, { state: fixtureState() });
+
+test('WP37 export / import: weeklyPriorities travels in the same backup; an old backup without it imports and gets an empty map', async ({ page }) => {
+  await wpSeed(page); await page.evaluate(() => { wpTogglePriority('2026-09-21', 'gW1'); }); await persist(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.deepEqual(exported, await stateOf(page)); assert.deepEqual(exported.weeklyPriorities, { '2026-09-21': ['gW1'] }); assert.equal(exported.schemaVersion, 8);
+  await page.evaluate(() => { S.weeklyPriorities = {}; S.plannerBlocks = []; }); await importFile(page, await dl.path()); await settle(page);
+  assert.deepEqual(await stateOf(page), exported, 'restored exactly');
+  const old = JSON.parse(JSON.stringify(exported)); delete old.weeklyPriorities;
+  const f = path.join(path.dirname(await dl.path()), 'old-week.json'); writeFileSync(f, JSON.stringify(old));
+  await page.click('#settingsBtn'); await importFile(page, f); await settle(page);
+  assert.deepEqual(await page.evaluate(() => S.weeklyPriorities), {});
+  await wpGo(page, 0); assert.deepEqual(await wpClean(page), { bad: false, dup: [], overflow: 0 });
+}, { state: fixtureState() });
+
+test('WP38 legacy data: a schemaVersion-4 state (no weeklyPriorities, old events and workouts) migrates idempotently and the week reads cleanly', async ({ page }) => {
+  const r = await page.evaluate(() => { const legacy = { tasks: [{ id: 'lt', title: 'Starý', dueDate: '2026-09-22', done: false, createdAt: 1 }], events: [{ id: 'le', title: 'Stará událost', date: '2026-09-24', time: '10:00' }],
+      workouts: [{ id: 'lw', name: 'Old', date: '2026-09-21', exercises: [] }], habits: [{ id: 'lh', name: 'Old habit', completions: ['2026-09-21'], active: true }], xpLog: [], totalXp: 0, schemaVersion: 4 };
+    const a = migrate(JSON.parse(JSON.stringify(legacy))); const b = migrate(JSON.parse(JSON.stringify(a)));
+    // key order of nested objects is not significant (migrate() merges defaults), so compare with sorted keys
+    const srt = o => JSON.stringify(o, (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
+    const same = srt(a) === srt(b); S = a; S.settings.onboarded = true; return [a.schemaVersion, JSON.stringify(a.weeklyPriorities), same, a.events[0].start]; });
+  assert.deepEqual(r, [8, '{}', true, '10:00']);
+  await page.evaluate(() => { view = 'home'; render(); });
+  const before = await wpState(page);
+  for (const o of [-1, 0, 1]) { await wpGo(page, o); assert.deepEqual(await wpClean(page), { bad: false, dup: [], overflow: 0 }, String(o)); }
+  await wpGo(page, 0);
+  assert.match(await page.locator('.wp-day[data-day="2026-09-24"]').innerText(), /10:00[\s\S]*Stará událost/);
+  assert.equal(await wpState(page), before);
+}, { state: fixtureState() });
+
+test('WP39 + WP40 opening the week never writes: no state, IndexedDB, XP, Daily Score or attribute change; no task or block created', async ({ page }) => {
+  await page.evaluate(() => { view = 'home'; render(); }); await persist(page);
+  const snap = () => page.evaluate(() => JSON.stringify([S, dailyScore(todayStr()), S.attrs, S.totalXp]));
+  const a0 = await snap(), idb0 = await idbState(page);
+  for (const o of [-2, -1, 0, 1, 2]) { await wpGo(page, o); await page.evaluate(() => { const w = wpWeek(wpOffset); wpSummary(w); wpGoals(w); wpUnplanned(w); }); }
+  await wpGo(page, 0); for (const id of await page.$$eval('.wp-strip [data-jump-day]', ns => ns.map(n => n.dataset.jumpDay))) await page.evaluate(id => document.getElementById('wpd-' + id), id);
+  await settle(page);
+  assert.equal(await snap(), a0); assert.deepEqual(await idbState(page), idb0);
+  await wpSeed(page); await persist(page); const b0 = await snap(), idb1 = await idbState(page);
+  for (const o of [-1, 0, 1]) await wpGo(page, o);
+  await page.evaluate(() => { view = 'home'; render(); }); await page.evaluate(() => { view = 'goalDetail'; currentGoalId = 'gW1'; render(); });
+  await settle(page);
+  assert.equal(await snap(), b0, 'seeded: nothing changed'); assert.deepEqual(await idbState(page), idb1);
+}, { state: fixtureState() });
+
+test('WP41 + WP42 no duplicate ids, no NaN / undefined in any week - fixture, seeded, empty, legacy', async ({ page }) => {
+  const bad = [];
+  const sweep = async name => { for (const o of [-2, -1, 0, 1, 2]) { await wpGo(page, o); const c = await wpClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${name}/${o}: ${JSON.stringify(c)}`); } };
+  await sweep('fixture'); await wpSeed(page); await sweep('seed');
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; }); await sweep('empty');
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; S.weeklyPriorities = { '2026-09-21': ['missing-goal', 'x', 'y', 'z'] }; S.plannerBlocks = [{ id: 'bad', date: '2026-09-22', startTime: '', endTime: 'xx', title: 'Neplatný' }]; S.events = [{ id: 'e', title: 'x', date: '2026-09-22', recurring: 'daily' }]; }); await sweep('odd');
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('WP43 performance: 1 500 tasks, 25 000 XP, 40 habits, 25 goals, 100 milestones, 400 blocks, 300 meals, 300 sleep records, 150 workouts, 200 events', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3)); const T = todayStr();
+    for (let i = 0; i < 25; i++) S.goals.push({ id: 'pg' + i, title: 'Cíl ' + i, category: ['Work', 'Fitness', ''][i % 3], status: i % 5 ? 'Active' : 'Completed', targetDate: i % 4 ? addDays(T, i * 7 - 30) : '', mode: 'auto', createdAt: Date.now() - 200 * 86400000 });
+    for (let i = 0; i < 100; i++) S.milestones.push({ id: 'pm' + i, goalId: 'pg' + (i % 25), title: 'M' + i, targetDate: addDays(T, i - 50), completed: i % 3 === 0, completedAt: i % 3 === 0 ? Date.now() - i * 86400000 : null, createdAt: 1 });
+    S.tasks.forEach((t, i) => { if (i % 5 === 0) t.goalId = 'pg' + (i % 25); });
+    for (let i = 0; i < 40; i++) S.habits.push({ id: 'ph' + i, name: 'Návyk ' + i, type: i % 9 ? 'good' : 'bad', frequency: ['daily', 'weekdays', 'weekly'][i % 3], weekdays: [1, 3, 5], target: i % 3 === 2 ? 3 : 1, goalId: i % 4 ? '' : 'pg' + (i % 25), completions: Array.from({ length: 200 }, (_, k) => addDays(T, -k)), active: true, createdAt: 1 });
+    for (let i = 0; i < 400; i++) S.plannerBlocks.push({ id: 'pp' + i, date: addDays(T, (i % 60) - 30), startTime: String(6 + i % 14).padStart(2, '0') + ':00', endTime: String(7 + i % 14).padStart(2, '0') + ':30', title: 'Blok ' + i, category: ['Work', 'Fitness', ''][i % 3], taskId: i % 3 ? '' : 'rt' + (i * 5), goalId: i % 4 ? '' : 'pg' + (i % 25), completed: i % 2 === 0 });
+    for (let i = 0; i < 300; i++) { const d = addDays(T, -i); S.meals.push({ id: 'pm' + i, name: 'J', date: d, type: 'Lunch', calories: 500, servings: 1 }); S.sleepLog.push({ id: 'ps' + i, date: d, bedtime: '23:00', wake: '07:00' }); }
+    for (let i = 0; i < 150; i++) S.workouts.push({ id: 'pw' + i, name: 'Push', date: addDays(T, -i * 2), status: 'done', startedAt: new Date(addDays(T, -i * 2) + 'T17:00').getTime(), finishedAt: new Date(addDays(T, -i * 2) + 'T18:00').getTime(), entries: [] });
+    for (let i = 0; i < 200; i++) S.events.push({ id: 'pe' + i, title: 'Událost ' + i, date: addDays(T, (i % 120) - 90), start: String(8 + i % 10).padStart(2, '0') + ':00', end: String(9 + i % 10).padStart(2, '0') + ':00', recurring: ['none', 'weekly', 'daily', 'monthly'][i % 4] });
+    const m = (f, n) => { f(); const ts = []; for (let i = 0; i < n; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[Math.floor(n / 2)]; };
+    return { week: m(() => { wpOffset = 0; view = 'week'; render(); }, 5), prev: m(() => { wpOffset = -1; view = 'week'; render(); }, 5), engine: m(() => { const w = wpWeek(0); wpSummary(w); wpGoals(w); wpUnplanned(w); }, 5), home: m(() => { view = 'home'; render(); }, 5),
+      bad: (wpOffset = 0, view = 'week', render(), /undefined|NaN/.test(document.getElementById('app').innerText)) }; });
+  console.log('      WP43 ' + Object.entries(r).filter(([k]) => k !== 'bad').map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', '));
+  assert.ok(!r.bad);
+  assert.ok(r.week < 80 && r.prev < 80 && r.engine < 50, 'fast (target week < 50 ms)');
+}, { state: fixtureState() });
+
+test('WP44 + WP45 Web Locks / multi-tab: a second tab stays blocked (never loads or saves the week), a priority set in the owner tab is saved and reaches the next owner', async ({ page }) => {
+  const errs = [];
+  await wpSeed(page); await persist(page);
+  const B = await extraTab(page, errs);
+  await B.waitForSelector('#tabLock');
+  assert.deepEqual(await tabState(B), { booted: false, active: false, blocked: true });
+  assert.equal(await B.evaluate(() => typeof S === 'undefined' || S === null), true, 'the blocked tab has no data to show a week from');
+  await B.evaluate(() => { try { flushSave(); scheduleSave(); } catch (e) {} });
+  await page.evaluate(() => { wpOffset = 0; view = 'week'; render(); wpTogglePriority('2026-09-21', 'gW2'); }); await settle(page);
+  assert.deepEqual((await idbState(page)).weeklyPriorities, { '2026-09-21': ['gW2'] }, 'owner saved');
+  await page.reload(); await ownerReady(B); await injectRawIdb(B);
+  assert.deepEqual(await B.evaluate(() => { wpOffset = 0; view = 'week'; render(); return [S.weeklyPriorities, document.querySelector('#wpPriorities').innerText.includes('1/3')]; }), [{ '2026-09-21': ['gW2'] }, true], 'the next owner reads the saved priority');
+  await B.close();
+  assert.deepEqual(errs, []);
+}, { state: fixtureState() });
 
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.
