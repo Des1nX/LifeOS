@@ -1673,6 +1673,9 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-we
 .pk-lbl{font-size:var(--fs-micro);font-weight:750;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:8px 2px 4px}
 .pk-foot{display:flex;justify-content:space-between;gap:8px;margin-top:10px}.pk-foot .btn{min-height:44px;flex:1}
 @media(pointer:coarse){.pk-cell{min-height:44px}}
+
+.cf-attrs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}.cf-attr{min-width:52px;min-height:44px;justify-content:center;cursor:pointer;font-weight:750}
+.cf-attr.on{background:var(--accent-strong);color:#fff;border-color:transparent}
 </style>
 </head>
 <body>
@@ -1856,10 +1859,11 @@ function habitXp(h){ return HABIT_XP[habitPriority(h)]; }
    edits of built-ins. A record keeps storing the category key (a built-in's key is its old name, so every
    old record resolves unchanged); renaming only changes the label. Archived = hidden from pickers only. ---- */
 const NOTE_CATS={Personal:'sparkle',Work:'briefcase',School:'book',Ideas:'star',Shopping:'cart',Car:'car'};
+const NOTE_CATS_DEFAULT=['Personal','Work'];
 const CAT_ICON_CHOICES=['dumbbell','heart','book','flame','wallet','briefcase','users','sparkle','target','home','music','code','leaf','globe','brush','cart','car','apple','moon','star','clock','tag'];
 const CAT_COLOR_CHOICES=['#ef4444','#f97316','#eab308','#10b981','#14b8a6','#3b82f6','#6366f1','#8b5cf6','#ec4899','#64748b'];
 function catBuiltins(scope){
-  if(scope==='notes') return Object.keys(NOTE_CATS).map(k=>({key:k,scope,name:k,icon:NOTE_CATS[k],color:'',profile:null,archived:false,builtin:true}));
+  if(scope==='notes') return Object.keys(NOTE_CATS).map(k=>({key:k,scope,name:k,icon:NOTE_CATS[k],color:'',profile:null,archived:!NOTE_CATS_DEFAULT.includes(k),builtin:true})); // Reality QA: Osobní + Práce by default
   return CAT_LIST.map(k=>({key:k,scope:'life',name:k,icon:CATS[k].icon,color:'',profile:CATS[k].p,archived:false,builtin:true}));
 }
 function catList(scope,st){
@@ -1878,13 +1882,17 @@ function catColor(key,scope){
   const p=ATTR_PROFILES[c.profile]; const top=p?Object.keys(p).sort((a,b)=>p[b]-p[a])[0]:null;
   return top&&ATTRS[top]?ATTRS[top].c:'var(--accent)';
 }
-function catProfile(key){ const c=catInfo(key,'life'); return c&&ATTR_PROFILES[c.profile]?c.profile:null; }
+function catAttrMix(c){ if(!c||!c.attrMix||typeof c.attrMix!=='object') return null; const m={}; Object.keys(c.attrMix).forEach(k=>{ if(ATTRS[k]&&Number(c.attrMix[k])>0) m[k]=Number(c.attrMix[k]); }); return Object.keys(m).length?m:null; }
+// Reality QA: a category can carry the user's own attribute mix ({VIT:1,FOC:1} = equal split); rpgProfileOf / rpgAttrGains
+// take it as they take a named profile. A category without one keeps its named profile, so old XP mapping is unchanged.
+function catProfile(key){ const c=catInfo(key,'life'); const mix=catAttrMix(c); if(mix) return mix; return c&&ATTR_PROFILES[c.profile]?c.profile:null; }
 function catValidate(f,scope,key){
   const e={}, name=String(f.name||'').trim();
   if(!name) e.name='required';
   else if(catList(scope).some(c=>c.key!==key&&!c.archived&&catLabel(c.key,scope).toLowerCase()===name.toLowerCase())) e.name='duplicate';
   if(f.icon&&!UI_ICONS[f.icon]) e.icon='invalid';
   if(scope!=='notes'&&f.profile&&!ATTR_PROFILES[f.profile]) e.profile='invalid';
+  if(f.attrMix&&(typeof f.attrMix!=='object'||!Object.keys(f.attrMix).length||Object.keys(f.attrMix).some(k=>!ATTRS[k]))) e.profile='invalid';
   return e;
 }
 function catSave(f,scope,key){
@@ -1895,7 +1903,7 @@ function catSave(f,scope,key){
   if(key&&!base) return {ok:false,errors:{key:'missing'}};
   const name=String(f.name).trim();
   const fields={name:base&&base.builtin&&name===uiL(base.key)?base.key:name,icon:f.icon||(base&&base.icon)||'tag',color:f.color!=null?f.color:(base&&base.color)||'',
-    profile:scope==='notes'?null:(f.profile||(base&&base.profile)||'personal'),updatedAt:Date.now()};
+    profile:scope==='notes'?null:(f.profile||(base&&base.profile)||'personal'),attrMix:scope==='notes'?null:(f.attrMix||null),updatedAt:Date.now()};
   let rec=key?S.lifeCategories.find(c=>c.key===key&&(c.scope||'life')===scope):null;
   if(rec) Object.assign(rec,fields);
   else if(base){ rec=Object.assign({key,scope,archived:!!base.archived,createdAt:Date.now()},fields); S.lifeCategories.push(rec); }
@@ -3350,7 +3358,7 @@ const UI_PHRASES_CS={
   'daily':'denně','weekly':'týdně','monthly':'měsíčně','weekdays':'vybrané dny','custom':'vlastní','Good (build)':'Dobrý (budovat)','Bad (avoid)':'Špatný (vyhýbat se)',
   'Paused':'Pozastavený','Completed':'Splněno','Archived':'Archivovaný','Auto':'Automaticky','Manual':'Ručně','auto':'automaticky','manual':'ručně','Yes':'Ano','No':'Ne',
   'Breakfast':'Snídaně','Lunch':'Oběd','Dinner':'Večeře','Snack':'Svačina','Oil Change':'Výměna oleje','Tires':'Pneumatiky','Inspection / STK':'Technická kontrola / STK',
-  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Učení','Finance':'Finance','Social':'Sociální','Habit':'Rutiny','School':'Škola','Ideas':'Nápady',
+  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Studium','Finance':'Finance','Social':'Sociální','Habit':'Disciplína','School':'Škola','Ideas':'Nápady',
   'Importance':'Důležitost','Strength':'Síla','Intelligence':'Inteligence','Discipline':'Disciplína','Vitality':'Vitalita','Wisdom':'Moudrost','Focus':'Soustředění',
   'Home':'Domov','Food':'Jídlo','Transport':'Doprava','Shopping':'Nákupy','Bills':'Účty','Entertainment':'Zábava','Salary':'Mzda','Card':'Karta','Cash':'Hotovost','Bank':'Banka',
   'general':'obecný','resting':'klidový','workout':'při tréninku','Inactive':'Neaktivní','Productivity':'Produktivita','Mindfulness':'Mindfulness',
@@ -5500,7 +5508,7 @@ function uiCategorySettings(){
       const n=catInUse(c.key,scope);
       const row=el(`<div class="cat-row${c.archived?' is-archived':''}" data-cat="${escapeHtml(c.key)}">
         <span class="cat-ic" style="--cc:${catColor(c.key,scope)}" aria-hidden="true">${uiIcon(c.icon||'tag',18)}</span>
-        <span class="cat-main"><b>${escapeHtml(catLabel(c.key,scope))}</b><small>${scope==='life'&&c.profile?escapeHtml(uiProfileLabel(c.profile)):''}${n?` · ${n}×`:''}${c.archived?` · ${cs?'archivováno':'archived'}`:''}</small></span>
+        <span class="cat-main"><b>${escapeHtml(catLabel(c.key,scope))}</b><small>${scope==='life'&&catAttrMix(c)?escapeHtml((cs?'Vlastní · ':'Custom · ')+Object.keys(catAttrMix(c)).join(' ')):scope==='life'&&c.profile?escapeHtml(uiProfileLabel(c.profile)):''}${n?` · ${n}×`:''}${c.archived?` · ${cs?'archivováno':'archived'}`:''}</small></span>
         <button class="iconbtn ghost-ic catEdit" aria-label="${uiT('edit')}: ${escapeHtml(catLabel(c.key,scope))}">${uiIcon('edit',17)}</button>
       </div>`);
       row.querySelector('.catEdit').onclick=()=>openCategoryForm(scope,c.key);
@@ -5510,29 +5518,37 @@ function uiCategorySettings(){
   sec.querySelectorAll('[data-addcat]').forEach(b=>b.onclick=()=>openCategoryForm(b.dataset.addcat));
   return sec;
 }
-function openCategoryForm(scope,key){
-  const cs=uiLang()==='cs', c=key?catInfo(key,scope):null;
+function openCategoryForm(scope,key,onSaved){
+  const cs=uiLang()==='cs', c=key?catInfo(key,scope):null, mix0=catAttrMix(c);
   let icon=(c&&c.icon)||'tag', color=c?(c.color||''):CAT_COLOR_CHOICES[5];
   const inner=el(`<div class="cat-form" id="catForm"><h3>${c?(cs?'Upravit kategorii':'Edit category'):(cs?'Nová kategorie':'New category')}</h3>
     <label for="cf_name">${cs?'Název':'Name'}</label><input id="cf_name" value="${c?escapeHtml(catLabel(c.key,scope)):''}" autocomplete="off"><div class="field-error" data-err="name" hidden></div>
     <label>${cs?'Ikona':'Icon'}</label><div class="cf-icons" role="radiogroup" aria-label="${cs?'Ikona':'Icon'}">${CAT_ICON_CHOICES.map(i=>`<button type="button" class="cf-ic" data-icon="${i}" role="radio" aria-checked="${i===icon}" aria-label="${i}">${uiIcon(i,20)}</button>`).join('')}</div>
     <label>${cs?'Barva':'Colour'}</label><div class="cf-colors" role="radiogroup" aria-label="${cs?'Barva':'Colour'}">${c&&c.builtin?`<button type="button" class="cf-col is-auto" data-color="" role="radio" aria-checked="${color===''}" aria-label="${cs?'Výchozí':'Default'}">A</button>`:''}${CAT_COLOR_CHOICES.map(x=>`<button type="button" class="cf-col" data-color="${x}" style="--cc:${x}" role="radio" aria-checked="${x===color}" aria-label="${x}"></button>`).join('')}</div>
-    ${scope==='life'?`<label for="cf_profile">${cs?'Rozvíjí atributy':'Grows attributes'}</label><select id="cf_profile">${ATTR_PROFILE_PICK.map(p=>`<option value="${p}">${escapeHtml(uiProfileLabel(p))}</option>`).join('')}</select>
+    ${scope==='life'?`<label for="cf_profile">${cs?'Rozvíjí atributy':'Grows attributes'}</label><select id="cf_profile">${ATTR_PROFILE_PICK.map(p=>`<option value="${p}">${escapeHtml(uiProfileLabel(p))}</option>`).join('')}<option value="__mix">${cs?'Vlastní výběr atributů…':'Choose attributes…'}</option></select>
+    <div class="cf-attrs" id="cf_attrs" role="group" aria-label="${cs?'Atributy kategorie':'Category attributes'}" hidden>${Object.keys(ATTRS).map(k=>`<button type="button" class="chip cf-attr${mix0&&mix0[k]?' on':''}" data-attr="${k}" aria-pressed="${!!(mix0&&mix0[k])}">${k}</button>`).join('')}
+      <p class="helper-text" style="margin:6px 0 0;width:100%">${cs?'XP za splněné věci této kategorie se rozdělí rovným dílem mezi vybrané atributy.':'XP of completed items in this category is split evenly between the chosen attributes.'}</p></div>
     <p class="helper-text" style="margin:-4px 0 12px">${cs?'Splněné úkoly a rutiny této kategorie posílí tyto atributy.':'Completed tasks and habits of this category strengthen these attributes.'}</p>`:''}
     <button class="btn" id="cf_save">${cs?'Uložit kategorii':'Save category'}</button>
     ${c?`<button class="btn ghost" id="cf_archive" style="margin-top:8px">${uiIcon('archive',16)} ${c.archived?(cs?'Obnovit z archivu':'Restore'):(cs?'Archivovat':'Archive')}</button>
     <p class="helper-text" style="margin-top:8px">${cs?'Archivovaná kategorie se nenabízí u nových položek; existující položky ji dál mají.':'An archived category is not offered for new items; existing items keep it.'}</p>`:''}
   </div>`);
-  const prof=inner.querySelector('#cf_profile'); if(prof) prof.value=(c&&c.profile)||'personal';
+  const prof=inner.querySelector('#cf_profile'), attrs=inner.querySelector('#cf_attrs');
+  if(prof){ prof.value=mix0?'__mix':(c&&c.profile)||'personal'; const sync=()=>{ attrs.hidden=prof.value!=='__mix'; }; prof.onchange=sync; sync();
+    attrs.querySelectorAll('.cf-attr').forEach(b=>b.onclick=()=>{ const on=!b.classList.contains('on'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); }); }
   const pick=(sel,attr,val)=>inner.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-checked',String(b.dataset[attr]===val)));
   inner.querySelectorAll('.cf-ic').forEach(b=>b.onclick=()=>{ icon=b.dataset.icon; pick('.cf-ic','icon',icon); });
   inner.querySelectorAll('.cf-col').forEach(b=>b.onclick=()=>{ color=b.dataset.color; pick('.cf-col','color',color); });
   const bg=openSheet(inner);
   inner.querySelector('#cf_save').onclick=()=>{
-    const r=catSave({name:inner.querySelector('#cf_name').value,icon,color,profile:prof?prof.value:null},scope,key);
+    let profile=prof?prof.value:null, attrMix=null;
+    if(profile==='__mix'){ const on=[...attrs.querySelectorAll('.cf-attr.on')].map(b=>b.dataset.attr);
+      if(!on.length){ const err=inner.querySelector('[data-err="name"]'); err.hidden=false; err.textContent=cs?'Vyber aspoň jeden atribut':'Pick at least one attribute'; return; }
+      attrMix=Object.fromEntries(on.map(k=>[k,1])); profile=(c&&c.profile&&c.profile!=='__mix')?c.profile:'personal'; }
+    const r=catSave({name:inner.querySelector('#cf_name').value,icon,color,profile,attrMix},scope,key);
     const err=inner.querySelector('[data-err="name"]');
     if(!r.ok){ err.hidden=false; err.textContent=r.errors.name==='duplicate'?(cs?'Kategorie s tímto názvem už existuje':'A category with this name already exists'):(cs?'Vyplň název':'Name required'); inner.querySelector('#cf_name').focus(); return; }
-    bg.remove(); render(); toast(cs?'Kategorie uložena':'Category saved');
+    bg.remove(); if(onSaved) onSaved(r.category.key); else render(); toast(cs?'Kategorie uložena':'Category saved');
   };
   const ar=inner.querySelector('#cf_archive');
   if(ar) ar.onclick=()=>{ catSetArchived(key,scope,!c.archived); bg.remove(); render(); };
@@ -8300,10 +8316,9 @@ function renderNotes(){
       ${n.body?`<div class="note-body">${escapeHtml((n.body||'').slice(0,220))}${(n.body||'').length>220?'…':''}</div>`:''}
       ${(n.tags||[]).length?`<div class="row" style="gap:5px;flex-wrap:wrap;margin-top:8px">${(n.tags||[]).map(t=>`<span class="chip">#${escapeHtml(t)}</span>`).join('')}</div>`:''}
       <div class="note-foot"><span class="sub">${n.updatedAt?fmtDate(uiIsoDate(n.updatedAt)):''}</span>
-        <div class="item-actions"><button class="iconbtn ghost-ic pinB${n.pinned?' is-on':''}" aria-pressed="${!!n.pinned}" aria-label="${uiL(n.pinned?'Unpin':'Pin')}: ${ttl}" title="${uiL(n.pinned?'Unpin':'Pin')}">📌</button><button class="iconbtn ghost-ic favB${n.favorite?' is-on':''}" aria-pressed="${!!n.favorite}" aria-label="${uiL(n.favorite?'Unfavorite':'Favorite')}: ${ttl}" title="${uiL(n.favorite?'Unfavorite':'Favorite')}">⭐</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${ttl}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${ttl}">✕</button></div></div>
+        <div class="item-actions"><button class="iconbtn ghost-ic pinB${n.pinned?' is-on':''}" aria-pressed="${!!n.pinned}" aria-label="${uiL(n.pinned?'Unpin':'Pin')}: ${ttl}" title="${uiL(n.pinned?'Unpin':'Pin')}">📌</button><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${ttl}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${ttl}">✕</button></div></div>
     </div>`);
     it.querySelector('.pinB').onclick=()=>{n.pinned=!n.pinned;scheduleSave();render();};
-    it.querySelector('.favB').onclick=()=>{n.favorite=!n.favorite;scheduleSave();render();};
     it.querySelector('.editBtn').onclick=()=>openNoteForm(n);
     it.querySelector('.delbtn').onclick=()=>uiDelConfirm('note',{name:n.title||(uiLang()==='cs'?'Bez názvu':'Untitled')},()=>{
       S.notes=S.notes.filter(x=>x.id!==n.id);scheduleSave();render();toast('Note deleted');
@@ -8317,21 +8332,21 @@ function openNoteForm(existing){
   const n=existing;
   const inner=el(`<div><h3>${n?'Edit Note':'New Note'}</h3>
     <label>Title</label><input id="n_title" value="${n?escapeHtml(n.title||''):''}" placeholder="Title">
-    <label>Category</label><select id="n_cat">${catOptions(n?n.category:'','notes')}</select>
+    <label>Category</label><div class="row" style="gap:8px;align-items:stretch"><select id="n_cat" style="flex:1">${catOptions(n?n.category:'','notes')}</select><button type="button" class="btn ghost sm" id="n_newcat" style="min-height:46px;flex:none">＋ ${uiLang()==='cs'?'Kategorie':'Category'}</button></div>
     <label>Body</label><textarea id="n_body" rows="6">${n?escapeHtml(n.body||''):''}</textarea>
     <label>Tags (comma separated)</label><input id="n_tags" value="${n?(n.tags||[]).join(', '):''}" placeholder="e.g. recipe, travel">
     <label><input type="checkbox" id="n_pin" style="width:auto;display:inline-block;margin-right:6px">Pinned</label>
-    <label><input type="checkbox" id="n_fav" style="width:auto;display:inline-block;margin-right:6px">Favorite</label>
     <button class="btn" id="n_save">${n?'Save Changes':'Save Note'}</button>
   </div>`);
-  if(n){ inner.querySelector('#n_cat').value=n.category||'Personal'; inner.querySelector('#n_pin').checked=!!n.pinned; inner.querySelector('#n_fav').checked=!!n.favorite; }
+  if(n){ inner.querySelector('#n_cat').value=n.category||'Personal'; inner.querySelector('#n_pin').checked=!!n.pinned; }
+  inner.querySelector('#n_newcat').onclick=()=>openCategoryForm('notes',undefined,key=>{ const sel=inner.querySelector('#n_cat'); sel.innerHTML=catOptions(key,'notes'); sel.value=key; });
   inner.querySelector('#n_save').onclick=()=>{
     const title=inner.querySelector('#n_title').value.trim();
     const body=inner.querySelector('#n_body').value;
     if(!title&&!body){toast('Note is empty');return;}
     const tags=inner.querySelector('#n_tags').value.split(',').map(t=>t.trim()).filter(Boolean);
     const fields={title,body,category:inner.querySelector('#n_cat').value,tags,
-      pinned:inner.querySelector('#n_pin').checked,favorite:inner.querySelector('#n_fav').checked};
+      pinned:inner.querySelector('#n_pin').checked}; // Reality QA: no favourites any more; an old note keeps its stored flag
     if(n){
       // Edit in place: same id/createdAt preserved; updatedAt bumped so "recently edited"
       // sort order (b.updatedAt-a.updatedAt) reflects the change.
