@@ -1422,6 +1422,62 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
   .an-body>#anSummary,.an-body>#anChanges,.an-body>#anHeat{grid-column:1/-1}.an-cards{grid-template-columns:repeat(6,minmax(0,1fr))}
   .an-body>#anChanges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3);align-items:start}.an-body>#anChanges>.section-header{grid-column:1/-1}
   .an-body .an-2{grid-template-columns:minmax(0,1fr)}}
+/* ---------- Advanced Goals & Planning 2.0 ---------- */
+.gp-filters .pill{min-height:44px}
+.gp .page-head .btn.sm,.gp .goal-card .sm-done{min-height:44px}
+.gp .chip.is-success,.gp-detail .chip.is-success{color:color-mix(in srgb,var(--color-success) 78%,var(--text))}
+@media(max-width:480px){.gp-filters{flex-wrap:wrap;overflow-x:visible;border-radius:18px}.gp-filters .pill{flex:1 1 auto;justify-content:center}}
+.gp-info{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-bottom:var(--sp-2)}
+.gp-h{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:var(--fs-body);min-width:0}
+.gp-h svg{color:var(--accent);flex:none}
+.gp-names{margin:-4px 0 8px;font-size:var(--fs-caption);color:var(--color-text-secondary);overflow-wrap:anywhere}
+.gp-big{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.gp-big small{font-size:13px;color:var(--sub);font-weight:650;letter-spacing:0}
+.gp-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:8px 0;border:none;border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent);background:none;text-align:left;cursor:pointer;color:var(--text);font:inherit}
+.gp-row:first-of-type{border-top:none}
+.gp-row-t{font-weight:700;min-width:0;overflow-wrap:anywhere;display:inline-flex;align-items:center;gap:4px}
+.gp-row-m{font-size:var(--fs-caption);color:var(--color-text-secondary);white-space:nowrap;font-variant-numeric:tabular-nums}
+.gp-conf-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.gp-conf-list li{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:12px;background:var(--card2);font-size:var(--fs-body-sm)}
+.gp-conf-b{display:flex;justify-content:space-between;gap:8px;min-height:44px;align-items:center;border:none;background:none;padding:0;text-align:left;cursor:pointer;color:var(--text);font:inherit;font-weight:650}
+.gp-card-next{margin-top:10px;font-size:var(--fs-body-sm)}
+.gp-next{display:inline;overflow-wrap:anywhere}
+.gp-next svg{color:var(--accent);vertical-align:-2px}
+.gp-next.is-none{color:var(--color-text-secondary)}
+.gp-next-btn{display:flex;width:100%;min-height:44px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--card2);text-align:left;cursor:pointer;color:var(--text);font:inherit;font-size:var(--fs-body-sm)}
+.gp-nextcard p.gp-next{margin:0 0 10px}
+.gp-nextcard .btn.sm,.gp-actions .btn.sm{min-height:44px}
+.gp-why{margin-top:12px}
+.gp-why ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:var(--fs-body-sm)}
+.gp-pace-t{margin:8px 0 0;font-size:var(--fs-body-sm);font-weight:650}
+.gp-wtbl td,.gp-wtbl th{white-space:nowrap}
+.gp-wtbl tbody th{white-space:normal}
+.gp-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.gp-road{list-style:none;margin:0;padding:0;position:relative}
+.gp-road::before{content:'';position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:color-mix(in srgb,var(--line) 80%,transparent)}
+.gp-node,.gp-ms{position:relative;display:flex;gap:10px;align-items:flex-start;padding:6px 0;min-width:0}
+.gp-node.is-ms-wrap{display:block;padding:0}
+.gp-dot{position:relative;z-index:1;flex:none;width:20px;height:20px;border-radius:50%;margin-top:14px;background:var(--card);border:3px solid var(--accent)}
+.gp-dot.is-done{background:var(--accent)}
+.gp-node.is-goal .gp-dot{margin-top:2px;background:var(--accent)}
+.gp-node.is-free .gp-dot,.gp-node.is-blocks .gp-dot{border-color:var(--sub);margin-top:2px}
+.gp-node-b{flex:1;min-width:0}
+.gp-node-h{margin:0 0 6px;min-height:20px;display:flex;align-items:center}
+.gp-ms-item{margin-bottom:6px}
+.gp-ms-bar{height:5px;margin-top:6px}
+.gp-ms-next{margin-top:4px;font-size:var(--fs-caption)}
+.gp-ms-tasks{margin-left:6px}
+.gp-ms-hint{margin:0 0 6px}
+.gp-ms-hint .linkbtn{border:none;background:none;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;min-height:44px;padding:0 4px}
+.gp-blocks{list-style:none;margin:0;padding:0}
+.gp-tl{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid color-mix(in srgb,var(--line) 80%,transparent);display:flex;flex-direction:column;gap:10px}
+.gp-tl-i{position:relative;display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:0 10px;font-size:var(--fs-body-sm)}
+.gp-tl-i::before{content:'';position:absolute;left:-21px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.gp-tl-i time{grid-row:1/3;font-variant-numeric:tabular-nums;color:var(--color-text-secondary);font-size:var(--fs-caption);white-space:nowrap;padding-top:1px}
+.gp-tl-k{font-weight:700}
+.gp-tl-t{grid-column:2;color:var(--color-text-secondary);overflow-wrap:anywhere}
+@media(min-width:700px){.gp-info{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3)}.gp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3)}.gp-grid>#gpWeek{grid-column:1/-1}}
+@media(min-width:1100px){.gp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.gp-grid>#gpWeek{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -2855,7 +2911,7 @@ function openPlannerForm(existing,preset){
     Object.keys(idOf).forEach(k=>{ const inp=inner.querySelector('#'+idOf[k]), msg=inner.querySelector(`[data-err="${k}"]`); const code=r.errors[k];
       inp.classList.toggle('invalid',!!code); inp.setAttribute('aria-invalid',code?'true':'false'); msg.hidden=!code; msg.textContent=code?uiPlT(code==='required'?'e_required':code==='end_before_start'?'e_order':'e_invalid'):''; });
     if(!r.ok){ const first=inner.querySelector('.invalid'); if(first) first.focus(); return; }
-    closeSheets(); uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved'));
+    closeSheets(); if(view==='goalDetail') render(); else uiOpenPlanner(r.block.date); toast(uiPlT(b?'updated':'saved')); // opened from a goal: stay on it (the block shows there at once)
   };
   const del=inner.querySelector('#pb_delete');
   if(del) del.onclick=()=>uiDelConfirm('block',{name:b.title},()=>{ plannerDeleteBlock(b.id); closeSheets(); render(); toast(uiPlT('deleted')); });
@@ -3585,12 +3641,8 @@ function ccGoalNextSteps(g,ctx){
   else if(habits.length) week={k:'habits',done:habits.reduce((a,h)=>a+habitWeekCount(h,ws),0),total:null};
   else if(tasks.length) week={k:'tasks',done:tasks.filter(t=>{ const d=done.get(t.id); return t.done&&d&&d>=ws; }).length,total:null};
   else { const ms=S.milestones.filter(m=>m.goalId===g.id); if(ms.length) week={k:'milestones',done:ms.filter(m=>m.completed).length,total:ms.length}; }
-  let next=null;
-  const blocks=(S.plannerBlocks||[]).filter(b=>!b.completed&&b.date>=D&&(b.goalId===g.id||(b.taskId&&taskIds.has(b.taskId)))&&!(b.date===D&&ccBlockState(b,ctx)==='missed'))
-    .sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
-  if(blocks[0]) next={k:'block',title:blocks[0].title,date:blocks[0].date,time:blocks[0].startTime,obj:blocks[0]};
-  if(!next){ const t=tasks.filter(t=>!t.done).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'))[0]; if(t) next={k:'task',title:t.title,date:t.dueDate||null,obj:t}; }
-  if(!next){ const m=S.milestones.filter(m=>m.goalId===g.id&&!m.completed).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))[0]; if(m) next={k:'milestone',title:m.title,obj:m}; }
+  // the Goal system's one "Další krok" (task -> milestone -> planner block); the Command Center only presents it
+  const gn=gpNextStep(g); let next=gn?{k:gn.k,title:gn.title,date:gn.date,...(gn.time?{time:gn.time}:{}),obj:gn.obj}:null;
   if(!next&&fitness&&ccIsTrainingDay(ctx)&&!ccWorkoutDoneToday(ctx)) next={k:'training'};
   return {pct:goalProgress(g),ready:uiGoalReady(g),week,next};
 }
@@ -4244,17 +4296,20 @@ function openTaskEditForm(t){
     ${uiXpHint('f_xpHint')}
     <label>Due date</label><input type="date" id="f_due" value="${t.dueDate||''}">
     <label>Goal</label><select id="f_goal">${goalOptions(t.goalId)}</select>
+    ${uiGpMsFieldHtml()}
     <button class="btn" id="f_save">Save Changes</button>
     ${uiTaskPlanBlock(t)}
   </div>`);
   inner.querySelector('#f_cat').value=t.category||'';
   inner.querySelector('#f_pri').value=t.priority||'Medium';
+  uiGpBindMs(inner,t.milestoneId||'');
   uiBindXpHint(inner,'f_pri','f_xpHint',p=>taskXp({priority:p}),t.done);
   inner.querySelector('#f_save').onclick=()=>{
     const title=inner.querySelector('#f_title').value.trim();
     if(!title){toast('Title required');return;}
     t.title=title; t.description=inner.querySelector('#f_desc').value; t.category=inner.querySelector('#f_cat').value; t.priority=inner.querySelector('#f_pri').value;
     t.dueDate=inner.querySelector('#f_due').value; t.goalId=inner.querySelector('#f_goal').value;
+    Object.assign(t,uiGpMsValue(inner,t.milestoneId));
     scheduleSave();closeSheets();render();toast('Task updated');
   };
   // Phase 10: schedule this task in the planner (creates a linked block; the task is not changed).
@@ -4629,61 +4684,407 @@ function openHabitForm(existing){
 }
 
 /* ---- Goals view ---- */
+/* ================= Advanced Goals & Planning 2.0 (logic) =================
+   A READ-ONLY organisation layer over the existing links: task.goalId, habit.goalId, milestone.goalId,
+   plannerBlock.goalId / plannerBlock.taskId, and two optional fields entered in the existing forms:
+   milestone.targetDate and task.milestoneId (absent = no deadline / no milestone; no migration needed).
+   Nothing here writes to S, grants XP or creates a task, block or goal. Progress is always goalProgress().
+   Statuses are facts (active / completed / overdue / no deadline / paused / archived), never a judgement. */
+function gpIndex(){
+  const tasks=new Map(), ms=new Map(), habits=new Map(), blocks=new Map(), taskGoal=new Map();
+  const push=(m,k,v)=>{ if(!k) return; let a=m.get(k); if(!a){ a=[]; m.set(k,a); } a.push(v); };
+  S.tasks.forEach(t=>{ if(t.goalId){ push(tasks,t.goalId,t); taskGoal.set(t.id,t.goalId); } });
+  S.milestones.forEach(m=>push(ms,m.goalId,m));
+  S.habits.forEach(h=>{ if(h.goalId) push(habits,h.goalId,h); });
+  (S.plannerBlocks||[]).forEach(b=>{ const g=b.goalId||taskGoal.get(b.taskId); if(g) push(blocks,g,b); });
+  const of=(m,id)=>m.get(id)||[];
+  return {tasks:id=>of(tasks,id),ms:id=>of(ms,id),habits:id=>of(habits,id),blocks:id=>of(blocks,id),taskGoal};
+}
+function gpNowMin(){ const n=new Date(); return n.getHours()*60+n.getMinutes(); }
+// factual status of a goal
+function gpStatus(g){
+  if(g.status==='Completed') return 'completed';
+  if(g.status==='Paused') return 'paused';
+  if(g.status==='Archived') return 'archived';
+  if(!g.targetDate) return 'nodeadline';
+  return g.targetDate<todayStr()?'overdue':'active';
+}
+const gpByDue=(a,b)=>String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))||((CC_PRIO[b.priority]||200)-(CC_PRIO[a.priority]||200))||String(a.title).localeCompare(String(b.title),'cs')||String(a.id).localeCompare(String(b.id));
+const gpByMsDate=(a,b)=>String(a.targetDate||'9999').localeCompare(String(b.targetDate||'9999'))||((a.createdAt||0)-(b.createdAt||0))||String(a.id).localeCompare(String(b.id));
+// a planner block that has not ended yet and is not marked done
+function gpBlockUpcoming(b,T,nowMin){ if(b.completed||!b.date||b.date<T) return false; if(b.date>T) return true; const e=plannerTimeToMin(b.endTime); return e==null||e>nowMin; }
+// milestone view: its linked tasks (task.milestoneId inside the same goal), progress, status, next task
+function gpMilestone(m,ix){
+  ix=ix||gpIndex(); const T=todayStr();
+  const tasks=ix.tasks(m.goalId).filter(t=>t.milestoneId===m.id), done=tasks.filter(t=>t.done), open=tasks.filter(t=>!t.done).sort(gpByDue);
+  return {m,tasks,done:done.length,remaining:open.length,next:open[0]||null,
+    progress:m.completed?100:tasks.length?Math.round(done.length/tasks.length*100):0,
+    status:m.completed?'completed':m.targetDate&&m.targetDate<T?'overdue':'active'};
+}
+// "Další krok": 1. nearest open linked task, 2. nearest open milestone, 3. nearest upcoming linked planner block
+function gpNextStep(g,ix){
+  ix=ix||gpIndex(); if(g.status==='Completed') return null;
+  const T=todayStr(), nm=gpNowMin();
+  const t=ix.tasks(g.id).filter(t=>!t.done).sort(gpByDue)[0];
+  if(t) return {k:'task',id:t.id,title:t.title,date:t.dueDate||null,obj:t};
+  const m=ix.ms(g.id).filter(m=>!m.completed).sort(gpByMsDate)[0];
+  if(m) return {k:'milestone',id:m.id,title:m.title,date:m.targetDate||null,obj:m};
+  const b=ix.blocks(g.id).filter(b=>gpBlockUpcoming(b,T,nm)).sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime))[0];
+  if(b) return {k:'block',id:b.id,title:b.title,date:b.date,time:b.startTime,end:b.endTime,obj:b};
+  return null;
+}
+// pace: pure arithmetic from the goal's creation day, its deadline and goalProgress(); null parts when not computable
+function gpPace(g){
+  const T=todayStr(), start=g.createdAt&&g.createdAt>86400000?uiIsoDate(g.createdAt):null, end=g.targetDate||null, progress=goalProgress(g);
+  if(g.status!=='Active'||!start||!end||end<=start) return {ok:false,progress,start,end};
+  const total=ccDaysBetween(start,end), elapsed=Math.max(0,Math.min(total,ccDaysBetween(start,T))), remaining=ccDaysBetween(T,end);
+  const timePct=Math.round(elapsed/total*100);
+  return {ok:true,start,end,total,elapsed,remaining:Math.max(0,remaining),past:remaining<0,progress,timePct,
+    diff:elapsed>0?progress-timePct:null,perDay:remaining>0&&progress<100?Math.round((100-progress)/remaining*10)/10:null};
+}
+function gpWeekRange(){ const ws=weekStart(); return {from:ws,to:addDays(ws,6),days:7}; }
+// this week of one goal: tasks, milestones, blocks and linked habits -- planned / done / remaining
+function gpWeek(g,ix){
+  ix=ix||gpIndex(); const w=gpWeekRange(), T=todayStr(), nm=gpNowMin(), inW=d=>d&&d>=w.from&&d<=w.to;
+  const doneIn=anTaskIdsIn(w), tasks=ix.tasks(g.id);
+  const tDue=tasks.filter(t=>inW(t.dueDate)), tDone=tasks.filter(t=>doneIn.has(t.id));
+  const ms=ix.ms(g.id), mDue=ms.filter(m=>inW(m.targetDate)), mDone=ms.filter(m=>m.completed&&m.completedAt&&inW(uiIsoDate(m.completedAt)));
+  const bl=ix.blocks(g.id).filter(b=>inW(b.date)), bDone=bl.filter(b=>b.completed), bLeft=bl.filter(b=>gpBlockUpcoming(b,T,nm));
+  const hs=ix.habits(g.id).filter(h=>h.active!==false&&h.type!=='bad').map(h=>({h,...anHabitRate(h,w)}));
+  return {range:w,
+    tasks:{planned:tDue.length,done:tDone.length,remaining:tDue.filter(t=>!t.done).length,list:[...new Set([...tDue,...tDone])].sort(gpByDue)},
+    milestones:{planned:mDue.length,done:mDone.length,remaining:mDue.filter(m=>!m.completed).length,list:[...new Set([...mDue,...mDone])].sort(gpByMsDate)},
+    blocks:{planned:bl.length,done:bDone.length,remaining:bLeft.length,min:bl.reduce((a,b)=>a+plannerDuration(b),0),doneMin:bDone.reduce((a,b)=>a+plannerDuration(b),0),list:bl.sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime))},
+    habits:hs.map(x=>({id:x.h.id,name:x.h.name,done:x.done,expected:x.expected}))};
+}
+// dated events from the real records only (nothing reconstructed): creation, milestones, task completion records, blocks, closing
+function gpTimeline(g,ix){
+  ix=ix||gpIndex(); const ev=[], ids=new Set(ix.tasks(g.id).map(t=>t.id)), byId=new Map(ix.tasks(g.id).map(t=>[t.id,t]));
+  if(g.createdAt&&g.createdAt>86400000) ev.push({d:uiIsoDate(g.createdAt),k:'goal_created',title:g.title,o:0});
+  ix.ms(g.id).forEach(m=>{ if(m.createdAt&&m.createdAt>86400000) ev.push({d:uiIsoDate(m.createdAt),k:'ms_created',title:m.title,id:m.id,o:1});
+    if(m.completed&&m.completedAt) ev.push({d:uiIsoDate(m.completedAt),k:'ms_done',title:m.title,id:m.id,o:3}); });
+  if(ids.size) for(const [d,set] of anTaskDoneByDay()) for(const id of set) if(ids.has(id)) ev.push({d,k:'task_done',title:byId.get(id).title,id,o:2});
+  ix.blocks(g.id).forEach(b=>{ if(b.completed&&b.date&&b.date<=todayStr()) ev.push({d:b.date,k:'block_done',title:b.title,id:b.id,time:b.startTime,o:2}); });
+  const m=anXpByDay(); for(const [d,e] of m) if(e.goals&&e.goals.includes(g.id)) ev.push({d,k:'goal_done',title:g.title,o:4});
+  return ev.sort((a,b)=>a.d.localeCompare(b.d)||a.o-b.o||String(a.title).localeCompare(String(b.title),'cs')||String(a.id||'').localeCompare(String(b.id||'')));
+}
+// why the goal matters today: the Command Center's own reasons for the goal + today's facts of its tasks and blocks (no second engine)
+function gpRelevance(g,ix,ranked){
+  ix=ix||gpIndex(); const T=todayStr(), out=[];
+  if(g.status!=='Active') return out;
+  const c=(ranked||ccCandidates(ccContext())).find(x=>x.kind==='goal'&&x.id===g.id); if(c) c.reasons.forEach(r=>out.push({src:'cc',...r}));
+  ix.tasks(g.id).filter(t=>!t.done&&t.dueDate&&t.dueDate<=T).sort(gpByDue).slice(0,3).forEach(t=>out.push({r:t.dueDate<T?'task_overdue':'task_today',title:t.title,days:ccDaysBetween(t.dueDate,T)}));
+  ix.blocks(g.id).filter(b=>b.date===T&&!b.completed).sort((a,b)=>a.startTime.localeCompare(b.startTime)).slice(0,3).forEach(b=>out.push({r:'block_today',title:b.title,time:b.startTime}));
+  return out;
+}
+// planned time this week: blocks, minutes, per goal and per category (only what is in the Planner -- free time is unknown)
+function gpCapacity(ix){
+  ix=ix||gpIndex(); const w=gpWeekRange(), bl=(S.plannerBlocks||[]).filter(b=>b.date>=w.from&&b.date<=w.to);
+  const byGoal={}, byCat={}; let min=0;
+  bl.forEach(b=>{ const m=plannerDuration(b); min+=m; const g=b.goalId||ix.taskGoal.get(b.taskId)||''; byGoal[g]=(byGoal[g]||0)+m; const c=b.category||''; byCat[c]=(byCat[c]||0)+m; });
+  const list=o=>Object.entries(o).map(([k,m])=>({k,min:m})).sort((a,b)=>b.min-a.min||String(a.k).localeCompare(String(b.k),'cs'));
+  return {range:w,count:bl.length,min,byGoal:list(byGoal),byCat:list(byCat)};
+}
+// overlapping planner blocks (same day, time ranges intersect); nothing is moved
+function gpConflicts(from,to){
+  const days=new Map(); (S.plannerBlocks||[]).forEach(b=>{ if(!b.date||b.date<from||b.date>to) return; const s=plannerTimeToMin(b.startTime), e=plannerTimeToMin(b.endTime); if(s==null||e==null||e<=s) return; let a=days.get(b.date); if(!a){ a=[]; days.set(b.date,a); } a.push({b,s,e}); });
+  const out=[];
+  [...days.keys()].sort().forEach(d=>{ const a=days.get(d).sort((x,y)=>x.s-y.s||x.e-y.e||String(x.b.id).localeCompare(String(y.b.id)));
+    for(let i=0;i<a.length;i++) for(let j=i+1;j<a.length&&a[j].s<a[i].e;j++) out.push({date:d,a:a[i].b,b:a[j].b}); });
+  return out;
+}
+// did anything happen on a goal in [from,to]: a completion record of its task, a milestone done, a block done, a linked habit ticked
+function gpActivityIn(g,ix,from,to,doneIds){
+  const inR=d=>d&&d>=from&&d<=to;
+  return ix.tasks(g.id).some(t=>doneIds.has(t.id))||ix.ms(g.id).some(m=>m.completed&&m.completedAt&&inR(uiIsoDate(m.completedAt)))||
+    ix.blocks(g.id).some(b=>b.completed&&inR(b.date))||ix.habits(g.id).some(h=>(h.completions||[]).some(inR));
+}
+function gpWeekReview(ix){
+  ix=ix||gpIndex(); const w=gpWeekRange(), doneIds=anTaskIdsIn(w), cap=gpCapacity(ix);
+  const active=S.goals.filter(g=>g.status==='Active');
+  const withAct=active.filter(g=>gpActivityIn(g,ix,w.from,w.to,doneIds));
+  return {range:w,tasksDone:doneIds.size,goalTasksDone:[...doneIds.keys()].filter(id=>ix.taskGoal.has(id)).length,planned:cap.min,blocks:cap.count,
+    msDone:S.milestones.filter(m=>m.completed&&m.completedAt&&(d=>d>=w.from&&d<=w.to)(uiIsoDate(m.completedAt))).length,
+    active:withAct.map(g=>g.id),idle:active.filter(g=>!withAct.includes(g)).map(g=>g.id)};
+}
+// Goals overview: filter + data for each card
+const GP_FILTERS=['All','Active','Completed','Overdue','NoNext'];
+function gpOverview(filter,ix){
+  ix=ix||gpIndex();
+  const cards=S.goals.map(g=>({g,status:gpStatus(g),pct:goalProgress(g),next:gpNextStep(g,ix),ms:ix.ms(g.id),msDone:ix.ms(g.id).filter(m=>m.completed).length,open:ix.tasks(g.id).filter(t=>!t.done).length}));
+  const isActive=c=>c.g.status==='Active';
+  const f=GP_FILTERS.includes(filter)?filter:'All';
+  const pick=f==='All'?cards:f==='Active'?cards.filter(isActive):f==='Completed'?cards.filter(c=>c.status==='completed'):f==='Overdue'?cards.filter(c=>c.status==='overdue'):cards.filter(c=>isActive(c)&&!c.next);
+  const byDeadline=(a,b)=>String(a.g.targetDate||'9999').localeCompare(String(b.g.targetDate||'9999'))||String(a.g.title).localeCompare(String(b.g.title),'cs')||String(a.g.id).localeCompare(String(b.g.id));
+  return {filter:f,cards:pick.sort(byDeadline),all:cards,
+    deadlines:cards.filter(c=>isActive(c)&&c.g.targetDate).sort(byDeadline).slice(0,5),
+    noNext:cards.filter(c=>isActive(c)&&!c.next).sort(byDeadline)};
+}
 let goalFilter='Active';
 let currentGoalId=null;
+/* ================= Advanced Goals & Planning 2.0 (presentation) =================
+   Markup from the gp* helpers; every action opens an existing form or calls an existing handler
+   (openForm('task'), openPlannerForm, openMilestoneForm, toggleMilestone, completeGoal, taskItem, habitItem). */
+const UI_GP={
+  cs:{all:'Vše',active:'Aktivní',completed:'Dokončené',overdue:'Po termínu',nonext:'Bez dalšího kroku',
+    st:{active:'Aktivní',completed:'Dokončeno',overdue:'Po termínu',nodeadline:'Bez termínu',paused:'Pozastaveno',archived:'Archivováno'},
+    next:'Další krok',no_next:'Další krok není naplánován.',plan_next:'Naplánovat další krok',plan_time:'Naplánovat čas',add_task:'Úkol',add_ms:'Milník',
+    k:{task:'Úkol',milestone:'Milník',block:'Blok'},why:'Proč je tento cíl dnes relevantní',
+    r:{task_today:x=>`Úkol „${x.title}“ má termín dnes`,task_overdue:x=>`Úkol „${x.title}“ je po termínu ${x.days} ${x.days===1?'den':x.days<5?'dny':'dní'}`,block_today:x=>`Blok „${x.title}“ je dnes v ${x.time}`},
+    pace:'Tempo',pace_na:'Tempo nelze vypočítat.',pace_na_d:'Chybí termín nebo datum vzniku cíle, nebo cíl není aktivní.',progress:'Progress',time_left:'Čas do termínu',elapsed:'Uplynulo',time_share:'Podle času',
+    per_day:'Potřebné tempo',per_day_v:v=>`+${v} % / den`,past_deadline:'Termín už uplynul',days:n=>`${n} ${n===1?'den':n<5&&n>0?'dny':'dní'}`,
+    ahead:n=>`Progress je o ${n} ${n===1?'procentní bod':n<5?'procentní body':'procentních bodů'} před časovým podílem.`,behind:n=>`Progress je o ${n} ${n===1?'procentní bod':n<5?'procentní body':'procentních bodů'} za časovým podílem.`,even:'Progress odpovídá časovému podílu.',
+    week:'Tento týden',planned:'Naplánováno',done:'Dokončeno',left:'Zbývá',w_tasks:'Úkoly',w_ms:'Milníky',w_blocks:'Bloky',w_habits:'Návyky',
+    roadmap:'Roadmapa',no_ms_tasks:'Úkoly bez milníku',blocks:'Bloky v plánovači',ms_next:'Další úkol',ms_tasks:'úkolů',ms_none:'Zatím bez propojených úkolů',
+    ms_hint:'Úkol se k milníku propojí v úpravě úkolu (pole Milník).',no_blocks:'Žádné bloky propojené s cílem.',
+    habits:'Podporující návyky',today_done:'dnes splněno',today_open:'dnes zatím ne',streak:'série',
+    timeline:'Timeline',tl:{goal_created:'Cíl vytvořen',ms_created:'Milník přidán',ms_done:'Milník splněn',task_done:'Úkol dokončen',block_done:'Blok splněn',goal_done:'Cíl uzavřen'},
+    tl_note:'Jen zaznamenané události. Změny progressu v čase se neukládají, proto je timeline nevypisuje.',tl_empty:'Zatím žádné datované události.',
+    review:'Týdenní přehled',r_tasks:'Dokončené úkoly',r_goal_tasks:'z toho u cílů',r_planned:'Naplánovaný čas',r_ms:'Splněné milníky',r_act:'Cíle s aktivitou',r_idle:'Cíle bez aktivity',
+    capacity:'Tento týden v plánování',cap_note:'Jen čas zapsaný v plánovači — volný čas aplikace nezná.',cap_goal:'Podle cílů',cap_cat:'Podle kategorií',no_goal:'Bez cíle',
+    conflicts:'Konflikty v plánu',conf_d:'Překrývající se bloky (od dneška na 30 dní). Nic se neposouvá automaticky.',
+    deadlines:'Nejbližší deadline',no_step:'Cíle bez plánovaného dalšího kroku',open_tasks:n=>`${n} ${n===1?'otevřený úkol':n<5&&n>0?'otevřené úkoly':'otevřených úkolů'}`,ms_count:'milníky',
+    others:'Pozastavené a archivované',empty_f:'V tomto filtru nejsou žádné cíle.',deadline:'Termín',no_deadline:'bez termínu',created:'Vytvořeno'},
+  en:{all:'All',active:'Active',completed:'Completed',overdue:'Overdue',nonext:'No next step',
+    st:{active:'Active',completed:'Completed',overdue:'Overdue',nodeadline:'No deadline',paused:'Paused',archived:'Archived'},
+    next:'Next step',no_next:'No next step planned.',plan_next:'Plan the next step',plan_time:'Plan time',add_task:'Task',add_ms:'Milestone',
+    k:{task:'Task',milestone:'Milestone',block:'Block'},why:'Why this goal matters today',
+    r:{task_today:x=>`Task “${x.title}” is due today`,task_overdue:x=>`Task “${x.title}” is overdue by ${x.days} day${x.days===1?'':'s'}`,block_today:x=>`Block “${x.title}” is today at ${x.time}`},
+    pace:'Pace',pace_na:'Pace cannot be calculated.',pace_na_d:'The goal has no deadline or creation date, or it is not active.',progress:'Progress',time_left:'Time to deadline',elapsed:'Elapsed',time_share:'By time',
+    per_day:'Required pace',per_day_v:v=>`+${v} % / day`,past_deadline:'The deadline has passed',days:n=>`${n} day${n===1?'':'s'}`,
+    ahead:n=>`Progress is ${n} percentage point${n===1?'':'s'} ahead of the elapsed time share.`,behind:n=>`Progress is ${n} percentage point${n===1?'':'s'} behind the elapsed time share.`,even:'Progress matches the elapsed time share.',
+    week:'This week',planned:'Planned',done:'Done',left:'Left',w_tasks:'Tasks',w_ms:'Milestones',w_blocks:'Blocks',w_habits:'Habits',
+    roadmap:'Roadmap',no_ms_tasks:'Tasks without a milestone',blocks:'Planner blocks',ms_next:'Next task',ms_tasks:'tasks',ms_none:'No linked tasks yet',
+    ms_hint:'Link a task to a milestone in the task edit (Milestone field).',no_blocks:'No planner blocks linked to this goal.',
+    habits:'Supporting habits',today_done:'done today',today_open:'not yet today',streak:'streak',
+    timeline:'Timeline',tl:{goal_created:'Goal created',ms_created:'Milestone added',ms_done:'Milestone done',task_done:'Task completed',block_done:'Block done',goal_done:'Goal closed'},
+    tl_note:'Recorded events only. Progress changes over time are not stored, so the timeline does not list them.',tl_empty:'No dated events yet.',
+    review:'Weekly review',r_tasks:'Tasks completed',r_goal_tasks:'of them for goals',r_planned:'Planned time',r_ms:'Milestones done',r_act:'Goals with activity',r_idle:'Goals without activity',
+    capacity:'Planned this week',cap_note:'Only the time in the Planner — the app does not know your free time.',cap_goal:'By goal',cap_cat:'By category',no_goal:'No goal',
+    conflicts:'Planning conflicts',conf_d:'Overlapping blocks (from today for 30 days). Nothing is moved automatically.',
+    deadlines:'Nearest deadlines',no_step:'Goals without a planned next step',open_tasks:n=>`${n} open task${n===1?'':'s'}`,ms_count:'milestones',
+    others:'Paused and archived',empty_f:'No goals in this filter.',deadline:'Deadline',no_deadline:'no deadline',created:'Created'},
+};
+function uiGpT(k){ return (UI_GP[uiLang()]||UI_GP.cs)[k]; }
+function uiGpStatusChip(g){
+  if(uiGoalReady(g)) return uiGoalStatusChip(g); // "Dokončeno" at 100 % (existing chip)
+  const s=gpStatus(g), cls={completed:'is-success',overdue:'is-danger',paused:'is-muted',archived:'is-muted',nodeadline:'is-muted',active:''}[s];
+  return `<span class="chip ${cls}" data-gp-status="${s}" data-goal-state="${escapeHtml(g.status)}">${uiGpT('st')[s]}</span>`;
+}
+function uiGpDate(d){ return d?(d===todayStr()?uiT('today'):fmtDate(d)):''; }
+function uiGpNextHtml(n){
+  if(!n) return `<span class="gp-next is-none" data-next="none">${uiGpT('no_next')}</span>`;
+  return `<span class="gp-next" data-next="${n.k}">${uiIcon(n.k==='task'?'tasks':n.k==='milestone'?'flag':'clock',14)} <b>${uiGpT('k')[n.k]}:</b> ${escapeHtml(n.title)}${n.date?` · ${uiGpDate(n.date)}`:''}${n.time?` ${n.time}${n.end?'–'+n.end:''}`:''}</span>`;
+}
+function uiGpOpenNext(n){ if(!n) return; if(n.k==='task') openTaskEditForm(n.obj); else if(n.k==='milestone') openMilestoneForm(n.obj.goalId,n.obj); else openPlannerForm(n.obj); }
+// the existing forms, with the goal (and its category) already chosen -- nothing is saved until the user saves
+function uiGpAddTask(g,msId){
+  openForm('task');
+  const s=document.querySelector('.sheet'); if(!s) return;
+  const gs=s.querySelector('#f_goal'); if(gs){ gs.value=g.id; gs.dispatchEvent(new Event('change')); }
+  const cs=s.querySelector('#f_cat'); if(cs&&g.category&&[...cs.options].some(o=>o.value===g.category)){ cs.value=g.category; cs.dispatchEvent(new Event('change')); }
+  const ms=s.querySelector('#f_ms'); if(ms&&msId){ ms.value=msId; }
+}
+function uiGpPlanTime(g){ openPlannerForm(null,{date:todayStr(),goalId:g.id,title:g.title,category:g.category||''}); }
+function uiGpMin(m){ return m?uiPlDur(m):'0 min'; }
+function uiGpBlocks(n){ return uiLang()==='cs'?`${n} ${n===1?'blok':n>1&&n<5?'bloky':'bloků'}`:`${n} block${n===1?'':'s'}`; }
+
+// task forms: optional "Milník" select, offering only the milestones of the chosen goal (stored as task.milestoneId)
+function uiGpMsFieldHtml(){ return `<div id="f_msWrap" hidden><label for="f_ms">${uiLang()==='cs'?'Milník (nepovinné)':'Milestone (optional)'}</label><select id="f_ms"></select></div>`; }
+function uiGpBindMs(inner,cur){
+  const gs=inner.querySelector('#f_goal'), ms=inner.querySelector('#f_ms'), wrapM=inner.querySelector('#f_msWrap'); if(!gs||!ms) return;
+  const fill=keep=>{ const list=S.milestones.filter(m=>m.goalId===gs.value).sort(gpByMsDate);
+    ms.innerHTML=`<option value="">${uiLang()==='cs'?'Bez milníku':'No milestone'}</option>`+list.map(m=>`<option value="${escapeHtml(m.id)}">${escapeHtml(m.title)}</option>`).join('');
+    ms.value=list.some(m=>m.id===keep)?keep:''; wrapM.hidden=!list.length; };
+  fill(cur); gs.addEventListener('change',()=>fill(ms.value));
+}
+function uiGpMsValue(inner,prev){ const ms=inner.querySelector('#f_ms'); const v=ms?ms.value:''; return v||prev?{milestoneId:v}:{}; }
+// ---------- Goals overview ----------
 function renderGoals(){
-  const wrap=el(`<div>${uiPageHead(uiT('goals'),'',`<button class="btn sm" id="addGoalBtn">＋ ${uiT('new_goal')}</button>`)}<div class="period-selector" id="gf" role="tablist"></div><div class="list" id="glist"></div></div>`);
-  const gf=wrap.querySelector('#gf');
-  ['Active','Completed','Paused','Archived','All'].forEach(f=>{
-    const b=el(`<button class="pill ${f===goalFilter?'on':''}" data-f="${f}" role="tab" aria-selected="${f===goalFilter}">${uiT('g_'+f)}</button>`);
-    b.onclick=()=>{goalFilter=f;render();};
-    gf.appendChild(b);
-  });
+  const T=uiGpT, cs=uiLang()==='cs', t0=performance.now();
+  if(!GP_FILTERS.includes(goalFilter)) goalFilter=goalFilter==='Paused'||goalFilter==='Archived'?'All':'Active';
+  const ix=gpIndex(), ov=gpOverview(goalFilter,ix);
+  const wrap=el(`<div class="gp">${uiPageHead(uiT('goals'),'',`<button class="btn sm" id="addGoalBtn">＋ ${uiT('new_goal')}</button>`)}
+    <div class="period-selector gp-filters" id="gf" role="tablist" aria-label="${cs?'Filtr cílů':'Goal filter'}">${GP_FILTERS.map(f=>`<button class="pill ${f===ov.filter?'on':''}" data-f="${f}" role="tab" aria-selected="${f===ov.filter}">${T({All:'all',Active:'active',Completed:'completed',Overdue:'overdue',NoNext:'nonext'}[f])}</button>`).join('')}</div>
+    <div id="gpTop"></div><div class="list" id="glist"></div></div>`);
+  wrap.querySelectorAll('#gf [data-f]').forEach(b=>b.onclick=()=>{ goalFilter=b.dataset.f; render(); const nb=document.querySelector(`#gf [data-f="${goalFilter}"]`); if(nb) nb.focus({preventScroll:true}); });
   wrap.querySelector('#addGoalBtn').onclick=()=>openGoalForm();
+  const top=wrap.querySelector('#gpTop');
+  if(S.goals.length&&(ov.filter==='All'||ov.filter==='Active')) top.appendChild(uiGpOverviewInfo(ix,ov));
   const list=wrap.querySelector('#glist');
-  const items=S.goals.filter(g=>goalFilter==='All'||g.status===goalFilter);
-  if(!items.length){ const e=el(`<div class="card">${uiEmpty('🎯',uiT('empty_goals_t'),uiT('empty_goals_d'),uiT('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openGoalForm(); list.appendChild(e); }
-  items.forEach(g=>{
-    const pct=goalProgress(g);
-    const msAll=S.milestones.filter(m=>m.goalId===g.id), msDone=msAll.filter(m=>m.completed).length;
-    const overdue=g.status==='Active'&&g.targetDate&&g.targetDate<todayStr();
-    const card=el(`<div class="card goal-card">
-      <div class="goal-top gTap" role="button" tabindex="0">
-        <div style="flex:1;min-width:0"><div class="goal-title">${uiIcon('target',17)} ${escapeHtml(g.title)}</div>
+  if(!S.goals.length){ const e=el(`<div class="card">${uiEmpty('🎯',uiT('empty_goals_t'),uiT('empty_goals_d'),uiT('add_goal'))}</div>`); e.querySelector('.emptyCta').onclick=()=>openGoalForm(); list.appendChild(e); }
+  else if(!ov.cards.length) list.appendChild(el(`<div class="card"><p class="sub" style="margin:0">${T('empty_f')}</p></div>`));
+  const groups=ov.filter==='All'?[[T('active'),ov.cards.filter(c=>c.g.status==='Active')],[T('completed'),ov.cards.filter(c=>c.g.status==='Completed')],[T('others'),ov.cards.filter(c=>c.g.status!=='Active'&&c.g.status!=='Completed')]]:[[null,ov.cards]];
+  groups.forEach(([title,cards])=>{ if(!cards.length) return; if(title) list.appendChild(el(`<div class="section-header gp-group"><h3>${title} · ${cards.length}</h3></div>`)); cards.forEach(c=>list.appendChild(uiGpCard(c))); });
+  window.__gpMs=performance.now()-t0;
+  return wrap;
+}
+function uiGpCard(c){
+  const g=c.g, T=uiGpT, pct=c.pct;
+  const card=el(`<div class="card goal-card" data-goal="${escapeHtml(g.id)}">
+      <div class="goal-top gTap" role="button" tabindex="0" aria-label="${escapeHtml(g.title)} · ${pct} %">
+        <div style="flex:1;min-width:0"><div class="goal-title">${uiIcon(g.category&&catInfo(g.category,'life')?catIconName(g.category,'life'):'target',17)} ${escapeHtml(g.title)}</div>
         ${g.description?`<div class="sub" style="margin-top:3px">${escapeHtml(g.description)}</div>`:''}</div>
         <div class="goal-pct">${pct}<small>%</small></div>
       </div>
       <div class="bar gTap${pct>=100?' is-success':''}" style="cursor:pointer" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
       <div class="goal-meta">
-        ${uiGoalStatusChip(g)}
-        ${g.targetDate?`<span class="chip ${overdue?'is-danger':'is-muted'}">⏳ ${fmtDate(g.targetDate)}</span>`:''}
-        ${msAll.length?`<span class="chip is-muted">🚩 ${msDone}/${msAll.length}</span>`:''}
+        ${uiGpStatusChip(g)}
+        ${g.targetDate?`<span class="chip ${c.status==='overdue'?'is-danger':'is-muted'}">${uiIcon('calendar',13)} ${fmtDate(g.targetDate)}</span>`:''}
+        ${c.ms.length?`<span class="chip is-muted">${uiIcon('flag',13)} ${c.msDone}/${c.ms.length}</span>`:''}
+        ${g.status!=='Completed'?`<span class="chip is-muted" data-open-tasks="${c.open}">${uiIcon('tasks',13)} ${T('open_tasks')(c.open)}</span>`:''}
         <span class="chip is-gold">+${goalXp(g)} XP</span>
-        <span class="sub">${g.mode==='manual'?uiT('progress_manual'):(uiLang()==='cs'?'automaticky z propojených úkolů':'automatic from linked tasks')}</span>
       </div>
+      ${g.status!=='Completed'?`<div class="gp-card-next">${uiGpNextHtml(c.next)}</div>`:''}
       <div class="goal-actions">
         ${uiGoalReady(g)?`<button class="btn sm sm-done">${uiIcon('check',15)} ${uiGoalCloseLabel(g)}</button>`:g.status!=='Completed'?`<button class="pill sm sm-done">✓ ${uiT('mark_complete')}</button>`:''}
         <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(g.title)}">✕</button>
       </div>
     </div>`);
-    card.querySelectorAll('.gTap').forEach(elx=>elx.onclick=()=>{currentGoalId=g.id;view='goalDetail';render();window.scrollTo(0,0);});
-    card.querySelectorAll('.gTap[role="button"]').forEach(x=>x.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); x.onclick(); } });
-    const mc=card.querySelector('.sm-done');
-    if(mc) mc.onclick=(e)=>{e.stopPropagation();completeGoal(g);render();};
-    card.querySelector('.delbtn').onclick=(e)=>{
-      e.stopPropagation();
-      const n={milestones:S.milestones.filter(m=>m.goalId===g.id).length,tasks:S.tasks.filter(t=>t.goalId===g.id).length,habits:S.habits.filter(h=>h.goalId===g.id).length};
-      uiDelConfirm('goal',{name:g.title,n},()=>{
-        // cascade: unlink tasks and habits, remove milestones that belonged only to this goal
-        S.tasks.forEach(t=>{ if(t.goalId===g.id) t.goalId=''; });
-        S.habits.forEach(h=>{ if(h.goalId===g.id) h.goalId=''; });
-        S.milestones=S.milestones.filter(m=>m.goalId!==g.id);
-        S.goals=S.goals.filter(x=>x.id!==g.id);
-        scheduleSave();render();
-      });
-    };
-    list.appendChild(card);
+  const open=()=>{currentGoalId=g.id;view='goalDetail';render();window.scrollTo(0,0);};
+  card.querySelectorAll('.gTap').forEach(x=>x.onclick=open);
+  card.querySelectorAll('.gTap[role="button"]').forEach(x=>x.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
+  const mc=card.querySelector('.sm-done'); if(mc) mc.onclick=(e)=>{e.stopPropagation();completeGoal(g);render();};
+  card.querySelector('.delbtn').onclick=(e)=>{
+    e.stopPropagation();
+    const n={milestones:S.milestones.filter(m=>m.goalId===g.id).length,tasks:S.tasks.filter(t=>t.goalId===g.id).length,habits:S.habits.filter(h=>h.goalId===g.id).length};
+    uiDelConfirm('goal',{name:g.title,n},()=>{
+      // cascade: unlink tasks and habits, remove milestones that belonged only to this goal
+      S.tasks.forEach(t=>{ if(t.goalId===g.id) t.goalId=''; });
+      S.habits.forEach(h=>{ if(h.goalId===g.id) h.goalId=''; });
+      S.milestones=S.milestones.filter(m=>m.goalId!==g.id);
+      S.goals=S.goals.filter(x=>x.id!==g.id);
+      scheduleSave();render();
+    });
+  };
+  return card;
+}
+function uiGpOverviewInfo(ix,ov){
+  const T=uiGpT, rv=gpWeekReview(ix), cap=gpCapacity(ix), conf=gpConflicts(todayStr(),addDays(todayStr(),30)), name=id=>{ const g=S.goals.find(x=>x.id===id); return g?g.title:T('no_goal'); };
+  const box=el(`<div class="gp-info"></div>`);
+  box.insertAdjacentHTML('beforeend',`<section class="card gp-review" id="gpReview" aria-labelledby="gpReviewH"><div class="between"><h3 id="gpReviewH" class="gp-h">${uiIcon('chart',16)} ${T('review')}</h3><span class="sub">${fmtDate(rv.range.from)} – ${fmtDate(rv.range.to)}</span></div>
+    <div class="kv"><span>${T('r_tasks')}</span><b>${rv.tasksDone} <span class="sub">(${T('r_goal_tasks')} ${rv.goalTasksDone})</span></b></div>
+    <div class="kv"><span>${T('r_planned')}</span><b>${uiGpMin(rv.planned)} · ${uiGpBlocks(rv.blocks)}</b></div>
+    <div class="kv"><span>${T('r_ms')}</span><b>${rv.msDone}</b></div>
+    <div class="kv"><span>${T('r_act')}</span><b>${rv.active.length}</b></div>${rv.active.length?`<p class="gp-names">${rv.active.map(id=>escapeHtml(name(id))).join(', ')}</p>`:''}
+    <div class="kv"><span>${T('r_idle')}</span><b>${rv.idle.length}</b></div>${rv.idle.length?`<p class="gp-names">${rv.idle.map(id=>escapeHtml(name(id))).join(', ')}</p>`:''}</section>`);
+  box.insertAdjacentHTML('beforeend',`<section class="card gp-cap" id="gpCapacity" aria-labelledby="gpCapH"><h3 id="gpCapH" class="gp-h">${uiIcon('clock',16)} ${T('capacity')}</h3>
+    <div class="gp-big">${uiGpMin(cap.min)} <small>· ${uiGpBlocks(cap.count)}</small></div>
+    ${cap.count?`<div class="an-2"><div><div class="kicker">${T('cap_goal')}</div>${uiAnBars(cap.byGoal.map(x=>({l:x.k?name(x.k):T('no_goal'),v:x.min})),v=>uiPlDur(v))}</div><div><div class="kicker">${T('cap_cat')}</div>${uiAnBars(cap.byCat.map(x=>({l:x.k?catLabel(x.k,'life'):uiAnT('none_cat'),v:x.min})),v=>uiPlDur(v))}</div></div>`:''}
+    <p class="helper-text" style="margin:8px 0 0">${T('cap_note')}</p></section>`);
+  if(conf.length) box.insertAdjacentHTML('beforeend',`<section class="card gp-conf" id="gpConflicts" aria-labelledby="gpConfH"><h3 id="gpConfH" class="gp-h">${uiIcon('calendar',16)} ${T('conflicts')}</h3><p class="helper-text" style="margin:2px 0 8px">${T('conf_d')}</p>
+    <ul class="gp-conf-list">${conf.slice(0,20).map(c=>`<li data-conf="${escapeHtml(c.a.id)}|${escapeHtml(c.b.id)}"><b>${fmtDate(c.date)}</b><button class="gp-conf-b" data-block="${escapeHtml(c.a.id)}">${escapeHtml(c.a.title)} <span class="sub">${c.a.startTime}–${c.a.endTime}</span></button><button class="gp-conf-b" data-block="${escapeHtml(c.b.id)}">${escapeHtml(c.b.title)} <span class="sub">${c.b.startTime}–${c.b.endTime}</span></button></li>`).join('')}</ul></section>`);
+  if(ov.deadlines.length) box.insertAdjacentHTML('beforeend',`<section class="card gp-dl" id="gpDeadlines" aria-labelledby="gpDlH"><h3 id="gpDlH" class="gp-h">${uiIcon('flag',16)} ${T('deadlines')}</h3>${ov.deadlines.map(c=>`<button class="gp-row" data-goal="${escapeHtml(c.g.id)}"><span class="gp-row-t">${escapeHtml(c.g.title)}</span><span class="gp-row-m">${fmtDate(c.g.targetDate)} · ${c.pct} %</span></button>`).join('')}</section>`);
+  if(ov.noNext.length) box.insertAdjacentHTML('beforeend',`<section class="card gp-nonext" id="gpNoNext" aria-labelledby="gpNnH"><h3 id="gpNnH" class="gp-h">${uiIcon('target',16)} ${T('no_step')}</h3>${ov.noNext.map(c=>`<button class="gp-row" data-goal="${escapeHtml(c.g.id)}"><span class="gp-row-t">${escapeHtml(c.g.title)}</span><span class="gp-row-m">${c.pct} %${c.g.targetDate?' · '+fmtDate(c.g.targetDate):''}</span></button>`).join('')}</section>`);
+  box.querySelectorAll('.gp-row[data-goal]').forEach(b=>b.onclick=()=>{ currentGoalId=b.dataset.goal; view='goalDetail'; render(); window.scrollTo(0,0); });
+  box.querySelectorAll('.gp-conf-b[data-block]').forEach(b=>b.onclick=()=>{ const x=(S.plannerBlocks||[]).find(y=>y.id===b.dataset.block); if(x) searchNavigate('plannerBlock',x); });
+  return box;
+}
+
+// ---------- Goal detail ----------
+function renderGoalDetail(){
+  const g=S.goals.find(x=>x.id===currentGoalId);
+  if(!g){ view='goals'; return renderGoals(); }
+  const T=uiGpT, cs=uiLang()==='cs', t0=performance.now(), ix=gpIndex();
+  const pct=goalProgress(g);
+  const linkedTasks=ix.tasks(g.id), milestones=ix.ms(g.id).slice().sort(gpByMsDate), linkedHabits=ix.habits(g.id);
+  const progressSource=linkedTasks.length?'linked tasks':milestones.length?'milestones':linkedHabits.length?'linked habits':'manual fallback';
+  const srcLabel=uiT(linkedTasks.length?'src_tasks':milestones.length?'src_ms':linkedHabits.length?'src_habits':'src_manual');
+  const next=gpNextStep(g,ix), pace=gpPace(g), wk=gpWeek(g,ix), rel=gpRelevance(g,ix), tl=gpTimeline(g,ix);
+  const cat=g.category&&catInfo(g.category,'life');
+  const wrap=el(`<div class="gp-detail">
+    ${uiBack(uiT('goals'))}
+    <section class="card hud goal-card gp-head" aria-labelledby="gpTitle">
+      <div class="goal-top"><div style="flex:1;min-width:0"><div class="kicker">${uiIcon(cat?catIconName(g.category,'life'):'target',14)} ${cat?escapeHtml(catLabel(g.category,'life')):uiT('goals')}</div><h2 id="gpTitle" style="margin:4px 0 0">${escapeHtml(g.title)}</h2>
+        ${g.description?`<p class="sub" style="margin-top:6px">${escapeHtml(g.description)}</p>`:''}</div>
+        <div class="goal-pct" style="font-size:40px">${pct}<small>%</small></div></div>
+      <div class="bar${pct>=100?' is-success':''}" style="height:12px;margin:14px 0 10px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
+      <div class="goal-meta">${uiGpStatusChip(g)}<span class="chip is-muted">${uiIcon('calendar',13)} ${g.targetDate?`${uiT('by')} ${fmtDate(g.targetDate)}`:T('no_deadline')}</span><span class="chip is-gold">+${goalXp(g)} XP</span></div>
+      <div class="sub" style="margin-top:8px" data-source="${progressSource}">${g.mode==='manual'?uiT('progress_manual'):uiT('progress_auto',{s:srcLabel})}</div>
+      <div class="row gp-actions" style="gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn ghost sm" id="editGoalBtn">${uiIcon('edit',16)} ${uiT('edit')}</button>
+        ${uiGoalReady(g)?`<button class="btn sm doneBtn">${uiIcon('check',15)} ${uiGoalCloseLabel(g)}</button>`:g.status!=='Completed'?`<button class="btn sm doneBtn">✓ ${uiT('mark_complete')}</button>`:''}
+        <button class="btn ghost sm" id="gpAddTask">＋ ${T('add_task')}</button>
+        <button class="btn ghost sm" id="gpPlan">${uiIcon('clock',16)} ${T('plan_time')}</button>
+        <button class="btn ghost sm" id="addMs">＋ ${T('add_ms')}</button>
+      </div>
+      ${uiGoalReady(g)?`<p class="sub" style="margin-top:10px" data-goal-ready>${cs?'Cíl je splněný na 100 %. Uzavři ho — zůstane v historii i s propojenými úkoly.':'The goal is at 100 %. Close it — it stays in your history with its linked tasks.'}</p>`:''}
+    </section>
+    <div class="gp-grid">
+      ${g.status!=='Completed'?`<section class="card gp-nextcard" id="gpNext" aria-labelledby="gpNextH"><h3 id="gpNextH" class="gp-h">${uiIcon('chevron',16)} ${T('next')}</h3>
+        ${next?`<button class="gp-next-btn" id="gpNextOpen">${uiGpNextHtml(next)}</button>`:`<p class="gp-next is-none" data-next="none">${T('no_next')}</p><button class="btn sm" id="gpPlanNext">＋ ${T('plan_next')}</button>`}
+        ${rel.length?`<div class="gp-why"><div class="kicker">${T('why')}</div><ul>${rel.map(r=>`<li>${escapeHtml(r.src==='cc'?uiCcReason(r):T('r')[r.r](r))}</li>`).join('')}</ul></div>`:''}</section>`:''}
+      <section class="card gp-pace" id="gpPace" aria-labelledby="gpPaceH"><h3 id="gpPaceH" class="gp-h">${uiIcon('activity',16)} ${T('pace')}</h3>
+        ${pace.ok?`<div class="kv"><span>${T('progress')}</span><b>${pace.progress} %</b></div>
+          <div class="kv"><span>${T('time_share')}</span><b>${pace.timePct} % <span class="sub">(${T('elapsed')} ${T('days')(pace.elapsed)} z ${pace.total})</span></b></div>
+          <div class="kv"><span>${T('time_left')}</span><b>${pace.past?T('past_deadline'):T('days')(pace.remaining)}</b></div>
+          ${pace.perDay!=null?`<div class="kv"><span>${T('per_day')}</span><b>${T('per_day_v')(uiAnNum(pace.perDay,1))}</b></div>`:''}
+          ${pace.diff!=null?`<p class="gp-pace-t" data-pace="${pace.diff>0?'ahead':pace.diff<0?'behind':'even'}">${pace.diff>0?T('ahead')(pace.diff):pace.diff<0?T('behind')(-pace.diff):T('even')}</p>`:''}`
+          :`<p class="gp-pace-t" data-pace="na">${T('pace_na')}</p><p class="helper-text" style="margin:0">${T('pace_na_d')}</p>`}</section>
+      <section class="card gp-week" id="gpWeek" aria-labelledby="gpWeekH"><div class="between"><h3 id="gpWeekH" class="gp-h">${uiIcon('calendar',16)} ${T('week')}</h3><span class="sub">${fmtDate(wk.range.from)} – ${fmtDate(wk.range.to)}</span></div>
+        <table class="an-tbl gp-wtbl"><thead><tr><th scope="col"></th><th scope="col">${T('planned')}</th><th scope="col">${T('done')}</th><th scope="col">${T('left')}</th></tr></thead><tbody>
+          <tr data-w="tasks"><th scope="row">${T('w_tasks')}</th><td>${wk.tasks.planned}</td><td>${wk.tasks.done}</td><td>${wk.tasks.remaining}</td></tr>
+          <tr data-w="milestones"><th scope="row">${T('w_ms')}</th><td>${wk.milestones.planned}</td><td>${wk.milestones.done}</td><td>${wk.milestones.remaining}</td></tr>
+          <tr data-w="blocks"><th scope="row">${T('w_blocks')}</th><td>${wk.blocks.planned} <span class="sub">${uiGpMin(wk.blocks.min)}</span></td><td>${wk.blocks.done} <span class="sub">${uiGpMin(wk.blocks.doneMin)}</span></td><td>${wk.blocks.remaining}</td></tr>
+          ${wk.habits.map(h=>`<tr data-w="habit"><th scope="row">${escapeHtml(h.name)}</th><td>${h.expected}</td><td>${h.done}</td><td>${Math.max(0,h.expected-h.done)}</td></tr>`).join('')}
+        </tbody></table></section>
+    </div>
+    <section class="gp-roadsec" id="gpRoadmap" aria-labelledby="gpRoadH">
+      <div class="section-header"><h3 id="gpRoadH">${uiIcon('flag',18)} ${T('roadmap')} · ${uiT('milestones')} ${milestones.filter(m=>m.completed).length}/${milestones.length}</h3><button class="action" id="addMs2">＋ ${uiT('add_milestone')}</button></div>
+      <ol class="gp-road">
+        <li class="gp-node is-goal"><span class="gp-dot" aria-hidden="true"></span><div class="gp-node-b"><b>${escapeHtml(g.title)}</b> <span class="sub">${pct} %${g.targetDate?' · '+fmtDate(g.targetDate):''}</span></div></li>
+        <li class="gp-node is-ms-wrap"><div class="list" id="msList"></div></li>
+        <li class="gp-node is-free"><span class="gp-dot" aria-hidden="true"></span><div class="gp-node-b"><div class="gp-node-h"><b>${T('no_ms_tasks')}</b></div><div class="list" id="ltList"></div></div></li>
+        <li class="gp-node is-blocks"><span class="gp-dot" aria-hidden="true"></span><div class="gp-node-b"><div class="gp-node-h"><b>${T('blocks')}</b></div><div id="gpBlocks"></div></div></li>
+      </ol>
+    </section>
+    ${linkedHabits.length?`<section id="gpHabits" aria-labelledby="gpHabH"><div class="section-header"><h3 id="gpHabH">${uiIcon('habits',18)} ${T('habits')} · ${linkedHabits.length}</h3></div><div class="list" id="lhList"></div></section>`:''}
+    <section id="gpTimeline" aria-labelledby="gpTlH"><div class="section-header"><h3 id="gpTlH">${uiIcon('clock',18)} ${T('timeline')}</h3></div>
+      <div class="card">${tl.length?`<ol class="gp-tl">${tl.slice(-60).map(e=>`<li class="gp-tl-i" data-k="${e.k}"><time datetime="${e.d}">${fmtDate(e.d)}</time><span class="gp-tl-k">${T('tl')[e.k]}</span><span class="gp-tl-t">${escapeHtml(e.title)}</span></li>`).join('')}</ol>`:`<p class="sub" style="margin:0">${T('tl_empty')}</p>`}
+      <p class="helper-text" style="margin:10px 0 0">${T('tl_note')}</p></div></section>
+  </div>`);
+  wrap.querySelector('#backBtn').onclick=()=>{view='goals';render();};
+  wrap.querySelector('#editGoalBtn').onclick=()=>openGoalForm(g);
+  const db=wrap.querySelector('.doneBtn'); if(db) db.onclick=()=>{completeGoal(g);render();};
+  wrap.querySelector('#gpAddTask').onclick=()=>uiGpAddTask(g);
+  wrap.querySelector('#gpPlan').onclick=()=>uiGpPlanTime(g);
+  const pn=wrap.querySelector('#gpPlanNext'); if(pn) pn.onclick=()=>uiGpPlanTime(g);
+  const no=wrap.querySelector('#gpNextOpen'); if(no) no.onclick=()=>uiGpOpenNext(next);
+  wrap.querySelector('#addMs').onclick=()=>openMilestoneForm(g.id);
+  wrap.querySelector('#addMs2').onclick=()=>openMilestoneForm(g.id);
+  // roadmap: milestones with their linked tasks, then tasks without a milestone, then planner blocks
+  const msList=wrap.querySelector('#msList'), msIds=new Set(milestones.map(m=>m.id));
+  if(!milestones.length) msList.appendChild(el(`<div class="card">${uiEmpty('🚩',uiT('no_milestones'),'','')}</div>`));
+  milestones.forEach(m=>{
+    const mi=gpMilestone(m,ix);
+    const it=el(`<div class="gp-ms" data-ms="${escapeHtml(m.id)}"><span class="gp-dot${m.completed?' is-done':''}" aria-hidden="true"></span>
+      <div class="gp-node-b"><div class="item gp-ms-item">
+      <button class="check ${m.completed?'done':''}" aria-label="${escapeHtml(m.title)}" aria-pressed="${m.completed?'true':'false'}">${m.completed?'✓':''}</button>
+      <div style="flex:1;min-width:0"><div class="item-title ${m.completed?'done':''}">${escapeHtml(m.title)}</div>
+      <div class="item-meta meta-row"><span class="chip ${mi.status==='completed'?'is-success':mi.status==='overdue'?'is-danger':''}" data-ms-status="${mi.status}">${T('st')[mi.status]}</span>${m.targetDate?`<span>${uiIcon('calendar',13)} ${fmtDate(m.targetDate)}</span>`:''}${mi.tasks.length?`<span>${mi.done}/${mi.tasks.length} ${T('ms_tasks')}</span>`:''}${m.description?`<span>${escapeHtml(m.description)}</span>`:''}<span class="xp-tag">+${milestoneXp(m)} XP</span></div>
+      ${mi.tasks.length?`<div class="bar gp-ms-bar" role="progressbar" aria-valuenow="${mi.progress}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(m.title)}"><i style="width:${mi.progress}%"></i></div>`:''}
+      ${mi.next?`<div class="sub gp-ms-next">${T('ms_next')}: ${escapeHtml(mi.next.title)}${mi.next.dueDate?' · '+uiGpDate(mi.next.dueDate):''}</div>`:''}</div>
+      <div class="item-actions"><button class="iconbtn ghost-ic editMs" aria-label="${uiT('edit')}: ${escapeHtml(m.title)}">${uiIcon('edit',18)}</button>
+      <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.title)}">✕</button></div>
+      </div><div class="list gp-ms-tasks"></div>${!mi.tasks.length&&!m.completed?`<p class="helper-text gp-ms-hint">${T('ms_none')} · <button class="linkbtn gpMsTask">＋ ${T('add_task')}</button></p>`:''}</div></div>`);
+    it.querySelector('.check').onclick=()=>{toggleMilestone(m);render();};
+    it.querySelector('.editMs').onclick=()=>openMilestoneForm(g.id,m);
+    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('milestone',{name:m.title},()=>{S.milestones=S.milestones.filter(x=>x.id!==m.id);scheduleSave();render();});
+    const at=it.querySelector('.gpMsTask'); if(at) at.onclick=()=>uiGpAddTask(g,m.id);
+    const tl2=it.querySelector('.gp-ms-tasks'); mi.tasks.slice().sort((a,b)=>(a.done-b.done)||gpByDue(a,b)).forEach(t=>tl2.appendChild(taskItem(t)));
+    msList.appendChild(it);
   });
+  const free=linkedTasks.filter(t=>!t.milestoneId||!msIds.has(t.milestoneId)).sort((a,b)=>(a.done-b.done)||gpByDue(a,b));
+  const lt=wrap.querySelector('#ltList');
+  if(!linkedTasks.length) lt.appendChild(el(`<div class="card">${uiEmpty('✅',uiT('linked_tasks'),uiT('no_linked_tasks'),'')}</div>`));
+  else if(!free.length) lt.appendChild(el(`<p class="sub" style="margin:0">—</p>`));
+  free.forEach(t=>lt.appendChild(taskItem(t)));
+  const bl=ix.blocks(g.id).slice().sort((a,b)=>(b.date+b.startTime).localeCompare(a.date+a.startTime)).slice(0,12);
+  const gb=wrap.querySelector('#gpBlocks');
+  gb.innerHTML=bl.length?`<ul class="gp-blocks">${bl.map(b=>`<li><button class="gp-row" data-block="${escapeHtml(b.id)}"><span class="gp-row-t">${b.completed?uiIcon('check',14)+' ':''}${escapeHtml(b.title)}</span><span class="gp-row-m">${fmtDate(b.date)} · ${b.startTime}–${b.endTime}</span></button></li>`).join('')}</ul>`:`<p class="sub" style="margin:0">${T('no_blocks')}</p>`;
+  gb.querySelectorAll('[data-block]').forEach(b=>b.onclick=()=>{ const x=(S.plannerBlocks||[]).find(y=>y.id===b.dataset.block); if(x) openPlannerForm(x); });
+  const lh=wrap.querySelector('#lhList'); if(lh) linkedHabits.forEach(h=>lh.appendChild(habitItem(h)));
+  window.__gpDetailMs=performance.now()-t0;
   return wrap;
 }
 function openGoalForm(existing){
@@ -4739,79 +5140,25 @@ function openGoalForm(existing){
   openSheet(inner);
 }
 
-/* ---- Goal Detail view (progress, linked tasks, milestones) ---- */
-function renderGoalDetail(){
-  const g=S.goals.find(x=>x.id===currentGoalId);
-  if(!g){ view='goals'; return renderGoals(); }
-  const pct=goalProgress(g);
-  const linkedTasks=S.tasks.filter(t=>t.goalId===g.id);
-  const milestones=S.milestones.filter(m=>m.goalId===g.id);
-  const linkedHabits=S.habits.filter(h=>h.goalId===g.id);
-  const progressSource=linkedTasks.length?'linked tasks':milestones.length?'milestones':linkedHabits.length?'linked habits':'manual fallback';
-  const srcLabel=uiT(linkedTasks.length?'src_tasks':milestones.length?'src_ms':linkedHabits.length?'src_habits':'src_manual');
-  const wrap=el(`<div>
-    ${uiBack(uiT('goals'))}
-    <section class="card hud goal-card">
-      <div class="goal-top"><div style="flex:1;min-width:0"><div class="kicker">🎯 ${uiT('goals')}</div><h2 style="margin:4px 0 0">${escapeHtml(g.title)}</h2>
-        ${g.description?`<p class="sub" style="margin-top:6px">${escapeHtml(g.description)}</p>`:''}</div>
-        <div class="goal-pct" style="font-size:40px">${pct}<small>%</small></div></div>
-      <div class="bar${pct>=100?' is-success':''}" style="height:12px;margin:14px 0 10px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(g.title)}"><i style="width:${pct}%"></i></div>
-      <div class="goal-meta">${uiGoalStatusChip(g)}${g.targetDate?`<span class="chip is-muted">⏳ ${uiT('by')} ${fmtDate(g.targetDate)}</span>`:''}<span class="chip is-gold">+${goalXp(g)} XP</span></div>
-      <div class="sub" style="margin-top:8px" data-source="${progressSource}">${g.mode==='manual'?uiT('progress_manual'):uiT('progress_auto',{s:srcLabel})}</div>
-      <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap">
-        <button class="btn ghost sm" id="editGoalBtn">${uiIcon('edit',16)} ${uiT('edit')}</button>
-        ${uiGoalReady(g)?`<button class="btn sm doneBtn">${uiIcon('check',15)} ${uiGoalCloseLabel(g)}</button>`:g.status!=='Completed'?`<button class="btn sm doneBtn">✓ ${uiT('mark_complete')}</button>`:''}
-      </div>
-      ${uiGoalReady(g)?`<p class="sub" style="margin-top:10px" data-goal-ready>${uiLang()==='cs'?'Cíl je splněný na 100 %. Uzavři ho — zůstane v historii i s propojenými úkoly.':'The goal is at 100 %. Close it — it stays in your history with its linked tasks.'}</p>`:''}
-    </section>
-    <div class="section-header"><h3>🚩 ${uiT('milestones')} · ${milestones.filter(m=>m.completed).length}/${milestones.length}</h3><button class="action" id="addMs">＋ ${uiT('add_milestone')}</button></div>
-    <div class="tree"><div class="list" id="msList"></div></div>
-    <div class="section-header"><h3>✅ ${uiT('linked_tasks')} · ${linkedTasks.length}</h3></div>
-    <div class="tree"><div class="list" id="ltList"></div></div>
-    ${linkedHabits.length?`<div class="section-header"><h3>🔥 ${uiT('linked_habits')} · ${linkedHabits.length}</h3></div><div class="tree"><div class="list" id="lhList"></div></div>`:''}
-  </div>`);
-  wrap.querySelector('#backBtn').onclick=()=>{view='goals';render();};
-  wrap.querySelector('#editGoalBtn').onclick=()=>openGoalForm(g);
-  const db=wrap.querySelector('.doneBtn'); if(db) db.onclick=()=>{completeGoal(g);render();};
-  const lt=wrap.querySelector('#ltList');
-  if(!linkedTasks.length) lt.appendChild(el(`<div class="card">${uiEmpty('✅',uiT('linked_tasks'),uiT('no_linked_tasks'),'')}</div>`));
-  linkedTasks.forEach(t=>lt.appendChild(taskItem(t)));
-  const lh=wrap.querySelector('#lhList');
-  if(lh) linkedHabits.forEach(h=>lh.appendChild(habitItem(h)));
-  const msList=wrap.querySelector('#msList');
-  if(!milestones.length) msList.appendChild(el(`<div class="card">${uiEmpty('🚩',uiT('no_milestones'),'','')}</div>`));
-  milestones.forEach(m=>{
-    const it=el(`<div class="item">
-      <button class="check ${m.completed?'done':''}" aria-label="${escapeHtml(m.title)}" aria-pressed="${m.completed?'true':'false'}">${m.completed?'✓':''}</button>
-      <div style="flex:1;min-width:0"><div class="item-title ${m.completed?'done':''}">${escapeHtml(m.title)}</div>
-      <div class="item-meta meta-row">${m.description?`<span>${escapeHtml(m.description)}</span>`:''}<span class="xp-tag">+${milestoneXp(m)} XP</span></div></div>
-      <div class="item-actions"><button class="iconbtn ghost-ic editMs" aria-label="${uiT('edit')}: ${escapeHtml(m.title)}">${uiIcon('edit',18)}</button>
-      <button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(m.title)}">✕</button></div>
-    </div>`);
-    it.querySelector('.check').onclick=()=>{toggleMilestone(m);render();};
-    it.querySelector('.editMs').onclick=()=>openMilestoneForm(g.id,m);
-    it.querySelector('.delbtn').onclick=()=>uiDelConfirm('milestone',{name:m.title},()=>{S.milestones=S.milestones.filter(x=>x.id!==m.id);scheduleSave();render();});
-    msList.appendChild(it);
-  });
-  wrap.querySelector('#addMs').onclick=()=>openMilestoneForm(g.id);
-  return wrap;
-}
 function openMilestoneForm(goalId,existing){
   const m=existing;
   const inner=el(`<div><h3>${m?'Edit Milestone':'New Milestone'}</h3>
     <label>Title</label><input id="ms_title" value="${m?escapeHtml(m.title):''}" placeholder="e.g. Run first 5K">
     <label>Description</label><textarea id="ms_desc" rows="2">${m?escapeHtml(m.description||''):''}</textarea>
+    <label for="ms_due">${uiLang()==='cs'?'Termín (nepovinné)':'Deadline (optional)'}</label><input type="date" id="ms_due" value="${m&&m.targetDate?m.targetDate:''}">
     <p class="helper-text" id="ms_xpInfo">${uiLang()==='cs'?`Odměna za splnění: +${MILESTONE_XP} XP · určuje ji aplikace`:`Reward: +${MILESTONE_XP} XP · set by the app`}</p>
     <button class="btn" id="ms_save">${m?'Save Changes':'Add Milestone'}</button>
   </div>`);
   inner.querySelector('#ms_save').onclick=()=>{
     const title=inner.querySelector('#ms_title').value.trim();
     if(!title){toast('Title required');return;}
+    const due=inner.querySelector('#ms_due').value; // optional deadline: stored only when set (or when it was set before)
     if(m){
       m.title=title; m.description=inner.querySelector('#ms_desc').value;
+      if(due||m.targetDate) m.targetDate=due;
     } else {
       S.milestones.push({id:uid(),goalId,title,description:inner.querySelector('#ms_desc').value,
-        completed:false,completedAt:null,createdAt:Date.now()});
+        completed:false,completedAt:null,createdAt:Date.now(),...(due?{targetDate:due}:{})});
     }
     scheduleSave();closeSheets();render();toast(m?'Milestone updated':'Milestone added');
   };
@@ -8770,9 +9117,11 @@ function getGoalTrend(r,pr){
   active.forEach(g=>{ if(!g.targetDate){ deadline.none++; return; } const dd=ccDaysBetween(T,g.targetDate); deadline[dd<0?'overdue':dd<=7?'week':dd<=30?'month':'later']++; });
   const stale=active.map(g=>{ const last=ccGoalLastActivity(g); const since=last?ccDaysBetween(last,T):(g.createdAt?ccDaysBetween(anDay(g.createdAt),T):null);
     return {id:g.id,title:g.title,progress:goalProgress(g),last,days:since}; }).filter(x=>x.days!=null&&x.days>=14).sort((a,b)=>b.days-a.days||a.title.localeCompare(b.title,'cs'));
+  const withGoal=new Set(S.tasks.filter(t=>t.goalId).map(t=>t.id)), goalTasksDone=rr=>{ let n=0; anTaskIdsIn(rr).forEach((d,id)=>{ if(withGoal.has(id)) n++; }); return n; };
   return {active:active.length,completedAll:S.goals.filter(g=>g.status==='Completed').length,avgProgress:active.length?Math.round(anAvg(active.map(goalProgress))):null,
     byCategory:Object.entries(cats).map(([c,v])=>({c,...v})).sort((a,b)=>(b.active+b.completed)-(a.active+a.completed)||String(a.c).localeCompare(String(b.c),'cs')),deadline,stale,
-    metrics:{completed:comparePeriods(anHad('goals',r)?cur.goals:null,anHad('goals',pr)?prev.goals:null,0),milestones:comparePeriods(anHad('goals',r)&&S.milestones.length?cur.milestones:null,anHad('goals',pr)&&S.milestones.length?prev.milestones:null,0)}};
+    metrics:{tasks:comparePeriods(anHad('goals',r)&&anHad('tasks',r)?goalTasksDone(r):null,anHad('goals',pr)&&anHad('tasks',pr)?goalTasksDone(pr):null,0),
+      completed:comparePeriods(anHad('goals',r)?cur.goals:null,anHad('goals',pr)?prev.goals:null,0),milestones:comparePeriods(anHad('goals',r)&&S.milestones.length?cur.milestones:null,anHad('goals',pr)&&S.milestones.length?prev.milestones:null,0)}};
 }
 function anPlannerIn(r){
   const T=todayStr(), n=new Date(), nowMin=n.getHours()*60+n.getMinutes();
@@ -9067,7 +9416,7 @@ const UI_AN={
     attr_val:'Hodnota',attr_ch:'Za období',attr_prev:'Předchozí',attr_note:'Přírůstky z historie XP (každý záznam nese svůj podíl atributů). Atributy nejdou upravovat ručně.',attr_na:'Historie XP zatím neobsahuje přírůstky atributů.',
     t_done:'Dokončené',t_created:'Vytvořené',t_rate:'Splněné s termínem',t_overdue:'Po termínu (teď)',t_lead:'Průměrně dní do dokončení',t_streak:'Série dní s dokončeným úkolem',t_by_p:'Plnění podle priority',t_by_c:'Dokončené podle kategorie',t_chart:'Dokončené úkoly za den',t_rate_note:'Podíl úkolů s termínem v období, které jsou hotové. Dokončení se počítá podle záznamu splnění (datum dokončení).',
     none_cat:'Bez kategorie',h_active:'Aktivní návyky',h_rate:'Plnění',h_checks:'Check-iny',h_streak:'Průměrná aktuální série',h_list:'Podle návyku',h_cur:'aktuálně',h_best:'nejlépe',h_chart:'Splněné návyky za den',h_note:'Denní a pracovní návyky: splněné plánované dny. Týdenní: splnění vůči cíli na týden. Zlozvyky se do plnění nepočítají.',
-    g_active:'Aktivní',g_done:'Dokončené v období',g_done_all:'Dokončené celkem',g_prog:'Průměrný progress',g_ms:'Milníky v období',g_by_c:'Podle kategorie',g_by_d:'Aktivní podle termínu',g_stale:'Cíle bez pohybu',g_stale_d:'Aktivní cíle bez zaznamenané aktivity 14 a více dní.',g_last:'poslední aktivita',g_never:'zatím bez aktivity',g_days:'dní',
+    g_active:'Aktivní',g_done:'Dokončené v období',g_done_all:'Dokončené celkem',g_tasks:'Úkoly cílů dokončené v období',g_prog:'Průměrný progress',g_ms:'Milníky v období',g_by_c:'Podle kategorie',g_by_d:'Aktivní podle termínu',g_stale:'Cíle bez pohybu',g_stale_d:'Aktivní cíle bez zaznamenané aktivity 14 a více dní.',g_last:'poslední aktivita',g_never:'zatím bez aktivity',g_days:'dní',
     dl:{overdue:'Po termínu',week:'Do 7 dní',month:'Do 30 dní',later:'Později',none:'Bez termínu'},
     p_blocks:'Bloky',p_time:'Naplánovaný čas',p_done:'Proběhlé bloky označené jako splněné',p_by_c:'Čas podle kategorie',p_by_d:'Čas podle dne v týdnu',p_chart:'Naplánováno za den',p_note:'Splnění se bere z označení bloku v plánovači; skutečně strávený čas aplikace neměří.',
     f_count:'Tréninky',f_min:'Minuty',f_vol:'Objem (kg)',f_sets:'Pracovní série',f_types:'Tréninky podle názvu',f_last:'Poslední trénink',f_cons:'Týdny s tréninkem',f_chart:'Tréninky za den',
@@ -9103,7 +9452,7 @@ const UI_AN={
     attr_val:'Value',attr_ch:'This period',attr_prev:'Previous',attr_note:'Gains from the XP history (each entry carries its attribute share). Attributes cannot be edited by hand.',attr_na:'The XP history has no attribute gains yet.',
     t_done:'Completed',t_created:'Created',t_rate:'Done with a due date',t_overdue:'Overdue (now)',t_lead:'Average days to completion',t_streak:'Days-in-a-row with a completed task',t_by_p:'Completion by priority',t_by_c:'Completed by category',t_chart:'Tasks completed per day',t_rate_note:'Share of the tasks due in the period that are done. Completion is dated by its completion record.',
     none_cat:'No category',h_active:'Active habits',h_rate:'Completion',h_checks:'Check-ins',h_streak:'Average current streak',h_list:'By habit',h_cur:'current',h_best:'best',h_chart:'Habits completed per day',h_note:'Daily and weekday habits: completed scheduled days. Weekly: completions against the weekly target. Bad habits are not in the rate.',
-    g_active:'Active',g_done:'Completed in period',g_done_all:'Completed overall',g_prog:'Average progress',g_ms:'Milestones in period',g_by_c:'By category',g_by_d:'Active by deadline',g_stale:'Goals without movement',g_stale_d:'Active goals with no recorded activity for 14 days or more.',g_last:'last activity',g_never:'no activity yet',g_days:'days',
+    g_active:'Active',g_done:'Completed in period',g_done_all:'Completed overall',g_tasks:'Goal tasks completed in period',g_prog:'Average progress',g_ms:'Milestones in period',g_by_c:'By category',g_by_d:'Active by deadline',g_stale:'Goals without movement',g_stale_d:'Active goals with no recorded activity for 14 days or more.',g_last:'last activity',g_never:'no activity yet',g_days:'days',
     dl:{overdue:'Overdue',week:'Within 7 days',month:'Within 30 days',later:'Later',none:'No deadline'},
     p_blocks:'Blocks',p_time:'Planned time',p_done:'Past blocks marked as done',p_by_c:'Time by category',p_by_d:'Time by weekday',p_chart:'Planned per day',p_note:'Completion comes from marking a block in the Planner; the app does not measure time actually spent.',
     f_count:'Workouts',f_min:'Minutes',f_vol:'Volume (kg)',f_sets:'Working sets',f_types:'Workouts by name',f_last:'Last workout',f_cons:'Weeks with a workout',f_chart:'Workouts per day',
@@ -9306,7 +9655,7 @@ function renderStats(){
     ${hb.list.length?`<div class="card"><div class="kicker">${T('h_list')}</div><table class="an-tbl"><tbody>${hb.list.map(x=>`<tr data-habit="${escapeHtml(x.id)}"><th scope="row">${escapeHtml(x.name)}</th><td>${x.rate==null?'—':x.rate+' %'} <span class="sub">${x.done}/${x.expected}</span></td><td><span class="sub">${T('h_cur')}</span> ${x.current}</td><td><span class="sub">${T('h_best')}</span> ${x.best}</td></tr>`).join('')}</tbody></table></div>`:''}`));
   // 10. goals
   const gl=a.goals;
-  body.insertAdjacentHTML('beforeend',uiAnSec('anGoals','target',T('s_goals'),!S.goals.length?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('g_active'),uiAnNum(gl.active))}${uiAnStat(T('g_done'),uiAnNum(M('goals','completed').current),uiAnDelta(M('goals','completed')))}${uiAnStat(T('g_done_all'),uiAnNum(gl.completedAll))}${uiAnStat(T('g_prog'),gl.avgProgress==null?big(null):gl.avgProgress+' %')}</div>
+  body.insertAdjacentHTML('beforeend',uiAnSec('anGoals','target',T('s_goals'),!S.goals.length?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('g_active'),uiAnNum(gl.active))}${uiAnStat(T('g_done'),uiAnNum(M('goals','completed').current),uiAnDelta(M('goals','completed')))}${uiAnStat(T('g_done_all'),uiAnNum(gl.completedAll))}${uiAnStat(T('g_prog'),gl.avgProgress==null?big(null):gl.avgProgress+' %')}${uiAnStat(T('g_tasks'),big(M('goals','tasks').current),uiAnDelta(M('goals','tasks')))}${uiAnStat(T('g_ms'),big(M('goals','milestones').current),uiAnDelta(M('goals','milestones')))}</div>
     <div class="an-2"><div class="card"><div class="kicker">${T('g_by_c')}</div>${uiAnBars(gl.byCategory.map(c=>({l:uiAnCatName(c.c),v:c.active+c.completed,x:c})),(v,row)=>`${row.x.active} / ${row.x.completed}`)}<p class="helper-text" style="margin:8px 0 0">${cs?'aktivní / dokončené':'active / completed'}</p></div>
     <div class="card"><div class="kicker">${T('g_by_d')}</div>${Object.keys(gl.deadline).map(k=>`<div class="kv" data-deadline="${k}"><span>${T('dl')[k]}</span><b>${gl.deadline[k]}</b></div>`).join('')}</div></div>
     ${gl.stale.length?`<div class="card" id="anStale"><div class="kicker">${T('g_stale')}</div><p class="helper-text" style="margin:4px 0 8px">${T('g_stale_d')}</p>${gl.stale.map(g=>`<button class="an-stale" data-goal="${escapeHtml(g.id)}"><span class="an-stale-t">${escapeHtml(g.title)}</span><span class="sub">${g.progress} % · ${g.last?`${T('g_last')} ${fmtDate(g.last)}`:T('g_never')} · ${g.days} ${T('g_days')}</span></button>`).join('')}</div>`:''}`));
@@ -10150,16 +10499,18 @@ function openForm(type){
       ${uiXpHint('f_xpHint')}
       <label>Due date</label><input type="date" id="f_due" value="${todayStr()}">
       <label>Goal</label><select id="f_goal">${goalOptions()}</select>
+      ${uiGpMsFieldHtml()}
       <button class="btn" id="f_save">Add Task</button>
     </div>`);
+    uiGpBindMs(inner,'');
     const priSel=inner.querySelector('#f_pri');
     uiBindXpHint(inner,'f_pri','f_xpHint',p=>taskXp({priority:p}));
     inner.querySelector('#f_save').onclick=()=>{
       const title=inner.querySelector('#f_title').value.trim();
       if(!title){toast('Title required');return;}
       S.tasks.push({id:uid(),title,description:inner.querySelector('#f_desc').value,category:inner.querySelector('#f_cat').value,priority:priSel.value,
-        dueDate:inner.querySelector('#f_due').value,goalId:inner.querySelector('#f_goal').value,done:false,createdAt:Date.now()});
-      scheduleSave();closeSheets();view='tasks';render();toast('Task added');
+        dueDate:inner.querySelector('#f_due').value,goalId:inner.querySelector('#f_goal').value,done:false,createdAt:Date.now(),...uiGpMsValue(inner,undefined)});
+      scheduleSave();closeSheets();view=view==='goalDetail'?'goalDetail':'tasks';render();toast('Task added'); // added from a goal: stay on the goal
     };
   } else if(type==='habit'){
     inner=el(`<div><h3>New Habit</h3>
