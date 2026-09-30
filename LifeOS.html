@@ -1331,6 +1331,97 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 @media(min-width:1100px){.cc-home{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 var(--sp-5);align-items:start}
   .cc-home>.hud,.cc-home>#ccNow,.cc-home>.cc-quick,.cc-home>#ccAttn,.cc-home>#ccDay,.cc-home>#ccMini{grid-column:1/-1}
   .cc-home .cc-goals{grid-template-columns:minmax(0,1fr)}}
+/* ---------- Deep Analytics & Insights 2.0 ---------- */
+.an .page-head{flex-wrap:wrap}
+.an .page-head .btn.sm{min-height:44px}
+.an-heat-tabs .pill{min-width:44px}
+.an-tabs button{min-height:44px}
+@media(max-width:480px){.an-tabs{flex-wrap:wrap;overflow-x:visible;border-radius:18px}.an-tabs button{flex:1 1 30%}}
+.an-custom{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin:-6px 0 var(--sp-3)}
+.an-custom label{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-caption);font-weight:700;color:var(--sub);flex:1 1 140px;margin:0}
+.an-custom input{min-height:44px;margin:0}
+.an-range{font-size:var(--fs-body-sm);color:var(--sub);margin:-4px 2px var(--sp-3)}
+.an-range b{color:var(--text)}
+.an-jump{display:flex;flex-wrap:nowrap;gap:6px;margin:0 0 var(--sp-2);padding:2px 0 6px;overflow-x:auto;scrollbar-width:none}.an-jump::-webkit-scrollbar{display:none}
+.an-jump .pill{flex:none;min-width:44px;justify-content:center}
+@media(min-width:700px){.an-jump{flex-wrap:wrap;overflow-x:visible;margin:0 0 var(--sp-2);padding:0}}
+.an-jump .pill{min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+.an-sec{scroll-margin-top:72px;min-width:0}
+.an-sec .section-header h3{display:flex;align-items:center;gap:6px;min-width:0}
+.an-sec h3:focus{outline:none}
+.an-sec h3:focus-visible{outline:2px solid var(--color-accent);outline-offset:4px}
+.an-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.an-card .stat-value .an-nd,.an-stat .stat-value .an-nd{font-size:15px;color:var(--sub);font-weight:650}
+.an-card-d{margin-top:8px}
+.an-delta{display:inline;font-size:var(--fs-caption);font-weight:650;color:var(--color-text-secondary);font-variant-numeric:tabular-nums;line-height:1.35}
+.an-delta svg{color:var(--accent);vertical-align:-2px}
+.an-delta.is-na{color:var(--color-text-muted);font-weight:600}
+.an-stat .stat-sub{min-height:0}
+.an-cmp{margin:0 0 8px}
+.an-chs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.an-top{counter-reset:an}
+.an-ch{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent);font-size:var(--fs-body-sm)}
+.an-ch:last-child{border-bottom:none}
+.an-ch-l{color:var(--text);font-weight:650;min-width:0;overflow-wrap:anywhere}
+.an-ch-v{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.an-ch-d{grid-column:1/-1;color:var(--color-text-secondary);font-size:var(--fs-caption)}
+.an-obs{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:var(--fs-body-sm);line-height:1.45}
+.an-2{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.an-hbars{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.an-hbar{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr) auto;align-items:center;gap:8px;font-size:var(--fs-body-sm)}
+.an-hbar-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.an-hbar-t{height:8px;border-radius:var(--radius-pill);background:var(--card2);overflow:hidden}
+.an-hbar-t i{display:block;height:100%;border-radius:var(--radius-pill);background:var(--accent)}
+.an-hbar-v{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:var(--fs-caption)}
+.an-chart{margin:0 0 var(--sp-3);outline-offset:2px}
+.an-chart figcaption{margin-bottom:8px}
+.an-per{font-size:var(--fs-caption)}
+.an-plot{position:relative;height:120px;cursor:crosshair;touch-action:pan-y}
+.an-plot svg{display:block;width:100%;height:100%}
+.an-b{fill:var(--accent)}
+.an-b.is-na{fill:var(--line)}
+.an-b.is-sel{fill:var(--accent-strong)}
+.an-base{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.an-cursor{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--sub);opacity:0;pointer-events:none}
+.an-cursor.on{opacity:.8}
+.an-axis{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-caption);color:var(--color-text-secondary);margin-top:6px;font-variant-numeric:tabular-nums}
+.an-readout{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-height:44px;margin-top:8px;padding:8px 10px;border-radius:12px;background:var(--card2);font-size:var(--fs-body-sm);line-height:1.35}
+.an-ro-t{min-width:0;overflow-wrap:anywhere}
+.an-ro-open{min-height:44px}
+.an-table{margin-top:8px}
+.an-table summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:var(--fs-body-sm);font-weight:650;color:var(--accent)}
+.an-table table,.an-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-body-sm);font-variant-numeric:tabular-nums}
+.an-table td,.an-table th,.an-tbl td,.an-tbl th{padding:7px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent);text-align:left}
+.an-table th,.an-tbl thead th{font-size:var(--fs-caption);color:var(--color-text-secondary);font-weight:700}
+.an-tbl tbody th{font-weight:700;white-space:nowrap}
+.an-tbl td{white-space:nowrap}
+.an-tbl tbody th:first-child{white-space:normal;overflow-wrap:anywhere}
+.an-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.an-chart-empty{margin-bottom:var(--sp-3)}
+.an-heat-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.an-heat-tabs .pill{min-height:44px}
+.an-heat-span{display:flex;gap:6px;margin-left:auto}
+.an-heat-what{margin:0 0 10px}
+.an-heat-scroll{overflow-x:auto;padding:2px;scrollbar-width:thin}
+.an-heat{display:grid;grid-template-rows:repeat(7,14px);grid-auto-flow:column;grid-auto-columns:14px;gap:3px;width:max-content;padding:2px;border-radius:6px}
+.an-heat.is-year{grid-template-rows:repeat(7,11px);grid-auto-columns:11px;gap:2px}
+.an-hc{display:block;border-radius:3px;background:var(--card2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 60%,transparent)}
+.an-hc.is-pad{background:none;box-shadow:none}
+.an-hc.l1{background:color-mix(in srgb,var(--accent) 28%,var(--card2))}
+.an-hc.l2{background:color-mix(in srgb,var(--accent) 50%,var(--card2))}
+.an-hc.l3{background:color-mix(in srgb,var(--accent) 74%,var(--card2))}
+.an-hc.l4{background:var(--accent)}
+.an-hc.is-sel{box-shadow:0 0 0 2px var(--text)}
+.an-heat-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:var(--fs-caption);color:var(--color-text-secondary)}
+.an-legend{display:inline-flex;align-items:center;gap:3px}
+.an-legend .an-hc{width:12px;height:12px}
+.an-stale{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:44px;padding:10px 0;border:none;border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent);background:none;text-align:left;cursor:pointer;color:var(--text);font:inherit}
+.an-stale-t{font-weight:700;overflow-wrap:anywhere}
+@media(min-width:700px){.an-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.an-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3)}.an-plot{height:150px}}
+@media(min-width:1100px){.an-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-5);align-items:start}
+  .an-body>#anSummary,.an-body>#anChanges,.an-body>#anHeat{grid-column:1/-1}.an-cards{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .an-body>#anChanges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--sp-3);align-items:start}.an-body>#anChanges>.section-header{grid-column:1/-1}
+  .an-body .an-2{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -8495,6 +8586,327 @@ function chartCard(title,values,labels,opts){
 }
 
 
+/* ================= Deep Analytics & Insights 2.0 (logic) =================
+   A READ-ONLY layer over the existing state and the existing calculators (dailyScore + the stored S.dailyScores
+   snapshots, the xpLog ledger, xpKeyIndex task completions, isScheduledDate/isDayComplete/currentStreak/bestStreak,
+   goalProgress, plannerDuration, completedWorkouts/workoutVolume, nutriTotals, sleepDuration, the Finance 2.0 helpers).
+   Nothing here writes to S, grants XP or creates records. Same state + same day = same result.
+   A range is {key,from,to,days}; the previous range is the same number of days right before it.
+   Every compared number goes through comparePeriods(): {current,previous,delta,percentDelta,direction}
+   with direction up | down | flat | unavailable -- a description of the data, never a judgement. */
+const AN_PERIODS={today:1,week:7,month:30,quarter:90,year:365};
+function anDay(ts){ return uiIsoDate(ts); } // local calendar day of a timestamp (the same day xpToday() uses)
+function getAnalyticsRange(key,today,custom){
+  today=today||todayStr();
+  if(key==='custom'&&custom&&/^\d{4}-\d\d-\d\d$/.test(custom.from||'')&&/^\d{4}-\d\d-\d\d$/.test(custom.to||'')){
+    let from=custom.from<=custom.to?custom.from:custom.to, to=custom.from<=custom.to?custom.to:custom.from; if(to>today) to=today; if(from>to) from=to;
+    const days=ccDaysBetween(from,to)+1; return {key:'custom',from,to,days:Math.min(days,3660)};
+  }
+  const days=AN_PERIODS[key]||7;
+  return {key:AN_PERIODS[key]?key:'week',from:addDays(today,-(days-1)),to:today,days};
+}
+function getPreviousAnalyticsRange(r){ const to=addDays(r.from,-1); return {key:r.key,from:addDays(to,-(r.days-1)),to,days:r.days,previous:true}; }
+function anDays(r){ const out=[]; for(let d=r.from,i=0;d<=r.to&&i<3700;d=addDays(d,1),i++) out.push(d); return out; }
+function anRound(v,dp){ if(v==null||!isFinite(v)) return null; const m=Math.pow(10,dp||0); return Math.round(v*m)/m; }
+function comparePeriods(current,previous,dp){
+  const c=anRound(current,dp==null?1:dp), p=anRound(previous,dp==null?1:dp);
+  if(c==null||p==null) return {current:c,previous:p,delta:null,percentDelta:null,direction:'unavailable'};
+  const delta=anRound(c-p,dp==null?1:dp);
+  return {current:c,previous:p,delta,percentDelta:p!==0?anRound((c-p)/Math.abs(p)*100,0):null,direction:delta>0?'up':delta<0?'down':'flat'};
+}
+const anAvg=xs=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
+// the first day a domain has any record: a period that ends before it has "no data", never a 0
+const anMin=xs=>{ let m=null; for(const d of xs) if(d&&(m==null||d<m)) m=d; return m; };
+const anTs=ts=>ts&&isFinite(ts)&&ts>86400000?anDay(ts):null;
+function anHabitStart(h){ return h.startDate||anTs(h.createdAt)||anMin(h.completions||[]); }
+function anSince(domain){
+  switch(domain){
+    case 'tasks': { let m=anMin(S.tasks.map(t=>anTs(t.createdAt))); for(const d of anTaskDoneByDay().keys()) if(m==null||d<m) m=d; return anMin([m,...S.tasks.filter(t=>!anTs(t.createdAt)).map(t=>t.dueDate)]); }
+    case 'habits': return anMin(S.habits.map(anHabitStart));
+    case 'goals': return anMin([...S.goals.map(g=>anTs(g.createdAt)),...S.milestones.map(m=>anTs(m.createdAt))]);
+    case 'planner': return anMin((S.plannerBlocks||[]).map(b=>b.date));
+    case 'fitness': return anMin(completedWorkouts(S).map(w=>w.date));
+    case 'nutrition': return anMin(S.meals.map(m=>m.date));
+    case 'sleep': return anMin(S.sleepLog.map(x=>x.date));
+    case 'finance': return anMin([...S.expenses,...S.income].map(x=>x.date));
+    case 'xp': return anMin(anXpByDay().keys());
+  }
+  return null;
+}
+const anHad=(domain,r)=>{ const s=anSince(domain); return s!=null&&s<=r.to; };
+
+// ---- per-day indexes (built from append-only ledgers; cached on the ledger identity + length) ----
+const AN_XP_SOURCES=['tasks','habits','quests','fitness','nutrition','sleep','journal','goals','milestones','finance','achievements','other'];
+function anXpSource(x){
+  const k=typeof x.key==='string'?x.key.split(':')[0]:'';
+  const byKey={task:'tasks',habit:'habits',goal:'goals',milestone:'milestones',journal:'journal',sleep:'sleep',meal:'nutrition',workout:'fitness',quest:'quests',finance:'finance'}[k];
+  if(byKey) return byKey;
+  const r=String(x.reason||'');
+  return /^Task/.test(r)?'tasks':/^Habit/.test(r)?'habits':/^Quest/.test(r)?'quests':/^Workout/.test(r)?'fitness':/^Meal/.test(r)?'nutrition':/^Sleep/.test(r)?'sleep':
+    /^Journal/.test(r)?'journal':/^Goal/.test(r)?'goals':/^Milestone/.test(r)?'milestones':/^Finance/.test(r)?'finance':/^Achievement/.test(r)?'achievements':'other';
+}
+let anXpCache={log:null,len:-1,last:null,map:null};
+function anXpByDay(){
+  const log=S.xpLog||[], c=anXpCache, last=log.length?log[log.length-1]:null;
+  if(c.log===log&&c.len===log.length&&c.last===last) return c.map;
+  const map=new Map();
+  for(const x of log){ if(!x||!isFinite(x.ts)) continue; const d=anDay(x.ts); let e=map.get(d); if(!e){ e={total:0,src:{},attrs:{},n:0}; map.set(d,e); }
+    const a=Number(x.amount)||0; e.total+=a; e.n++; const s=anXpSource(x); e.src[s]=(e.src[s]||0)+a;
+    if(typeof x.key==='string'&&x.key.startsWith('goal:')&&x.key.endsWith(':complete')) (e.goals||(e.goals=[])).push(x.key.slice(5,-9));
+    if(x.attrs) for(const k in x.attrs) e.attrs[k]=(e.attrs[k]||0)+(Number(x.attrs[k])||0); }
+  c.log=log; c.len=log.length; c.last=last; c.map=map; return map;
+}
+// task completions by day, from the ledger keys task:<id>:<date> (the same record taskDoneOn() reads)
+let anTaskCache={set:null,size:-1,map:null};
+function anTaskDoneByDay(){
+  const set=xpKeyIndex(), c=anTaskCache;
+  if(c.set===set&&c.size===set.size) return c.map;
+  const map=new Map();
+  for(const k of set){ if(typeof k!=='string'||!k.startsWith('task:')) continue; const d=k.slice(-10); if(!/^\d{4}-\d\d-\d\d$/.test(d)) continue; const id=k.slice(5,-11);
+    let s=map.get(d); if(!s){ s=new Set(); map.set(d,s); } s.add(id); }
+  c.set=set; c.size=set.size; c.map=map; return map;
+}
+function anTaskIdsIn(r){ const m=anTaskDoneByDay(), ids=new Map(); for(const d of anDays(r)){ const s=m.get(d); if(s) for(const id of s) if(!ids.has(id)) ids.set(id,d); } return ids; }
+// habits completed per day: good habits with a complete day (isDayComplete) + bad habits logged clean that day
+function anHabitDoneByDay(from,to){
+  const map=new Map();
+  S.habits.forEach(h=>{ const seen=new Set(); (h.completions||[]).forEach(d=>{ if(d<from||d>to||seen.has(d)) return; seen.add(d); if(isDayComplete(h,d)) map.set(d,(map.get(d)||0)+1); }); });
+  return map;
+}
+// Daily Score of a day: the stored snapshot for past days, the live dailyScore() for today -- never an estimated history
+function anDailyScoreOf(d){
+  const T=todayStr();
+  if(d===T) return dailyScore(T).score;
+  if(d>T) return null;
+  const s=S.dailyScores&&S.dailyScores[d]; return s&&s.score!=null?s.score:null;
+}
+
+// ---- domain trends: {metrics:{name:comparePeriods(...)}, ...details} ----
+function getDailyScoreTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const ser=rr=>anDays(rr).map(d=>({date:d,score:anDailyScoreOf(d),live:d===todayStr()}));
+  const cur=ser(r), prev=ser(pr), xs=cur.filter(x=>x.score!=null).map(x=>x.score), ps=prev.filter(x=>x.score!=null).map(x=>x.score);
+  const best=cur.filter(x=>x.score!=null).reduce((b,x)=>!b||x.score>b.score?x:b,null), low=cur.filter(x=>x.score!=null).reduce((b,x)=>!b||x.score<b.score?x:b,null);
+  return {series:cur,days:xs.length,prevDays:ps.length,min:low,max:best,
+    metrics:{avg:comparePeriods(anAvg(xs),anAvg(ps),0)}};
+}
+function anXpIn(r){ const m=anXpByDay(); let total=0,n=0; const src={},attrs={}; for(const d of anDays(r)){ const e=m.get(d); if(!e) continue; total+=e.total; n+=e.n;
+  for(const k in e.src) src[k]=(src[k]||0)+e.src[k]; for(const k in e.attrs) attrs[k]=(attrs[k]||0)+e.attrs[k]; } return {total,n,src,attrs}; }
+function getXpTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anXpIn(r), prev=anXpIn(pr), m=anXpByDay();
+  let after=0; for(const [d,e] of m) if(d>r.to) after+=e.total;
+  const endXp=Math.max(0,(S.totalXp||0)-after), startXp=Math.max(0,endXp-cur.total);
+  const sources=AN_XP_SOURCES.filter(k=>cur.src[k]||prev.src[k]).map(k=>({k,xp:cur.src[k]||0,prev:prev.src[k]||0,pct:cur.total?Math.round((cur.src[k]||0)/cur.total*100):0})).sort((a,b)=>b.xp-a.xp||AN_XP_SOURCES.indexOf(a.k)-AN_XP_SOURCES.indexOf(b.k));
+  const has=anHad('xp',r), hadPrev=anHad('xp',pr);
+  return {series:anDays(r).map(d=>({date:d,xp:(m.get(d)||{total:0}).total})),entries:cur.n,sources,
+    level:{start:levelFromXp(startXp),end:levelFromXp(endXp)},
+    metrics:{total:comparePeriods(has||hadPrev?cur.total:null,hadPrev?prev.total:null,0),perDay:comparePeriods(has||hadPrev?cur.total/r.days:null,hadPrev?prev.total/pr.days:null,1)}};
+}
+function getAttributeTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anXpIn(r).attrs, prev=anXpIn(pr).attrs, any=(S.xpLog||[]).some(x=>x&&x.attrs), hp=any&&anHad('xp',pr);
+  return {tracked:any,attrs:Object.keys(ATTRS).map(k=>({k,value:S.attrs[k]||0,level:Math.floor((S.attrs[k]||0)/50)+1,
+    change:comparePeriods(any&&anHad('xp',r)?(cur[k]||0):null,hp?(prev[k]||0):null,0)}))};
+}
+function anTasksIn(r){
+  const done=anTaskIdsIn(r), byId=new Map(S.tasks.map(t=>[t.id,t]));
+  const created=S.tasks.filter(t=>t.createdAt&&isFinite(t.createdAt)&&t.createdAt>1&&(()=>{ const d=anDay(t.createdAt); return d>=r.from&&d<=r.to; })()).length;
+  const due=S.tasks.filter(t=>t.dueDate&&t.dueDate>=r.from&&t.dueDate<=r.to), dueDone=due.filter(t=>t.done);
+  const lead=[]; done.forEach((d,id)=>{ const t=byId.get(id); if(t&&t.createdAt&&t.createdAt>86400000){ const c=anDay(t.createdAt); if(c<=d) lead.push(ccDaysBetween(c,d)); } });
+  return {done,created,due:due.length,dueDone:dueDone.length,rate:due.length?dueDone.length/due.length*100:null,lead:lead.length?anAvg(lead):null,leadN:lead.length,dueList:due,byId};
+}
+function getTaskTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anTasksIn(r), prev=anTasksIn(pr), T=todayStr();
+  const group=(keyOf)=>{ const g={}; cur.dueList.forEach(t=>{ const k=keyOf(t); const e=g[k]||(g[k]={due:0,done:0}); e.due++; if(t.done) e.done++; }); return g; };
+  const byPriority=['Low','Medium','High','Urgent'].map(p=>{ const e=group(t=>CC_PRIO[t.priority]?t.priority:'Medium')[p]; return e?{p,due:e.due,done:e.done,rate:Math.round(e.done/e.due*100)}:null; }).filter(Boolean);
+  const cats={}; cur.done.forEach((d,id)=>{ const t=cur.byId.get(id); const c=t&&t.category?t.category:''; cats[c]=(cats[c]||0)+1; });
+  const byCategory=Object.entries(cats).map(([c,n])=>({c,n})).sort((a,b)=>b.n-a.n||String(a.c).localeCompare(String(b.c),'cs'));
+  const has=anHad('tasks',r), hp=anHad('tasks',pr);
+  return {byPriority,byCategory,overdue:S.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<T).length,leadN:cur.leadN,has,
+    series:anDays(r).map(d=>({date:d,n:(anTaskDoneByDay().get(d)||{size:0}).size})),
+    metrics:{done:comparePeriods(has?cur.done.size:null,hp?prev.done.size:null,0),created:comparePeriods(has?cur.created:null,hp?prev.created:null,0),
+      rate:comparePeriods(cur.rate,hp?prev.rate:null,0),lead:comparePeriods(cur.lead,hp?prev.lead:null,1),due:comparePeriods(has?cur.due:null,hp?prev.due:null,0)}};
+}
+// expected check-ins of a good habit in a range: scheduled days for daily/weekday habits, target per 7 days for weekly/custom ones
+function anHabitRate(h,r){
+  const T=todayStr(), st=anHabitStart(h), from=st&&st>r.from?st:r.from, to=r.to<T?r.to:T;
+  if(from>to) return {expected:0,done:0};
+  const set=new Set((h.completions||[]).filter(d=>d>=from&&d<=to));
+  if(h.frequency==='weekly'||h.frequency==='custom'){
+    const n=ccDaysBetween(from,to)+1; let done=0; set.forEach(d=>{ if(isDayComplete(h,d)) done++; });
+    const expected=Math.max(1,Math.round((Number(h.target)||1)*n/7)); return {expected,done:Math.min(done,expected)};
+  }
+  let expected=0,done=0; for(let d=from,i=0;d<=to&&i<3700;d=addDays(d,1),i++){ if(!isScheduledDate(h,d)) continue; expected++; if(set.has(d)&&isDayComplete(h,d)) done++; }
+  return {expected,done};
+}
+function anHabitsIn(r){
+  const good=S.habits.filter(h=>h.active!==false&&h.type!=='bad'&&!(anHabitStart(h)&&anHabitStart(h)>r.to));
+  let e=0,d=0; const per=good.map(h=>{ const x=anHabitRate(h,r); e+=x.expected; d+=x.done; return {h,expected:x.expected,done:x.done,rate:x.expected?Math.round(x.done/x.expected*100):null}; });
+  const map=anHabitDoneByDay(r.from,r.to); let checks=0; map.forEach(v=>checks+=v);
+  return {rate:e?d/e*100:null,per,checks,map};
+}
+function getHabitTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anHabitsIn(r), prev=anHabitsIn(pr), active=S.habits.filter(h=>h.active!==false);
+  const cs=new Map(active.map(h=>[h,currentStreak(h)])), streaks=[...cs.values()];
+  return {active:active.length,good:active.filter(h=>h.type!=='bad').length,bad:active.filter(h=>h.type==='bad').length,
+    avgStreak:streaks.length?anRound(anAvg(streaks),1):null,
+    list:cur.per.map(x=>({id:x.h.id,name:x.h.name,rate:x.rate,done:x.done,expected:x.expected,current:cs.has(x.h)?cs.get(x.h):currentStreak(x.h),best:bestStreak(x.h)})).sort((a,b)=>(b.rate==null)-(a.rate==null)||(b.rate||0)-(a.rate||0)||a.name.localeCompare(b.name,'cs')),
+    series:anDays(r).map(d=>({date:d,n:cur.map.get(d)||0})),
+    metrics:{rate:comparePeriods(cur.rate,prev.rate,0),checks:comparePeriods(anHad('habits',r)?cur.checks:null,anHad('habits',pr)?prev.checks:null,0)}};
+}
+function anGoalCompletedIn(r){
+  const done=new Set(), m=anXpByDay(); for(const d of anDays(r)){ const e=m.get(d); if(e&&e.goals) e.goals.forEach(id=>done.add(id)); }
+  const ms=S.milestones.filter(m=>m.completed&&m.completedAt&&(()=>{ const d=anDay(m.completedAt); return d>=r.from&&d<=r.to; })()).length;
+  return {goals:done.size,milestones:ms};
+}
+function getGoalTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const T=todayStr(), active=S.goals.filter(g=>g.status==='Active'), cur=anGoalCompletedIn(r), prev=anGoalCompletedIn(pr);
+  const cats={}; S.goals.forEach(g=>{ const c=g.category||''; const e=cats[c]||(cats[c]={active:0,completed:0}); if(g.status==='Active') e.active++; else if(g.status==='Completed') e.completed++; });
+  const deadline={overdue:0,week:0,month:0,later:0,none:0};
+  active.forEach(g=>{ if(!g.targetDate){ deadline.none++; return; } const dd=ccDaysBetween(T,g.targetDate); deadline[dd<0?'overdue':dd<=7?'week':dd<=30?'month':'later']++; });
+  const stale=active.map(g=>{ const last=ccGoalLastActivity(g); const since=last?ccDaysBetween(last,T):(g.createdAt?ccDaysBetween(anDay(g.createdAt),T):null);
+    return {id:g.id,title:g.title,progress:goalProgress(g),last,days:since}; }).filter(x=>x.days!=null&&x.days>=14).sort((a,b)=>b.days-a.days||a.title.localeCompare(b.title,'cs'));
+  return {active:active.length,completedAll:S.goals.filter(g=>g.status==='Completed').length,avgProgress:active.length?Math.round(anAvg(active.map(goalProgress))):null,
+    byCategory:Object.entries(cats).map(([c,v])=>({c,...v})).sort((a,b)=>(b.active+b.completed)-(a.active+a.completed)||String(a.c).localeCompare(String(b.c),'cs')),deadline,stale,
+    metrics:{completed:comparePeriods(anHad('goals',r)?cur.goals:null,anHad('goals',pr)?prev.goals:null,0),milestones:comparePeriods(anHad('goals',r)&&S.milestones.length?cur.milestones:null,anHad('goals',pr)&&S.milestones.length?prev.milestones:null,0)}};
+}
+function anPlannerIn(r){
+  const T=todayStr(), n=new Date(), nowMin=n.getHours()*60+n.getMinutes();
+  const bl=(S.plannerBlocks||[]).filter(b=>b.date>=r.from&&b.date<=r.to);
+  const past=bl.filter(b=>b.date<T||(b.date===T&&plannerTimeToMin(b.endTime)!=null&&plannerTimeToMin(b.endTime)<=nowMin));
+  const min=xs=>xs.reduce((a,b)=>a+plannerDuration(b),0);
+  return {blocks:bl,planned:min(bl),count:bl.length,past:past.length,pastMin:min(past),done:past.filter(b=>b.completed).length,doneMin:min(past.filter(b=>b.completed))};
+}
+function getPlannerTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anPlannerIn(r), prev=anPlannerIn(pr), has=anHad('planner',r), hp=anHad('planner',pr);
+  const cats={}; cur.blocks.forEach(b=>{ const c=b.category||''; cats[c]=(cats[c]||0)+plannerDuration(b); });
+  const dows=[0,0,0,0,0,0,0]; cur.blocks.forEach(b=>{ dows[(new Date(b.date+'T00:00').getDay()+6)%7]+=plannerDuration(b); });
+  return {count:cur.count,planned:cur.planned,past:cur.past,pastMin:cur.pastMin,done:cur.done,doneMin:cur.doneMin,has,
+    byCategory:Object.entries(cats).map(([c,m])=>({c,min:m})).sort((a,b)=>b.min-a.min||String(a.c).localeCompare(String(b.c),'cs')),byWeekday:dows,
+    series:anDays(r).map(d=>({date:d,min:cur.blocks.filter(b=>b.date===d).reduce((a,b)=>a+plannerDuration(b),0)})),
+    metrics:{hours:comparePeriods(has?cur.planned/60:null,hp?prev.planned/60:null,1),blocks:comparePeriods(has?cur.count:null,hp?prev.count:null,0),
+      doneRate:comparePeriods(cur.past?cur.done/cur.past*100:null,prev.past?prev.done/prev.past*100:null,0)}};
+}
+function anWorkoutsIn(r){ return completedWorkouts(S).filter(w=>w.date>=r.from&&w.date<=r.to); }
+function getFitnessTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const all=completedWorkouts(S), cur=anWorkoutsIn(r), prev=anWorkoutsIn(pr), has=anHad('fitness',r), hp=anHad('fitness',pr);
+  const mins=ws=>{ const t=ws.filter(w=>Number(w.duration)>0); return t.length?t.reduce((a,w)=>a+Number(w.duration),0):null; };
+  const vol=ws=>ws.reduce((a,w)=>a+workoutVolume(w),0);
+  const types={}; cur.forEach(w=>{ const k=String(w.name||'').trim()||'—'; types[k]=(types[k]||0)+1; });
+  const last=[...all].filter(w=>w.date<=r.to).sort((a,b)=>workoutChronoCmp(b,a))[0]||null;
+  const weeks=new Set(anDays(r).map(d=>weekStartOf(d))), active=new Set(cur.map(w=>weekStartOf(w.date)));
+  return {has,last:last?{name:last.name,date:last.date}:null,types:Object.entries(types).map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n||a.k.localeCompare(b.k,'cs')),
+    sets:cur.reduce((a,w)=>a+workoutTotalSets(w),0),weeks:weeks.size,activeWeeks:active.size,
+    series:anDays(r).map(d=>({date:d,n:cur.filter(w=>w.date===d).length})),
+    metrics:{count:comparePeriods(has?cur.length:null,hp?prev.length:null,0),minutes:comparePeriods(mins(cur),hp?mins(prev):null,0),volume:comparePeriods(has&&vol(cur)>0?vol(cur):null,hp&&vol(prev)>0?vol(prev):null,0)}};
+}
+function anMealsIn(r){
+  const meals=S.meals.filter(m=>m.date>=r.from&&m.date<=r.to), days=[...new Set(meals.map(m=>m.date))].sort();
+  const tot=days.map(d=>({date:d,...nutriTotals(d)}));
+  const stored=k=>meals.some(m=>m[k]!==undefined&&m[k]!==null&&m[k]!==''&&isFinite(Number(m[k])));
+  const avg=k=>stored(k)&&tot.length?anAvg(tot.map(t=>t[k])):null;
+  return {count:meals.length,days:tot,kcal:avg('calories'),protein:avg('protein'),carbs:avg('carbs'),fat:avg('fat')};
+}
+function getNutritionTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anMealsIn(r), prev=anMealsIn(pr), has=anHad('nutrition',r), hp=anHad('nutrition',pr);
+  const by=new Map(cur.days.map(t=>[t.date,t.calories]));
+  return {has,daysLogged:cur.days.length,protein:cur.protein,carbs:cur.carbs,fat:cur.fat,
+    series:anDays(r).map(d=>({date:d,kcal:by.has(d)?by.get(d):null})),
+    metrics:{meals:comparePeriods(has?cur.count:null,hp?prev.count:null,0),kcal:comparePeriods(cur.kcal,prev.kcal,0),days:comparePeriods(has?cur.days.length:null,hp?prev.days.length:null,0)}};
+}
+function anSleepIn(r){ return S.sleepLog.filter(s=>s.date>=r.from&&s.date<=r.to).map(s=>({date:s.date,h:sleepDuration(s),q:Number(s.quality)||null})).filter(x=>x.h>0); }
+function getSleepTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=anSleepIn(r), prev=anSleepIn(pr), hs=cur.map(x=>x.h);
+  const buckets=[['<6',0,6],['6–7',6,7],['7–8',7,8],['8–9',8,9],['≥9',9,99]].map(([l,a,b])=>({l,n:hs.filter(h=>h>=a&&h<b).length}));
+  const byDay=new Map(); cur.forEach(x=>byDay.set(x.date,x.h));
+  const qs=cur.filter(x=>x.q).map(x=>x.q);
+  return {has:S.sleepLog.length>0,nights:cur.length,min:hs.length?Math.min(...hs):null,max:hs.length?Math.max(...hs):null,quality:qs.length?anRound(anAvg(qs),1):null,buckets,
+    series:anDays(r).map(d=>({date:d,h:byDay.has(d)?byDay.get(d):null})),
+    metrics:{avg:comparePeriods(anAvg(hs),anAvg(prev.map(x=>x.h)),1),nights:comparePeriods(anHad('sleep',r)?cur.length:null,anHad('sleep',pr)?prev.length:null,0)}};
+}
+function getFinanceTrend(r,pr){
+  pr=pr||getPreviousAnalyticsRange(r);
+  const cur=financeTotalsBetween(r.from,r.to), prev=financeTotalsBetween(pr.from,pr.to), has=anHad('finance',r), hp=anHad('finance',pr);
+  const inc={}; financeTxInRange('income',r.from,r.to).forEach(x=>{ const l=financeCategoryLabel(x,'income'); inc[l]=finRound((inc[l]||0)+finNum(x.amount)); });
+  const list=o=>Object.entries(o).map(([c,a])=>({c,a})).sort((a,b)=>b.a-a.a||a.c.localeCompare(b.c,'cs'));
+  const exp=financeTxInRange('expense',r.from,r.to), incs=financeTxInRange('income',r.from,r.to);
+  const perDay=new Map(); exp.forEach(x=>perDay.set(x.date,(perDay.get(x.date)||0)+finNum(x.amount)));
+  return {has,expByCategory:list(cur.byCategory),incByCategory:list(inc),count:cur.count,
+    series:anDays(r).map(d=>({date:d,exp:perDay.get(d)||0})),txDays:new Set([...exp,...incs].map(x=>x.date)),
+    metrics:{income:comparePeriods(has?cur.income:null,hp?prev.income:null,0),expenses:comparePeriods(has?cur.expenses:null,hp?prev.expenses:null,0),
+      net:comparePeriods(has?cur.net:null,hp?prev.net:null,0),count:comparePeriods(has?cur.count:null,hp?prev.count:null,0)}};
+}
+function weekStartOf(D){ const d=new Date(D+'T00:00'); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// ---- consistency: days of the range with a record of each kind (percent only for ranges longer than one day) ----
+function anConsistency(r,a){
+  const days=anDays(r), set=xs=>new Set(xs), tDone=anTaskDoneByDay(), hMap=anHabitDoneByDay(r.from,r.to), xp=anXpByDay();
+  const wk=set(anWorkoutsIn(r).map(w=>w.date)), sl=set(S.sleepLog.filter(s=>s.date>=r.from&&s.date<=r.to).map(s=>s.date));
+  const jr=set(S.journal.filter(j=>j.date>=r.from&&j.date<=r.to).map(j=>j.date)), ml=set(S.meals.filter(m=>m.date>=r.from&&m.date<=r.to).map(m=>m.date));
+  const fin=(a&&a.finance?a.finance.txDays:set([...financeTxInRange('expense',r.from,r.to),...financeTxInRange('income',r.from,r.to)].map(x=>x.date)));
+  const ds=set(days.filter(d=>anDailyScoreOf(d)!=null));
+  const count=f=>days.filter(f).length;
+  const rows=[['any',d=>tDone.has(d)||hMap.has(d)||wk.has(d)||sl.has(d)||jr.has(d)||ml.has(d)||fin.has(d)||xp.has(d)],['tasks',d=>tDone.has(d)],['habits',d=>hMap.has(d)],['ds',d=>ds.has(d)],['workout',d=>wk.has(d)],['sleep',d=>sl.has(d)]]
+    .map(([k,f])=>{ const n=count(f); return {k,n,pct:r.days>1?Math.round(n/r.days*100):null}; });
+  return {days:r.days,rows};
+}
+// ---- heatmap: one clearly defined value per day (never a blended "activity score") ----
+const AN_HEAT=['tasks','habits','fitness','xp','ds'];
+function anHeatmap(metric,n,today){
+  today=today||todayStr(); n=n||90; const r={from:addDays(today,-(n-1)),to:today,days:n};
+  const tm=anTaskDoneByDay(), hm=metric==='habits'?anHabitDoneByDay(r.from,r.to):null, xm=anXpByDay();
+  const wk=metric==='fitness'?anWorkoutsIn(r).reduce((m,w)=>m.set(w.date,(m.get(w.date)||0)+1),new Map()):null;
+  const val=d=>metric==='tasks'?(tm.get(d)||{size:0}).size:metric==='habits'?(hm.get(d)||0):metric==='fitness'?(wk.get(d)||0):metric==='xp'?((xm.get(d)||{total:0}).total):anDailyScoreOf(d);
+  const cells=anDays(r).map(d=>({date:d,v:val(d)}));
+  const pos=cells.filter(c=>c.v!=null&&c.v>0).map(c=>c.v), max=pos.length?Math.max(...pos):0;
+  // levels: Daily Score by fixed bands; counts by quarters of the period maximum
+  const thr=metric==='ds'?[1,40,60,80]:[1,Math.max(2,Math.ceil(max*0.25)),Math.max(3,Math.ceil(max*0.5)),Math.max(4,Math.ceil(max*0.75))];
+  cells.forEach(c=>{ c.level=c.v==null||c.v<=0?0:c.v>=thr[3]?4:c.v>=thr[2]?3:c.v>=thr[1]?2:1; });
+  const best=cells.filter(c=>c.v!=null&&c.v>0).reduce((b,c)=>!b||c.v>b.v?c:b,null);
+  return {metric,from:r.from,to:r.to,cells,thr,max,active:pos.length,best,empty:!pos.length};
+}
+
+// ---- everything for one range, once per render ----
+function anAnalyze(r){
+  const pr=getPreviousAnalyticsRange(r);
+  const a={range:r,prev:pr,ds:getDailyScoreTrend(r,pr),xp:getXpTrend(r,pr),attrs:getAttributeTrend(r,pr),tasks:getTaskTrend(r,pr),habits:getHabitTrend(r,pr),
+    goals:getGoalTrend(r,pr),planner:getPlannerTrend(r,pr),fitness:getFitnessTrend(r,pr),nutrition:getNutritionTrend(r,pr),sleep:getSleepTrend(r,pr),finance:getFinanceTrend(r,pr)};
+  a.consistency=anConsistency(r,a);
+  a.hasAny=!!(S.tasks.length||S.habits.length||S.goals.length||(S.xpLog||[]).length||(S.plannerBlocks||[]).length||completedWorkouts(S).length||S.meals.length||S.sleepLog.length||S.expenses.length||S.income.length);
+  return a;
+}
+// the headline comparisons ("Co se změnilo"), in a fixed order; only those with data in both periods
+const AN_CHANGES=[['ds','avg','ds_avg',''],['xp','perDay','xp_day',''],['tasks','rate','task_rate','%'],['tasks','done','task_done',''],['habits','rate','habit_rate','%'],
+  ['fitness','count','workouts',''],['sleep','avg','sleep_avg','h'],['nutrition','kcal','kcal_avg','kcal'],['planner','hours','planned_h','h'],['finance','expenses','expenses','money'],['finance','income','income','money']];
+function anChanges(a){ return AN_CHANGES.map(([d,m,label,unit])=>({domain:d,metric:m,label,unit,...a[d].metrics[m]})).filter(x=>x.direction!=='unavailable'); }
+// largest relative changes (metrics in different units are compared by their % change); previous value must be non-zero
+function anTopChanges(a,n){
+  return anChanges(a).filter(x=>x.percentDelta!=null&&x.direction!=='flat').sort((x,y)=>Math.abs(y.percentDelta)-Math.abs(x.percentDelta)||x.label.localeCompare(y.label)).slice(0,n||5);
+}
+// deterministic, factual observations; a rule without enough data yields nothing
+function anObservations(a){
+  const out=[], r=a.range;
+  const f=a.fitness.metrics.count; if(f.current>0) out.push({k:'workouts',n:f.current,days:r.days});
+  const tr=a.tasks.metrics.rate; if(tr.direction!=='unavailable'&&tr.direction!=='flat') out.push({k:'task_rate',from:tr.previous,to:tr.current,dir:tr.direction});
+  const tc=a.tasks.byCategory.filter(x=>x.c); if(tc.length&&tc[0].n>=3&&(!tc[1]||tc[1].n<tc[0].n)) out.push({k:'task_cat',cat:tc[0].c,n:tc[0].n});
+  const xs=a.xp.sources; if(xs.length&&xs[0].xp>0&&(!xs[1]||xs[1].xp<xs[0].xp)) out.push({k:'xp_source',src:xs[0].k,xp:xs[0].xp,pct:xs[0].pct});
+  const ds=a.ds.metrics.avg; if(ds.direction!=='unavailable') out.push({k:'ds',from:ds.previous,to:ds.current,dir:ds.direction});
+  if(a.sleep.nights>=3) out.push({k:'sleep',h:a.sleep.metrics.avg.current,n:a.sleep.nights});
+  const hb=a.habits.list.filter(x=>x.rate!=null&&x.expected>=5); if(hb.length&&(!hb[1]||hb[1].rate<hb[0].rate)) out.push({k:'habit_top',name:hb[0].name,rate:hb[0].rate});
+  const ex=a.finance.metrics.expenses; if(ex.direction!=='unavailable'&&(ex.current||ex.previous)) out.push({k:'expenses',from:ex.previous,to:ex.current,dir:ex.direction});
+  if(a.goals.stale.length) out.push({k:'goals_stale',n:a.goals.stale.length});
+  if(a.planner.count) out.push({k:'planner',h:anRound(a.planner.planned/60,1),n:a.planner.count,doneH:a.planner.past?anRound(a.planner.doneMin/60,1):null});
+  return out;
+}
+
 let statsPeriod='week';
 function periodStart(p){const d=new Date();if(p==='today')return todayStr();if(p==='week'){const s=new Date();s.setDate(s.getDate()-7);return s.toISOString().slice(0,10);}if(p==='month'){const s=new Date();s.setMonth(s.getMonth()-1);return s.toISOString().slice(0,10);}const s=new Date();s.setFullYear(s.getFullYear()-1);return s.toISOString().slice(0,10);}
 function statRow(label,val){return `<div class="kv"><span>${label}</span><b>${val}</b></div>`;}
@@ -8637,105 +9049,304 @@ function statCard(title,rows){
   return `<div class="card"><h3>${escapeHtml(uiL(title))}</h3>${rows.map(([l,v])=>`<div class="kv"><span>${escapeHtml(uiL(l))}</span><b>${v}</b></div>`).join('')}</div>`;
 }
 
+/* ================= Deep Analytics & Insights 2.0 (presentation) =================
+   Statistics becomes the Analytics centre. Markup only, from anAnalyze(); nothing here writes to S. Chart and heatmap
+   selection, the heatmap switch and "copy summary" update only their own element -- never a full recalculation. */
+const UI_AN={
+  cs:{title:'Analytika',sub:'Jak si vedu — fakta z tvých dat a porovnání s předchozím obdobím',today:'Dnes',week:'7 dní',month:'30 dní',quarter:'90 dní',year:'Rok',custom:'Vlastní',
+    from:'Od',to:'Do',pp:'p. b.',total:'celkem',vs:'porovnání s',no_data:'Žádná data',prev_na:'předchozí období: žádná data',flat:'beze změny',vs_prev:'oproti',up:'nárůst',down:'pokles',
+    copy:'Kopírovat souhrn',copied:'Souhrn zkopírován',copy_t:'Souhrn analytiky',sections:'Sekce',
+    s_summary:'Jak si vedu?',s_changes:'Co se změnilo',s_top:'Největší změny',s_obs:'Pozorování',s_cons:'Konzistence',s_heat:'Kalendář aktivity',
+    s_ds:'Daily Score',s_xp:'XP',s_attrs:'Atributy',s_tasks:'Úkoly',s_habits:'Návyky',s_goals:'Cíle',s_planner:'Plánovač a čas',s_fitness:'Fitness',s_nutrition:'Výživa',s_sleep:'Spánek',s_finance:'Finance',s_journal:'Deník',
+    changes_empty:'Pro porovnání zatím nejsou data v obou obdobích.',top_note:'Seřazeno podle relativní změny (%), aby šly porovnat metriky s různými jednotkami. Jen metriky s nenulovou hodnotou v předchozím období.',
+    top_empty:'Zatím žádná změna, kterou by šlo porovnat v procentech.',obs_empty:'Pro pozorování zatím není dost dat.',obs_note:'Pevná pravidla nad tvými daty — žádné odhady ani doporučení.',
+    empty_t:'Zatím tu nic není',empty_d:'Analytika se naplní, jakmile začneš zapisovat úkoly, návyky, tréninky, jídlo, spánek nebo finance.',
+    avg:'Průměr',min:'Minimum',max:'Maximum',days_scored:'Dny se skóre',ds_note:'Minulé dny z uložených snímků, dnešek živě. Dny bez skóre zůstávají prázdné (nepočítají se jako 0).',
+    xp_total:'Získané XP',xp_day:'XP za den',entries:'Záznamy',level:'Level',xp_src:'XP podle zdroje',xp_chart:'XP za den',level_move:'Level na začátku → na konci období',
+    src:{tasks:'Úkoly',habits:'Návyky',quests:'Výpravy',fitness:'Fitness',nutrition:'Výživa',sleep:'Spánek',journal:'Deník',goals:'Cíle',milestones:'Milníky',finance:'Finance',achievements:'Úspěchy',other:'Ostatní'},
+    attr_val:'Hodnota',attr_ch:'Za období',attr_prev:'Předchozí',attr_note:'Přírůstky z historie XP (každý záznam nese svůj podíl atributů). Atributy nejdou upravovat ručně.',attr_na:'Historie XP zatím neobsahuje přírůstky atributů.',
+    t_done:'Dokončené',t_created:'Vytvořené',t_rate:'Splněné s termínem',t_overdue:'Po termínu (teď)',t_lead:'Průměrně dní do dokončení',t_streak:'Série dní s dokončeným úkolem',t_by_p:'Plnění podle priority',t_by_c:'Dokončené podle kategorie',t_chart:'Dokončené úkoly za den',t_rate_note:'Podíl úkolů s termínem v období, které jsou hotové. Dokončení se počítá podle záznamu splnění (datum dokončení).',
+    none_cat:'Bez kategorie',h_active:'Aktivní návyky',h_rate:'Plnění',h_checks:'Check-iny',h_streak:'Průměrná aktuální série',h_list:'Podle návyku',h_cur:'aktuálně',h_best:'nejlépe',h_chart:'Splněné návyky za den',h_note:'Denní a pracovní návyky: splněné plánované dny. Týdenní: splnění vůči cíli na týden. Zlozvyky se do plnění nepočítají.',
+    g_active:'Aktivní',g_done:'Dokončené v období',g_done_all:'Dokončené celkem',g_prog:'Průměrný progress',g_ms:'Milníky v období',g_by_c:'Podle kategorie',g_by_d:'Aktivní podle termínu',g_stale:'Cíle bez pohybu',g_stale_d:'Aktivní cíle bez zaznamenané aktivity 14 a více dní.',g_last:'poslední aktivita',g_never:'zatím bez aktivity',g_days:'dní',
+    dl:{overdue:'Po termínu',week:'Do 7 dní',month:'Do 30 dní',later:'Později',none:'Bez termínu'},
+    p_blocks:'Bloky',p_time:'Naplánovaný čas',p_done:'Proběhlé bloky označené jako splněné',p_by_c:'Čas podle kategorie',p_by_d:'Čas podle dne v týdnu',p_chart:'Naplánováno za den',p_note:'Splnění se bere z označení bloku v plánovači; skutečně strávený čas aplikace neměří.',
+    f_count:'Tréninky',f_min:'Minuty',f_vol:'Objem (kg)',f_sets:'Pracovní série',f_types:'Tréninky podle názvu',f_last:'Poslední trénink',f_cons:'Týdny s tréninkem',f_chart:'Tréninky za den',
+    n_meals:'Zapsaná jídla',n_days:'Dny se záznamem',n_kcal:'Průměr kcal na zapsaný den',n_macros:'Průměr maker na zapsaný den',n_chart:'Kalorie za den',
+    sl_avg:'Průměrný spánek',sl_nights:'Noci',sl_q:'Průměrná kvalita',sl_dist:'Rozložení délky spánku',sl_chart:'Délka spánku',
+    fi_inc:'Příjmy',fi_exp:'Výdaje',fi_net:'Rozdíl',fi_count:'Transakce',fi_exp_c:'Výdaje podle kategorie',fi_inc_c:'Příjmy podle kategorie',fi_chart:'Výdaje za den',fi_all:'Celkový stav (nezávisle na období)',savings:'Úspory',investments:'Investice',
+    j_entries:'Záznamy',j_days:'Dny se záznamem',j_rating:'Průměrné hodnocení',
+    c_any:'Dny s jakoukoli aktivitou',c_tasks:'Dny s dokončeným úkolem',c_habits:'Dny se splněným návykem',c_ds:'Dny s Daily Score',c_workout:'Dny s tréninkem',c_sleep:'Dny se záznamem spánku',c_of:'z',
+    heat_90:'90 dní',heat_year:'Rok',heat_m:{tasks:'Úkoly',habits:'Návyky',fitness:'Fitness',xp:'XP',ds:'Daily Score'},
+    heat_what:{tasks:'Počet dokončených úkolů za den.',habits:'Počet splněných návyků za den (zlozvyky: dny označené jako dodržené).',fitness:'Počet dokončených tréninků za den.',xp:'Získané XP za den.',ds:'Daily Score dne (uložený snímek, dnes živě).'},
+    less:'Méně',more:'Více',heat_sum:(n,m)=>`Dní s hodnotou: ${n}. Nejvyšší hodnota: ${m}.`,
+    table:'Tabulka hodnot',date:'Datum',value:'Hodnota',open_day:'Detail dne',chart_hint:'Šipkami vlevo a vpravo projdeš jednotlivé hodnoty.',
+    per:{day:'po dnech',week:'po týdnech',month:'po měsících'},
+    lbl:{ds_avg:'Daily Score (průměr)',xp_day:'XP za den',task_rate:'Splněné úkoly s termínem',task_done:'Dokončené úkoly',habit_rate:'Plnění návyků',workouts:'Tréninky',sleep_avg:'Spánek (průměr)',kcal_avg:'Kalorie (průměr na zapsaný den)',planned_h:'Naplánovaný čas',expenses:'Výdaje',income:'Příjmy'},
+    phr:r=>r.key==='today'?'Dnes':r.key==='custom'?'Ve zvoleném období':`Za posledních ${r.days} dní`,
+    obs:{workouts:(x,r)=>`${UI_AN.cs.phr(r)} ${x.n===1?'byl zaznamenán 1 trénink':x.n<5?`byly zaznamenány ${x.n} tréninky`:`bylo zaznamenáno ${x.n} tréninků`}.`,
+      task_rate:x=>`Podíl splněných úkolů s termínem: ${x.from} % → ${x.to} %.`,task_cat:x=>`Nejčastěji dokončovaná kategorie úkolů: ${x.cat} (${x.n}).`,
+      xp_source:x=>`Nejvíce XP pocházelo ze zdroje ${x.src}: ${x.xp} XP (${x.pct} %).`,ds:x=>x.dir==='flat'?`Průměrný Daily Score beze změny: ${x.to}.`:`Průměrný Daily Score: ${x.from} → ${x.to}.`,
+      sleep:x=>`Průměrná délka spánku za ${x.n} ${x.n<5?'noci':'nocí'}: ${x.h} h.`,habit_top:x=>`Nejvyšší míru plnění měl návyk ${x.name} (${x.rate} %).`,
+      expenses:x=>`Výdaje: ${x.from} → ${x.to}.`,goals_stale:x=>`Bez aktivity 14 a více dní: ${x.n} ${x.n===1?'aktivní cíl':x.n<5?'aktivní cíle':'aktivních cílů'}.`,
+      planner:x=>`V plánovači naplánováno celkem ${x.h} h (bloky: ${x.n})${x.doneH!=null?`; z proběhlých bloků označeno jako splněné ${x.doneH} h`:''}.`}},
+  en:{title:'Analytics',sub:'How am I doing — facts from your data compared with the previous period',today:'Today',week:'7 days',month:'30 days',quarter:'90 days',year:'Year',custom:'Custom',
+    from:'From',to:'To',pp:'pp',total:'total',vs:'compared with',no_data:'No data',prev_na:'previous period: no data',flat:'no change',vs_prev:'vs',up:'increase',down:'decrease',
+    copy:'Copy summary',copied:'Summary copied',copy_t:'Analytics summary',sections:'Sections',
+    s_summary:'How am I doing?',s_changes:'What changed',s_top:'Biggest changes',s_obs:'Observations',s_cons:'Consistency',s_heat:'Activity calendar',
+    s_ds:'Daily Score',s_xp:'XP',s_attrs:'Attributes',s_tasks:'Tasks',s_habits:'Habits',s_goals:'Goals',s_planner:'Planner and time',s_fitness:'Fitness',s_nutrition:'Nutrition',s_sleep:'Sleep',s_finance:'Finance',s_journal:'Journal',
+    changes_empty:'There is no data in both periods to compare yet.',top_note:'Sorted by relative change (%) so metrics with different units can be compared. Only metrics with a non-zero previous value.',
+    top_empty:'No change that can be compared in percent yet.',obs_empty:'Not enough data for observations yet.',obs_note:'Fixed rules over your data — no estimates or advice.',
+    empty_t:'Nothing here yet',empty_d:'Analytics fills up once you log tasks, habits, workouts, food, sleep or finance.',
+    avg:'Average',min:'Minimum',max:'Maximum',days_scored:'Days with a score',ds_note:'Past days from stored snapshots, today live. Days without a score stay empty (never counted as 0).',
+    xp_total:'XP earned',xp_day:'XP per day',entries:'Entries',level:'Level',xp_src:'XP by source',xp_chart:'XP per day',level_move:'Level at the start → end of the period',
+    src:{tasks:'Tasks',habits:'Habits',quests:'Quests',fitness:'Fitness',nutrition:'Nutrition',sleep:'Sleep',journal:'Journal',goals:'Goals',milestones:'Milestones',finance:'Finance',achievements:'Achievements',other:'Other'},
+    attr_val:'Value',attr_ch:'This period',attr_prev:'Previous',attr_note:'Gains from the XP history (each entry carries its attribute share). Attributes cannot be edited by hand.',attr_na:'The XP history has no attribute gains yet.',
+    t_done:'Completed',t_created:'Created',t_rate:'Done with a due date',t_overdue:'Overdue (now)',t_lead:'Average days to completion',t_streak:'Days-in-a-row with a completed task',t_by_p:'Completion by priority',t_by_c:'Completed by category',t_chart:'Tasks completed per day',t_rate_note:'Share of the tasks due in the period that are done. Completion is dated by its completion record.',
+    none_cat:'No category',h_active:'Active habits',h_rate:'Completion',h_checks:'Check-ins',h_streak:'Average current streak',h_list:'By habit',h_cur:'current',h_best:'best',h_chart:'Habits completed per day',h_note:'Daily and weekday habits: completed scheduled days. Weekly: completions against the weekly target. Bad habits are not in the rate.',
+    g_active:'Active',g_done:'Completed in period',g_done_all:'Completed overall',g_prog:'Average progress',g_ms:'Milestones in period',g_by_c:'By category',g_by_d:'Active by deadline',g_stale:'Goals without movement',g_stale_d:'Active goals with no recorded activity for 14 days or more.',g_last:'last activity',g_never:'no activity yet',g_days:'days',
+    dl:{overdue:'Overdue',week:'Within 7 days',month:'Within 30 days',later:'Later',none:'No deadline'},
+    p_blocks:'Blocks',p_time:'Planned time',p_done:'Past blocks marked as done',p_by_c:'Time by category',p_by_d:'Time by weekday',p_chart:'Planned per day',p_note:'Completion comes from marking a block in the Planner; the app does not measure time actually spent.',
+    f_count:'Workouts',f_min:'Minutes',f_vol:'Volume (kg)',f_sets:'Working sets',f_types:'Workouts by name',f_last:'Last workout',f_cons:'Weeks with a workout',f_chart:'Workouts per day',
+    n_meals:'Meals logged',n_days:'Days logged',n_kcal:'Average kcal per logged day',n_macros:'Average macros per logged day',n_chart:'Calories per day',
+    sl_avg:'Average sleep',sl_nights:'Nights',sl_q:'Average quality',sl_dist:'Sleep length distribution',sl_chart:'Sleep length',
+    fi_inc:'Income',fi_exp:'Expenses',fi_net:'Net',fi_count:'Transactions',fi_exp_c:'Expenses by category',fi_inc_c:'Income by category',fi_chart:'Expenses per day',fi_all:'Overall (independent of the period)',savings:'Savings',investments:'Investments',
+    j_entries:'Entries',j_days:'Days with an entry',j_rating:'Average rating',
+    c_any:'Days with any activity',c_tasks:'Days with a completed task',c_habits:'Days with a completed habit',c_ds:'Days with a Daily Score',c_workout:'Days with a workout',c_sleep:'Days with a sleep log',c_of:'of',
+    heat_90:'90 days',heat_year:'Year',heat_m:{tasks:'Tasks',habits:'Habits',fitness:'Fitness',xp:'XP',ds:'Daily Score'},
+    heat_what:{tasks:'Tasks completed per day.',habits:'Habits completed per day (bad habits: days logged as kept).',fitness:'Workouts completed per day.',xp:'XP earned per day.',ds:'Daily Score of the day (stored snapshot, today live).'},
+    less:'Less',more:'More',heat_sum:(n,m)=>`Days with a value: ${n}. Highest value: ${m}.`,
+    table:'Table of values',date:'Date',value:'Value',open_day:'Day detail',chart_hint:'Use the left and right arrows to step through the values.',
+    per:{day:'per day',week:'per week',month:'per month'},
+    lbl:{ds_avg:'Daily Score (average)',xp_day:'XP per day',task_rate:'Tasks done with a due date',task_done:'Tasks completed',habit_rate:'Habit completion',workouts:'Workouts',sleep_avg:'Sleep (average)',kcal_avg:'Calories (average per logged day)',planned_h:'Planned time',expenses:'Expenses',income:'Income'},
+    phr:r=>r.key==='today'?'Today':r.key==='custom'?'In the chosen period':`In the last ${r.days} days`,
+    obs:{workouts:(x,r)=>`${UI_AN.en.phr(r)} ${x.n} workout${x.n===1?' was':'s were'} logged.`,task_rate:x=>`Share of tasks done with a due date: ${x.from} % → ${x.to} %.`,task_cat:x=>`Most completed task category: ${x.cat} (${x.n}).`,
+      xp_source:x=>`Most XP came from ${x.src}: ${x.xp} XP (${x.pct} %).`,ds:x=>x.dir==='flat'?`Average Daily Score unchanged: ${x.to}.`:`Average Daily Score: ${x.from} → ${x.to}.`,
+      sleep:x=>`Average sleep over ${x.n} nights: ${x.h} h.`,habit_top:x=>`Highest completion rate: ${x.name} (${x.rate} %).`,expenses:x=>`Expenses: ${x.from} → ${x.to}.`,
+      goals_stale:x=>`${x.n} active goal${x.n===1?'':'s'} without activity for 14+ days.`,planner:x=>`${x.h} h planned in ${x.n} block${x.n===1?'':'s'}${x.doneH!=null?`; past blocks marked as done: ${x.doneH} h`:''}.`}},
+};
+function uiAnT(k){ return (UI_AN[uiLang()]||UI_AN.cs)[k]; }
+let uiAnCustom=null, uiAnHeat={metric:'habits',span:90};
+const UI_AN_PERIODS=['today','week','month','quarter','year','custom'];
+function uiAnRange(){ const k=UI_AN_PERIODS.includes(statsPeriod)?statsPeriod:'week'; return getAnalyticsRange(k,todayStr(),uiAnCustom||{from:addDays(todayStr(),-13),to:todayStr()}); }
+// Intl formatters are expensive to create -- one per locale and precision, reused
+const uiAnFmtCache=new Map();
+function uiAnIntl(kind,opts){ const k=kind+uiLocale()+JSON.stringify(opts); let f=uiAnFmtCache.get(k); if(!f){ f=kind==='n'?new Intl.NumberFormat(uiLocale(),opts):new Intl.DateTimeFormat(uiLocale(),opts); uiAnFmtCache.set(k,f); } return f; }
+function uiAnNum(v,dp){ return v==null?'—':uiAnIntl('n',{maximumFractionDigits:dp==null?0:dp,minimumFractionDigits:0}).format(Number(v)); }
+function uiAnFmt(v,unit){
+  if(v==null) return uiAnT('no_data');
+  if(unit==='%') return uiAnNum(v)+' %';
+  if(unit==='h') return uiAnNum(v,1)+' h';
+  if(unit==='money') return uiMoney(v);
+  if(unit==='kcal') return uiAnNum(v)+' kcal';
+  if(unit==='min') return uiPlDur(Math.round(v));
+  return uiAnNum(v,1);
+}
+function uiAnShort(D){ try{ return uiAnIntl('d',{day:'numeric',month:'numeric'}).format(new Date(D+'T00:00')); }catch(e){ return D; } }
+function uiAnSpan(r){ return r.from===r.to?fmtDate(r.from):`${fmtDate(r.from)} – ${fmtDate(r.to)}`; }
+// a comparison as a neutral line: "↑ +5 (+7 %) oproti 71" / "beze změny" / "předchozí období: žádná data"
+function uiAnDelta(m,unit){
+  if(!m||m.current==null) return '';
+  if(m.previous==null) return `<span class="an-delta is-na">${uiAnT('prev_na')}</span>`;
+  if(m.direction==='flat') return `<span class="an-delta" data-dir="flat">${uiAnT('flat')} (${uiAnFmt(m.previous,unit)})</span>`;
+  const sign=m.delta>0?'+':'−', abs=Math.abs(m.delta);
+  return `<span class="an-delta" data-dir="${m.direction}">${uiIcon(m.direction==='up'?'up':'down',13)}<span class="hide">${uiAnT(m.direction)}</span> ${sign}${unit==='%'?uiAnNum(abs)+' '+uiAnT('pp'):uiAnFmt(abs,unit)}${m.percentDelta!=null&&unit!=='%'?` (${m.percentDelta>0?'+':'−'}${Math.abs(m.percentDelta)} %)`:''} ${uiAnT('vs_prev')} ${uiAnFmt(m.previous,unit)}</span>`;
+}
+function uiAnStat(label,value,sub){ return `<div class="stat-card an-stat"><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</div>`; }
+function uiAnSec(id,icon,title,body,extra){ return `<section class="an-sec" id="${id}" aria-labelledby="${id}H"><div class="section-header"><h3 id="${id}H">${uiIcon(icon,18)} ${title}</h3>${extra||''}</div>${body}</section>`; }
+function uiAnNoData(){ return `<div class="card an-nodata"><p class="sub" style="margin:0">${uiAnT('no_data')}</p></div>`; }
+// horizontal bars with the value written next to each bar (identity by text, one hue)
+function uiAnBars(rows,fmt){
+  const max=Math.max(1,...rows.map(r=>r.v||0));
+  return `<div class="an-hbars" role="list">${rows.map(r=>`<div class="an-hbar" role="listitem"><span class="an-hbar-l">${escapeHtml(r.l)}</span><span class="an-hbar-t" aria-hidden="true"><i style="width:${Math.max(r.v?2:0,Math.round((r.v||0)/max*100))}%"></i></span><b class="an-hbar-v">${fmt?fmt(r.v,r):uiAnNum(r.v)}</b></div>`).join('')}</div>`;
+}
+// time series -> buckets (per day up to 31 days, per week up to 120 days, otherwise per month); avg ignores empty days
+function uiAnBuckets(series,key,agg,r){
+  const per=r.days<=31?'day':r.days<=120?'week':'month', groups=new Map();
+  series.forEach(p=>{ const g=per==='day'?p.date:per==='week'?weekStartOf(p.date):p.date.slice(0,7); let e=groups.get(g); if(!e){ e={from:p.date,to:p.date,vals:[]}; groups.set(g,e); } e.to=p.date; if(p[key]!=null) e.vals.push(p[key]); });
+  return {per,points:[...groups.values()].map(e=>({from:e.from,to:e.to,n:e.vals.length,value:e.vals.length?(agg==='avg'?e.vals.reduce((a,b)=>a+b,0)/e.vals.length:e.vals.reduce((a,b)=>a+b,0)):(agg==='avg'?null:0)}))};
+}
+function uiAnChart(id,title,series,key,agg,r,unit,opts){
+  opts=opts||{};
+  const {per,points}=uiAnBuckets(series,key,agg,r), vals=points.map(p=>p.value).filter(v=>v!=null&&v>0);
+  if(!vals.length) return `<div class="card an-chart-empty" data-chart="${id}"><div class="kicker">${escapeHtml(title)}</div><p class="sub" style="margin:6px 0 0">${uiAnT('no_data')}</p></div>`;
+  const max=Math.max(...vals), n=points.length, W=n*10, H=100;
+  const lab=p=>per==='day'?uiAnShort(p.from):`${uiAnShort(p.from)}–${uiAnShort(p.to)}`;
+  const val=p=>p.value==null?uiAnT('no_data'):uiAnFmt(anRound(p.value,unit==='h'?1:0),unit);
+  const hi=points.reduce((b,p,i)=>p.value!=null&&(b<0||p.value>points[b].value)?i:b,-1);
+  const summary=`${escapeHtml(title)}: ${agg==='avg'?uiAnT('avg'):uiAnT('total')} ${uiAnFmt(anRound(agg==='avg'?vals.reduce((a,b)=>a+b,0)/vals.length:vals.reduce((a,b)=>a+b,0),unit==='h'?1:0),unit)}; ${uiAnT('max')} ${val(points[hi])} (${lab(points[hi])}).`;
+  const bars=points.map((p,i)=>{ const h=p.value==null||p.value<=0?0:Math.max(3,p.value/max*(H-4)); return p.value==null?`<rect class="an-b is-na" x="${i*10+1}" y="${H-2}" width="8" height="2"></rect>`:`<rect class="an-b" data-i="${i}" x="${i*10+1}" y="${(H-h).toFixed(1)}" width="8" height="${Math.max(h,1.5).toFixed(1)}" rx="2"></rect>`; }).join('');
+  return `<figure class="card an-chart" data-chart="${id}" data-per="${per}" data-unit="${unit||''}" data-open="${opts.open||''}" tabindex="0" role="group" aria-label="${summary} ${uiAnT('chart_hint')}">
+    <figcaption class="between"><span class="kicker">${escapeHtml(title)}</span><span class="sub an-per">${uiAnT('per')[per]}</span></figcaption>
+    <div class="an-plot"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><line class="an-base" x1="0" y1="${H-.5}" x2="${W}" y2="${H-.5}"></line>${bars}</svg><span class="an-cursor" aria-hidden="true"></span></div>
+    <div class="an-axis" aria-hidden="true"><span>${lab(points[0])}</span><span>${lab(points[n-1])}</span></div>
+    <div class="an-readout" aria-live="polite"><span class="an-ro-t">${summary}</span></div>
+    <details class="an-table"><summary>${uiAnT('table')}</summary><table><thead><tr><th scope="col">${uiAnT('date')}</th><th scope="col">${uiAnT('value')}</th></tr></thead><tbody>${points.map(p=>`<tr><td>${lab(p)}</td><td>${val(p)}</td></tr>`).join('')}</tbody></table></details>
+    <i class="an-data hide" data-pts="${escapeHtml(JSON.stringify(points.map(p=>({l:lab(p),v:val(p),d:per==='day'&&p.value!=null?p.from:null}))))}"></i>
+  </figure>`;
+}
+// pointer + keyboard readout for a chart: the whole plot is one target; nothing is recomputed
+function uiAnWireChart(fig){
+  const data=JSON.parse(fig.querySelector('.an-data').dataset.pts), plot=fig.querySelector('.an-plot'), ro=fig.querySelector('.an-readout'), cur=fig.querySelector('.an-cursor');
+  let sel=-1;
+  const show=i=>{ sel=Math.max(0,Math.min(data.length-1,i)); const p=data[sel];
+    fig.querySelectorAll('.an-b.is-sel').forEach(b=>b.classList.remove('is-sel')); const b=fig.querySelector(`.an-b[data-i="${sel}"]`); if(b) b.classList.add('is-sel');
+    cur.style.left=((sel+.5)/data.length*100)+'%'; cur.classList.add('on');
+    ro.innerHTML=`<span class="an-ro-t"><b>${escapeHtml(p.l)}</b>: ${escapeHtml(p.v)}</span>${fig.dataset.open==='ds'&&p.d?`<button class="btn sm ghost an-ro-open" data-day="${p.d}">${uiAnT('open_day')}</button>`:''}`;
+    const ob=ro.querySelector('.an-ro-open'); if(ob) ob.onclick=()=>uiOpenDailyScore(ob.dataset.day); };
+  const at=e=>{ const rc=plot.getBoundingClientRect(); return Math.floor((e.clientX-rc.left)/rc.width*data.length); };
+  plot.addEventListener('pointerdown',e=>show(at(e))); plot.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse') show(at(e)); });
+  fig.addEventListener('keydown',e=>{ if(e.target!==fig) return; const k={ArrowRight:1,ArrowLeft:-1}[e.key];
+    if(k){ e.preventDefault(); show(sel<0?(k>0?0:data.length-1):sel+k); } else if(e.key==='Home'){ e.preventDefault(); show(0); } else if(e.key==='End'){ e.preventDefault(); show(data.length-1); }
+    else if(e.key==='Enter'&&fig.dataset.open==='ds'&&sel>=0&&data[sel].d){ e.preventDefault(); uiOpenDailyScore(data[sel].d); } });
+}
+function uiAnHeatHtml(){
+  const T=uiAnT, h=anHeatmap(uiAnHeat.metric,uiAnHeat.span===365?365:90);
+  const first=h.cells[0].date, pad=(new Date(first+'T00:00').getDay()+6)%7; // Monday-first rows
+  const fmt=v=>v==null?T('no_data'):uiAnMetricFmt(h.metric,v);
+  const thrTxt=h.metric==='ds'?['1–39','40–59','60–79','80–100']:[`1${h.thr[1]>2?'–'+(h.thr[1]-1):''}`,`${h.thr[1]}${h.thr[2]-1>h.thr[1]?'–'+(h.thr[2]-1):''}`,`${h.thr[2]}${h.thr[3]-1>h.thr[2]?'–'+(h.thr[3]-1):''}`,`${h.thr[3]}+`];
+  const sum=`${T('heat_m')[h.metric]} · ${fmtDate(h.from)} – ${fmtDate(h.to)}. ${T('heat_what')[h.metric]} ${T('heat_sum')(h.active,h.best?`${fmt(h.best.v)} (${fmtDate(h.best.date)})`:T('no_data'))}`;
+  return `<div class="an-heat-tabs" role="group" aria-label="${T('s_heat')}">${AN_HEAT.map(m=>`<button class="pill sm${m===h.metric?' on':''}" data-heat="${m}" aria-pressed="${m===h.metric}">${T('heat_m')[m]}</button>`).join('')}
+      <span class="an-heat-span">${[90,365].map(n=>`<button class="pill sm${n===uiAnHeat.span?' on':''}" data-span="${n}" aria-pressed="${n===uiAnHeat.span}">${n===90?T('heat_90'):T('heat_year')}</button>`).join('')}</span></div>
+    <p class="helper-text an-heat-what">${T('heat_what')[h.metric]}</p>
+    <div class="an-heat-scroll"><div class="an-heat${uiAnHeat.span===365?' is-year':''}" tabindex="0" role="group" aria-label="${escapeHtml(sum)} ${T('chart_hint')}" style="--cols:${Math.ceil((pad+h.cells.length)/7)}">
+      ${'<i class="an-hc is-pad" aria-hidden="true"></i>'.repeat(pad)}${h.cells.map((c,i)=>`<i class="an-hc l${c.level}" data-i="${i}" title="${fmtDate(c.date)}: ${escapeHtml(fmt(c.v))}"></i>`).join('')}</div></div>
+    <div class="an-heat-foot"><span class="an-legend" aria-hidden="true">${T('less')} <i class="an-hc l0"></i><i class="an-hc l1"></i><i class="an-hc l2"></i><i class="an-hc l3"></i><i class="an-hc l4"></i> ${T('more')}</span>
+      <span class="sub an-legend-t">0 · ${thrTxt.join(' · ')}</span></div>
+    <div class="an-readout" aria-live="polite"><span class="an-ro-t">${escapeHtml(sum)}</span></div>
+    <i class="an-data hide" data-pts="${escapeHtml(JSON.stringify(h.cells.map(c=>({l:fmtDate(c.date),v:fmt(c.v)}))))}"></i>`;
+}
+function uiAnMetricFmt(m,v){ return m==='xp'?uiAnNum(v)+' XP':uiAnNum(v); }
+function uiAnWireHeat(box){
+  const g=box.querySelector('.an-heat'), data=JSON.parse(box.querySelector('.an-data').dataset.pts), ro=box.querySelector('.an-readout');
+  let sel=-1;
+  const show=i=>{ sel=Math.max(0,Math.min(data.length-1,i)); box.querySelectorAll('.an-hc.is-sel').forEach(c=>c.classList.remove('is-sel')); const c=g.querySelector(`.an-hc[data-i="${sel}"]`); if(c) c.classList.add('is-sel');
+    ro.innerHTML=`<span class="an-ro-t"><b>${escapeHtml(data[sel].l)}</b>: ${escapeHtml(data[sel].v)}</span>`; };
+  g.addEventListener('pointerdown',e=>{ const c=e.target.closest('.an-hc[data-i]'); if(c) show(+c.dataset.i); });
+  g.addEventListener('keydown',e=>{ const k={ArrowRight:1,ArrowLeft:-1,ArrowDown:1,ArrowUp:-1}[e.key]; if(!k) return; e.preventDefault(); const step=(e.key==='ArrowDown'||e.key==='ArrowUp')?1:7; show(sel<0?data.length-1:sel+k*step); });
+  box.querySelectorAll('[data-heat],[data-span]').forEach(b=>b.onclick=()=>{ if(b.dataset.heat) uiAnHeat.metric=b.dataset.heat; else uiAnHeat.span=+b.dataset.span;
+    const key=b.dataset.heat?`[data-heat="${b.dataset.heat}"]`:`[data-span="${b.dataset.span}"]`; box.innerHTML=uiAnHeatHtml(); uiIconize(box); uiAnWireHeat(box); const nb=box.querySelector(key); if(nb) nb.focus({preventScroll:true}); });
+  const sc=box.querySelector('.an-heat-scroll'); if(sc) requestAnimationFrame(()=>{ sc.scrollLeft=sc.scrollWidth; });
+}
+// plain-text summary for "copy" (never touches the backup format)
+function uiAnSummaryText(a){
+  const T=uiAnT, lines=[`${T('copy_t')} · ${uiAnSpan(a.range)} (${T('vs')} ${uiAnSpan(a.prev)})`,'',`${T('s_changes')}:`];
+  anChanges(a).forEach(c=>lines.push(`- ${T('lbl')[c.label]}: ${uiAnFmt(c.previous,c.unit)} → ${uiAnFmt(c.current,c.unit)}`));
+  const obs=anObservations(a); if(obs.length){ lines.push('',`${T('s_obs')}:`); obs.forEach(o=>lines.push('- '+uiAnObsText(o,a.range))); }
+  return lines.join('\n');
+}
+function uiAnObsText(o,r){ const x=Object.assign({},o); if(o.k==='xp_source') x.src=uiAnT('src')[o.src]; if(o.k==='task_cat') x.cat=catLabel(o.cat,'life');
+  if(o.k==='expenses'){ x.from=uiMoney(o.from); x.to=uiMoney(o.to); } if(o.k==='sleep') x.h=uiAnNum(o.h,1); if(o.k==='planner'){ x.h=uiAnNum(o.h,1); if(o.doneH!=null) x.doneH=uiAnNum(o.doneH,1); }
+  return uiAnT('obs')[o.k](x,r); }
+function uiAnCopy(a){
+  const text=uiAnSummaryText(a), cs=uiLang()==='cs';
+  const fallback=()=>{ const inner=el(`<div><h3>${uiAnT('copy_t')}</h3><textarea id="anCopyText" rows="12" readonly aria-label="${uiAnT('copy_t')}"></textarea><p class="helper-text" style="margin-top:8px">${cs?'Označ text a zkopíruj ho.':'Select the text and copy it.'}</p></div>`); inner.querySelector('textarea').value=text; openSheet(inner); setTimeout(()=>{ const t=document.getElementById('anCopyText'); if(t){ t.focus(); t.select(); } },60); };
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>toast(uiAnT('copied')),fallback); else fallback(); }catch(e){ fallback(); }
+}
+function uiAnCatName(c){ return c?catLabel(c,'life'):uiAnT('none_cat'); }
 function renderStats(){
-  const wrap=el(`<div>${uiPageHead(uiL('Statistics'))}<div class="period-selector" id="spTabs" role="tablist"></div></div>`);
-  const tabs=wrap.querySelector('#spTabs');
-  [['today','Today'],['week','Week'],['month','Month'],['year','Year']].forEach(([k,l])=>{
-    const b=el(`<button class="${statsPeriod===k?'on':''}" data-p="${k}" role="tab" aria-selected="${statsPeriod===k}">${l==='Year'&&uiLang()==='cs'?'Rok':uiL(l)}</button>`);
-    b.onclick=()=>{statsPeriod=k;render();};
-    tabs.appendChild(b);
-  });
-  const st=computeStats(statsPeriod);
-  const body=el(`<div class="stats-body"></div>`);
-  const dsCard=uiDsStatsCard(); // Phase 9 (placed above the KPI grid below)
-  const kpi=(ic,label,v)=>`<div class="stat-card"><div class="stat-label">${ic} ${uiL(label)}</div><div class="stat-value">${v}</div></div>`;
-  wrap.appendChild(el(`<div class="stat-grid cols-4 stats-kpis">
-    ${kpi('✨','XP earned (period)',uiNum(st.xp.xpEarned))}${kpi('✅','Tasks',st.tasks.tasksCompleted)}${kpi('🔥','Check-ins (period)',st.habits.checks)}
-    ${kpi('🏋️','Workouts',st.fitness.count)}${kpi('💰','Balance',`<span style="color:${st.finance.balance>=0?'var(--accent2)':'var(--danger)'}">${uiNum(Math.round(st.finance.balance))}</span>`)}${kpi('😴','Avg sleep (period)',st.health.avgSleep?st.health.avgSleep.toFixed(1)+'<small> h</small>':'—')}
-  </div>`));
-
-  body.appendChild(el(statCard('Tasks',[
-    ['Completed',st.tasks.tasksCompleted],['Created',st.tasks.tasksCreated],
-    ['Completion rate (all-time)',st.tasks.completionRate+'%'],['Overdue (now)',st.tasks.overdueTasks],
-  ])));
-  const priRows=Object.keys(st.tasks.byPriority).length?Object.entries(st.tasks.byPriority).map(([p,c])=>`<div class="kv"><span>${escapeHtml(uiL(p))}</span><b>${c}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No tasks yet.')}</div>`;
-  body.appendChild(el(`<div class="card"><h3>${uiL('Tasks by priority')}</h3>${priRows}</div>`));
-  body.appendChild(el(chartCard(uiL('Task completions'),chartValuesForTaskCompletions(statsPeriod),null,{})));
-
-  body.appendChild(el(statCard('Habits',[
-    ['Check-ins (period)',st.habits.checks],['Completion % (period, good habits)',st.habits.completion.pct+'%'],
-    ['Current streak (best across habits)',st.habits.currentStreakOverall],['Best streak ever',st.habits.bestStreakOverall],
-    ['Active habits',st.habits.activeCount],['Good / Bad',st.habits.goodHabits+' / '+st.habits.badHabits],
-  ])));
-  body.appendChild(el(chartCard(uiL('Habit completions'),chartValuesForHabitCompletions(statsPeriod),null,{})));
-
-  body.appendChild(el(statCard('Goals',[
-    ['Active',st.goals.activeGoals],['Completed',st.goals.completedGoals],
-    ['Average progress',st.goals.avgGoalProgress+'%'],
-    ['Milestones completed (period)',st.goals.completedMilestonesInPeriod],['Milestones completed (all-time)',st.goals.completedMilestonesAll],
-  ])));
-  const catRows=Object.keys(st.goals.goalsByCategory).length?Object.entries(st.goals.goalsByCategory).map(([c,n])=>`<div class="kv"><span>${escapeHtml(c==='None'?uiL(c):catLabel(c,'life'))}</span><b>${n}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No goals yet.')}</div>`;
-  body.appendChild(el(`<div class="card"><h3>${uiL('Goals by category')}</h3>${catRows}</div>`));
-
-  body.appendChild(el(statCard('XP / RPG',[
-    ['XP earned (period)',st.xp.xpEarned],['XP today',st.xp.xpTodayVal],['XP this week',st.xp.xpThisWeek],['XP this month',st.xp.xpThisMonth],
-    ['Level',st.xp.level],['Progress to next level',st.xp.into+' / '+st.xp.need],
-  ])));
-  body.appendChild(el(chartCard(uiL('XP trend'),chartValuesForLog(S.xpLog.map(x=>({date:new Date(x.ts).toISOString().slice(0,10),amount:x.amount})),statsPeriod,x=>x.amount),null,{type:'line'})));
-
-  const attrRows=Object.keys(ATTRS).map(k=>{
-    const val=S.attrs[k]||0; const into2=val%50;
-    return `<div class="kv"><span>${k}</span><b>${val} <span class="sub">(${into2}/50)</span></b></div>`;
-  }).join('');
-  body.appendChild(el(`<div class="card"><h3>${uiL('Attributes')}</h3>${attrRows}<div class="sub" style="margin-top:8px">${uiL("Change-over-period isn't shown: attribute deltas aren't individually tracked per grant, so a per-period breakdown can't be derived from real data without inventing numbers.")}</div></div>`));
-
-  body.appendChild(el(statCard('Fitness',[
-    ['Workouts',st.fitness.count],['Sets',st.fitness.sets],['Reps',st.fitness.reps],
-    ['Total volume',st.fitness.volume],['Total duration (min)',st.fitness.duration],['Personal records (all-time)',st.fitness.prs.length],
-  ])));
-  body.appendChild(el(chartCard(uiL('Workout volume'),chartValuesForLog(completedWorkouts(S),statsPeriod,w=>workoutVolume(w)),null,{})));
-
-  body.appendChild(el(statCard('Nutrition',[
-    ['Avg calories/day (logged)',Math.round(st.nutrition.avgCalories)],['Avg protein (g)',Math.round(st.nutrition.avgProtein)],
-    ['Avg carbs (g)',Math.round(st.nutrition.avgCarbs)],['Avg fat (g)',Math.round(st.nutrition.avgFat)],
-    ['Avg water (ml)',Math.round(st.nutrition.avgWater)],['Days logged',st.nutrition.daysLogged],
-    ['Calorie target adherence',S.nutritionTargets.calories?Math.round(st.nutrition.avgCalories/S.nutritionTargets.calories*100)+'%':'—'],
-  ])));
-  body.appendChild(el(chartCard(uiL('Calories (per day logged)'),chartValuesForLog(S.meals,statsPeriod,m=>Number(m.calories||0)*(Number(m.servings)||1)),null,{type:'line'})));
-
-  body.appendChild(el(statCard('Finance',[
-    ['Income',st.finance.income.toFixed(0)],['Expenses',st.finance.expenses.toFixed(0)],['Balance',st.finance.balance.toFixed(0)],
-    ['Savings',st.finance.savings.toFixed(0)],['Investments',st.finance.investments.toFixed(0)],['Transactions',st.finance.transactions],
-  ])));
-  const finCatRows=Object.keys(st.finance.byCategory).length?Object.entries(st.finance.byCategory).map(([c,a])=>`<div class="kv"><span>${escapeHtml(uiL(c))}</span><b>${uiNum(Math.round(a))}</b></div>`).join(''):`<div class="sub" style="padding:6px 0">${uiL('No expenses yet.')}</div>`;
-  body.appendChild(el(`<div class="card"><h3>${uiL('Expenses by category')}</h3>${finCatRows}</div>`));
-  body.appendChild(el(chartCard(uiL('Income vs Expenses (net balance)'),chartValuesForNetBalance(statsPeriod),null,{})));
-
-  body.appendChild(el(statCard('Sleep / Health',[
-    ['Avg sleep (period)',st.health.avgSleep?st.health.avgSleep.toFixed(1)+'h':'—'],['Sleep days logged',st.health.sleepDaysLogged],
-    ['Avg steps/day (period)',st.health.avgSteps?Math.round(st.health.avgSteps).toLocaleString():'—'],['Steps days logged',st.health.stepsDaysLogged],
-    ['Weight trend (period)',st.health.weightTrend!=null?(st.health.weightTrend>0?'+':'')+st.health.weightTrend.toFixed(1):'—'],
-  ])));
-  const sleepChartValues=chartValuesForLog(S.sleepLog,statsPeriod,sleepDuration);
-  body.appendChild(el(chartCard(uiL('Sleep duration'),sleepChartValues,null,{type:'line'})));
-
-  body.appendChild(el(statCard('Journal',[
-    ['Entries',st.journal.count],['Average rating',st.journal.avgRating!=null?st.journal.avgRating.toFixed(1)+'/10':'—'],
-    ['Days with an entry',st.journal.daysLogged],
-  ])));
-  const moodIc={1:'😞',2:'😕',3:'😐',4:'🙂',5:'😄'};
-  const moodRows=Object.keys(st.journal.moodCounts).map(m=>`<div class="kv"><span>${moodIc[m]} ${m}</span><b>${st.journal.moodCounts[m]}</b></div>`).join('');
-  body.appendChild(el(`<div class="card"><h3>${uiL('Mood distribution')}</h3>${st.journal.count?moodRows:'<div class="sub" style="padding:6px 0">'+uiL('No journal entries yet.')+'</div>'}</div>`));
-
-  body.appendChild(el(statCard('Streaks',[
-    ['Best habit streak (any habit, all-time)',st.streaks.habitBest],['Current habit streak (any habit)',st.streaks.habitCurrent],
-    ['Current task-completion streak',st.streaks.taskStreak],
-  ])));
-
-  wrap.insertBefore(dsCard,wrap.querySelector('.stats-kpis'));
+  const T=uiAnT, t0=performance.now(), r=uiAnRange(), a=anAnalyze(r), pr=a.prev, cs=uiLang()==='cs';
+  const wrap=el(`<div class="an">${uiPageHead(T('title'),T('sub'),`<button class="btn sm ghost" id="anCopy">${uiIcon('note',16)} ${T('copy')}</button>`)}
+    <div class="period-selector an-tabs" id="spTabs" role="tablist" aria-label="${cs?'Období':'Period'}">${UI_AN_PERIODS.map(k=>`<button class="${r.key===k?'on':''}" data-p="${k}" role="tab" aria-selected="${r.key===k}">${T(k)}</button>`).join('')}</div>
+    ${r.key==='custom'?`<div class="an-custom"><label>${T('from')}<input type="date" id="anFrom" value="${r.from}" max="${todayStr()}"></label><label>${T('to')}<input type="date" id="anTo" value="${r.to}" max="${todayStr()}"></label></div>`:''}
+    <p class="an-range" data-from="${r.from}" data-to="${r.to}"><b>${uiAnSpan(r)}</b> · ${T('vs')} ${uiAnSpan(pr)}</p>
+  </div>`);
+  wrap.querySelectorAll('#spTabs [data-p]').forEach(b=>b.onclick=()=>{ statsPeriod=b.dataset.p; if(statsPeriod==='custom'&&!uiAnCustom) uiAnCustom={from:addDays(todayStr(),-13),to:todayStr()}; render(); const nb=document.querySelector(`#spTabs [data-p="${statsPeriod}"]`); if(nb) nb.focus({preventScroll:true}); });
+  ['anFrom','anTo'].forEach(id=>{ const i=wrap.querySelector('#'+id); if(i) i.onchange=()=>{ if(!/^\d{4}-\d\d-\d\d$/.test(i.value)) return; uiAnCustom=Object.assign({},uiAnCustom||{},{[id==='anFrom'?'from':'to']:i.value}); render(); uiRefocus(id); }; });
+  wrap.querySelector('#anCopy').onclick=()=>uiAnCopy(a);
+  if(!a.hasAny){ wrap.appendChild(el(`<div class="card" id="anEmpty">${uiEmpty('📊',T('empty_t'),T('empty_d'),'')}</div>`)); window.__anMs=performance.now()-t0; return wrap; }
+  const secs=[['anSummary','chart',T('s_summary')],['anChanges','activity',T('s_changes')],['anObs','sparkle',T('s_obs')],['anCons','calendar',T('s_cons')],['anHeat','calendar',T('s_heat')],['anDs','star',T('s_ds')],['anXp','bolt',T('s_xp')],['anAttrs','character',T('s_attrs')],
+    ['anTasks','tasks',T('s_tasks')],['anHabits','habits',T('s_habits')],['anGoals','target',T('s_goals')],['anPlanner','clock',T('s_planner')],['anFitness','dumbbell',T('s_fitness')],['anNutrition','apple',T('s_nutrition')],['anSleep','moon',T('s_sleep')],['anFinance','wallet',T('s_finance')],['anJournal','journal',T('s_journal')]];
+  wrap.appendChild(el(`<nav class="an-jump" aria-label="${T('sections')}">${secs.map(([id,,t])=>`<a class="pill sm" href="#${id}" data-jump="${id}">${t}</a>`).join('')}</nav>`));
+  wrap.querySelectorAll('[data-jump]').forEach(l=>l.onclick=e=>{ e.preventDefault(); const s=document.getElementById(l.dataset.jump); if(s){ s.scrollIntoView({behavior:animationsOn()&&!matchMedia('(prefers-reduced-motion: reduce)').matches?'smooth':'auto',block:'start'}); const h=s.querySelector('h3'); if(h){ h.tabIndex=-1; h.focus({preventScroll:true}); } } });
+  const M=(d,k)=>a[d].metrics[k];
+  // 1. executive summary
+  const pl=a.planner, big=(v,unit)=>v==null?`<span class="an-nd">${T('no_data')}</span>`:uiAnFmt(v,unit);
+  const cards=[
+    ['ds',T('s_ds'),big(M('ds','avg').current),`${T('avg')} · ${T('days_scored')}: ${a.ds.days}`,uiAnDelta(M('ds','avg'))],
+    ['xp',T('xp_total'),big(M('xp','total').current),`${uiAnFmt(M('xp','perDay').current)} ${T('xp_day')}`,uiAnDelta(M('xp','total'))],
+    ['tasks',T('s_tasks'),big(M('tasks','rate').current,'%'),`${T('t_done')} ${uiAnNum(M('tasks','done').current)} · ${T('t_created')} ${uiAnNum(M('tasks','created').current)}`,uiAnDelta(M('tasks','rate'),'%')],
+    ['habits',T('s_habits'),big(M('habits','rate').current,'%'),`${T('h_active')} ${a.habits.active} · ${T('h_streak')} ${a.habits.avgStreak==null?'—':uiAnNum(a.habits.avgStreak,1)}`,uiAnDelta(M('habits','rate'),'%')],
+    ['goals',T('s_goals'),a.goals.active||S.goals.length?`${a.goals.active}<small> ${T('g_active').toLowerCase()}</small>`:big(null),`${T('g_done')} ${uiAnNum(M('goals','completed').current)} · ${T('g_prog')} ${a.goals.avgProgress==null?'—':a.goals.avgProgress+' %'}`,uiAnDelta(M('goals','completed'))],
+    ['planner',T('p_time'),pl.has?uiPlDur(pl.planned):big(null),pl.has?`${T('p_blocks')} ${pl.count}${pl.past?` · ${cs?'splněno':'done'} ${pl.done}/${pl.past}`:''}`:'',uiAnDelta(M('planner','hours'),'h')],
+  ];
+  const body=el(`<div class="an-body"></div>`);
+  body.insertAdjacentHTML('beforeend',uiAnSec('anSummary','chart',T('s_summary'),`<div class="an-cards">${cards.map(([k,l,v,s,d])=>`<div class="stat-card an-card" data-card="${k}"><div class="stat-label">${l}</div><div class="stat-value">${v}</div>${s?`<div class="stat-sub">${s}</div>`:''}${d?`<div class="an-card-d">${d}</div>`:''}</div>`).join('')}</div>`));
+  // 2. what changed + biggest changes
+  const ch=anChanges(a), top=anTopChanges(a,5);
+  const chRow=c=>`<li class="an-ch" data-metric="${c.label}"><span class="an-ch-l">${T('lbl')[c.label]}</span><b class="an-ch-v">${uiAnFmt(c.previous,c.unit)} → ${uiAnFmt(c.current,c.unit)}</b><span class="an-ch-d">${c.direction==='flat'?T('flat'):`${T(c.direction)} ${cs?'o':'of'} ${c.unit==='%'?uiAnNum(Math.abs(c.delta))+' '+T('pp'):uiAnFmt(Math.abs(c.delta),c.unit)}${c.percentDelta!=null&&c.unit!=='%'?` (${Math.abs(c.percentDelta)} %)`:''}`}</span></li>`;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anChanges','activity',T('s_changes'),`<div class="card"><p class="sub an-cmp">${uiAnSpan(r)} ${T('vs')} ${uiAnSpan(pr)}</p>${ch.length?`<ul class="an-chs">${ch.map(chRow).join('')}</ul>`:`<p class="sub" style="margin:0">${T('changes_empty')}</p>`}</div>
+    <div class="card" id="anTop"><div class="kicker">${T('s_top')}</div>${top.length?`<ol class="an-chs an-top">${top.map(chRow).join('')}</ol><p class="helper-text" style="margin:8px 0 0">${T('top_note')}</p>`:`<p class="sub" style="margin:6px 0 0">${T('top_empty')}</p>`}</div>`));
+  // 3. observations
+  const obs=anObservations(a);
+  body.insertAdjacentHTML('beforeend',uiAnSec('anObs','sparkle',T('s_obs'),`<div class="card">${obs.length?`<ul class="an-obs">${obs.map(o=>`<li data-obs="${o.k}">${escapeHtml(uiAnObsText(o,r))}</li>`).join('')}</ul>`:`<p class="sub" style="margin:0">${T('obs_empty')}</p>`}<p class="helper-text" style="margin:10px 0 0">${T('obs_note')}</p></div>`));
+  // 4. consistency + heatmap
+  body.insertAdjacentHTML('beforeend',uiAnSec('anCons','calendar',T('s_cons'),`<div class="card an-cons">${a.consistency.rows.map(x=>`<div class="kv" data-cons="${x.k}"><span>${T('c_'+x.k)}</span><b>${x.n} ${T('c_of')} ${a.consistency.days}${x.pct!=null?` · ${x.pct} %`:''}</b></div>`).join('')}</div>`));
+  body.insertAdjacentHTML('beforeend',uiAnSec('anHeat','calendar',T('s_heat'),`<div class="card an-heat-card" id="anHeatBox">${uiAnHeatHtml()}</div>`));
+  // 5. Daily Score
+  const ds=a.ds;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anDs','star',T('s_ds'),`<div class="stat-grid cols-3">${uiAnStat(T('avg'),big(M('ds','avg').current),uiAnDelta(M('ds','avg')))}${uiAnStat(T('min'),ds.min?ds.min.score:big(null),ds.min?fmtDate(ds.min.date):'')}${uiAnStat(T('max'),ds.max?ds.max.score:big(null),ds.max?fmtDate(ds.max.date):'')}</div>
+    ${uiAnChart('ds',T('s_ds'),ds.series,'score','avg',r,'',{open:'ds'})}<p class="helper-text">${T('ds_note')} ${T('days_scored')}: ${ds.days}.</p><div id="anDsCard"></div>`));
+  // 6. XP
+  const xp=a.xp;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anXp','bolt',T('s_xp'),`<div class="stat-grid">${uiAnStat(T('xp_total'),big(M('xp','total').current),uiAnDelta(M('xp','total')))}${uiAnStat(T('xp_day'),big(M('xp','perDay').current),uiAnDelta(M('xp','perDay')))}${uiAnStat(T('entries'),uiAnNum(xp.entries))}${uiAnStat(T('level'),`${xp.level.start.level} → ${xp.level.end.level}`,T('level_move'))}</div>
+    ${uiAnChart('xp',T('xp_chart'),xp.series,'xp','sum',r,'')}<div class="card"><div class="kicker">${T('xp_src')}</div>${xp.sources.some(s=>s.xp)?uiAnBars(xp.sources.filter(s=>s.xp).map(s=>({l:T('src')[s.k],v:s.xp,pct:s.pct})),(v,row)=>`${uiAnNum(v)} XP · ${row.pct} %`):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div>`));
+  // 7. attributes
+  const at=a.attrs;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anAttrs','character',T('s_attrs'),`<div class="card"><table class="an-tbl"><thead><tr><th scope="col"></th><th scope="col">${T('attr_val')}</th><th scope="col">${T('attr_ch')}</th><th scope="col">${T('attr_prev')}</th></tr></thead><tbody>${at.attrs.map(x=>`<tr data-attr="${x.k}"><th scope="row"><span class="an-dot" style="background:${ATTRS[x.k].c}" aria-hidden="true"></span>${x.k}</th><td>${uiAnNum(x.value)} <span class="sub">(lv ${x.level})</span></td><td>${x.change.current==null?'—':(x.change.current>0?'+':'')+uiAnNum(x.change.current)}</td><td>${x.change.previous==null?'—':(x.change.previous>0?'+':'')+uiAnNum(x.change.previous)}</td></tr>`).join('')}</tbody></table><p class="helper-text" style="margin:10px 0 0">${at.tracked?T('attr_note'):T('attr_na')}</p></div>`));
+  // 8. tasks
+  const tk=a.tasks;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anTasks','tasks',T('s_tasks'),!tk.has?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('t_done'),uiAnNum(M('tasks','done').current),uiAnDelta(M('tasks','done')))}${uiAnStat(T('t_created'),uiAnNum(M('tasks','created').current),uiAnDelta(M('tasks','created')))}${uiAnStat(T('t_rate'),big(M('tasks','rate').current,'%'),uiAnDelta(M('tasks','rate'),'%'))}${uiAnStat(T('t_overdue'),uiAnNum(tk.overdue))}${uiAnStat(T('t_lead'),M('tasks','lead').current==null?big(null):uiAnNum(M('tasks','lead').current,1),tk.leadN?`n = ${tk.leadN}`:'')}${uiAnStat(T('t_streak'),uiAnNum(currentTaskStreak()))}</div>
+    <p class="helper-text">${T('t_rate_note')}</p>${uiAnChart('tasks',T('t_chart'),tk.series,'n','sum',r,'')}
+    <div class="an-2"><div class="card"><div class="kicker">${T('t_by_p')}</div>${tk.byPriority.length?uiAnBars(tk.byPriority.map(p=>({l:uiPrioLabel(p.p),v:p.rate,x:p})),(v,row)=>`${v} % · ${row.x.done}/${row.x.due}`):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div>
+    <div class="card"><div class="kicker">${T('t_by_c')}</div>${tk.byCategory.length?uiAnBars(tk.byCategory.map(c=>({l:uiAnCatName(c.c),v:c.n}))):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div></div>`));
+  // 9. habits
+  const hb=a.habits;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anHabits','habits',T('s_habits'),!S.habits.length?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('h_active'),uiAnNum(hb.active),`${hb.good} / ${hb.bad}`)}${uiAnStat(T('h_rate'),big(M('habits','rate').current,'%'),uiAnDelta(M('habits','rate'),'%'))}${uiAnStat(T('h_checks'),big(M('habits','checks').current),uiAnDelta(M('habits','checks')))}${uiAnStat(T('h_streak'),hb.avgStreak==null?big(null):uiAnNum(hb.avgStreak,1))}</div>
+    <p class="helper-text">${T('h_note')}</p>${uiAnChart('habits',T('h_chart'),hb.series,'n','sum',r,'')}
+    ${hb.list.length?`<div class="card"><div class="kicker">${T('h_list')}</div><table class="an-tbl"><tbody>${hb.list.map(x=>`<tr data-habit="${escapeHtml(x.id)}"><th scope="row">${escapeHtml(x.name)}</th><td>${x.rate==null?'—':x.rate+' %'} <span class="sub">${x.done}/${x.expected}</span></td><td><span class="sub">${T('h_cur')}</span> ${x.current}</td><td><span class="sub">${T('h_best')}</span> ${x.best}</td></tr>`).join('')}</tbody></table></div>`:''}`));
+  // 10. goals
+  const gl=a.goals;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anGoals','target',T('s_goals'),!S.goals.length?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('g_active'),uiAnNum(gl.active))}${uiAnStat(T('g_done'),uiAnNum(M('goals','completed').current),uiAnDelta(M('goals','completed')))}${uiAnStat(T('g_done_all'),uiAnNum(gl.completedAll))}${uiAnStat(T('g_prog'),gl.avgProgress==null?big(null):gl.avgProgress+' %')}</div>
+    <div class="an-2"><div class="card"><div class="kicker">${T('g_by_c')}</div>${uiAnBars(gl.byCategory.map(c=>({l:uiAnCatName(c.c),v:c.active+c.completed,x:c})),(v,row)=>`${row.x.active} / ${row.x.completed}`)}<p class="helper-text" style="margin:8px 0 0">${cs?'aktivní / dokončené':'active / completed'}</p></div>
+    <div class="card"><div class="kicker">${T('g_by_d')}</div>${Object.keys(gl.deadline).map(k=>`<div class="kv" data-deadline="${k}"><span>${T('dl')[k]}</span><b>${gl.deadline[k]}</b></div>`).join('')}</div></div>
+    ${gl.stale.length?`<div class="card" id="anStale"><div class="kicker">${T('g_stale')}</div><p class="helper-text" style="margin:4px 0 8px">${T('g_stale_d')}</p>${gl.stale.map(g=>`<button class="an-stale" data-goal="${escapeHtml(g.id)}"><span class="an-stale-t">${escapeHtml(g.title)}</span><span class="sub">${g.progress} % · ${g.last?`${T('g_last')} ${fmtDate(g.last)}`:T('g_never')} · ${g.days} ${T('g_days')}</span></button>`).join('')}</div>`:''}`));
+  // 11. planner
+  body.insertAdjacentHTML('beforeend',uiAnSec('anPlanner','clock',T('s_planner'),!pl.has?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('p_blocks'),uiAnNum(pl.count),uiAnDelta(M('planner','blocks')))}${uiAnStat(T('p_time'),uiPlDur(pl.planned),uiAnDelta(M('planner','hours'),'h'))}${uiAnStat(T('p_done'),pl.past?`${pl.done}/${pl.past}`:big(null),pl.past?`${uiPlDur(pl.doneMin)} / ${uiPlDur(pl.pastMin)}`:'')}</div>
+    <p class="helper-text">${T('p_note')}</p>${uiAnChart('planner',T('p_chart'),pl.series.map(p=>({date:p.date,h:p.min/60})),'h','sum',r,'h')}
+    <div class="an-2"><div class="card"><div class="kicker">${T('p_by_c')}</div>${pl.byCategory.length?uiAnBars(pl.byCategory.map(c=>({l:uiAnCatName(c.c),v:c.min})),v=>uiPlDur(v)):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div>
+    <div class="card"><div class="kicker">${T('p_by_d')}</div>${pl.byWeekday.some(v=>v)?uiAnBars(pl.byWeekday.map((v,i)=>({l:uiAnWeekday(i),v})),v=>v?uiPlDur(v):'—'):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div></div>`));
+  // 12. fitness
+  const ft=a.fitness;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anFitness','dumbbell',T('s_fitness'),!ft.has?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('f_count'),uiAnNum(M('fitness','count').current),uiAnDelta(M('fitness','count')))}${uiAnStat(T('f_min'),big(M('fitness','minutes').current),uiAnDelta(M('fitness','minutes')))}${uiAnStat(T('f_vol'),big(M('fitness','volume').current),uiAnDelta(M('fitness','volume')))}${uiAnStat(T('f_sets'),uiAnNum(ft.sets))}${uiAnStat(T('f_cons'),`${ft.activeWeeks}/${ft.weeks}`)}${uiAnStat(T('f_last'),ft.last?escapeHtml(ft.last.name||'—'):big(null),ft.last?fmtDate(ft.last.date):'')}</div>
+    ${uiAnChart('fitness',T('f_chart'),ft.series,'n','sum',r,'')}${ft.types.length?`<div class="card"><div class="kicker">${T('f_types')}</div>${uiAnBars(ft.types.map(x=>({l:x.k,v:x.n})))}</div>`:''}`));
+  // 13. nutrition
+  const nu=a.nutrition, mac=[['protein','P'],['carbs','C'],['fat','F']].filter(([k])=>nu[k]!=null);
+  body.insertAdjacentHTML('beforeend',uiAnSec('anNutrition','apple',T('s_nutrition'),!nu.has?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('n_meals'),uiAnNum(M('nutrition','meals').current),uiAnDelta(M('nutrition','meals')))}${uiAnStat(T('n_days'),uiAnNum(nu.daysLogged))}${uiAnStat(T('n_kcal'),big(M('nutrition','kcal').current,'kcal'),uiAnDelta(M('nutrition','kcal'),'kcal'))}${uiAnStat(T('n_macros'),mac.length?mac.map(([k,l])=>`${l} ${uiAnNum(nu[k])}`).join(' · ')+'<small> g</small>':big(null))}</div>
+    ${uiAnChart('nutrition',T('n_chart'),nu.series,'kcal','avg',r,'kcal')}`));
+  // 14. sleep
+  const sl=a.sleep;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anSleep','moon',T('s_sleep'),!sl.has?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('sl_avg'),big(M('sleep','avg').current,'h'),uiAnDelta(M('sleep','avg'),'h'))}${uiAnStat(T('sl_nights'),uiAnNum(sl.nights),uiAnDelta(M('sleep','nights')))}${uiAnStat(T('min'),sl.min==null?big(null):uiAnFmt(sl.min,'h'))}${uiAnStat(T('max'),sl.max==null?big(null):uiAnFmt(sl.max,'h'))}${sl.quality!=null?uiAnStat(T('sl_q'),uiAnNum(sl.quality,1)+'<small> / 5</small>'):''}</div>
+    ${uiAnChart('sleep',T('sl_chart'),sl.series,'h','avg',r,'h')}${sl.nights?`<div class="card"><div class="kicker">${T('sl_dist')}</div>${uiAnBars(sl.buckets.map(b=>({l:b.l+' h',v:b.n})))}</div>`:''}`));
+  // 15. finance
+  const fi=a.finance;
+  body.insertAdjacentHTML('beforeend',uiAnSec('anFinance','wallet',T('s_finance'),!fi.has?uiAnNoData():`<div class="stat-grid">${uiAnStat(T('fi_inc'),uiMoney(M('finance','income').current),uiAnDelta(M('finance','income'),'money'))}${uiAnStat(T('fi_exp'),uiMoney(M('finance','expenses').current),uiAnDelta(M('finance','expenses'),'money'))}${uiAnStat(T('fi_net'),uiMoney(M('finance','net').current),uiAnDelta(M('finance','net'),'money'))}${uiAnStat(T('fi_count'),uiAnNum(M('finance','count').current),uiAnDelta(M('finance','count')))}</div>
+    ${uiAnChart('finance',T('fi_chart'),fi.series,'exp','sum',r,'money')}
+    <div class="an-2"><div class="card"><div class="kicker">${T('fi_exp_c')}</div>${fi.expByCategory.length?uiAnBars(fi.expByCategory.map(c=>({l:uiL(c.c),v:c.a})),v=>uiMoney(v)):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div>
+    <div class="card"><div class="kicker">${T('fi_inc_c')}</div>${fi.incByCategory.length?uiAnBars(fi.incByCategory.map(c=>({l:uiL(c.c),v:c.a})),v=>uiMoney(v)):`<p class="sub" style="margin:6px 0 0">${T('no_data')}</p>`}</div></div>
+    <div class="card"><div class="kicker">${T('fi_all')}</div><div class="kv"><span>${T('savings')}</span><b>${uiMoney(financeSavingsTotal())}</b></div><div class="kv"><span>${T('investments')}</span><b>${uiMoney(financeInvestmentsSummary().value)}</b></div></div>`));
+  // 16. journal
+  const jr=S.journal.filter(j=>j.date>=r.from&&j.date<=r.to), rated=jr.filter(j=>j.rating!=null&&j.rating!==''&&isFinite(Number(j.rating)));
+  body.insertAdjacentHTML('beforeend',uiAnSec('anJournal','journal',T('s_journal'),!S.journal.length?uiAnNoData():`<div class="stat-grid cols-3">${uiAnStat(T('j_entries'),uiAnNum(jr.length))}${uiAnStat(T('j_days'),uiAnNum(new Set(jr.map(j=>j.date)).size))}${uiAnStat(T('j_rating'),rated.length?uiAnNum(anAvg(rated.map(j=>Number(j.rating))),1)+'<small> / 10</small>':big(null))}</div>`));
   wrap.appendChild(body);
+  // the existing Daily Score card (7-day history + stored-snapshot averages) stays part of the Daily Score section
+  const dsBox=wrap.querySelector('#anDsCard'); if(dsBox) dsBox.replaceWith(uiDsStatsCard());
+  wrap.querySelectorAll('.an-chart').forEach(uiAnWireChart);
+  const hb2=wrap.querySelector('#anHeatBox'); if(hb2) uiAnWireHeat(hb2);
+  wrap.querySelectorAll('.an-stale[data-goal]').forEach(b=>b.onclick=()=>{ currentGoalId=b.dataset.goal; view='goalDetail'; render(); window.scrollTo(0,0); });
+  window.__anMs=performance.now()-t0;
   return wrap;
 }
+function uiAnWeekday(i){ try{ return new Date(2024,0,1+i).toLocaleDateString(uiLocale(),{weekday:'short'}); }catch(e){ return ['Po','Út','St','Čt','Pá','So','Ne'][i]; } }
 function chartValuesForTaskCompletions(period){ return bucketSum(periodBuckets(period),S.tasks.filter(t=>t.done&&t.dueDate),t=>t.dueDate,()=>1); }
 function chartValuesForHabitCompletions(period){
   const events=[]; S.habits.forEach(h=>(h.completions||[]).forEach(d=>events.push({date:d})));

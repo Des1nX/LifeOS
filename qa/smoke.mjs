@@ -5590,6 +5590,429 @@ test('FP5 data safety: existing IndexedDB data, schemaVersion 8, export/import, 
   same(await idbState(page), exported, 'after ON');
 }, { state: fixtureState() });
 
+// ---------- Deep Analytics & Insights 2.0 ----------
+// Statistics is the Analytics centre: a read-only layer over the existing calculators. The tests pin the ranges and the
+// previous-period comparison, every domain against the app's own helpers, "Žádná data" instead of fake zeros, the
+// deterministic observations, no writes, performance on a year of data, layout, themes, accessibility and data safety.
+const anGo = (page, per) => page.evaluate(p => { closeSheets(); statsPeriod = p; view = 'statistics'; render(); }, per);
+const anState = page => page.evaluate(() => JSON.stringify(S));
+const anClean = page => page.evaluate(() => { const t = document.getElementById('app').innerText, ids = {}; document.querySelectorAll('[id]').forEach(n => ids[n.id] = (ids[n.id] || 0) + 1);
+  return { bad: /undefined|NaN|Infinity|\[object/.test(t), dup: Object.keys(ids).filter(k => ids[k] > 1), overflow: document.documentElement.scrollWidth - innerWidth }; });
+const anPeriods = ['today', 'week', 'month', 'quarter', 'year'];
+// a controlled data set on the fixture day (2026-09-23): the current 7-day range is 09-17..09-23, the previous 09-10..09-16
+const anSeed = page => page.evaluate(() => {
+  const T = todayStr(), D = n => addDays(T, n), ts = (d, h) => new Date(d + 'T' + String(h || 12).padStart(2, '0') + ':00').getTime();
+  S = defaultState(); S.settings.onboarded = true;
+  S.tasks = [
+    { id: 'a1', title: 'A1', priority: 'High', category: 'Work', dueDate: D(-1), done: true, createdAt: ts(D(-4)) },
+    { id: 'a2', title: 'A2', priority: 'Low', category: 'Work', dueDate: D(-2), done: false, createdAt: ts(D(-3)) },
+    { id: 'a3', title: 'A3', priority: 'Urgent', category: 'Health', dueDate: D(0), done: true, createdAt: ts(D(-2)) },
+    { id: 'b1', title: 'B1', priority: 'Medium', category: 'Work', dueDate: D(-9), done: true, createdAt: ts(D(-12)) },
+    { id: 'b2', title: 'B2', priority: 'Medium', category: '', dueDate: D(-10), done: false, createdAt: ts(D(-12)) }];
+  S.xpLog = [
+    { id: 'x1', amount: 30, reason: 'Task: A1', ts: ts(D(-1)), key: `task:a1:${D(-1)}`, attrs: { INT: 18 } },
+    { id: 'x2', amount: 45, reason: 'Task: A3', ts: ts(D(0), 9), key: `task:a3:${D(0)}`, attrs: { VIT: 27 } },
+    { id: 'x3', amount: 25, reason: 'Task: B1', ts: ts(D(-9)), key: `task:b1:${D(-9)}`, attrs: { INT: 15 } },
+    { id: 'x4', amount: 80, reason: 'Workout: Push', ts: ts(D(-3)), key: `workout:w1:${D(-3)}`, attrs: { STR: 24, VIT: 14, DEX: 10 } },
+    { id: 'x5', amount: 40, reason: 'Quest: Den', ts: ts(D(-2)) },
+    { id: 'x6', amount: 10, reason: 'Meal logged', ts: ts(D(-9)), key: `meal:${D(-9)}:Lunch` },
+    { id: 'x7', amount: 50, reason: 'Achievement', ts: ts(D(-20)) }];
+  S.totalXp = S.xpLog.reduce((a, x) => a + x.amount, 0);
+  S.attrs = { STR: 24, INT: 33, DEX: 10, VIT: 41, WIS: 0, FOC: 0, SOC: 0 };
+  S.habits = [
+    { id: 'hd', name: 'Denní', type: 'good', frequency: 'daily', target: 1, completions: [D(0), D(-1), D(-2), D(-8), D(-9)], active: true, startDate: D(-13), createdAt: ts(D(-13)) },
+    { id: 'hn', name: 'Nový', type: 'good', frequency: 'daily', target: 1, completions: [D(0)], active: true, createdAt: ts(D(-1)) },
+    { id: 'hw', name: 'Týdenní', type: 'good', frequency: 'weekly', target: 2, completions: [D(-1), D(-4)], active: true, startDate: D(-30), createdAt: ts(D(-30)) },
+    { id: 'hb', name: 'Zlozvyk', type: 'bad', frequency: 'daily', target: 1, completions: [D(0), D(-1)], brokenDates: [], active: true, startDate: D(-30), createdAt: ts(D(-30)) }];
+  S.goals = [
+    { id: 'g1', title: 'Hotový', status: 'Completed', targetDate: D(-2), mode: 'manual', manualProgress: 100, category: 'Learning', createdAt: ts(D(-40)) },
+    { id: 'g2', title: 'Spící', status: 'Active', targetDate: D(20), mode: 'manual', manualProgress: 30, category: 'Work', createdAt: ts(D(-40)) },
+    { id: 'g3', title: 'Živý', status: 'Active', targetDate: '', mode: 'manual', manualProgress: 60, category: 'Fitness', createdAt: ts(D(-40)) }];
+  S.xpLog.push({ id: 'x8', amount: 200, reason: 'Goal: Hotový', ts: ts(D(-2)), key: 'goal:g1:complete' }); S.totalXp += 200;
+  S.tasks.push({ id: 'g3t', title: 'Krok', priority: 'Low', category: 'Fitness', goalId: 'g3', dueDate: '', done: true, createdAt: ts(D(-5)) });
+  S.xpLog.push({ id: 'x9', amount: 15, reason: 'Task: Krok', ts: ts(D(-3)), key: `task:g3t:${D(-3)}` }); S.totalXp += 15;
+  S.plannerBlocks = [
+    { id: 'p1', date: D(-1), startTime: '08:00', endTime: '09:30', title: 'Učení', category: 'Learning', completed: true },
+    { id: 'p2', date: D(-2), startTime: '10:00', endTime: '11:00', title: 'Práce', category: 'Work', completed: false },
+    { id: 'p3', date: D(-9), startTime: '10:00', endTime: '10:30', title: 'Starší', category: 'Work', completed: true }].map(b => ({ description: '', taskId: '', goalId: '', workoutId: '', notes: '', workoutTemplateId: '', createdAt: 1, updatedAt: 1, ...b }));
+  S.workouts = [{ id: 'w1', name: 'Push', date: D(-3), duration: 50, exercises: [{ id: 'e1', name: 'Bench', sets: 3, reps: 10, weight: 60 }] },
+    { id: 'w2', name: 'Pull', date: D(-1), exercises: [{ id: 'e2', name: 'Row', sets: 3, reps: 10, weight: 50 }] },
+    { id: 'w3', name: 'Push', date: D(-10), duration: 40, exercises: [{ id: 'e3', name: 'Bench', sets: 2, reps: 5, weight: 70 }] },
+    { id: 'w4', name: 'Běží', date: D(0), status: 'active', entries: [] }];
+  S.meals = [{ id: 'm1', name: 'Oběd', date: D(-1), type: 'Lunch', calories: 600, servings: 1 }, { id: 'm2', name: 'Večeře', date: D(-1), type: 'Dinner', calories: 400, servings: 2 },
+    { id: 'm3', name: 'Snídaně', date: D(-9), type: 'Breakfast', calories: 500, protein: 30, servings: 1 }];
+  S.sleepLog = [{ id: 's1', date: D(-1), bedtime: '23:00', wake: '07:00', quality: 4 }, { id: 's2', date: D(-2), bedtime: '00:30', wake: '06:00', quality: 2 }, { id: 's3', date: D(-9), bedtime: '22:00', wake: '07:00' }];
+  S.expenses = [{ id: 'e1', date: D(-1), amount: 300, category: 'Food', description: 'x' }, { id: 'e2', date: D(-9), amount: 1000, category: 'Housing', description: 'y' }];
+  S.income = [{ id: 'i1', date: D(-2), amount: 5000, category: 'Salary', description: 'z' }];
+  S.journal = [{ id: 'j1', date: D(-1), mood: '4', rating: '8', text: 'x', tags: [] }];
+  S.dailyScores = { [D(-1)]: { score: 70, label: 'solid', algo: 1, areas: {}, finalizedAt: 1 }, [D(-3)]: { score: 50, label: 'weaker', algo: 1, areas: {}, finalizedAt: 1 }, [D(-9)]: { score: 90, label: 'excellent', algo: 1, areas: {}, finalizedAt: 1 } };
+  S.dailyScoresSince = T; // nothing left for finalizeDailyScores() to snapshot: the Daily Score history is exactly the one above
+  S.achievementsUnlocked = ACHV.map(a => a.id); // achievements and today's quests settled, so a render pays nothing into the seeded ledger
+  S = migrate(JSON.parse(JSON.stringify(S))); // stored the way the app stores it (as after an import)
+  ['daily', 'weekly'].forEach(p => questBoardFor(p).forEach(({ q }) => { const k = questKey(q.id, p); if (!S.quests.some(x => x.key === k)) S.quests.push({ key: k, questId: q.id, date: todayStr(), period: p }); }));
+});
+const anWeek = page => page.evaluate(() => { const a = anAnalyze(getAnalyticsRange('week')); return JSON.parse(JSON.stringify(a, (k, v) => v instanceof Map || v instanceof Set ? [...v] : k === 'byId' || k === 'dueList' || (k === 'blocks' && Array.isArray(v)) ? undefined : v)); });
+
+test('AN1 empty state: no data -> "Zatím tu nic není", no metric shows a fake 0, nothing is written', async ({ page }) => {
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; view = 'home'; render(); });
+  const before = await anState(page);
+  await anGo(page, 'month');
+  assert.equal(await page.locator('#anEmpty').count(), 1);
+  assert.match(await page.locator('#anEmpty').innerText(), /Zatím tu nic není/);
+  assert.equal(await page.locator('#anSummary').count(), 0);
+  const m = await page.evaluate(() => { const a = anAnalyze(getAnalyticsRange('month')); return Object.fromEntries(['xp', 'tasks', 'habits', 'fitness', 'nutrition', 'sleep', 'finance', 'planner'].map(d => [d, Object.values(a[d].metrics).map(x => x.current)])); });
+  for (const [d, xs] of Object.entries(m)) assert.ok(xs.every(v => v == null), `${d}: no data -> null, not 0 (${xs})`);
+  assert.deepEqual(await page.evaluate(() => anObservations(anAnalyze(getAnalyticsRange('month')))), []);
+  assert.equal(await anState(page), before);
+});
+
+test('AN2 date ranges: Dnes / 7 / 30 / 90 / Rok / Vlastní - inclusive days ending today, previous range adjacent and equally long', async ({ page }) => {
+  const r = await page.evaluate(() => { const T = todayStr(); return { T, ranges: ['today', 'week', 'month', 'quarter', 'year'].map(k => { const a = getAnalyticsRange(k), p = getPreviousAnalyticsRange(a); return [k, a.from, a.to, a.days, p.from, p.to, p.days, addDays(p.to, 1) === a.from]; }),
+    custom: getAnalyticsRange('custom', T, { from: addDays(T, 5), to: addDays(T, -9) }), bad: getAnalyticsRange('nonsense').key }; });
+  assert.deepEqual(r.ranges, [['today', TODAY, TODAY, 1, '2026-09-22', '2026-09-22', 1, true], ['week', '2026-09-17', TODAY, 7, '2026-09-10', '2026-09-16', 7, true],
+    ['month', '2026-08-25', TODAY, 30, '2026-07-26', '2026-08-24', 30, true], ['quarter', '2026-06-26', TODAY, 90, '2026-03-28', '2026-06-25', 90, true],
+    ['year', '2025-09-24', TODAY, 365, '2024-09-24', '2025-09-23', 365, true]]);
+  assert.deepEqual([r.custom.from, r.custom.to, r.custom.days], ['2026-09-14', TODAY, 10], 'custom: swapped ends put in order, never past today');
+  assert.equal(r.bad, 'week', 'unknown key -> 7 days');
+  await anGo(page, 'week');
+  for (const k of ['today', 'week', 'month', 'quarter', 'year', 'custom']) {
+    await page.click(`#spTabs [data-p="${k}"]`);
+    assert.equal(await page.locator(`#spTabs [data-p="${k}"]`).getAttribute('aria-selected'), 'true');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.p), k, 'focus stays on the tab');
+  }
+  await page.fill('#anFrom', '2026-09-01');
+  assert.deepEqual(await page.evaluate(() => { const e = document.querySelector('.an-range'); return [e.dataset.from, e.dataset.to, document.activeElement.id]; }), ['2026-09-01', TODAY, 'anFrom']);
+  await page.fill('#anTo', '2026-09-10');
+  assert.match(await page.locator('.an-range').innerText(), /01\.09\.2026 – 10\.09\.2026[\s\S]*22\.08\.2026 – 31\.08\.2026/);
+}, { state: fixtureState() });
+
+test('AN3 previous-period comparison: up / down / flat / unavailable, % change only for a non-zero previous value, no fake 0 before data existed', async ({ page }) => {
+  const c = await page.evaluate(() => [comparePeriods(76, 71, 0), comparePeriods(2, 5, 0), comparePeriods(3, 3, 0), comparePeriods(4, null), comparePeriods(null, 4), comparePeriods(4, 0, 0), comparePeriods(7.26, 7.24, 1)]);
+  assert.deepEqual(c, [{ current: 76, previous: 71, delta: 5, percentDelta: 7, direction: 'up' }, { current: 2, previous: 5, delta: -3, percentDelta: -60, direction: 'down' },
+    { current: 3, previous: 3, delta: 0, percentDelta: 0, direction: 'flat' }, { current: 4, previous: null, delta: null, percentDelta: null, direction: 'unavailable' },
+    { current: null, previous: 4, delta: null, percentDelta: null, direction: 'unavailable' }, { current: 4, previous: 0, delta: 4, percentDelta: null, direction: 'up' },
+    { current: 7.3, previous: 7.2, delta: 0.1, percentDelta: 1, direction: 'up' }]);
+  await anSeed(page);
+  // tasks existed in both weeks; the habit "Nový" did not exist in the previous week and is not counted there
+  const a = await anWeek(page);
+  assert.deepEqual([a.tasks.metrics.done.current, a.tasks.metrics.done.previous, a.tasks.metrics.done.direction], [3, 1, 'up']);
+  const prevOnly = await page.evaluate(() => { const r = getAnalyticsRange('week'), p = getPreviousAnalyticsRange(r); return anHabitsIn(p).per.map(x => x.h.id); });
+  assert.deepEqual(prevOnly, ['hd', 'hw'], 'a habit created later is not "missed" in the previous period');
+  // a domain that only starts in the current period: previous = no data (not 0)
+  await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(s => s.date >= addDays(todayStr(), -6)); });
+  const s = await page.evaluate(() => getSleepTrend(getAnalyticsRange('week')).metrics.nights);
+  assert.deepEqual([s.current, s.previous, s.direction], [2, null, 'unavailable']);
+  await anGo(page, 'week');
+  assert.match(await page.locator('#anSleep').innerText(), /předchozí období: žádná data/);
+}, { state: fixtureState() });
+
+test('AN4 Daily Score: stored snapshots for past days + the live score today (the existing dailyScore), average/min/max, empty days stay empty, a point opens the day', async ({ page }) => {
+  await anSeed(page);
+  const r = await page.evaluate(() => { const t = getDailyScoreTrend(getAnalyticsRange('week')); return { t: JSON.parse(JSON.stringify(t)), live: dailyScore(todayStr()).score }; });
+  const scores = r.t.series.map(x => x.score);
+  assert.deepEqual(scores.slice(0, 6), [null, null, null, 50, null, 70], 'past days = stored snapshots only');
+  assert.equal(scores[6], r.live, 'today = live dailyScore()');
+  const xs = [50, 70, ...(r.live != null ? [r.live] : [])];
+  assert.equal(r.t.metrics.avg.current, Math.round(xs.reduce((a, b) => a + b, 0) / xs.length));
+  assert.equal(r.t.metrics.avg.previous, 90); assert.equal(r.t.max.score, Math.max(...xs)); assert.equal(r.t.min.score, Math.min(...xs));
+  await anGo(page, 'week');
+  const fig = page.locator('#anDs .an-chart');
+  await fig.focus(); await page.keyboard.press('End'); await page.keyboard.press('ArrowLeft');
+  assert.match(await fig.locator('.an-readout').innerText(), /22\. ?9\.: 70/);
+  await fig.locator('.an-ro-open').click();
+  assert.equal((await page.locator('[data-ds="detail"] .ring > span').innerText()).trim(), '70', 'the existing detail sheet with the stored snapshot');
+  await page.evaluate(() => closeSheets());
+  assert.equal(await page.locator('#anDs [data-ds="stats"]').count(), 1, 'the existing Daily Score card stays in the section');
+}, { state: fixtureState() });
+
+test('AN5 XP: earned, per day, by source from the real key/reason, level at start/end; the XP history is never changed', async ({ page }) => {
+  await anSeed(page);
+  const before = await page.evaluate(() => JSON.stringify(S.xpLog));
+  const a = await anWeek(page);
+  assert.deepEqual([a.xp.metrics.total.current, a.xp.metrics.total.previous], [30 + 45 + 80 + 40 + 200 + 15, 25 + 10]);
+  assert.equal(a.xp.metrics.perDay.current, Math.round((410 / 7) * 10) / 10);
+  assert.deepEqual(a.xp.sources.filter(s => s.xp).map(s => [s.k, s.xp]), [['goals', 200], ['tasks', 90], ['fitness', 80], ['quests', 40]]);
+  assert.deepEqual(await page.evaluate(() => [{ reason: 'Habit: X' }, { key: 'sleep:day:2026-09-01', reason: 'Sleep logged' }, { reason: 'Finance logged' }, { reason: 'Journal entry', key: 'journal:2026-09-01' }, { reason: 'Something old' }, { key: 'milestone:m1', reason: 'Milestone: x' }].map(anXpSource)),
+    ['habits', 'sleep', 'finance', 'journal', 'other', 'milestones']);
+  const lv = await page.evaluate(() => { const t = getXpTrend(getAnalyticsRange('week')); return [t.level.end.level, levelFromXp(S.totalXp).level, t.level.start.level, levelFromXp(S.totalXp - 410).level]; });
+  assert.equal(lv[0], lv[1]); assert.equal(lv[2], lv[3]);
+  await anGo(page, 'week');
+  assert.match(await page.locator('#anXp').innerText(), /Cíle[\s\S]*200 XP · 49 %/);
+  assert.equal(await page.evaluate(() => JSON.stringify(S.xpLog)), before);
+}, { state: fixtureState() });
+
+test('AN6 tasks: completed by their completion record, created, completion rate of tasks due in the period, overdue, lead time, by priority and category', async ({ page }) => {
+  await anSeed(page);
+  const t = (await anWeek(page)).tasks;
+  assert.deepEqual([t.metrics.done.current, t.metrics.created.current, t.metrics.due.current, t.metrics.rate.current], [3, 4, 3, 67], 'done a1, a3, g3t; created a1-a3 + g3t; due a1-a3 of which 2 done');
+  assert.deepEqual([t.metrics.done.previous, t.metrics.created.previous, t.metrics.rate.previous], [1, 2, 50]);
+  assert.equal(t.overdue, 2, 'a2 and b2 are open and overdue now');
+  assert.equal(t.metrics.lead.current, Math.round(((3 + 2 + 2) / 3) * 10) / 10, 'days from creation to the completion record');
+  assert.deepEqual(t.byPriority.map(p => [p.p, p.done, p.due]), [['Low', 0, 1], ['High', 1, 1], ['Urgent', 1, 1]]);
+  assert.deepEqual(t.byCategory, [{ c: 'Fitness', n: 1 }, { c: 'Health', n: 1 }, { c: 'Work', n: 1 }]);
+  await anGo(page, 'week');
+  assert.match(await page.locator('#anTasks').innerText(), /Plnění podle priority[\s\S]*Nízká[\s\S]*0 % · 0\/1[\s\S]*Vysoká[\s\S]*100 % · 1\/1/i);
+}, { state: fixtureState() });
+
+test('AN7 habits: completion from isScheduledDate/isDayComplete, weekly habits against their target, streaks from the existing functions, check-ins per day and heatmap', async ({ page }) => {
+  await anSeed(page);
+  const h = (await anWeek(page)).habits;
+  const by = Object.fromEntries(h.list.map(x => [x.id, [x.done, x.expected]]));
+  assert.deepEqual(by, { hd: [3, 7], hn: [1, 2], hw: [2, 2] }, 'daily: 3 of 7; created yesterday: 1 of 2; weekly 2x: 2 of 2');
+  assert.equal(h.metrics.rate.current, Math.round(6 / 11 * 100));
+  assert.deepEqual(h.series.map(x => x.n), [0, 0, 1, 0, 1, 3, 3], 'check-ins per day (bad habit: days logged clean)');
+  const streaks = await page.evaluate(() => Object.fromEntries(S.habits.map(h => [h.id, [currentStreak(h), bestStreak(h)]])));
+  for (const x of h.list) assert.deepEqual([x.current, x.best], streaks[x.id], 'streaks of ' + x.id + ' = currentStreak/bestStreak');
+  const heat = await page.evaluate(() => { const x = anHeatmap('habits', 90); return [x.cells.length, x.cells.slice(-3).map(c => c.v), x.max, x.active]; });
+  assert.deepEqual(heat, [90, [1, 3, 3], 3, 6], 'days with a completed habit: -9, -8, -4, -2, -1, 0');
+  await anGo(page, 'week');
+  await page.click('#anHeatBox [data-heat="tasks"]');
+  assert.equal(await page.locator('#anHeatBox [data-heat="tasks"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.heat), 'tasks', 'focus kept on the switch');
+  assert.match(await page.locator('#anHeatBox .an-heat-what').innerText(), /Počet dokončených úkolů za den/);
+  await page.click('#anHeatBox [data-span="365"]');
+  assert.equal(await page.locator('#anHeatBox .an-hc[data-i]').count(), 365);
+}, { state: fixtureState() });
+
+test('AN8 goals: active, completed in the period (goal completion record), average progress (goalProgress), deadlines, goals without movement - nothing created', async ({ page }) => {
+  await anSeed(page);
+  const g = (await anWeek(page)).goals;
+  assert.deepEqual([g.active, g.completedAll, g.metrics.completed.current, g.metrics.completed.previous], [2, 1, 1, 0]);
+  assert.equal(g.avgProgress, await page.evaluate(() => Math.round((goalProgress(S.goals[1]) + goalProgress(S.goals[2])) / 2)));
+  assert.deepEqual(g.deadline, { overdue: 0, week: 0, month: 1, later: 0, none: 1 });
+  assert.deepEqual(g.stale.map(x => [x.id, x.last, x.days]), [['g2', null, 40]], '"Živý" has a recent linked task; "Spící" none since creation');
+  const n = await page.evaluate(() => [S.tasks.length, S.goals.length, S.habits.length]);
+  await anGo(page, 'week');
+  assert.match(await page.locator('#anStale').innerText(), /Spící[\s\S]*30 %[\s\S]*zatím bez aktivity · 40 dní/);
+  await page.click('#anStale .an-stale[data-goal="g2"]');
+  assert.deepEqual(await page.evaluate(() => [view, currentGoalId, S.tasks.length, S.goals.length, S.habits.length]), ['goalDetail', 'g2', ...n]);
+}, { state: fixtureState() });
+
+test('AN9 planner: blocks and planned time (plannerDuration), past blocks marked done vs not, by category and weekday - no invented "actual time"', async ({ page }) => {
+  await anSeed(page);
+  const p = (await anWeek(page)).planner;
+  assert.deepEqual([p.count, p.planned, p.past, p.done, p.doneMin, p.pastMin], [2, 150, 2, 1, 90, 150]);
+  assert.deepEqual(p.byCategory, [{ c: 'Learning', min: 90 }, { c: 'Work', min: 60 }]);
+  assert.deepEqual([p.metrics.hours.current, p.metrics.hours.previous, p.metrics.blocks.previous], [2.5, 0.5, 1]);
+  assert.equal(p.byWeekday.reduce((a, b) => a + b, 0), 150);
+  await anGo(page, 'week');
+  assert.match(await page.locator('#anPlanner').innerText(), /aplikace neměří/);
+}, { state: fixtureState() });
+
+test('AN10 finance: income, expenses, net and count from the Finance 2.0 helpers, expenses and income by category, savings/investments as before', async ({ page }) => {
+  await anSeed(page);
+  const f = (await anWeek(page)).finance;
+  const ref = await page.evaluate(() => { const r = getAnalyticsRange('week'), p = getPreviousAnalyticsRange(r); return [financeTotalsBetween(r.from, r.to), financeTotalsBetween(p.from, p.to)]; });
+  assert.deepEqual([f.metrics.income.current, f.metrics.expenses.current, f.metrics.net.current, f.metrics.count.current], [ref[0].income, ref[0].expenses, ref[0].net, ref[0].count]);
+  assert.deepEqual([f.metrics.expenses.previous, f.metrics.expenses.direction], [ref[1].expenses, 'down']);
+  assert.deepEqual([f.expByCategory.length, f.incByCategory.length], [1, 1]);
+  await anGo(page, 'week');
+  const t = await page.locator('#anFinance').innerText();
+  assert.match(t, /Úspory[\s\S]*Investice/); assert.doesNotMatch(t, /měl bys|špatn|problém|should|bad/i);
+}, { state: fixtureState() });
+
+test('AN11 fitness: completed workouts only (a running one is left out), minutes only where stored, volume from workoutVolume, names, weeks with a workout', async ({ page }) => {
+  await anSeed(page);
+  const f = (await anWeek(page)).fitness;
+  assert.deepEqual([f.metrics.count.current, f.metrics.count.previous, f.metrics.minutes.current, f.metrics.minutes.previous], [2, 1, 50, 40], 'Pull has no duration: not counted as 0 minutes');
+  assert.equal(f.metrics.volume.current, await page.evaluate(() => workoutVolume(S.workouts[0]) + workoutVolume(S.workouts[1])));
+  assert.deepEqual(f.types, [{ k: 'Pull', n: 1 }, { k: 'Push', n: 1 }]);
+  assert.deepEqual([f.last.name, f.activeWeeks, f.weeks], ['Pull', 2, 2]);
+}, { state: fixtureState() });
+
+test('AN12 nutrition: meals, logged days, kcal per logged day from nutriTotals (servings count), macros only when stored', async ({ page }) => {
+  await anSeed(page);
+  const n = (await anWeek(page)).nutrition;
+  assert.deepEqual([n.metrics.meals.current, n.daysLogged, n.metrics.kcal.current, n.metrics.kcal.previous], [2, 1, 1400, 500]);
+  assert.deepEqual([n.protein, n.carbs, n.fat], [null, null, null], 'no macro stored in the current period -> nothing computed');
+  assert.equal(n.series.filter(x => x.kcal != null).length, 1, 'days without a meal stay empty');
+}, { state: fixtureState() });
+
+test('AN13 sleep: average/min/max from sleepDuration (overnight-safe), nights, quality, length distribution - no advice', async ({ page }) => {
+  await anSeed(page);
+  const s = (await anWeek(page)).sleep;
+  assert.deepEqual([s.nights, s.min, s.max, s.metrics.avg.current, s.metrics.avg.previous, s.quality], [2, 5.5, 8, 6.8, 9, 3]);
+  assert.deepEqual(s.buckets.map(b => b.n), [1, 0, 0, 1, 0]);
+  await anGo(page, 'week');
+  assert.doesNotMatch(await page.locator('#anSleep').innerText(), /doporuč|měl bys|nedostatek|should|too little/i);
+}, { state: fixtureState() });
+
+test('AN14 attributes: current value and the gains of the period from the XP entries; no way to edit them', async ({ page }) => {
+  await anSeed(page);
+  const a = (await anWeek(page)).attrs;
+  const by = Object.fromEntries(a.attrs.map(x => [x.k, [x.value, x.change.current, x.change.previous]]));
+  assert.deepEqual(by, { STR: [24, 24, 0], INT: [33, 18, 15], DEX: [10, 10, 0], VIT: [41, 41, 0], WIS: [0, 0, 0], FOC: [0, 0, 0], SOC: [0, 0, 0] });
+  await anGo(page, 'week');
+  assert.equal(await page.locator('#anAttrs input, #anAttrs button, #anAttrs select').count(), 0);
+}, { state: fixtureState() });
+
+test('AN15 observations and biggest changes are deterministic, factual and only shown with data', async ({ page }) => {
+  await anSeed(page);
+  const r = await page.evaluate(() => { const run = () => { const a = anAnalyze(getAnalyticsRange('week')); return JSON.stringify([anObservations(a), anTopChanges(a), anChanges(a)]); }; return [run(), run(), run()]; });
+  assert.equal(new Set(r).size, 1, 'same data -> same output');
+  const [obs, top] = JSON.parse(r[0]);
+  assert.deepEqual(obs.map(o => o.k), ['workouts', 'task_rate', 'xp_source', 'ds', 'habit_top', 'expenses', 'goals_stale', 'planner']);
+  const pd = top.map(t => Math.abs(t.percentDelta));
+  assert.deepEqual(pd, [...pd].sort((a, b) => b - a), 'sorted by the size of the relative change'); assert.ok(top.length <= 5);
+  await anGo(page, 'week');
+  const text = await page.locator('#anObs').innerText() + await page.locator('#anChanges').innerText();
+  assert.match(text, /Podíl splněných úkolů s termínem: 50 % → 67 %/);
+  assert.match(text, /Průměrný Daily Score: 90 → \d+/);
+  assert.doesNotMatch(text, /zlepšil|zhoršil|lepší|horší|dobr[ýá]|špatn|výborn|líný|měl bys|should|good|bad|excellent|lazy|poor|\bAI\b/i, 'no judgement, no advice');
+}, { state: fixtureState() });
+
+test('AN16 no write side effects: opening Analytics in every period, charts, heatmap, tables and copy change no data and pay no XP', async ({ page }) => {
+  await page.evaluate(() => { view = 'home'; render(); }); await persist(page);
+  const before = await anState(page), idb0 = await idbState(page);
+  await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__copied = t; return Promise.resolve(); } }, configurable: true }); });
+  for (const p of [...anPeriods, 'custom']) {
+    await anGo(page, p);
+    for (const fig of await page.locator('.an-chart').all()) { await fig.focus(); await page.keyboard.press('ArrowRight'); }
+    await page.locator('.an-table summary').first().click();
+  }
+  for (const m of ['tasks', 'habits', 'fitness', 'xp', 'ds']) await page.click(`#anHeatBox [data-heat="${m}"]`);
+  await page.click('#anCopy');
+  await page.waitForFunction(() => window.__copied);
+  assert.match(await page.evaluate(() => window.__copied), /Souhrn analytiky[\s\S]*Co se změnilo/);
+  await settle(page);
+  assert.equal(await anState(page), before, 'state unchanged');
+  assert.deepEqual(await idbState(page), idb0, 'nothing saved');
+}, { state: fixtureState() });
+
+test('AN17 performance: a year of data (1 500 tasks, 25 000 XP, 40 habits, 25 goals, 400 planner blocks) - Analytics render and engine', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3));
+    const T = todayStr();
+    for (let i = 0; i < 40; i++) S.habits.push({ id: 'ph' + i, name: 'Návyk ' + i, type: i % 9 ? 'good' : 'bad', frequency: i % 7 ? 'daily' : 'weekly', target: i % 5 ? 1 : 3, completions: Array.from({ length: 200 }, (_, k) => addDays(T, -k * (1 + i % 2))), brokenDates: [], active: true, createdAt: 1 });
+    for (let i = 0; i < 25; i++) S.goals.push({ id: 'pg' + i, title: 'Cíl ' + i, status: i % 5 ? 'Active' : 'Completed', targetDate: addDays(T, i - 5), mode: 'auto', createdAt: 1 });
+    for (let i = 0; i < 400; i++) S.plannerBlocks.push({ id: 'pp' + i, date: addDays(T, -(i % 365)), startTime: String(6 + i % 14).padStart(2, '0') + ':00', endTime: String(7 + i % 14).padStart(2, '0') + ':00', title: 'Blok ' + i, category: ['Work', 'Learning', ''][i % 3], taskId: '', goalId: '', completed: i % 2 === 0 });
+    for (let i = 0; i < 300; i++) { const d = addDays(T, -i); S.meals.push({ id: 'pm' + i, name: 'Jídlo', date: d, type: 'Lunch', calories: 500 + i % 300, servings: 1 }); S.sleepLog.push({ id: 'ps' + i, date: d, bedtime: '23:00', wake: '07:00', quality: 3 }); if (i % 3 === 0) S.expenses.push({ id: 'pe' + i, date: d, amount: 100 + i, category: 'Food' }); }
+    for (let i = 0; i < 150; i++) S.workouts.push({ id: 'pw' + i, name: i % 2 ? 'Push' : 'Pull', date: addDays(T, -i * 2), duration: 45, exercises: [{ id: 'x', name: 'Bench', sets: 3, reps: 8, weight: 60 }] });
+    const m = (f, n) => { f(); const ts = []; for (let i = 0; i < n; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[Math.floor(n / 2)]; };
+    const out = {};
+    for (const p of ['week', 'month', 'quarter', 'year']) { out[p] = m(() => { statsPeriod = p; view = 'statistics'; render(); }, 3); out[p + 'Engine'] = m(() => anAnalyze(getAnalyticsRange(p)), 3); }
+    out.first = (() => { anXpCache = { log: null, len: -1, last: null, map: null }; anTaskCache = { set: null, size: -1, map: null }; const t = performance.now(); statsPeriod = 'month'; view = 'statistics'; render(); return performance.now() - t; })();
+    out.bad = /undefined|NaN/.test(document.getElementById('app').innerText);
+    return out; });
+  console.log('      AN17 ' + Object.entries(r).filter(([k]) => k !== 'bad').map(([k, v]) => `${k} ${v.toFixed(1)} ms`).join(', '));
+  assert.ok(!r.bad);
+  assert.ok(r.month < 250 && r.year < 400 && r.monthEngine < 150 && r.first < 400, 'fast enough (target: month < 100 ms)');
+}, { state: fixtureState() });
+
+test('AN18 320-1440 px: no page overflow, cards stack, every control is a 44 px target, no clipped text', async ({ page }) => {
+  const bad = [];
+  for (const w of [320, 390, 768, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    for (const p of ['month', 'year']) {
+      await anGo(page, p);
+      const c = await anClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${w}/${p}: ${JSON.stringify(c)}`);
+      const small = await page.$$eval('.an button, .an summary, .an a, .an input, .an .an-chart, .an .an-heat', ns => ns.filter(n => n.offsetParent && !n.closest('[data-ds="stats"]')).map(n => [n.className || n.tagName, n.getBoundingClientRect()]).filter(([, r]) => r.height < 44 || r.width < 44).map(([c, r]) => `${c} ${Math.round(r.width)}x${Math.round(r.height)}`));
+      if (small.length) bad.push(`${w}/${p} small: ${small.slice(0, 5).join(', ')}`);
+      const clipped = await page.$$eval('.an .stat-value, .an .an-ch-l, .an .an-ch-v, .an .kicker', ns => ns.filter(n => n.scrollWidth > n.clientWidth + 1).map(n => n.textContent.trim().slice(0, 20)));
+      if (clipped.length) bad.push(`${w}/${p} clipped: ${clipped.join(', ')}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('AN19 light + dark: WCAG AA text contrast in every Analytics period; no emoji as UI icons', async ({ page }) => {
+  const bad = [];
+  for (const theme of ['light', 'dark']) for (const p of [...anPeriods, 'custom']) {
+    const r = await page.evaluate(([theme, p]) => { S.settings.theme = theme; applyTheme(); closeSheets(); statsPeriod = p; view = 'statistics'; render();
+      const parse = c => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const v = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 }; };
+      const lum = c => { const f = x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }; return .2126 * f(c.r) + .7152 * f(c.g) + .0722 * f(c.b); };
+      const blend = (fg, bg) => ({ r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1 });
+      const bgOf = el => { const st = []; for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c.a > 0) { st.push(c); if (c.a >= 1) break; } } let bg = parse(getComputedStyle(document.body).backgroundColor); for (let i = st.length - 1; i >= 0; i--) bg = blend(st[i], bg); return bg; };
+      const out = [];
+      document.querySelectorAll('.an *').forEach(e => { if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return; const cs = getComputedStyle(e);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || e.closest('[aria-hidden="true"],.hide,details:not([open]) table')) return;
+        const fg0 = parse(cs.color); if (!fg0) return; const bg = bgOf(e), fg = blend(fg0, bg); const L1 = lum(fg), L2 = lum(bg), ratio = (Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05);
+        const size = parseFloat(cs.fontSize), need = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700) ? 3 : 4.5; if (ratio < need) out.push(`${theme}/${p}: "${e.textContent.trim().slice(0, 24)}" ${ratio.toFixed(2)}`); });
+      const emoji = [...document.querySelectorAll('.an button, .an h3, .an .kicker, .an .stat-label')].map(n => n.textContent).filter(t => /\p{Extended_Pictographic}/u.test(t));
+      return out.concat(emoji.map(t => `${theme}/${p} emoji: ${t.trim().slice(0, 20)}`)); }, [theme, p]);
+    bad.push(...r);
+  }
+  assert.deepEqual([...new Set(bad)], []);
+}, { state: fixtureState() });
+
+test('AN20 accessibility: tabs, named sections and controls, charts with text summaries + tables + keyboard readout, heatmap by keyboard, reduced motion', async ({ page }) => {
+  await anGo(page, 'month');
+  const r = await page.evaluate(() => {
+    const an = document.querySelector('.an');
+    const unnamed = [...an.querySelectorAll('button, summary, a, input, [tabindex="0"]')].filter(n => !((n.getAttribute('aria-label') || n.textContent || (n.labels && n.labels[0] && n.labels[0].textContent) || '').trim())).map(n => n.className);
+    const tabs = [...document.querySelectorAll('#spTabs [role="tab"]')].map(t => t.getAttribute('aria-selected'));
+    const figs = [...an.querySelectorAll('.an-chart')].map(f => [f.getAttribute('role'), (f.getAttribute('aria-label') || '').length > 20, !!f.querySelector('.an-readout[aria-live]'), !!f.querySelector('details.an-table table')]);
+    const secs = [...an.querySelectorAll('.an-sec')].filter(s => !document.getElementById(s.getAttribute('aria-labelledby'))).length;
+    const bars = [...an.querySelectorAll('[role="progressbar"]')].filter(b => !b.hasAttribute('aria-valuenow')).length;
+    return { unnamed, tabs, figs, secs, bars, heat: document.querySelector('.an-heat').getAttribute('aria-label') };
+  });
+  assert.deepEqual(r.unnamed, []); assert.equal(r.secs, 0); assert.equal(r.bars, 0);
+  assert.deepEqual(r.tabs, ['false', 'false', 'true', 'false', 'false', 'false']);
+  assert.ok(r.figs.length >= 5 && r.figs.every(f => f[0] === 'group' && f[1] && f[2] && f[3]), 'charts: group + summary + live readout + table');
+  assert.match(r.heat, /Dní s hodnotou: \d+/);
+  const fig = page.locator('#anXp .an-chart'); await fig.focus(); await page.keyboard.press('Home');
+  assert.match(await fig.locator('.an-readout').innerText(), /25\. ?8\.: \d/);
+  const heat = page.locator('.an-heat'); await heat.focus(); await page.keyboard.press('ArrowLeft');
+  assert.match(await page.locator('#anHeatBox .an-readout').innerText(), /\d{2}\.\d{2}\.2026: /);
+  await page.click('.an-jump [data-jump="anSleep"]');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'anSleepH', 'section jump moves focus to the section heading');
+  const moving = await page.evaluate(() => [...document.querySelectorAll('.an, .an *')].filter(n => { const cs = getComputedStyle(n); return cs.animationName !== 'none' && parseFloat(cs.animationDuration) > 0.01 || parseFloat(cs.transitionDuration) > 0.01; }).map(n => n.className));
+  assert.deepEqual(moving, [], 'reduced motion: nothing in Analytics animates');
+}, { state: fixtureState() });
+
+test('AN21 export/import unchanged: the backup is still exactly the state (no Analytics data inside); a round trip gives the same Analytics', async ({ page }) => {
+  await anSeed(page); await persist(page);
+  const keys0 = await page.evaluate(() => Object.keys(defaultState()).sort());
+  await anGo(page, 'month');
+  const html0 = await page.evaluate(() => document.querySelector('.an-body').innerHTML);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.deepEqual(exported, await stateOf(page), 'export equals state');
+  assert.ok(Object.keys(exported).every(k => keys0.includes(k) || ['dailyScores', 'dailyScoresSince'].includes(k)), 'no new top-level key');
+  assert.ok(!JSON.stringify(exported).includes('anAnalyze') && !('analytics' in exported));
+  await page.evaluate(() => { S.tasks = []; S.xpLog = []; }); await importFile(page, await dl.path()); await settle(page);
+  assert.deepEqual(await stateOf(page), exported, 'import restores it exactly');
+  await anGo(page, 'month');
+  assert.equal(await page.evaluate(() => document.querySelector('.an-body').innerHTML), html0, 'same Analytics after the round trip');
+}, { state: fixtureState() });
+
+test('AN22 legacy state: an old backup (schemaVersion 4, XP without keys or attribute gains) migrates as before and Analytics reads it cleanly', async ({ page }) => {
+  await page.evaluate(() => { const legacy = { tasks: [{ id: 'lt', title: 'Legacy', priority: 'High', dueDate: '2026-09-20', done: true, createdAt: 1 }], habits: [{ id: 'lh', name: 'Legacy habit', category: 'Health', completions: ['2026-09-20', '2026-09-21'], active: true, createdAt: 1 }],
+      goals: [{ id: 'lg', title: 'Starý cíl', status: 'Active', createdAt: 1 }], sleepLog: [{ id: 'ls', date: '2026-09-20', bedtime: '23:00', wake: '07:00', quality: 4, createdAt: 1 }],
+      workouts: [{ id: 'lw', name: 'Old', date: '2026-09-19', exercises: [{ id: 'le', name: 'Squat', sets: 3, reps: 5, weight: 100 }] }], totalXp: 800,
+      xpLog: [{ id: 'l1', amount: 50, reason: 'Task completed', ts: new Date('2026-09-20T10:00').getTime() }, { id: 'l2', amount: 20, reason: 'Workout', ts: new Date('2026-09-19T10:00').getTime() }], schemaVersion: 4 };
+    S = migrate(legacy); S.settings.onboarded = true; });
+  assert.equal(await page.evaluate(() => S.schemaVersion), 8);
+  await page.evaluate(() => { view = 'home'; render(); }); // the app's own first-render work (daily-score snapshots, achievements) happens before we measure
+  const before = await anState(page);
+  for (const p of anPeriods) { await anGo(page, p); assert.deepEqual(await anClean(page), { bad: false, dup: [], overflow: 0 }, p); }
+  await anGo(page, 'week');
+  const a = await anWeek(page);
+  assert.deepEqual(a.xp.sources.filter(s => s.xp).map(s => s.k), ['tasks', 'fitness'], 'old reasons without keys still classified');
+  assert.equal(a.attrs.tracked, false); assert.match(await page.locator('#anAttrs').innerText(), /Historie XP zatím neobsahuje přírůstky atributů/);
+  assert.equal(a.tasks.metrics.done.current, 0, 'a legacy "done" without a completion record is not dated into a period');
+  assert.equal(await anState(page), before, 'reading a migrated state writes nothing');
+}, { state: fixtureState() });
+
+test('AN23 repeated render gives an identical result (every period); switching periods back and forth too', async ({ page }) => {
+  await anSeed(page);
+  for (const p of [...anPeriods, 'custom']) {
+    const h = await page.evaluate(p => { const html = () => { statsPeriod = p; view = 'statistics'; render(); return document.getElementById('app').innerHTML; }; const a = html(); statsPeriod = 'year'; render(); return [a, html(), html()]; }, p);
+    assert.ok(h[0] === h[1] && h[1] === h[2], p);
+  }
+}, { state: fixtureState() });
+
+test('AN24 + AN25 no duplicate ids, no NaN / undefined / Infinity in any period, on the fixture, the seeded data, an empty state and a year of data', async ({ page }) => {
+  const bad = [];
+  const sweep = async name => { for (const p of [...anPeriods, 'custom']) { await anGo(page, p); const c = await anClean(page); if (c.bad || c.dup.length || c.overflow > 0) bad.push(`${name}/${p}: ${JSON.stringify(c)}`); } };
+  await sweep('fixture');
+  await anSeed(page); await sweep('seed');
+  await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; }); await sweep('empty');
+  await withGen(page); await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; Object.assign(S, window.__gen(300, 4000, 7)); }); await sweep('year');
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.
 // The original pre-8B set (mobile-dark/mobile-light/desktop-dark) lives in baseline/screens.
