@@ -256,7 +256,9 @@ function compare(base, cur, approved = loadApproved()) {
   const sameBag = bb.size === cb.size && [...bb].every(([k, v]) => cb.get(k) === v);
   for (const k of new Set([...Object.keys(base.ui), ...Object.keys(cur.ui)])) {
     const b = base.ui[k], c = cur.ui[k];
-    if (!c) { fails.push(`UI function removed: ${k}`); continue; }
+    // A UI function may only disappear when it was approved (--approve pins its name in uiRemoved; its data effects
+    // are then counted through uiEffectsRemoved). Reality QA: Car, steps and heart-rate screens left the UI.
+    if (!c) { ((approved.uiRemoved || []).includes(k) ? reviews : fails).push(`${(approved.uiRemoved || []).includes(k) ? 'APPROVED ' : ''}UI function removed: ${k}`); continue; }
     if (!b) { reviews.push(`UI function added: ${k} (effects: ${c.effects.length})`); if (c.effects.length) reviews.push(...c.effects.map(e => `    ${e}`)); continue; }
     if (b.effectsHash !== c.effectsHash && sameBag && b.data && c.data) {
       const gone = b.effects.filter(e => !c.effects.includes(e)), added = c.effects.filter(e => !b.effects.includes(e));
@@ -293,7 +295,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const cbg = bag(fp.ui), gone = [];
     for (const [d, n] of bb) for (let i = 0; i < n - (cbg.get(d) || 0); i++) gone.push(d);
     ap.uiEffectsRemoved = gone;
-    ap.reasons.push({ reason, logic: changed, at: new Date().toISOString().slice(0, 10) });
+    const uiGone = Object.keys(base.ui).filter(k => !(k in fp.ui));
+    ap.uiRemoved = uiGone;
+    ap.reasons.push({ reason, logic: changed, uiRemoved: uiGone, at: new Date().toISOString().slice(0, 10) });
     writeFileSync(APPROVED, JSON.stringify(ap, null, 1) + '\n');
     console.log(`approved -> ${path.relative(process.cwd(), APPROVED)}\n  logic: ${changed.join(', ') || '-'}\n  statements: ${ap.statements.length} (removed/replaced baseline statements: ${ap.statementsRemoved.length})\n  ui data effects: ${extra.join(', ') || '-'}\n  removed ui data effects: ${gone.join(', ') || '-'}`);
   } else if (process.argv.includes('--write')) {
