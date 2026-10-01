@@ -796,8 +796,8 @@
   },
   "dq_calories": {
    "id": "dq_calories",
-   "title": "Hit your calorie target (90–110 %)",
-   "cs": "Splň kalorický cíl (90–110 %)",
+   "title": "Yesterday's calories within the target (90–110 %)",
+   "cs": "Včerejší kalorie v cíli (90–110 %)",
    "xp": 30,
    "attr": "nutrition",
    "icon": "apple"
@@ -3738,12 +3738,12 @@
      }
     },
     {
-     "title": "Splň kalorický cíl (90–110 %)",
+     "title": "Včerejší kalorie v cíli (90–110 %)",
      "meta": "+30 XP",
      "obj": {
       "id": "dq_calories",
-      "title": "Hit your calorie target (90–110 %)",
-      "cs": "Splň kalorický cíl (90–110 %)",
+      "title": "Yesterday's calories within the target (90–110 %)",
+      "cs": "Včerejší kalorie v cíli (90–110 %)",
       "xp": 30,
       "attr": "nutrition",
       "icon": "apple"

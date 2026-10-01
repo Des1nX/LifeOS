@@ -3463,7 +3463,7 @@ test('P4 attributes: grow automatically by the category profile (deterministic s
   for (const re of [/Strom dovedností/i, /Skill Tree/i, /bodů atributů/i, /Skill body/i, /Body atributů/i, /Nastavení/]) assert.doesNotMatch(txt, re);
   assert.equal(await page.locator('.spendAttrBtn, .unlockSkillBtn, .skill-node').count(), 0);
   assert.match(await page.locator('.attr-row[data-attr="STR"] .attr-src').innerText(), /Fitness/);
-  assert.match(await page.locator('.attr-row[data-attr="INT"] .attr-src').innerText(), /Studium[\s\S]*Práce/, 'Reality QA: the Learning category reads Studium');
+  assert.match(await page.locator('.attr-row[data-attr="INT"] .attr-src').innerText(), /Učení[\s\S]*Práce/);
   // stored Skill Tree / points data is not deleted (export keeps it)
   assert.ok(s.rpg.skillTree && Array.isArray(s.rpg.skillTree.unlocked));
 }, { state: fixtureState() });
@@ -3563,7 +3563,7 @@ test('P6 categories: reload, export/import, old backup and reset', async ({ page
   await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await page.waitForFunction(() => Array.isArray(S.lifeCategories) && S.lifeCategories.length === 0);
   assert.equal(await page.evaluate(() => catList('life').length), 8, 'an old backup gets the built-ins');
-  assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Studium', 'Reality QA: built-in label Učení -> Studium (key unchanged)');
+  assert.equal(await page.evaluate(() => catLabel('Learning', 'life')), 'Učení');
   page.on('dialog', d => d.accept());
   await page.evaluate(() => { S.lifeCategories = [{ key: 'cat_x', scope: 'life', name: 'x', icon: 'tag' }]; S.profile.photo = 'data:image/jpeg;base64,xx'; });
   await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok'); // A3: two in-app confirmation steps
@@ -7638,8 +7638,8 @@ test('RQ22 quests: the day plan needs every block (repeating occurrences too); a
     const q = id => [...DAILY_QUESTS, ...WEEKLY_QUESTS].find(x => x.id === id), T = todayStr();
     S.plannerBlocks = [{ id: 'p1', date: T, startTime: '08:00', endTime: '09:00', title: 'A', completed: true }, { id: 'p2', date: '2026-09-21', startTime: '18:00', endTime: '18:30', title: 'R', repeat: { freq: 'daily', days: [], until: '' }, doneDates: [] }];
     const plan = [questVal(q('dq_plan_all'), {}), questMax(q('dq_plan_all'), {})]; plannerToggleCompleted('p2', T); const plan2 = q('dq_plan_all').check(S, {});
-    S.nutritionTargets.calories = 2000; S.meals = S.meals.filter(m => m.date !== T);
-    const cal = [1799, 1800, 2200, 2201].map(c => { S.meals = S.meals.filter(m => m.date !== T); S.meals.push({ id: 'mm', name: 'x', date: T, calories: c, servings: 1 }); return questVal(q('dq_calories'), {}); });
+    S.nutritionTargets.calories = 2000; const Y = addDays(T, -1); // dq_calories scores the finished day (yesterday)
+    const cal = [1799, 1800, 2200, 2201].map(c => { S.meals = S.meals.filter(m => m.date !== Y); S.meals.push({ id: 'mm', name: 'x', date: Y, calories: c, servings: 1 }); return questVal(q('dq_calories'), {}); });
     S.nutritionTargets.water = 2000; S.waterLog = S.waterLog.filter(w => w.date !== T); S.waterLog.push({ id: 'w1', date: T, amount: 1500 }); const water = [questVal(q('dq_water'), {}), questMax(q('dq_water'), {})];
     S.sleepLog = ['2026-09-21', '2026-09-22', '2026-09-23'].map((d, i) => ({ id: 's' + i, date: d, bedtime: '23:00', wake: i === 1 ? '05:00' : '07:00' }));
     const sleep = [questVal(q('wq_sleep_week'), {}), questMax(q('wq_sleep_week'), {})];
@@ -7745,6 +7745,146 @@ test('RQ29 accessibility: calendar items are focusable buttons with names, keybo
   await page.evaluate(() => { closeSheets(); openSleepForm(); });
   assert.deepEqual(await page.evaluate(() => [!!document.querySelector('label[for="sl_qp"]'), document.querySelector('#sl_qp_r').getAttribute('aria-label')]), [true, 'Kvalita spánku']);
 }, { state: fixtureState() });
+
+// ---------- Reality QA review fixes ----------
+test('RQ30 favourite foods CRUD: list the saved foods, create (name required), edit (same record, other fields kept), delete (cancel keeps), use one for the chosen day', async ({ page }) => {
+  await page.evaluate(() => { S.customFoods = [{ id: 'cf_old', name: 'Starý shake', calories: 200, protein: 30, carbs: 8, fat: 3, favorite: true, servingSize: '1 ks', createdAt: 1 }, { id: 'cf_rice', name: 'Rýže', calories: 130, protein: 3, carbs: 28, fat: 0, createdAt: 2 }];
+    nutriDay = null; view = 'nutrition'; render(); });
+  // list: every saved food (old ones included) with its values
+  assert.deepEqual(await page.$$eval('#foodList .food-item', ns => ns.map(n => n.dataset.food)), ['cf_old', 'cf_rice'], 'favourites first, then the other saved foods');
+  assert.match(await page.locator('.food-item[data-food="cf_old"]').innerText(), /Starý shake[\s\S]*200 kcal · B 30 g · S 8 g · T 3 g/);
+  // create: an empty name is refused, nothing saved
+  await page.click('#addFood'); await page.click('#fd_save');
+  assert.equal(await page.locator('.food-form [data-err="name"]').isVisible(), true); assert.equal(await page.evaluate(() => S.customFoods.length), 2);
+  await page.fill('#fd_name', 'Ovesná kaše'); await page.fill('#fd_cal', '350'); await page.fill('#fd_p', '12'); await page.fill('#fd_c', '60'); await page.fill('#fd_f', '7'); await page.click('#fd_save');
+  const made = await page.evaluate(() => JSON.parse(JSON.stringify(S.customFoods.find(f => f.name === 'Ovesná kaše'))));
+  assert.deepEqual([made.calories, made.protein, made.carbs, made.fat, made.favorite, typeof made.id], [350, 12, 60, 7, true, 'string']);
+  assert.equal(await page.locator('.food-item', { hasText: 'Ovesná kaše' }).count(), 1, 'shown right away');
+  // edit: the same record changes, its id / createdAt and fields the form does not know stay
+  await page.locator('.food-item', { hasText: 'Ovesná kaše' }).locator('.editBtn').click();
+  assert.equal(await page.inputValue('#fd_cal'), '350', 'the form shows the stored values');
+  await page.fill('#fd_name', 'Ovesná kaše s ovocem'); await page.fill('#fd_cal', '380'); await page.fill('#fd_f', '8'); await page.click('#fd_save');
+  const ed = await page.evaluate(id => JSON.parse(JSON.stringify(S.customFoods.find(f => f.id === id))), made.id);
+  assert.deepEqual([ed.name, ed.calories, ed.protein, ed.carbs, ed.fat, ed.createdAt], ['Ovesná kaše s ovocem', 380, 12, 60, 8, made.createdAt]);
+  await page.locator('.food-item[data-food="cf_old"] .editBtn').click(); await page.fill('#fd_p', '32'); await page.click('#fd_save');
+  assert.deepEqual(await page.evaluate(() => { const f = S.customFoods.find(x => x.id === 'cf_old'); return [f.protein, f.servingSize, f.createdAt]; }), [32, '1 ks', 1], 'an old food keeps its other fields');
+  // use: into the day shown (tomorrow here), every value copied; a future day pays no XP
+  const xp0 = await page.evaluate(() => S.totalXp);
+  await page.click('#nuNext'); assert.equal(await page.evaluate(() => nutriDay), '2026-09-24');
+  await page.locator(`.food-item[data-food="${made.id}"] .useFood`).click();
+  assert.deepEqual(await page.evaluate(() => ['#m_name', '#m_cal', '#m_p', '#m_c', '#m_f', '#m_date'].map(x => document.querySelector(x).value)), ['Ovesná kaše s ovocem', '380', '12', '60', '8', '2026-09-24']);
+  await page.click('#m_save');
+  assert.deepEqual(await page.evaluate(() => S.meals.filter(m => m.name === 'Ovesná kaše s ovocem').map(m => [m.date, +m.calories, +m.protein, +m.carbs, +m.fat])), [['2026-09-24', 380, 12, 60, 8]]);
+  assert.equal(await page.evaluate(() => S.totalXp), xp0, 'a meal for a future day pays no XP');
+  assert.equal(await page.evaluate(() => S.customFoods.length), 3, 'using a food never copies or removes it');
+  // delete: cancel keeps, confirm removes only that food; the logged meal stays
+  await page.locator(`.food-item[data-food="${made.id}"] .delbtn`).click(); await page.click('#cf_cancel');
+  assert.equal(await page.evaluate(() => S.customFoods.length), 3);
+  await page.locator(`.food-item[data-food="${made.id}"] .delbtn`).click(); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => S.customFoods.map(f => f.id)), ['cf_old', 'cf_rice']);
+  assert.equal(await page.evaluate(() => S.meals.filter(m => m.name === 'Ovesná kaše s ovocem').length), 1, 'meals logged from it stay');
+  await settle(page); await reload(page);
+  assert.deepEqual(await page.evaluate(() => S.customFoods.map(f => [f.id, f.protein])), [['cf_old', 32], ['cf_rice', 3]], 'saved');
+}, { state: fixtureState() });
+
+test('RQ31 dq_calories is the result of a whole finished day: 1800-2200 of 2000 valid, 2201 invalid, the running day is never final, 1900 -> 2300 the same day ends invalid; XP once', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    S.nutritionTargets.calories = 2000; const T = todayStr(), Y = addDays(T, -1);
+    const on = (D, ...cs) => { S.meals = S.meals.filter(m => m.date !== D); cs.forEach((c, i) => S.meals.push({ id: 'q' + D + i, name: 'x', date: D, calories: c, servings: 1 })); return questCaloriesResult(D); };
+    const days = [1799, 1800, 1900, 2100, 2200, 2201].map(c => on(Y, c));
+    const today = on(T, 1900); // inside the band, but the day is still running
+    const passedThenOver = [on(Y, 1900), (S.meals.push({ id: 'late', name: 'večeře', date: Y, calories: 400, servings: 1 }), questCaloriesResult(Y))];
+    const servings = on(Y, 950) && (S.meals.find(m => m.date === Y).servings = 2, questCaloriesResult(Y)); // servings count, like everywhere
+    return { days, today, passedThenOver, servings, none: (S.nutritionTargets.calories = 0, questCaloriesResult(Y)) }; });
+  assert.deepEqual(r, { days: ['invalid', 'valid', 'valid', 'valid', 'valid', 'invalid'], today: 'open', passedThenOver: ['valid', 'invalid'], servings: 'valid', none: null });
+  // end to end through checkQuests: nothing is paid while the day runs; the next day pays for a valid day once, never for 1900 -> 2300
+  const board = page => page.evaluate(() => { S.questBoard = { daily: { stamp: todayStr(), items: [{ id: 'dq_calories', p: {} }, { id: 'x1' }, { id: 'x2' }] }, weekly: { stamp: weekStart(), items: [{ id: 'x1' }, { id: 'x2' }, { id: 'x3' }] } }; });
+  const run = page => page.evaluate(() => { const a = S.totalXp; checkQuests(); return S.totalXp - a; });
+  await page.evaluate(() => { S.nutritionTargets.calories = 2000; const T = todayStr(); S.meals = S.meals.filter(m => m.date !== T && m.date !== addDays(T, -1)); S.meals.push({ id: 'd1', name: 'oběd', date: T, calories: 1900, servings: 1 }); });
+  await board(page); assert.equal(await run(page), 0, 'the running day is not final: 1900 pays nothing today');
+  await page.evaluate(() => S.meals.push({ id: 'd2', name: 'večeře', date: todayStr(), calories: 400, servings: 1 })); // 2300
+  await page.clock.setFixedTime(NOW + 86400000); await board(page);
+  assert.equal(await page.evaluate(() => questCaloriesResult(addDays(todayStr(), -1))), 'invalid');
+  assert.equal(await run(page), 0, '1900 -> 2300 during the day: final state invalid, no XP');
+  await page.evaluate(() => { const Y = addDays(todayStr(), -1); S.meals = S.meals.filter(m => m.date !== Y); S.meals.push({ id: 'd3', name: 'den', date: Y, calories: 2050, servings: 1 }); });
+  await page.clock.setFixedTime(NOW + 2 * 86400000); await board(page);
+  await page.evaluate(() => { const Y = addDays(todayStr(), -1); S.meals = S.meals.filter(m => m.date !== Y); S.meals.push({ id: 'd4', name: 'den', date: Y, calories: 2050, servings: 1 }); });
+  assert.equal(await run(page), 30, 'a valid finished day pays the quest XP once');
+  assert.equal(await run(page), 0, 'never twice'); await board(page); assert.equal(await run(page), 0, 'not after a board rebuild either');
+  assert.equal(await page.evaluate(() => S.xpLog.filter(x => /^Quest: Včerejší kalorie/.test(x.reason)).map(x => x.amount).join()), '30');
+}, { state: fixtureState() });
+
+test('RQ32 Daily Score sleep (algo 3): no qualityPct = the old duration band; quality 0 / 50 / 100; duration + quality combined; stored snapshots are never recomputed', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const D = '2026-09-10';
+    const at = (bed, wake, extra) => { S.sleepLog = S.sleepLog.filter(x => x.date !== D); S.sleepLog.push(migrateSleepEntry(Object.assign({ id: 'z', date: D, bedtime: bed, wake }, extra || {}))); const a = dailyScoreSleep(D); return [a.band, a.qualityPct, a.score]; };
+    return {
+      noQuality: [at('23:00', '07:00'), at('01:00', '07:00'), at('21:00', '07:00'), at('23:00', '07:00', { quality: 1 })],
+      quality: [0, 50, 100].map(q => at('23:00', '07:00', { qualityPct: q })),
+      combined: [at('01:00', '07:00', { qualityPct: 50 }), at('02:00', '07:00', { qualityPct: 90 }), at('21:30', '07:00', { qualityPct: 0 }), at('03:00', '07:00', { qualityPct: 100 })],
+      whole: (at('23:00', '07:00', { qualityPct: 50 }), [dailyScore(D).areas.sleep.score, dailyScore(D).algo]) };
+  });
+  assert.deepEqual(r.noQuality, [[100, null, 100], [67, null, 67], [85, null, 85], [100, null, 100]], 'without qualityPct exactly the old band (1-5 quality ignored as before)');
+  assert.deepEqual(r.quality, [[100, 0, 70], [100, 50, 85], [100, 100, 100]], '8 h: 0.7 x 100 + 0.3 x quality');
+  assert.deepEqual(r.combined, [[67, 50, 62], [33, 90, 50], [93, 0, 65], [0, 100, 30]], 'round(0.7 x band + 0.3 x quality): 6 h, 5 h, 9.5 h, 4 h');
+  assert.deepEqual(r.whole, [85, 3], 'dailyScore() uses the same sleep area');
+  // stored snapshots stay as they were (algo 2), even when that night later gets a quality; a new finished day is snapshotted with algo 3
+  const snap = { score: 42, label: 'weaker', algo: 2, areas: { tasks: { score: null }, habits: { score: null }, nutrition: { score: null }, sleep: { score: 100, hours: 8 }, fitness: { score: null } }, finalizedAt: 1 };
+  await page.evaluate(snap => { S.dailyScoresSince = '2026-09-15'; S.dailyScores = { '2026-09-20': snap };
+    S.sleepLog.push(migrateSleepEntry({ id: 'n20', date: '2026-09-20', bedtime: '23:00', wake: '07:00', qualityPct: 0 }), migrateSleepEntry({ id: 'n21', date: '2026-09-21', bedtime: '23:00', wake: '07:00', qualityPct: 50 }));
+    finalizeDailyScores(); for (const v of ['home', 'statistics']) { view = v; render(); } }, snap);
+  await persist(page); await reload(page); await page.evaluate(() => { finalizeDailyScores(); view = 'home'; render(); });
+  const st = await stateOf(page);
+  assert.deepEqual(st.dailyScores['2026-09-20'], snap, 'the old snapshot is not recomputed');
+  assert.equal(st.dailyScores['2026-09-21'].algo, 3);
+}, { state: fixtureState() });
+
+const legacyState = () => ({ schemaVersion: 6, totalXp: 2345, profile: { name: 'Starý účet' }, settings: { theme: 'dark', onboarded: true },
+  xpLog: [{ id: 'x1', amount: 30, reason: 'Task: A', ts: 1, key: 'task:t1:2026-09-01' }, { id: 'x2', amount: 15, reason: 'Sleep logged', ts: 2 }],
+  tasks: [{ id: 't1', title: 'A', done: true, goalId: 'g1', dueDate: '2026-09-01', priority: 'High', category: 'Work', createdAt: 1 }],
+  goals: [{ id: 'g1', title: 'Web', status: 'Active', targetDate: '2026-12-01', createdAt: 1 }], milestones: [{ id: 'm1', goalId: 'g1', title: 'Logo', completed: false, createdAt: 1 }],
+  habits: [{ id: 'h1', name: 'Vitamíny', completions: ['2026-09-20', '2026-09-21'], active: true, createdAt: 1 }],
+  events: [{ id: 'e1', title: 'Porada', date: '2026-09-02', start: '10:00', end: '11:00', recurring: 'weekly' }, { id: 'e2', title: 'Narozeniny', date: '2026-03-02', recurring: 'monthly' }],
+  plannerBlocks: [{ id: 'b1', date: '2026-09-23', startTime: '09:00', endTime: '10:00', title: 'Web', goalId: 'g1', taskId: 't1', category: 'Work', completed: false, createdAt: 1 }],
+  meals: [{ id: 'ml1', name: 'Oběd', date: '2026-09-20', calories: 600, protein: 40 }], waterLog: [{ id: 'w1', date: '2026-09-20', amount: 500 }],
+  customFoods: [{ id: 'cf1', name: 'Shake', calories: 200, favorite: true }], recipes: [{ id: 'r1', name: 'Kaše', calories: 300 }],
+  sleepLog: [{ id: 's1', date: '2026-09-20', bedtime: '23:00', wake: '07:00', quality: 3 }],
+  weightLog: [{ id: 'wt1', date: '2026-09-20', weight: 80 }], activeCaloriesLog: [{ id: 'ac1', date: '2026-09-20', calories: 400 }],
+  stepsLog: [{ id: 'st1', date: '2026-09-01', steps: 8000 }], heartRateLog: [{ id: 'hr1', date: '2026-09-01', bpm: 60 }],
+  vehicles: [{ id: 'v1', name: 'Octavia', mileage: '84000' }], carServices: [{ id: 'cs1', vehicleId: 'v1', type: 'Oil change', date: '2026-08-14', cost: '2500' }], fuelEntries: [{ id: 'f1', vehicleId: 'v1', liters: 40, date: '2026-09-01' }],
+  expenses: [{ id: 'ex1', amount: 100, category: 'Food', date: '2026-09-01' }], income: [{ id: 'in1', amount: 1000, category: 'Salary', date: '2026-09-01' }],
+  subscriptions: [{ id: 'su1', name: 'Netflix', price: 299, period: 'Monthly', nextPayment: '2026-09-15' }], investments: [{ id: 'iv1', name: 'ETF', contributions: [{ id: 'c1', amount: 100, date: '2026-01-01' }] }],
+  notes: [{ id: 'n1', title: 'Pozn', body: 'x', category: 'Ideas', pinned: true, favorite: true, tags: ['a'] }], journal: [{ id: 'j1', date: '2026-09-20', text: 'Den' }] });
+
+test('RQ33 data safety through a real boot: an old stored state (no new optional fields) loads without reset or onboarding, keeps every record and field (Car, steps, heart rate too), migration is idempotent across reloads, export -> import keeps it all', async ({ page }) => {
+  const L = legacyState();
+  const kept = st => Object.keys(L).filter(k => Array.isArray(L[k])).flatMap(k => L[k].filter(rec => { const m = (st[k] || []).find(x => x.id === rec.id); return !m || Object.keys(rec).some(f => JSON.stringify(m[f]) !== JSON.stringify(rec[f])); }).map(rec => k + ':' + rec.id));
+  let st = await stateOf(page);
+  assert.deepEqual(kept(st), [], 'every old record with every old field value');
+  assert.deepEqual([st.schemaVersion, st.profile.name, st.settings.onboarded, await page.locator('#ob_name').count()], [8, 'Starý účet', true, 0], 'no reset, not a new account');
+  // the XP history is kept as it was; the only additions are achievements this old data had already earned (unchanged
+  // checkAchievements from main: this legacy state stores no achievement list), never a reset or a re-paid record
+  assert.deepEqual(st.xpLog.slice(0, 2), L.xpLog, 'old XP entries untouched');
+  assert.ok(st.xpLog.slice(2).every(x => x.reason === 'Achievement') && st.totalXp === L.totalXp + st.xpLog.slice(2).reduce((a, x) => a + x.amount, 0), 'only achievement XP added on top');
+  assert.deepEqual([st.vehicles.length, st.carServices.length, st.fuelEntries.length, st.stepsLog.length, st.heartRateLog.length, st.notes[0].favorite], [1, 1, 1, 1, 1, true], 'data without a UI stays');
+  const b = st.plannerBlocks[0], e = st.events[0], s = st.sleepLog[0];
+  assert.deepEqual([['endDate', 'repeat', 'doneDates', 'habitId'].filter(k => k in b), ['recurDays', 'recurUntil'].filter(k => k in e), 'qualityPct' in s, s.quality], [[], [], false, 3], 'no new optional field is forced onto old records');
+  assert.deepEqual(await page.evaluate(() => [eventUpcomingDate(S.events[0]), plannerBlocksOn('2026-09-23').map(x => x.id).join(), plannerBlocksOn('2026-09-24').length]), ['2026-09-23', 'b1', 0], 'old recurrence and blocks read as before');
+  // every screen renders with it, nothing is written by looking
+  await persist(page); const before = JSON.stringify(await idbState(page));
+  await page.evaluate(() => { for (const v of ['home', 'calendar', 'tasks', 'habits', 'goals', 'nutrition', 'health', 'finance', 'notes', 'journal', 'statistics', 'quests', 'settings']) { view = v; render(); } });
+  await reload(page); await persist(page);
+  assert.equal(JSON.stringify(await idbState(page)), before, 'a second boot (migrate again) changes nothing: idempotent');
+  // export -> wipe in memory -> import: identical
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]);
+  const exported = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  assert.deepEqual(kept(exported), [], 'the backup holds every old record');
+  await page.evaluate(() => { S.tasks = []; S.vehicles = []; S.stepsLog = []; S.sleepLog = []; });
+  await importFile(page, await dl.path()); await settle(page);
+  st = await stateOf(page);
+  assert.deepEqual(st, exported, 'import restores the backup exactly'); assert.deepEqual(kept(st), []);
+}, { state: legacyState() });
 
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.

@@ -3390,7 +3390,7 @@ const UI_PHRASES_CS={
   'daily':'denně','weekly':'týdně','monthly':'měsíčně','weekdays':'vybrané dny','custom':'vlastní','Good (build)':'Dobrý (budovat)','Bad (avoid)':'Špatný (vyhýbat se)',
   'Paused':'Pozastavený','Completed':'Splněno','Archived':'Archivovaný','Auto':'Automaticky','Manual':'Ručně','auto':'automaticky','manual':'ručně','Yes':'Ano','No':'Ne',
   'Breakfast':'Snídaně','Lunch':'Oběd','Dinner':'Večeře','Snack':'Svačina','Oil Change':'Výměna oleje','Tires':'Pneumatiky','Inspection / STK':'Technická kontrola / STK',
-  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Studium','Finance':'Finance','Social':'Sociální','Habit':'Disciplína','School':'Škola','Ideas':'Nápady',
+  'Insurance':'Pojištění','Repair':'Oprava','Other':'Ostatní','Work':'Práce','Personal':'Osobní','Health':'Zdraví','Fitness':'Fitness','Learning':'Učení','Finance':'Finance','Social':'Sociální','Habit':'Návyky','School':'Škola','Ideas':'Nápady',
   'Importance':'Důležitost','Strength':'Síla','Intelligence':'Inteligence','Discipline':'Disciplína','Vitality':'Vitalita','Wisdom':'Moudrost','Focus':'Soustředění',
   'Home':'Domov','Food':'Jídlo','Transport':'Doprava','Shopping':'Nákupy','Bills':'Účty','Entertainment':'Zábava','Salary':'Mzda','Card':'Karta','Cash':'Hotovost','Bank':'Banka',
   'general':'obecný','resting':'klidový','workout':'při tréninku','Inactive':'Neaktivní','Productivity':'Produktivita','Mindfulness':'Mindfulness',
@@ -8710,6 +8710,14 @@ function questAttrOf(q,p){ return typeof q.attr==='function'?q.attr(S,p||{}):q.a
 // Every 3rd planned training day with some history (3+ earlier workouts) asks for a PR instead; counted
 // from workouts before D only, so finishing today's workout can never switch the quest mid-day.
 function questPrDay(s,D){ return completedWorkouts(s).filter(w=>w.date<D).length>=3&&questDayIndex(D)%3===0; }
+// Calories of a finished day against the target: 'valid' inside 90–110 % (both ends included, exact arithmetic so
+// 2000 kcal -> 1800..2200), 'invalid' outside, 'open' while the day is still running (today or later), null without a target.
+function questCaloriesResult(D){
+  const t=Number(S.nutritionTargets&&S.nutritionTargets.calories); if(!(t>0)) return null;
+  if(D>=todayStr()) return 'open';
+  const c=nutriTotals(D).calories, [lo,hi]=QUEST_TOLERANCE.calories;
+  return c*100>=t*Math.round(lo*100)&&c*100<=t*Math.round(hi*100)?'valid':'invalid';
+}
 const DAILY_QUESTS=[
  {id:'dq_priority',core:true,title:'Finish all of today\'s priority tasks',cs:'Dokonči všechny dnešní prioritní úkoly',xp:40,attr:(s,p,D=QD())=>questTaskProfile(s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent'))),icon:'bolt',
   params:(s,D)=>{ const n=s.tasks.filter(t=>t.dueDate===D&&(t.priority==='High'||t.priority==='Urgent')).length; return n?{}:null; },
@@ -8754,9 +8762,11 @@ const DAILY_QUESTS=[
  // Reality QA: behaviour quests from the real logs. Calories: done when the day's logged calories are within the
  // QUEST_TOLERANCE band of the target (90-110 %); water: the day's logged water reaches the target. Offered only to
  // someone who has logged food / water in the 14 days before (no quest for data nobody keeps).
- {id:'dq_calories',title:'Hit your calorie target (90–110 %)',cs:'Splň kalorický cíl (90–110 %)',xp:30,attr:'nutrition',icon:'apple',
-  params:(s,D)=>Number(s.nutritionTargets&&s.nutritionTargets.calories)>0&&s.meals.some(m=>m.date>=addDays(D,-14)&&m.date<D)?{}:null,
-  max:()=>1, val:(s,p,D=QD())=>{ const t=Number(s.nutritionTargets.calories), c=nutriTotals(D).calories, [lo,hi]=QUEST_TOLERANCE.calories; return c>=t*lo&&c<=t*hi?1:0; }},
+ {id:'dq_calories',title:"Yesterday's calories within the target (90–110 %)",cs:'Včerejší kalorie v cíli (90–110 %)',xp:30,attr:'nutrition',icon:'apple',
+  // a result of a whole, finished day: offered the next day for yesterday (meals logged that day), never for the running day,
+  // so passing through the band and overshooting later is never a success
+  params:(s,D)=>Number(s.nutritionTargets&&s.nutritionTargets.calories)>0&&s.meals.some(m=>m.date===addDays(D,-1))?{}:null,
+  max:()=>1, val:(s,p,D=QD())=>questCaloriesResult(addDays(D,-1))==='valid'?1:0},
  {id:'dq_water',title:'Drink your daily water target',cs:'Vypij denní cíl vody',xp:20,attr:'nutrition',icon:'drop',
   params:(s,D)=>Number(s.nutritionTargets&&s.nutritionTargets.water)>0&&s.waterLog.some(w=>w.date>=addDays(D,-14)&&w.date<D)?{}:null,
   max:s=>Math.max(1,Math.round(Number(s.nutritionTargets.water))), val:(s,p,D=QD())=>Math.min(Math.round(Number(s.nutritionTargets.water)),Math.round(waterOnDate(D)))},
