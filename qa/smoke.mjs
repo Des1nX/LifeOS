@@ -7886,6 +7886,448 @@ test('RQ33 data safety through a real boot: an old stored state (no new optional
   assert.deepEqual(st, exported, 'import restores the backup exactly'); assert.deepEqual(kept(st), []);
 }, { state: legacyState() });
 
+// ---------- Gym Workout Mode 3.0 (FW) ----------
+// Fixture: two old quick-logged workouts (w1, w2: exercises[], no timing). fwSetup adds a "Push Day" template
+// (Bench press 3 x 8-10 @ 80, Squat 3 x 5 @ 100). Time is moved with page.clock.setFixedTime (Date only; timers keep running).
+const fwSetup = page => page.evaluate(() => {
+  const bench = exerciseFind('Bench press'); if (!exerciseFind('Squat')) exerciseAddPreset('Squat');
+  return templateSave({ name: 'Push Day', exercises: [{ exerciseId: bench.id, sets: 3, repsMin: 8, repsMax: 10, weight: 80 }, { exerciseId: exerciseFind('Squat').id, sets: 3, repsMin: 5, weight: 100 }] }).template.id;
+});
+const fwAt = (page, sec) => page.clock.setFixedTime(NOW + sec * 1000);
+const fwStart = async page => { await openWorkouts(page); await page.click('.wkStartTpl'); return (await active(page)).id; };
+const fwRow = (page, ei, si) => page.locator(`.wk-entry:nth-child(${ei + 1}) .ws-row[data-set]`).nth(si);
+const fwTiming = page => page.evaluate(() => { const w = activeWorkout() || S.workouts[S.workouts.length - 1]; const t = workoutTiming(w, Date.now());
+  return { total: t.totalSec, active: t.activeSec, rest: t.restSec, cardio: t.cardioSec, phase: t.phase, restFrom: t.restFrom }; });
+const fwTick = page => page.evaluate(() => uiWkTick());
+
+test('FW1 old workouts (quick-logged exercises[], Fitness 2.0 without timing) render with no timing, no NaN / undefined; their timing is all null', async ({ page }) => {
+  const tid = await fwSetup(page);
+  // a Fitness 2.0 workout finished before this pass: startedAt / finishedAt, sets without timestamps
+  await page.evaluate(tid => { const r = workoutStart({ templateId: tid }); r.workout.entries[0].sets.forEach(s => s.done = true); workoutFinish(r.workout.id); }, tid);
+  await openWorkouts(page);
+  const r = await page.evaluate(() => [...S.workouts].map(w => { const t = workoutTiming(w, Date.now()); return [w.id.length > 2 ? 'f2' : w.id, t.totalSec != null, t.activeSec, t.restSec, t.cardioSec]; }));
+  assert.deepEqual(r, [['w1', false, null, null, null], ['w2', false, null, null, null], ['f2', true, null, null, null]]);
+  const txt = await page.locator('#app').innerText();
+  assert.ok(!/undefined|NaN|0:NaN/.test(txt));
+  assert.equal(await page.locator('#wList [data-hist]').count(), 0, 'no timing shown for workouts without it');
+  for (const id of ['w1', 'w2']) assert.equal(await page.evaluate(id => !!S.workouts.find(w => w.id === id).exercises.length, id), true, 'old records untouched');
+  // the old ones still open in their editors
+  await page.click('.editBtn[aria-label="Upravit: Push day"]'); assert.equal(await page.inputValue('#w_name'), 'Push day'); await page.evaluate(() => closeSheets());
+}, { state: fixtureState() });
+
+test('FW2 + FW3 Start creates exactly one active session; a second Start (Fitness, template, planner) continues it, never a second one', async ({ page }) => {
+  await fwSetup(page); const id = await fwStart(page);
+  assert.equal(await page.locator('#wkLive').count(), 1);
+  assert.equal(await page.evaluate(() => S.workouts.filter(w => w.status === 'active').length), 1);
+  await openWorkouts(page); assert.match(await page.locator('#wkResume').innerText(), /Rozpracovaný trénink[\s\S]*Push Day/i);
+  assert.equal(await page.locator('.wkStartTpl').count(), 0, 'no second Start while one runs');
+  assert.deepEqual(await page.evaluate(() => { const r = workoutStart({ name: 'X' }); return [r.ok, r.reason, r.workout.id]; }), [false, 'active_exists', id]);
+  await page.evaluate(() => uiStartWorkout({ name: 'Y' }));
+  assert.deepEqual(await page.evaluate(() => [S.workouts.filter(w => w.status === 'active').length, activeWorkout().name]), [1, 'Push Day'], 'continues, never overwrites');
+}, { state: fixtureState() });
+
+test('FW4 + FW5-FW10 timers from timestamps: workout clock, Start set (ACTIVE + its clock), Finish set (DONE, duration), rest starts by itself, the next Start ends it (rest duration)', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  await fwAt(page, 125); await fwTick(page);
+  assert.equal(await page.locator('#wkClock').innerText(), '2:05', 'workout time = now - startedAt');
+  assert.equal(await fwRow(page, 0, 0).getAttribute('data-state'), 'ready');
+  await page.click('.wsStart'); // set 1 of Bench press
+  assert.equal(await fwRow(page, 0, 0).getAttribute('data-state'), 'active');
+  assert.equal(await page.locator('.wsStart').count(), 0, 'one set at a time: no other Start while a set runs');
+  await fwAt(page, 167); await fwTick(page);
+  assert.equal(await fwRow(page, 0, 0).locator('[data-elapsed]').innerText(), '0:42');
+  assert.match(await page.locator('#wkPhase').innerText(), /SÉRIE 1 · BENCH PRESS[\s\S]*0:42/i);
+  await page.click('.wsFinish');
+  let st = await page.evaluate(() => { const s = activeWorkout().entries[0].sets[0]; return [s.done, s.finishedAt - s.startedAt, workoutSetSec(s), s.weight, s.reps]; });
+  assert.deepEqual(st, [true, 42000, 42, 80, 8], 'DONE, 42 s, plan values adopted');
+  assert.match(await fwRow(page, 0, 0).innerText(), /0:42/);
+  assert.equal((await fwTiming(page)).phase, 'rest', 'the rest starts by itself');
+  await fwAt(page, 245); await fwTick(page);
+  assert.match(await page.locator('#wkPhase').innerText(), /PAUZA[\s\S]*1:18/i);
+  await page.click('.wk-entry:nth-child(1) .wsStart'); // set 2 ends the rest
+  const t = await fwTiming(page);
+  assert.deepEqual([t.phase, t.active, t.rest], ['set', 42, 78], 'rest 167 -> 245 s closed when set 2 starts');
+  assert.equal(await page.evaluate(() => activeWorkout().entries[0].sets[1].startedAt - activeWorkout().startedAt), 245000, 'set 2 starts at the click');
+}, { state: fixtureState() });
+
+test('FW11 + FW12 kg / reps stay editable after a set is done and after the workout is finished: values change, timing and XP do not', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  await page.click('.wsStart'); await fwAt(page, 40); await page.click('.wsFinish');
+  const x0 = await page.evaluate(() => [S.totalXp, S.xpLog.length]);
+  await fwRow(page, 0, 0).locator('[data-f="reps"]').fill('10');
+  assert.deepEqual(await page.evaluate(() => { const s = activeWorkout().entries[0].sets[0]; return [s.reps, s.done, workoutSetSec(s)]; }), [10, true, 40], 'only the value changed');
+  await page.click('#wkFinish');
+  const after = await page.evaluate(() => [S.totalXp, S.xpLog.length]);
+  assert.deepEqual(await page.evaluate(() => S.xpLog.filter(x => /^workout:/.test(x.key || '')).map(x => x.amount)), [80], 'the workout pays its 80 XP once (achievements unlocked by it are their own entries)');
+  await page.click('#wkSumEdit'); // "Opravit série" from the summary -> the finished workout's edit screen
+  await fwRow(page, 0, 0).locator('[data-f="weight"]').fill('82.5');
+  const w = await page.evaluate(() => { const w = S.workouts[S.workouts.length - 1], s = w.entries[0].sets[0]; return [w.status, s.weight, s.reps, workoutSetSec(s), S.totalXp, S.xpLog.length]; });
+  assert.deepEqual(w, ['done', 82.5, 10, 40, after[0], after[1]], 'edit after finishing: no XP, no re-finish, timing kept');
+}, { state: fixtureState() });
+
+test('FW13-FW16 Finish: a running set is resolved first; summary with total / active / rest / cardio, exercises and cardio; active + rest + cardio <= total', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  await page.click('.wsStart'); await fwAt(page, 45); await page.click('.wsFinish');
+  await fwAt(page, 135); await page.click('.wk-entry:nth-child(1) .wsStart'); await fwAt(page, 175); await page.click('.wsFinish'); // 40 s, rest 90 s
+  await page.evaluate(() => workoutCardioAdd(activeWorkout().id, { type: 'run', durationSec: 900 }));
+  await fwAt(page, 300); await page.click('.wk-entry:nth-child(2) .wsStart'); await fwAt(page, 330); // Squat set 1 running (rest 175 -> 300 = 125 s)
+  await page.click('#wkFinish');
+  assert.match(await page.locator('.cf-sheet').innerText(), /Série právě běží/);
+  await page.click('#cf_ok'); await page.waitForSelector('#wkSummary');
+  const w = await page.evaluate(() => { const w = S.workouts[S.workouts.length - 1], t = workoutTiming(w, Date.now()); return { st: w.status, t, d: w.finishedAt - w.startedAt, sets: workoutTotalSets(w) }; });
+  assert.deepEqual([w.st, w.d, w.t.totalSec, w.t.activeSec, w.t.restSec, w.t.cardioSec, w.sets], ['done', 330000, 330, 115, 215, 900, 3], 'set 3 finished at 330 s');
+  assert.ok(w.t.activeSec + w.t.restSec <= w.t.totalSec, 'sets + rests fit inside the workout (cardio was logged by hand here)');
+  const sum = await page.locator('#wkSummary').innerText();
+  assert.match(sum, /Trénink dokončen[\s\S]*CELKEM\s*5 min[\s\S]*AKTIVNÍ SÉRIE\s*1 min[\s\S]*PAUZY\s*3 min[\s\S]*KARDIO\s*15 min/i);
+  assert.match(sum, /Bench press[\s\S]*2 série[\s\S]*80 kg × 8, 8[\s\S]*Aktivní série 1:25 · Pauzy 3:35[\s\S]*Squat[\s\S]*1 série/);
+  assert.match(sum, /Běh · 15 min/);
+  await page.click('#wkSumOk');
+  assert.match(await page.locator('.workout-card').first().innerText(), /Aktivní série\s*1 min[\s\S]*Pauzy\s*3 min[\s\S]*Běh\s*15 min/, 'history shows the timing');
+}, { state: fixtureState() });
+
+test('FW17-FW19 reload: during a rest everything comes back (sets, kg, reps, timing, the running rest); a short running set continues; a set found running long after a reload is asked about - finish now or discard its time', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  await page.click('.wsStart'); await fwAt(page, 42); await page.click('.wsFinish'); await fwRow(page, 0, 0).locator('[data-f="reps"]').fill('9'); await settle(page);
+  await fwAt(page, 100); await persist(page); await reload(page);
+  await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  let t = await fwTiming(page);
+  assert.deepEqual([t.phase, t.restFrom - NOW, t.active], ['rest', 42000, 42], 'the rest runs on from the stored finish');
+  assert.equal(await fwRow(page, 0, 0).locator('[data-f="reps"]').inputValue(), '9');
+  await fwTick(page); assert.match(await page.locator('#wkPhase').innerText(), /0:58/);
+  assert.equal(await page.locator('#wkClock').innerText(), '1:40');
+  // a short running set survives a reload as running (no question)
+  await page.click('.wk-entry:nth-child(1) .wsStart'); await settle(page); await fwAt(page, 130); await reload(page);
+  await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  assert.equal(await page.locator('#wkStale').isVisible(), false); assert.equal(await fwRow(page, 0, 1).getAttribute('data-state'), 'active');
+  // the same set found 20 minutes later: asked, never auto-finished
+  await fwAt(page, 100 + 20 * 60); await reload(page); await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  assert.match(await page.locator('#wkStale').innerText(), /Tato série byla aktivní při zavření aplikace[\s\S]*Dokončit nyní · 20:00[\s\S]*Zrušit čas série/);
+  assert.equal(await page.locator('#wkPhase').isVisible(), false, 'no running clock pretends the set went on');
+  assert.equal(await page.evaluate(() => activeWorkout().entries[0].sets[1].done), false);
+  await page.click('#wkStaleReset');
+  assert.deepEqual(await page.evaluate(() => { const s = activeWorkout().entries[0].sets[1]; return [workoutSetState(s), 'startedAt' in s, s.done]; }), ['ready', false, false], 'back to READY, no time stored');
+  // and "Finish now" records what the person confirms
+  await page.click('.wk-entry:nth-child(1) .wsStart'); await settle(page); await fwAt(page, 100 + 40 * 60); await reload(page); await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  await page.click('#wkStaleFinish');
+  assert.equal(await page.evaluate(() => workoutSetSec(activeWorkout().entries[0].sets[1])), 20 * 60, 'finished now: the duration shown on the button');
+}, { state: fixtureState() });
+
+test('FW20 + FW21 leaving the workout never ends it (Home, Calendar, Nutrition, Character, back to Fitness); close + reopen restores it; a workout left over the next day asks before it finishes at its last activity', async ({ page }) => {
+  await fwSetup(page); const id = await fwStart(page);
+  await page.click('.wsStart'); await fwAt(page, 50); await page.click('.wsFinish');
+  const before = JSON.stringify(await active(page));
+  for (const v of ['home', 'calendar', 'nutrition', 'character', 'notes']) await page.evaluate(v => { view = v; render(); }, v);
+  assert.equal(JSON.stringify(await active(page)), before, 'navigating writes nothing to the session');
+  await openWorkouts(page); await page.click('#wkContinue');
+  assert.equal(await fwRow(page, 0, 0).getAttribute('data-state'), 'done');
+  // close the tab, open a new one
+  await persist(page); const ctx = page.context(); const p2 = await ctx.newPage(); await page.close();
+  await p2.clock.setFixedTime(NOW + 60000); await p2.goto(URL_); await booted(p2);
+  assert.equal(await p2.evaluate(() => activeWorkout() && activeWorkout().id), id);
+  await p2.evaluate(() => { fitnessTab = 'workouts'; uiWorkoutView = null; view = 'fitness'; render(); });
+  assert.match(await p2.locator('#wkResume').innerText(), /Push Day[\s\S]*1:00/);
+  // the next day: the session is asked about
+  await p2.clock.setFixedTime(NOW + 26 * 3600000); await p2.evaluate(() => { uiWorkoutView = { mode: 'active' }; render(); });
+  assert.match(await p2.locator('#wkStale').innerText(), /Tento trénink pořád běží[\s\S]*Dokončit k poslední aktivitě[\s\S]*Pokračovat v tréninku/);
+  await p2.click('#wkStaleEnd'); await p2.waitForSelector('#wkSummary');
+  assert.deepEqual(await p2.evaluate(id => { const w = workoutFindById(id); return [w.status, w.finishedAt - w.startedAt, workoutTiming(w, Date.now()).restSec]; }, id), ['done', 50000, null], 'ends at the last set, no invented day-long rest');
+}, { state: fixtureState() });
+
+test('FW22 multi-tab: a second tab is blocked while the workout runs; after the first closes it takes over and restores the workout with the right timing', async ({ page }) => {
+  const errs = [];
+  await fwSetup(page); await fwStart(page); await page.click('.wsStart'); await fwAt(page, 30); await page.click('.wsFinish'); await settle(page);
+  const B = await extraTab(page, errs); await B.waitForSelector('#tabLock');
+  assert.equal(await B.evaluate(() => !!S), false, 'blocked tab has no data and cannot write the workout');
+  await page.close(); await B.waitForLoadState(); await ownerReady(B); await injectRawIdb(B);
+  await B.clock.setFixedTime(NOW + 90000);
+  await B.evaluate(() => { fitnessTab = 'workouts'; uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); uiWkTick(); });
+  assert.deepEqual(await B.evaluate(() => { const t = workoutTiming(activeWorkout(), Date.now()); return [t.phase, t.restFrom - activeWorkout().startedAt, t.activeSec]; }), ['rest', 30000, 30]);
+  assert.match(await B.locator('#wkPhase').innerText(), /PAUZA[\s\S]*1:00/i);
+  assert.deepEqual(errs, []);
+}, { state: fixtureState() });
+
+test('FW23-FW28 cardio: + Přidat kardio opens the form only on demand; manual Běh 25 min; timer (Chůze, start -> finish); several entries; edit type / duration; delete asks (cancel keeps); invalid durations refused; 0 extra XP', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  const x0 = await page.evaluate(() => [S.totalXp, JSON.stringify(S.attrs), S.xpLog.length]);
+  assert.equal(await page.locator('#cd_min').count(), 0, 'no form until asked');
+  await page.click('#cdAdd'); assert.equal(await page.getAttribute('[data-cd-type="run"]', 'aria-checked'), 'true');
+  for (const bad of ['0', '-5', '']) { await page.fill('#cd_min', bad); await page.click('#cd_save'); assert.equal(await page.locator('.cd-form [data-err="durationSec"]').isVisible(), true, `refused: "${bad}"`); }
+  await page.fill('#cd_min', '25'); await page.click('#cd_save');
+  assert.deepEqual(await page.evaluate(() => activeWorkout().cardio.map(c => [c.type, c.durationSec, 'startedAt' in c])), [['run', 1500, false]]);
+  await page.click('#cdAdd'); await page.click('[data-cd-type="walk"]'); await page.click('#cd_timer');
+  assert.match(await page.locator('#wkPhase').innerText(), /KARDIO · CHŮZE/i);
+  assert.equal(await page.locator('.wsStart').count(), 0, 'no set starts while cardio runs');
+  await fwAt(page, 600); await fwTick(page); assert.match(await page.locator('[data-cardio] [data-elapsed]').innerText(), /10:00/);
+  await page.click('.cdFinish');
+  assert.deepEqual(await page.evaluate(() => activeWorkout().cardio.map(c => [c.type, c.durationSec])), [['run', 1500], ['walk', 600]], 'several entries');
+  await page.click('#cdAdd'); await page.click('[data-cd-type="stairs"]'); await page.fill('#cd_min', '12'); await page.click('#cd_save');
+  const walk = page.locator('.cd-row', { hasText: 'Chůze' });
+  await walk.locator('.cdEdit').click(); await page.click('[data-cd-type="run"]'); await page.fill('#cd_min', '11.5'); await page.click('#cd_save');
+  assert.deepEqual(await page.evaluate(() => activeWorkout().cardio.map(c => [c.type, c.durationSec])), [['run', 1500], ['run', 690], ['stairs', 720]], 'edited type and duration');
+  await page.locator('.cd-row', { hasText: 'Schody' }).locator('.cdDel').click(); assert.match(await page.locator('.cf-sheet').innerText(), /Smazat kardio/); await page.click('#cf_cancel');
+  assert.equal(await page.evaluate(() => activeWorkout().cardio.length), 3, 'cancel keeps');
+  await page.locator('.cd-row', { hasText: 'Schody' }).locator('.cdDel').click(); await page.click('#cf_ok');
+  assert.equal(await page.evaluate(() => activeWorkout().cardio.length), 2);
+  assert.deepEqual(await page.evaluate(() => [S.totalXp, JSON.stringify(S.attrs), S.xpLog.length]), x0, 'cardio pays nothing');
+  assert.deepEqual(await page.evaluate(() => [workoutCardioAdd(activeWorkout().id, { type: 'swim', durationSec: 60 }).ok, workoutCardioAdd(activeWorkout().id, { type: 'run', durationSec: 0 }).ok, workoutCardioAdd(activeWorkout().id, { type: 'run', durationSec: 90000 }).ok]), [false, false, false]);
+  // a cardio timer survives a reload (it runs on by timestamp); found 4 h later it is asked about
+  await page.click('#cdAdd'); await page.click('#cd_timer'); await settle(page); await fwAt(page, 900); await reload(page); await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); uiWkTick(); });
+  assert.match(await page.locator('#wkPhase').innerText(), /KARDIO · BĚH[\s\S]*5:00/i);
+  await fwAt(page, 4 * 3600); await reload(page); await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  assert.match(await page.locator('#wkStale').innerText(), /Kardio běželo při zavření aplikace/);
+  await page.click('#wkStaleReset'); assert.equal(await page.locator('.cd-form').count(), 1, 'enter the real duration instead');
+  assert.equal(await page.evaluate(() => activeWorkout().cardio.some(c => c.startedAt && !c.finishedAt)), false);
+}, { state: fixtureState() });
+
+test('FW29-FW32 XP freeze: start / finish set, rest, cardio, edits, reload, summary pay 0; Finish pays 80 XP exactly once with the same attributes; the quest completes once; the daily workout cap is unchanged', async ({ page }) => {
+  await fwSetup(page); await quietQuests(page);
+  const snap = () => page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog.length, S.attrs, S.quests.length, S.achievementsUnlocked]));
+  const s0 = await snap();
+  await fwStart(page); await page.click('.wsStart'); await fwAt(page, 30); await page.click('.wsFinish'); await fwAt(page, 90);
+  await page.click('.wk-entry:nth-child(1) .wsStart'); await fwAt(page, 120); await page.click('.wsFinish');
+  await fwRow(page, 0, 0).locator('[data-f="reps"]').fill('12'); await page.evaluate(() => workoutCardioAdd(activeWorkout().id, { type: 'stairs', durationSec: 300 }));
+  await persist(page); await reload(page); await page.evaluate(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); });
+  assert.equal(await snap(), s0, 'nothing before Finish pays');
+  const a0 = await page.evaluate(() => ({ ...S.attrs })), x0 = await page.evaluate(() => S.totalXp);
+  await page.click('#wkFinish'); await page.waitForSelector('#wkSummary');
+  const a1 = await page.evaluate(() => ({ ...S.attrs })), x1 = await page.evaluate(() => S.totalXp);
+  assert.equal(x1 - x0, 80); assert.deepEqual(['STR', 'VIT', 'DEX'].map(k => a1[k] - a0[k]), [24, 14, 10], 'fitness profile split unchanged');
+  await page.click('#wkSumOk'); await page.evaluate(() => { checkQuests(); for (const v of ['home', 'fitness', 'quests']) { view = v; render(); } });
+  const w = await page.evaluate(() => S.workouts[S.workouts.length - 1].id);
+  assert.equal(await page.evaluate(id => S.xpLog.filter(x => x.key === `workout:${id}:${todayStr()}`).length, w), 1, 'one workout ledger entry');
+  await page.evaluate(id => workoutFinish(id), w); assert.equal(await page.evaluate(() => S.totalXp), x1, 'finishing again pays nothing');
+  // daily cap: still 2 rewarded workouts a day (the review rule), a third pays 0
+  const third = await page.evaluate(() => { const pay = () => { const r = workoutStart({ name: 'Extra' }); workoutAddEntry(r.workout.id, exerciseFind('Bench press').id).sets[0].done = true; const a = S.totalXp; workoutFinish(r.workout.id); return S.totalXp - a; }; return [pay(), pay()]; });
+  assert.deepEqual(third, [80, 0], 'the second rewarded workout of the day pays, the third does not');
+}, { state: fixtureState() });
+
+test('FW30 quest compatibility: dq_workout completes once, at Finish (not at set start / finish / cardio)', async ({ page }) => {
+  await fwSetup(page);
+  await page.evaluate(() => { S.workouts = S.workouts.filter(w => w.date !== todayStr()); S.settings.trainingDays = [0, 1, 2, 3, 4, 5, 6]; S.questBoard = { daily: { stamp: todayStr(), items: [{ id: 'dq_workout', p: {} }, { id: 'x1' }, { id: 'x2' }] }, weekly: { stamp: weekStart(), items: [{ id: 'x1' }, { id: 'x2' }, { id: 'x3' }] } }; });
+  await fwStart(page); await page.click('.wsStart'); await fwAt(page, 30); await page.click('.wsFinish');
+  await page.evaluate(() => workoutCardioAdd(activeWorkout().id, { type: 'run', durationSec: 600 }));
+  assert.equal(await page.evaluate(() => { checkQuests(); return S.quests.filter(q => q.questId === 'dq_workout').length; }), 0, 'not before Finish');
+  await page.click('#wkFinish'); await page.click('#wkSumOk');
+  assert.equal(await page.evaluate(() => { checkQuests(); checkQuests(); return S.quests.filter(q => q.questId === 'dq_workout').length; }), 1);
+}, { state: fixtureState() });
+
+test('FW33-FW36 data: an old backup imports; a new workout with set timing + cardio survives export -> reset -> import; reset ends the active session (no timer left); deleting a workout asks and leaves no reference', async ({ page }) => {
+  await fwSetup(page); await fwStart(page); await page.click('.wsStart'); await fwAt(page, 42); await page.click('.wsFinish');
+  await page.evaluate(() => workoutCardioAdd(activeWorkout().id, { type: 'walk', durationSec: 1200 })); await fwAt(page, 100); await page.click('#wkFinish'); await page.click('#wkSumOk');
+  const done = await page.evaluate(() => JSON.parse(JSON.stringify(S.workouts[S.workouts.length - 1])));
+  await fwStart(page); await page.click('.wsStart'); await settle(page); // a second, running session
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]); const file = await dl.path();
+  const exp = JSON.parse(readFileSync(file, 'utf8'));
+  assert.deepEqual(exp.workouts.find(w => w.id === done.id), done, 'set timing, cardio and both timestamps are in the backup');
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [S.workouts.length, activeWorkout(), document.querySelectorAll('[data-elapsed]').length]), [0, null, 0], 'reset: no session, no running clock');
+  await page.evaluate(() => { S.settings.onboarded = true; closeSheets(); });
+  await importFile(page, file); await settle(page);
+  const back = await page.evaluate(id => JSON.parse(JSON.stringify(S.workouts.find(w => w.id === id))), done.id);
+  assert.deepEqual(back, done); assert.equal(await page.evaluate(() => workoutTiming(S.workouts.find(w => w.status === 'done' && w.cardio), Date.now()).activeSec), 42);
+  assert.equal(await page.evaluate(() => !!activeWorkout()), true, 'the backup also restores the running session');
+  // an old backup (no timing anywhere) imports cleanly
+  await importFile(page, { name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(fixtureState())) }); await settle(page);
+  assert.deepEqual(await page.evaluate(() => S.workouts.map(w => w.id)), ['w1', 'w2']);
+  await openWorkouts(page); assert.ok(!/NaN|undefined/.test(await page.locator('#app').innerText()));
+  // delete a finished workout: asks, removes only it; XP stays
+  const x = await page.evaluate(() => S.totalXp);
+  await page.locator('.workout-card', { hasText: 'Pull day' }).locator('.delbtn').click(); assert.match(await page.locator('.cf-sheet').innerText(), /Smazat trénink/); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [S.workouts.map(w => w.id), S.totalXp, activeWorkout(), plannerLinks(S.plannerBlocks.find(b => b.id === 'pb_push')).workout]), [['w1'], x, null, null], 'a block that linked it resolves to no workout (as before)');
+}, { state: fixtureState() });
+
+test('FW37-FW40 template compatibility, add exercise during the workout, add / remove sets (a done set asks), previous performance "Minule"', async ({ page }) => {
+  const tid = await fwSetup(page); const t0 = await page.evaluate(id => JSON.stringify(templateFind(id)), tid);
+  // a finished Bench press workout gives the next one its "Minule" line
+  await page.evaluate(tid => { const r = workoutStart({ templateId: tid }); r.workout.entries[0].sets.forEach((s, i) => { s.done = true; s.reps = 10 - i; }); workoutFinish(r.workout.id); }, tid);
+  await fwStart(page);
+  assert.match(await page.locator('.wk-entry').first().locator('.wk-last').innerText(), /Minule\s*80 kg × 10, 9, 8/i);
+  await page.click('.wk-entry:nth-child(1) .wkAddSet'); await fwRow(page, 0, 3).locator('[data-f="weight"]').fill('85');
+  assert.equal(await page.evaluate(id => JSON.stringify(templateFind(id)), tid), t0, 'session edits never touch the template');
+  await page.click('#wkAddEx'); await page.locator('.wk-pick-row', { hasText: 'Deadlift' }).first().click();
+  assert.deepEqual(await page.evaluate(() => activeWorkout().entries.map(e => [e.name, e.sets.length])), [['Bench press', 4], ['Squat', 3], ['Deadlift', 1]]);
+  assert.equal(await page.evaluate(id => JSON.stringify(templateFind(id)), tid), t0);
+  // remove: an untouched set goes at once, a done one asks
+  await fwRow(page, 0, 3).locator('.ws-rm').click(); assert.equal(await page.evaluate(() => activeWorkout().entries[0].sets.length), 3);
+  await page.click('.wsStart'); await fwAt(page, 20); await page.click('.wsFinish');
+  await fwRow(page, 0, 0).locator('.ws-rm').click(); assert.match(await page.locator('.cf-sheet').innerText(), /XP za trénink se nemění/); await page.click('#cf_cancel');
+  assert.equal(await page.evaluate(() => activeWorkout().entries[0].sets.length), 3);
+  await fwRow(page, 0, 0).locator('.ws-rm').click(); await page.click('#cf_ok');
+  assert.deepEqual(await page.evaluate(() => [activeWorkout().entries[0].sets.length, workoutTiming(activeWorkout(), Date.now()).activeSec]), [2, null], 'timing re-derived from the remaining sets');
+}, { state: fixtureState() });
+
+test('FW41-FW46 + FW48 training readiness: good / low / insufficient / old sleep without quality / recent load; reasons always shown; read-only and deterministic with an explicit now', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const T = todayStr(), now = Date.now(), D = n => addDays(T, n);
+    const base = () => { const st = JSON.parse(JSON.stringify(S)); st.workouts = []; st.sleepLog = []; st.settings.trainingDays = null; return st; };
+    const wk = d => ({ id: 'w' + d, name: 'W', date: D(d), status: 'done', entries: [] });
+    const A = base(); A.sleepLog = [{ id: 'a', date: T, bedtime: '23:00', wake: '07:00', qualityPct: 90 }]; A.workouts = [wk(-2)];
+    const B = base(); B.sleepLog = [{ id: 'b', date: T, bedtime: '01:00', wake: '06:00', qualityPct: 40 }]; B.workouts = [wk(-1)];
+    const C = base(); C.workouts = [wk(-3)];
+    const Dd = base(); Dd.sleepLog = [{ id: 'd', date: T, bedtime: '23:30', wake: '07:00', quality: '4' }];
+    const E = base(); E.sleepLog = [{ id: 'e', date: T, bedtime: '23:00', wake: '07:00' }]; E.workouts = [wk(-1), wk(-2), wk(-3), wk(-4)];
+    const F = base(); F.sleepLog = [{ id: 'f', date: T, bedtime: '23:00', wake: '07:00' }]; F.workouts = [wk(0), wk(-1), wk(-2), wk(-4), wk(-5)]; F.settings.trainingDays = [new Date(T + 'T00:00').getDay()];
+    const out = {}; const before = JSON.stringify(S);
+    for (const [k, st] of Object.entries({ A, B, C, D: Dd, E, F })) { const x = trainingReadiness(st, now); out[k] = [x.level, x.score, x.reasons.map(r => r.text)]; }
+    out.same = JSON.stringify(trainingReadiness(A, now)) === JSON.stringify(trainingReadiness(A, now));
+    out.readonly = JSON.stringify(S) === before; return out; });
+  assert.deepEqual(r.A, ['good', 97, ['Spánek 8 h 00 min', 'Kvalita spánku 90 %', 'Poslední trénink před 2 dny', '1 trénink za posledních 7 dní']]);
+  assert.deepEqual(r.B, ['low', 30, ['Spánek 5 h 00 min', 'Kvalita spánku 40 %', 'Poslední trénink včera', '1 trénink za posledních 7 dní']]);
+  assert.deepEqual(r.C, ['insufficient', null, ['Dnešní spánek není zapsaný', 'Poslední trénink před 3 dny', '1 trénink za posledních 7 dní']], 'no sleep: no score');
+  assert.deepEqual(r.D, ['good', 100, ['Spánek 7 h 30 min', 'Kvalita spánku nezadaná (počítá se jen délka)', 'Zatím žádný dokončený trénink', '0 tréninků za posledních 7 dní']], 'old 1-5 quality: duration only');
+  assert.deepEqual(r.E, ['good', 95, ['Spánek 8 h 00 min', 'Kvalita spánku nezadaná (počítá se jen délka)', 'Poslední trénink včera', '4 tréninky za posledních 7 dní']]);
+  assert.deepEqual(r.F, ['medium', 65, ['Spánek 8 h 00 min', 'Kvalita spánku nezadaná (počítá se jen délka)', 'Dnes už máš dokončený trénink', '3 tréninky za poslední 3 dny', '5 tréninků za posledních 7 dní', 'Podle plánu je dnes tréninkový den']]);
+  assert.ok(r.same && r.readonly, 'deterministic and read-only');
+  // the card: an estimate, with its reasons; insufficient data asks for sleep; nothing is written by rendering it
+  await page.evaluate(() => { S.sleepLog = S.sleepLog.filter(x => x.date !== todayStr()); }); await persist(page);
+  const idb0 = JSON.stringify(await idbState(page));
+  await openWorkouts(page);
+  const card = await page.locator('#fitReady').innerText();
+  assert.match(card, /Dnešní připravenost[\s\S]*Odhad podle dat v LifeOS[\s\S]*Nedostatek dat[\s\S]*Pro lepší odhad zapiš dnešní spánek[\s\S]*Proč:/i);
+  assert.ok(!/\d+ ?%.*připraven/i.test(card) && !/NaN|undefined/.test(card), 'no fake percentage');
+  await page.waitForTimeout(400); assert.equal(JSON.stringify(await idbState(page)), idb0, 'readiness writes nothing');
+  await page.click('#frSleep'); assert.equal(await page.locator('.sheet #sl_date').count(), 1);
+  assert.equal(await page.evaluate(() => JSON.stringify(S.dailyScores)), await page.evaluate(() => JSON.stringify(S.dailyScores)), 'Daily Score snapshots untouched');
+}, { state: fixtureState() });
+
+test('FW47 + FW48 the 1 s tick only updates the clocks: no render, same nodes, a focused kg field keeps focus, its typed value and the scroll position; nothing is saved by the tick', async ({ page }) => {
+  await fwSetup(page); await fwStart(page); await page.click('.wsStart'); await fwAt(page, 10); await page.click('.wsFinish'); await persist(page);
+  await page.evaluate(() => { window.__renders = 0; const r = render; render = function () { window.__renders++; return r.apply(this, arguments); }; window.__idbWrites = 0; const s = idbSet; idbSet = function () { window.__idbWrites++; return s.apply(this, arguments); }; });
+  const inp = fwRow(page, 0, 1).locator('[data-f="reps"]'); await inp.click(); await page.keyboard.press('End'); await page.keyboard.type('5');
+  await settle(page); await page.evaluate(() => { window.__idbWrites = 0; window.scrollTo(0, 200); }); // the typed value's own save is done
+  const mark = await page.evaluate(() => { document.querySelector('.wk-entry').__mark = 1; return [document.activeElement.dataset.f, document.activeElement.value, scrollY]; });
+  await fwAt(page, 75); await page.waitForTimeout(2300); // two real 1 s ticks
+  const after = await page.evaluate(() => [document.activeElement.dataset.f, document.activeElement.value, scrollY, window.__renders, document.querySelector('.wk-entry').__mark, window.__idbWrites]);
+  assert.deepEqual(after.slice(0, 3), mark, 'focus, typed value and scroll kept');
+  assert.deepEqual(after.slice(3), [0, 1, 0], 'no render, same DOM, no write by the tick');
+  assert.match(await page.locator('#wkPhase').innerText(), /1:05/, 'the clock text still moved');
+}, { state: fixtureState() });
+
+test('FW49 + FW50 caret: the tap that focuses a numeric field puts the caret after the value (80 -> 805); a second tap, a drag selection, Tab focus and arrow keys keep the browser behaviour', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  const kg = fwRow(page, 0, 0).locator('[data-f="weight"]'); const bb = await kg.boundingBox();
+  await page.mouse.click(bb.x + 4, bb.y + bb.height / 2); await page.keyboard.type('5');
+  assert.equal(await kg.inputValue(), '805', 'caret at the end, not |80');
+  await page.mouse.click(bb.x + 4, bb.y + bb.height / 2); await page.mouse.click(bb.x + 4, bb.y + bb.height / 2); await page.keyboard.type('1');
+  assert.equal(await kg.inputValue(), '1805', 'a later click in the focused field is the person\'s own caret');
+  await kg.fill('80'); await page.focus('#wk_name'); await page.keyboard.press('Shift+Tab');
+  await page.evaluate(() => { const r = document.querySelector('.wk-entry .ws-row[data-set] [data-f="reps"]'); r.focus(); });
+  await page.keyboard.press('ArrowUp'); assert.equal(await fwRow(page, 0, 0).locator('[data-f="reps"]').inputValue(), '9', 'arrow keys still step');
+  // other numeric editors share the same helper (a decimal text field: drag selection is kept)
+  await page.evaluate(() => { const i = document.createElement('input'); i.id = 'cx'; i.inputMode = 'decimal'; i.value = '12345'; i.style.cssText = 'position:fixed;top:300px;left:20px;width:220px;font-size:20px;z-index:99'; document.body.appendChild(i); });
+  const c = await page.locator('#cx').boundingBox();
+  await page.mouse.move(c.x + 3, c.y + c.height / 2); await page.mouse.down(); await page.mouse.move(c.x + 70, c.y + c.height / 2, { steps: 6 }); await page.mouse.up();
+  assert.deepEqual(await page.evaluate(() => { const i = document.getElementById('cx'); return [i.selectionStart > 0 || i.selectionEnd > 0, i.selectionStart !== i.selectionEnd]; }), [true, true], 'drag selection not overwritten');
+  await page.evaluate(() => document.getElementById('cx').remove());
+  // cardio minutes and the sleep / water / finance number fields are type=number: same helper
+  await page.click('#cdAdd'); await page.fill('#cd_min', '25'); await page.evaluate(() => document.activeElement.blur());
+  const cm = await page.locator('#cd_min').boundingBox(); await page.mouse.click(cm.x + 4, cm.y + cm.height / 2); await page.keyboard.type('5');
+  assert.equal(await page.inputValue('#cd_min'), '255');
+}, { state: fixtureState() });
+
+const FW_WIDTHS = [320, 360, 375, 390, 430, 768, 1024, 1280, 1440];
+test('FW51-FW57 + FW59 every Gym Mode screen at 320-1440 px, dark + light: no overflow, no duplicate ids, no undefined / NaN, 44 px targets, no animation with reduced motion', async ({ page }) => {
+  const tid = await fwSetup(page);
+  await page.evaluate(tid => { S.sleepLog.push({ id: 'qq', date: todayStr(), bedtime: '23:00', wake: '07:04', qualityPct: 87 });
+    const r = workoutStart({ templateId: tid }); const w = r.workout; const s = w.entries[0].sets; s[0].startedAt = Date.now() - 300000; s[0].finishedAt = Date.now() - 258000; s[0].done = true;
+    s[1].startedAt = Date.now() - 20000; uiWkLiveIds.add(s[1].id); workoutCardioAdd(w.id, { type: 'stairs', durationSec: 600 }); }, tid);
+  const scenes = {
+    overview: "uiWorkoutView=null;view='fitness';render()",
+    set: "uiWorkoutView={mode:'active'};view='fitness';render()",
+    rest: "{const w=activeWorkout(),s=w.entries[0].sets[1];if(!s.done){s.finishedAt=Date.now();s.done=true;}}uiWorkoutView={mode:'active'};view='fitness';render()",
+    cardioForm: "uiWorkoutView={mode:'active'};view='fitness';render();openCardioForm(activeWorkout(),null)",
+    stale: "{const w=activeWorkout(),s=w.entries[1].sets[0];if(!s.startedAt){s.startedAt=Date.now()-3600000;}}uiWorkoutView={mode:'active'};view='fitness';render()",
+    summary: "uiWorkoutView=null;view='fitness';render();openWorkoutSummary(S.workouts.find(w=>w.id==='__done'),true)",
+    history: "uiWorkoutView=null;view='fitness';render();window.scrollTo(0,document.body.scrollHeight)",
+    edit: "uiWorkoutView={mode:'edit',id:'__done'};view='fitness';render()" };
+  await page.evaluate(tid => { const w = JSON.parse(JSON.stringify(activeWorkout())); w.id = '__done'; w.status = 'done'; w.finishedAt = Date.now(); w.entries[1].sets[0].startedAt = undefined; w.entries[0].sets[1].startedAt = undefined; w.cardio = [{ id: 'c', type: 'run', durationSec: 900 }]; S.workouts.unshift(w); }, tid);
+  const bad = [];
+  for (const theme of ['dark', 'light']) for (const width of FW_WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [k, js] of Object.entries(scenes)) {
+      const r = await page.evaluate(({ js, theme }) => { closeSheets(); S.settings.theme = theme; applyTheme(); eval(js); uiWkTick();
+        const ids = [...document.querySelectorAll('[id]')].map(n => n.id), sheet = document.querySelector('.sheet');
+        const small = [...document.querySelectorAll('.wk-screen button, #fitReady button, .wk-cardio button, .cd-form button, .wk-summary button, .wk-phase button, .wk-stale button')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36).map(b => b.className);
+        const big = [...document.querySelectorAll('.wsStart, .wsFinish, .wkPhFinish, .wkPhCdFinish, #cdAdd, #cd_save, #cd_timer, .cd-type, #wkStaleFinish, #wkStaleReset, #frSleep')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 44).map(b => b.id || b.className);
+        const anim = [...document.querySelectorAll('.wk-phase, .ws-row.is-active, .fit-ready, .cd-row')].filter(n => getComputedStyle(n).animationName !== 'none' && parseFloat(getComputedStyle(n).animationDuration) > 0.01).length;
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: sheet ? sheet.scrollWidth - sheet.clientWidth : 0,
+          dup: ids.filter((x, i) => ids.indexOf(x) !== i), nan: /undefined|NaN|\[object/.test(document.body.innerText), small, big, anim,
+          live: [...document.querySelectorAll('[data-elapsed]')].filter(n => n.closest('[aria-live]')).length }; }, { js, theme });
+      const issues = [r.over > 0 && 'overflow ' + r.over, r.sheetOver > 0 && 'sheet overflow', r.dup.length && 'dup ' + r.dup, r.nan && 'NaN/undefined', r.small.length && 'small ' + r.small, r.big.length && '<44px ' + r.big, r.anim && 'animated', r.live && 'aria-live clock'].filter(Boolean);
+      if (issues.length) bad.push(`${theme}/${width}/${k}: ${issues.join('; ')}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+}, { state: fixtureState() });
+
+test('FW58 keyboard: Start / Finish set, the cardio form (type radio + Save) and Finish workout work from the keyboard with visible focus; clocks are not announced every second', async ({ page }) => {
+  await fwSetup(page); await fwStart(page);
+  await page.focus('.wsStart'); await page.keyboard.press('Enter');
+  assert.equal(await fwRow(page, 0, 0).getAttribute('data-state'), 'active');
+  assert.equal(await page.evaluate(() => document.activeElement.classList.contains('wsFinish')), true, 'focus moves to Finish set');
+  assert.notEqual(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle + getComputedStyle(document.activeElement).boxShadow), 'nonenone', 'focus visible');
+  await fwAt(page, 33); await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => workoutSetSec(activeWorkout().entries[0].sets[0])), 33);
+  await page.focus('#cdAdd'); await page.keyboard.press('Enter'); await page.focus('[data-cd-type="stairs"]'); await page.keyboard.press('Space');
+  await page.focus('#cd_min'); await page.keyboard.type('8'); await page.focus('#cd_save'); await page.keyboard.press('Enter');
+  assert.deepEqual(await page.evaluate(() => activeWorkout().cardio.map(c => [c.type, c.durationSec])), [['stairs', 480]]);
+  assert.equal(await page.evaluate(() => [...document.querySelectorAll('[data-elapsed]')].some(n => n.closest('[aria-live],[role="timer"],[role="status"]'))), false, 'no live region on second clocks');
+  for (const sel of ['.wsStart', '.ws-rm', '.cdDel', '.cdEdit']) assert.ok(await page.evaluate(sel => [...document.querySelectorAll(sel)].every(b => (b.getAttribute('aria-label') || b.textContent).trim().length > 2), sel), sel);
+  await page.focus('#wkFinish'); await page.keyboard.press('Enter'); await page.waitForSelector('#wkSummary');
+}, { state: fixtureState() });
+
+test('FW60 performance (a year: 1 500 tasks, 25 000 XP, 150 timed workouts, 300 sleep records): Fitness overview, active workout, 1 s tick, readiness, summary', async ({ page }) => {
+  await withGen(page);
+  const r = await page.evaluate(() => { S = defaultState(); S.settings.onboarded = true; closeSheets(); Object.assign(S, window.__gen(1500, 25000, 3)); const T = todayStr();
+    const bench = exerciseFind('Bench press') || exerciseAddPreset('Bench Press').exercise, sq = exerciseFind('Squat') || exerciseAddPreset('Squat').exercise;
+    for (let i = 0; i < 300; i++) S.sleepLog.push({ id: 'ps' + i, date: addDays(T, -i), bedtime: '23:00', wake: '07:00', qualityPct: 60 + i % 40 });
+    for (let i = 0; i < 150; i++) { const d = addDays(T, -i * 2 - 1), t0 = new Date(d + 'T17:00').getTime();
+      const en = [bench, sq].map((x, j) => ({ id: 'e' + i + j, exerciseId: x.id, name: x.name, measurement: 'weight_reps', target: null, notes: '', sets: Array.from({ length: 4 }, (_, k) => ({ id: `s${i}${j}${k}`, weight: 80 + j * 20, reps: 8, done: true, warmup: false, startedAt: t0 + (j * 4 + k) * 180000, finishedAt: t0 + (j * 4 + k) * 180000 + 40000 })) }));
+      S.workouts.push({ id: 'pw' + i, name: 'Push', date: d, status: 'done', startedAt: t0, finishedAt: t0 + 3000000, entries: en, cardio: [{ id: 'c' + i, type: 'run', durationSec: 900 }] }); }
+    const m = (f, n) => { f(); const ts = []; for (let i = 0; i < n; i++) { const t = performance.now(); f(); ts.push(performance.now() - t); } ts.sort((a, b) => a - b); return ts[Math.floor(n / 2)]; };
+    const out = { overview: m(() => { fitnessTab = 'workouts'; uiWorkoutView = null; view = 'fitness'; render(); }, 5), readiness: m(() => trainingReadiness(S, Date.now()), 21) };
+    const w = workoutStart({ name: 'Push', templateId: '' }).workout; [bench, sq].forEach(x => workoutAddEntry(w.id, x.id)); w.entries.forEach(e => { for (let k = 0; k < 3; k++) workoutAddSet(w.id, e.id); });
+    workoutStartSet(w.id, w.entries[0].id, w.entries[0].sets[0].id, Date.now()); uiWkLiveIds.add(w.entries[0].sets[0].id);
+    out.active = m(() => { uiWorkoutView = { mode: 'active' }; view = 'fitness'; render(); }, 5);
+    out.tick = m(() => uiWkTick(), 41);
+    out.summary = m(() => { closeSheets(); openWorkoutSummary(S.workouts.find(x => x.id === 'pw0'), false); }, 5); closeSheets();
+    out.bad = (render(), /undefined|NaN/.test(document.getElementById('app').innerText)); return out; });
+  console.log('      FW60 ' + Object.entries(r).filter(([k]) => k !== 'bad').map(([k, v]) => `${k} ${v.toFixed(2)} ms`).join(', '));
+  assert.ok(!r.bad);
+  assert.ok(r.tick < 2, 'the 1 s tick is cheap'); assert.ok(r.readiness < 10, 'readiness under 10 ms');
+  assert.ok(r.overview < 150 && r.active < 150 && r.summary < 100, 'renders stay smooth');
+}, { state: fixtureState() });
+
+test('FW59b data safety (merge blocker): an old realistic state of the previous version boots without onboarding or reset, keeps every record, gets no forced new fields, boots idempotently and survives export -> reset -> import', async ({ page }) => {
+  const L = legacyState(); L.schemaVersion = 8; L.workouts = [];
+  L.workouts.push({ id: 'fw_old', name: 'Push 2.0', date: '2026-09-21', status: 'done', startedAt: 1790000000000, finishedAt: 1790003600000, templateId: 'tp1', plannerBlockId: 'b1', duration: '60', notes: '', exercises: [],
+    entries: [{ id: 'en1', exerciseId: 'ex_b', name: 'Bench press', measurement: 'weight_reps', target: null, notes: '', sets: [{ id: 'st1', weight: 80, reps: 8, done: true, warmup: false }] }], plan: [], createdAt: 1 });
+  L.workoutTemplates = [{ id: 'tp1', name: 'Push', exercises: [{ exerciseId: 'ex_b', sets: 3, repsMin: 8 }], createdAt: 1 }];
+  L.exerciseLibrary = [{ id: 'ex_b', name: 'Bench press', measurement: 'weight_reps', muscles: { Chest: 100 }, archived: false, source: 'user', createdAt: 1 }];
+  // deep containment: every old value is still there unchanged (main's own Muscle XP migration may add a `muscles`
+  // snapshot to old done entries -- an addition, never a change)
+  const has = (o, m) => o === null || typeof o !== 'object' ? JSON.stringify(o) === JSON.stringify(m) : Array.isArray(o) ? Array.isArray(m) && m.length === o.length && o.every((x, i) => has(x, m[i])) : !!m && typeof m === 'object' && Object.keys(o).every(f => has(o[f], m[f]));
+  const kept = st => Object.keys(L).filter(k => Array.isArray(L[k])).flatMap(k => L[k].filter(rec => !has(rec, (st[k] || []).find(x => x.id === rec.id))).map(rec => k + ':' + rec.id));
+  await page.evaluate(async st => { S = st; await rawIdbPut(st); }, L); await reload(page);
+  let st = await stateOf(page);
+  assert.deepEqual(kept(st), [], 'every record and field (workouts, templates, exercises, tasks, goals, habits, planner, nutrition, sleep, finance, notes)');
+  assert.deepEqual([st.schemaVersion, st.settings.onboarded, await page.locator('#ob_name').count(), st.profile.name], [8, true, 0, 'Starý účet'], 'no onboarding, no reset');
+  assert.deepEqual(st.xpLog.slice(0, 2), L.xpLog, 'XP history kept');
+  const fw = st.workouts.find(w => w.id === 'fw_old');
+  assert.deepEqual([('cardio' in fw), ('startedAt' in fw.entries[0].sets[0]), ('totalDurationSec' in fw)], [false, false, false], 'no new field forced onto old workouts');
+  await page.evaluate(() => { fitnessTab = 'workouts'; uiWorkoutView = null; view = 'fitness'; render(); });
+  assert.ok(!/NaN|undefined/.test(await page.locator('#app').innerText()));
+  await persist(page); const once = JSON.stringify(await idbState(page)); await reload(page); await persist(page);
+  assert.equal(JSON.stringify(await idbState(page)), once, 'second boot changes nothing');
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]); const file = await dl.path();
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  await page.evaluate(() => { S.settings.onboarded = true; closeSheets(); }); await importFile(page, file); await settle(page);
+  st = await stateOf(page); assert.deepEqual(kept(st), [], 'after export -> reset -> import');
+  assert.deepEqual(st, JSON.parse(readFileSync(file, 'utf8')));
+}, { state: fixtureState() });
+
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.
 // The original pre-8B set (mobile-dark/mobile-light/desktop-dark) lives in baseline/screens.

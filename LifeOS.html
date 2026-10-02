@@ -883,6 +883,9 @@ input.invalid,select.invalid,textarea.invalid{border-color:var(--color-danger);b
 .ws-head{font-size:var(--fs-micro);color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .ws-head span{text-align:center}
 .ws-row .ws-in{margin:0;min-height:52px;font-size:18px;font-weight:700;text-align:center;padding:8px 6px;min-width:0}
+/* Gym Workout Mode 3.0 (found during implementation): no spin buttons eating the narrow kg / reps fields (100 kg read as "10" at 320 px) */
+.ws-row .ws-in{-moz-appearance:textfield;appearance:textfield}.ws-row .ws-in::-webkit-inner-spin-button,.ws-row .ws-in::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+@media(max-width:360px){.ws-row .ws-in{font-size:17px;padding:8px 2px}}
 .ws-num{min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-weight:800;font-size:16px;cursor:pointer}
 .ws-row.is-wu .ws-num{background:var(--color-warning-muted);color:var(--warn);border-color:transparent}
 .ws-row.is-wu .ws-in{opacity:.85}
@@ -1706,6 +1709,32 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-we
 .fin-bal-list{display:grid;gap:2px}
 .fin-bal-row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:44px;padding:6px 4px;border:none;border-top:1px solid var(--line);background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
 .inv-row{display:grid;grid-template-columns:1fr auto 44px;align-items:center;gap:8px}
+
+/* Gym Workout Mode 3.0 */
+.ws-act{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:6px}
+.ws-act .btn{flex:1;min-height:48px;font-size:16px}
+.ws-act.is-done{margin-top:0;justify-content:flex-end}.ws-act.is-done .ws-dur{font-variant-numeric:tabular-nums}
+.ws-row.is-active{background:var(--color-accent-muted);border-radius:12px;box-shadow:inset 3px 0 0 var(--accent)}
+.ws-timer{font-size:22px;font-weight:800;min-width:72px;font-variant-numeric:tabular-nums}
+.wk-phase{position:sticky;top:8px;z-index:6;display:flex;align-items:center;gap:12px;padding:10px 12px;margin:10px 0;border-radius:14px;background:var(--card);box-shadow:var(--shadow-card);border:1px solid var(--line)}
+.wk-phase[hidden]{display:none}
+.wk-phase.is-set{border-color:var(--accent)}.wk-phase.is-rest .wk-ph-time{color:var(--color-text-secondary)}
+.wk-ph-main{flex:1 1 auto;min-width:96px;display:flex;flex-direction:column}.wk-ph-main .kicker{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.wk-ph-time{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.wk-phase .btn{min-height:48px;flex:0 1 auto;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wk-stale{border-left:3px solid var(--warn,#f59e0b);margin:10px 0}.wk-stale .btn-row{margin-top:10px;flex-wrap:wrap}.wk-stale .btn{min-height:44px}
+.wk-cardio{margin-top:10px}.cd-row{display:flex;align-items:center;gap:10px;padding:6px 0;min-height:48px}.cd-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.wk-cardio #cdAdd{margin-top:6px;width:100%;min-height:44px}
+.cd-types{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}.cd-type{min-height:44px;display:inline-flex;align-items:center;gap:6px}.cd-type.on{background:var(--color-accent-muted);border-color:var(--accent);color:var(--text)}
+.wk-times{margin:10px 0}.wk-sum-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}.wk-sum-ex{padding:8px 0;border-bottom:1px solid var(--line)}
+.wk-sum-cd{margin-top:10px}.wk-hist-time{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--color-text-secondary)}.wk-hist-time span{display:inline-flex;align-items:center;gap:4px}.wk-hist-time b{color:var(--text)}
+.fit-ready{margin-bottom:12px}.fr-level{display:flex;align-items:center;gap:8px;margin:10px 0 2px;font-size:17px}
+.fr-dot{width:12px;height:12px;border-radius:50%;background:var(--color-text-secondary);flex:none}
+.fit-ready.is-good .fr-dot{background:var(--success,#10b981)}.fit-ready.is-medium .fr-dot{background:var(--warn,#f59e0b)}.fit-ready.is-low .fr-dot{background:var(--danger)}
+.fr-why ul{margin:6px 0 0;padding-left:18px}.fr-why li{margin:2px 0}.fr-rec{margin-bottom:8px}
+.fit-ready #frSleep{margin-top:10px;min-height:44px}
+@media(min-width:768px){.ws-act{justify-content:flex-end}.ws-act .btn{flex:0 1 340px}}
+@media(min-width:900px){.wk-phase{top:12px}}
 </style>
 </head>
 <body>
@@ -3511,6 +3540,9 @@ const UI_ICONS={
   cart:'<path d="M3.5 4.5h2.5l2 11h10l2-8H7"/><path d="M9.5 19h.01M16.5 19h.01"/>',
   pin:'<path d="M9 4h6l-1 5 3 3H7l3-3-1-5ZM12 12v8"/>',
   activity:'<path d="M3.5 12h4l2.5-6 4 12 2.5-6h4"/>',
+  run:'<circle cx="14.5" cy="4.5" r="1.8"/><path d="m8.5 20 3-5.5 3 2.5v4.5"/><path d="M6 11.5 9.5 8h4l2 3.5 3 1"/><path d="M11.5 14.5 13.5 8"/>',
+  walk:'<circle cx="12.5" cy="4.5" r="1.8"/><path d="m9.5 21 2-6 2.5 2.5V21"/><path d="M8.5 13 10 8.5h3.5l1.5 4 2 1"/><path d="M11.5 15 13.5 8.5"/>',
+  stairs:'<path d="M3.5 20.5h5v-4h4v-4h4v-4h4v-4"/><path d="M3.5 20.5h17"/>',
   scale:'<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 9.5a5 5 0 0 1 7 0L13 12"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   camera:'<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -6913,6 +6945,156 @@ function workoutDiscard(wid){
   const w=workoutFindById(wid); if(!w||w.status!=='active') return false;
   S.workouts=S.workouts.filter(x=>x.id!==wid); return true;
 }
+/* ---- Gym Workout Mode 3.0: set timing, rests, cardio, finished-workout timing ----
+   Only optional fields, all derived from timestamps (ms since epoch); nothing here is required by old workouts:
+     set    {startedAt?, finishedAt?}       READY (neither) -> ACTIVE (startedAt) -> DONE (done:true, finishedAt)
+                                             a set ticked done without Start keeps only finishedAt (no set time, rest still starts)
+     w.cardio [{id, type:'run'|'walk'|'stairs', startedAt?, finishedAt?, durationSec}]   durationSec null while its timer runs
+   A rest is never stored: it runs from a set's finishedAt to the next start (a set or cardio) or to the workout's end,
+   so deleting or editing sets re-derives it. The workout's total time is finishedAt - startedAt (no duplicate field). ---- */
+const CARDIO_TYPES=['run','walk','stairs'];
+const WK_SET_STALE_MS=5*60000;      // an ACTIVE set found after a reload / takeover and older than this is asked about, never auto-finished
+const WK_CARDIO_STALE_MS=3*3600000; // same for a running cardio timer
+const WK_STALE_MS=12*3600000;       // a workout running this long since its last activity is asked about before finishing
+function workoutSetState(st){ return st&&st.done?'done':st&&st.startedAt&&!st.finishedAt?'active':'ready'; }
+function workoutSetSec(st){ return st&&st.startedAt&&st.finishedAt&&st.finishedAt>=st.startedAt?Math.round((st.finishedAt-st.startedAt)/1000):null; }
+function workoutFindSet(wid,entryId,setId){ const w=workoutFindById(wid), en=w&&(w.entries||[]).find(e=>e.id===entryId), st=en&&en.sets.find(x=>x.id===setId); return st?{w,en,st}:null; }
+function workoutActiveSet(w){
+  for(const en of (w&&w.entries)||[]) for(const st of en.sets) if(workoutSetState(st)==='active') return {en,st};
+  return null;
+}
+function workoutRunningCardio(w){ return ((w&&w.cardio)||[]).find(c=>c.startedAt&&!c.finishedAt)||null; }
+function workoutStartSet(wid,entryId,setId,now){
+  const f=workoutFindSet(wid,entryId,setId); if(!f||f.w.status!=='active') return {ok:false,reason:'not_found'};
+  if(workoutSetState(f.st)!=='ready') return {ok:false,reason:'not_ready'};
+  if(workoutActiveSet(f.w)) return {ok:false,reason:'active_set'};
+  if(workoutRunningCardio(f.w)) return {ok:false,reason:'cardio_running'};
+  f.st.startedAt=now; delete f.st.finishedAt; return {ok:true,set:f.st};
+}
+function workoutFinishSet(wid,entryId,setId,now,patch){
+  const f=workoutFindSet(wid,entryId,setId); if(!f||workoutSetState(f.st)!=='active') return {ok:false};
+  if(patch) workoutUpdateSet(wid,entryId,setId,patch);
+  f.st.finishedAt=Math.max(now,f.st.startedAt); f.st.done=true; return {ok:true,set:f.st};
+}
+function workoutTickSet(wid,entryId,setId,done,now,patch){
+  // the quick check: done without Start (finishedAt only, so the rest still starts) / undone = back to READY, timing cleared
+  const f=workoutFindSet(wid,entryId,setId); if(!f) return null;
+  if(patch) workoutUpdateSet(wid,entryId,setId,patch);
+  if(done){ if(workoutSetState(f.st)==='active') return workoutFinishSet(wid,entryId,setId,now).set; f.st.done=true; if(f.w.status==='active'&&!f.st.finishedAt) f.st.finishedAt=now; }
+  else { f.st.done=false; delete f.st.startedAt; delete f.st.finishedAt; }
+  return f.st;
+}
+function workoutResetSetTiming(wid,entryId,setId){
+  const f=workoutFindSet(wid,entryId,setId); if(!f||workoutSetState(f.st)!=='active') return false;
+  delete f.st.startedAt; delete f.st.finishedAt; return true;
+}
+function workoutCardioValid(o){
+  const e={};
+  if(!CARDIO_TYPES.includes(o&&o.type)) e.type='invalid';
+  if(o&&'durationSec' in o&&o.durationSec!=null){ const d=Number(o.durationSec); if(!Number.isFinite(d)||d<=0||d>86400||Math.round(d)!==d) e.durationSec='invalid'; }
+  return e;
+}
+function workoutCardioAdd(wid,o){
+  const w=workoutFindById(wid); if(!w) return {ok:false,errors:{workout:'not_found'}};
+  const errors=workoutCardioValid(o); if(o.durationSec==null) errors.durationSec='required'; if(Object.keys(errors).length) return {ok:false,errors};
+  const c={id:uid(),type:o.type,durationSec:Number(o.durationSec)};
+  w.cardio=Array.isArray(w.cardio)?w.cardio:[]; w.cardio.push(c); return {ok:true,cardio:c};
+}
+function workoutCardioStart(wid,type,now){
+  const w=workoutFindById(wid); if(!w||w.status!=='active') return {ok:false,reason:'not_active'};
+  if(!CARDIO_TYPES.includes(type)) return {ok:false,reason:'type'};
+  if(workoutActiveSet(w)) return {ok:false,reason:'active_set'};
+  if(workoutRunningCardio(w)) return {ok:false,reason:'cardio_running'};
+  const c={id:uid(),type,startedAt:now,finishedAt:null,durationSec:null};
+  w.cardio=Array.isArray(w.cardio)?w.cardio:[]; w.cardio.push(c); return {ok:true,cardio:c};
+}
+function workoutCardioFinish(wid,cid,now){
+  const w=workoutFindById(wid), c=w&&(w.cardio||[]).find(x=>x.id===cid); if(!c||!c.startedAt||c.finishedAt) return {ok:false};
+  c.finishedAt=Math.max(now,c.startedAt); c.durationSec=Math.max(1,Math.round((c.finishedAt-c.startedAt)/1000)); return {ok:true,cardio:c};
+}
+function workoutCardioUpdate(wid,cid,patch){
+  const w=workoutFindById(wid), c=w&&(w.cardio||[]).find(x=>x.id===cid); if(!c) return {ok:false,errors:{cardio:'not_found'}};
+  const next=Object.assign({},c,patch||{}), errors=workoutCardioValid(next); if(Object.keys(errors).length) return {ok:false,errors};
+  if(patch&&'type' in patch) c.type=patch.type;
+  if(patch&&'durationSec' in patch&&!(c.startedAt&&!c.finishedAt)) c.durationSec=Number(patch.durationSec); // a running timer keeps its own duration
+  return {ok:true,cardio:c};
+}
+function workoutCardioRemove(wid,cid){
+  const w=workoutFindById(wid); if(!w||!Array.isArray(w.cardio)) return false;
+  const n=w.cardio.length; w.cardio=w.cardio.filter(c=>c.id!==cid); return w.cardio.length<n;
+}
+function workoutLastActivity(w){
+  // the latest timestamp the person produced in this workout (a set or cardio start/finish), else its start
+  let t=Number(w&&w.startedAt)||0;
+  (w.entries||[]).forEach(en=>en.sets.forEach(st=>{ t=Math.max(t,Number(st.startedAt)||0,Number(st.finishedAt)||0); }));
+  (w.cardio||[]).forEach(c=>{ t=Math.max(t,Number(c.startedAt)||0,Number(c.finishedAt)||0); });
+  return t;
+}
+function workoutTiming(w,now){
+  // Read-only. Finished workout: everything up to finishedAt. Active workout: up to now (explicit). Old workouts without
+  // timestamps give nulls -- the UI then simply shows nothing for that part.
+  const live=w&&w.status==='active', end=live?now:Number(w&&w.finishedAt)||null, start=Number(w&&w.startedAt)||null;
+  const total=start&&end&&end>=start?Math.round((end-start)/1000):null;
+  const per={}, starts=[];
+  let active=0, timed=0, rest=0, restTimed=0, cardio=0, cardioN=0;
+  (w.entries||[]).forEach(en=>{ per[en.id]={activeSec:0,restSec:0,timedSets:0};
+    en.sets.forEach(st=>{ if(st.startedAt) starts.push(Number(st.startedAt)); const d=workoutSetSec(st); if(d!=null&&st.done){ active+=d; timed++; per[en.id].activeSec+=d; per[en.id].timedSets++; } }); });
+  (w.cardio||[]).forEach(c=>{ if(c.startedAt) starts.push(Number(c.startedAt));
+    const d=c.durationSec!=null?Number(c.durationSec):(c.startedAt&&!c.finishedAt&&live?Math.max(0,Math.round((now-c.startedAt)/1000)):null);
+    if(d!=null&&Number.isFinite(d)){ cardio+=d; cardioN++; } });
+  starts.sort((a,b)=>a-b);
+  const running=live&&(workoutActiveSet(w)||workoutRunningCardio(w));
+  let restFrom=null;
+  (w.entries||[]).forEach(en=>en.sets.forEach(st=>{
+    if(!st.done||!st.finishedAt) return;
+    const f=Number(st.finishedAt), next=starts.find(x=>x>=f);
+    let to=next!=null?next:(live?(running?null:now):end);
+    if(live&&next==null&&!running) restFrom=Math.max(restFrom||0,f); // the rest that is running right now (0 s at its first moment)
+    if(to==null||!(to>f)) return;
+    const d=Math.round((to-f)/1000); rest+=d; restTimed++; per[en.id].restSec+=d;
+  }));
+  const as=live?workoutActiveSet(w):null, rc=live?workoutRunningCardio(w):null;
+  const phase=!live?'done':as?'set':rc?'cardio':restFrom?'rest':'idle';
+  return {totalSec:total,activeSec:timed?active:null,restSec:restTimed?rest:null,cardioSec:cardioN?cardio:null,timedSets:timed,perEntry:per,phase,
+    activeSet:as,runningCardio:rc,restFrom:phase==='rest'?restFrom:null};
+}
+/* ---- Gym Workout Mode 3.0: training readiness -- an estimate from data stored in LifeOS, never a medical statement.
+   Pure and read-only; `now` is an explicit input. Rules (all visible as reasons in the UI):
+     sleep  = the entry dated today (the night that ended today; several -> the longest). None -> 'insufficient' (no score).
+              base = sleep band of the Daily Score (7-9 h = 100; below 7 h: (h-4)/3 x 100, 0 at <= 4 h; above 9 h: max(70, 100-(h-9)/2 x 30)),
+              with qualityPct: 0.7 x band + 0.3 x quality (as the Daily Score does; old 1-5 quality is not used)
+     load   = finished workouts by date: trained today -15, trained yesterday -5 (the closer one only),
+              3+ workouts in the last 3 days (today included) -10, 5+ in the last 7 days -10
+     score  = round(base - load), clamped 0..100 -> good >= 75, medium 50-74, low < 50
+     trainingDays only adds a reason (plan context), it never changes the score. ---- */
+function trainingReadiness(st,now){
+  st=st||S; const nd=new Date(now), D=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0'), cs=uiLang()==='cs';
+  const sleeps=(st.sleepLog||[]).filter(x=>x.date===D), best=sleeps.length?sleeps.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a):null;
+  const done=(st.workouts||[]).filter(w=>isCompletedWorkout(w)&&w.date&&w.date<=D);
+  let last=null, n3=0, n7=0; const d3=addDays(D,-2), d7=addDays(D,-6);
+  done.forEach(w=>{ if(!last||w.date>last) last=w.date; if(w.date>=d3) n3++; if(w.date>=d7) n7++; });
+  const daysSince=last?Math.round((new Date(D+'T00:00')-new Date(last+'T00:00'))/86400000):null;
+  const td=st.settings&&Array.isArray(st.settings.trainingDays)?st.settings.trainingDays:null, isTd=td?td.includes(new Date(D+'T00:00').getDay()):null;
+  const reasons=[];
+  const hrs=best?sleepDuration(best):null, q=best?sleepQualityPct(best):null;
+  if(best){ const h=Math.floor(hrs), m=Math.round((hrs-h)*60); reasons.push({k:'sleep',text:cs?`Spánek ${h} h ${String(m).padStart(2,'0')} min`:`Sleep ${h} h ${String(m).padStart(2,'0')} min`}); }
+  else reasons.push({k:'sleep',text:cs?'Dnešní spánek není zapsaný':"Today's sleep is not logged"});
+  if(best) reasons.push({k:'quality',text:q!=null?(cs?`Kvalita spánku ${q} %`:`Sleep quality ${q} %`):(cs?'Kvalita spánku nezadaná (počítá se jen délka)':'Sleep quality not entered (duration only)')});
+  let load=0;
+  if(daysSince===0){ load+=15; reasons.push({k:'last',text:cs?'Dnes už máš dokončený trénink':'You already finished a workout today',effect:-15}); }
+  else if(daysSince===1){ load+=5; reasons.push({k:'last',text:cs?'Poslední trénink včera':'Last workout yesterday',effect:-5}); }
+  else if(daysSince!=null) reasons.push({k:'last',text:cs?`Poslední trénink před ${daysSince} dny`:`Last workout ${daysSince} days ago`});
+  else reasons.push({k:'last',text:cs?'Zatím žádný dokončený trénink':'No finished workout yet'});
+  if(n3>=3){ load+=10; reasons.push({k:'load3',text:cs?`${n3} tréninky za poslední 3 dny`:`${n3} workouts in the last 3 days`,effect:-10}); }
+  const tr=n=>cs?(n===1?'trénink':n>=2&&n<=4?'tréninky':'tréninků'):(n===1?'workout':'workouts');
+  reasons.push({k:'load7',text:cs?`${n7} ${tr(n7)} za posledních 7 dní`:`${n7} ${tr(n7)} in the last 7 days`,effect:n7>=5?-10:undefined});
+  if(n7>=5) load+=10;
+  if(isTd!=null) reasons.push({k:'plan',text:isTd?(cs?'Podle plánu je dnes tréninkový den':'Today is a training day in your plan'):(cs?'Podle plánu je dnes den volna':'Today is a rest day in your plan')});
+  if(!best) return {level:'insufficient',score:null,reasons,date:D,load,daysSince,n3,n7};
+  const base=q!=null?0.7*dailyScoreSleepBand(hrs)+0.3*q:dailyScoreSleepBand(hrs);
+  const score=Math.max(0,Math.min(100,Math.round(base-load)));
+  return {level:score>=75?'good':score>=50?'medium':'low',score,reasons,date:D,load,daysSince,n3,n7};
+}
 /* ---- Phase 11A step 5: exercise history + PR engine (always derived from S.workouts, never cached).
    Order: workouts are compared by when they happened -- date, then finishedAt/startedAt/createdAt,
    then id -- never by their position in S.workouts (import/editing cannot reorder "previous").
@@ -7292,12 +7474,17 @@ function muscleOverview(st){ const t=muscleTotals(st); return MUSCLE_GROUPS.map(
 function workoutMuscleXp(wid,st){
   const t={}; ((st||S).muscleProgress&&(st||S).muscleProgress.log||[]).filter(r=>r.workoutId===wid).forEach(r=>Object.entries(r.xp||{}).forEach(([g,v])=>{ t[g]=(t[g]||0)+v; })); return t;
 }
-function workoutFinish(wid){
+function workoutFinish(wid,at){
   // The moment a workout counts as done. The rewards below are exactly the ones the Log
   // Workout form grants for a new workout (80 XP STR + 20 VIT + the Phase 5 skill bonus), behind
   // the same idempotent workout:<id>:<date> ledger key -- so they can only ever be paid once.
   const w=workoutFindById(wid); if(!w||w.status!=='active') return {ok:false};
-  w.status='done'; w.finishedAt=Date.now();
+  // Gym Workout Mode 3.0: `at` lets a stale session end at its last activity (asked first in the UI); a running cardio timer
+  // ends with the workout, a set still ACTIVE goes back to READY (never an invented set time). Rewards below unchanged.
+  const end=Number(at)>0?Number(at):Date.now();
+  const rc=workoutRunningCardio(w); if(rc) workoutCardioFinish(w.id,rc.id,end);
+  const as=workoutActiveSet(w); if(as){ delete as.st.startedAt; delete as.st.finishedAt; }
+  w.status='done'; w.finishedAt=end;
   if(!w.duration) w.duration=String(Math.max(1,Math.round((w.finishedAt-(w.startedAt||w.finishedAt))/60000)));
   // Snapshot of the PRs at the moment of finishing (never rewritten; current records stay dynamic).
   const idx=exerciseHistoryIndex();
@@ -7751,6 +7938,44 @@ function uiWkT(k){
   return T[k];
 }
 function uiFmtSec(s){ s=Math.round(Number(s)||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`; }
+// Gym Workout Mode 3.0 texts
+function uiGymT(k){
+  const cs=uiLang()==='cs';
+  return (cs?{workout:'Trénink',start_set:'Start série',finish_set:'Dokončit sérii',rest:'Pauza',set:'Série',cardio:'Kardio',add_cardio:'+ Přidat kardio',
+    run:'Běh',walk:'Chůze',stairs:'Schody',dur_min:'Délka (min)',save:'Uložit',timer:'Spustit časovač',finish_cd:'Dokončit',edit_cd:'Upravit kardio',new_cd:'Přidat kardio',
+    rm_cd:'Smazat kardio',rm_cd_q:'Záznam kardia se smaže z tohoto tréninku. XP se nemění.',type:'Typ',e_dur:'Zadej délku v minutách (víc než 0)',
+    running:'běží',total:'Celkem',active:'Aktivní série',pauses:'Pauzy',sets:'sérií',exs:'cviků',vol:'objem',
+    set_running_t:'Série právě běží',set_running_q:'Dokonči ji, než ukončíš trénink.',set_finish_all:'Dokončit sérii a trénink',
+    stale_set:'Tato série byla aktivní při zavření aplikace.',stale_set_d:'Neodhadujeme, jak dlouho opravdu trvala — rozhodni sám/sama.',
+    stale_finish:'Dokončit nyní',stale_reset:'Zrušit čas série',stale_cd:'Kardio běželo při zavření aplikace.',stale_cd_reset:'Zadat délku ručně',
+    stale_w:'Tento trénink pořád běží',stale_w_d:'Poslední aktivita',stale_end:'Dokončit k poslední aktivitě',stale_keep:'Pokračovat v tréninku',
+    busy_set:'Nejdřív dokonči běžící sérii.',busy_cd:'Nejdřív dokonči kardio.',fix_sets:'Opravit série',interrupted:'přerušeno',
+    ready_t:'Dnešní připravenost',ready_sub:'Odhad podle dat v LifeOS — ne lékařské hodnocení.',why:'Proč:',
+    good:'Dobrá připravenost',medium:'Střední připravenost',low:'Nízká připravenost',insufficient:'Nedostatek dat',
+    rec_good:'Běžný trénink podle plánu.',rec_medium:'Zvaž běžný nebo lehčí trénink podle pocitu.',rec_low:'Zvaž lehčí aktivitu nebo odpočinek.',
+    rec_insufficient:'Pro lepší odhad zapiš dnešní spánek.',log_sleep:'Zapsat spánek',min:'min'}
+  :{workout:'Workout',start_set:'Start set',finish_set:'Finish set',rest:'Rest',set:'Set',cardio:'Cardio',add_cardio:'+ Add cardio',
+    run:'Run',walk:'Walk',stairs:'Stairs',dur_min:'Duration (min)',save:'Save',timer:'Start timer',finish_cd:'Finish',edit_cd:'Edit cardio',new_cd:'Add cardio',
+    rm_cd:'Delete cardio',rm_cd_q:'The cardio entry is removed from this workout. XP does not change.',type:'Type',e_dur:'Enter the duration in minutes (more than 0)',
+    running:'running',total:'Total',active:'Active sets',pauses:'Rests',sets:'sets',exs:'exercises',vol:'volume',
+    set_running_t:'A set is running',set_running_q:'Finish it before you end the workout.',set_finish_all:'Finish set and workout',
+    stale_set:'This set was running when the app closed.',stale_set_d:'We do not guess how long it really took — you decide.',
+    stale_finish:'Finish now',stale_reset:'Discard the set time',stale_cd:'Cardio was running when the app closed.',stale_cd_reset:'Enter the duration',
+    stale_w:'This workout is still running',stale_w_d:'Last activity',stale_end:'Finish at the last activity',stale_keep:'Keep going',
+    busy_set:'Finish the running set first.',busy_cd:'Finish the cardio first.',fix_sets:'Fix sets',interrupted:'interrupted',
+    ready_t:"Today's readiness",ready_sub:'An estimate from your LifeOS data — not a medical assessment.',why:'Why:',
+    good:'Good readiness',medium:'Medium readiness',low:'Low readiness',insufficient:'Not enough data',
+    rec_good:'A normal workout as planned.',rec_medium:'Consider a normal or a lighter workout, as you feel.',rec_low:'Consider a lighter activity or rest.',
+    rec_insufficient:"Log today's sleep for a better estimate.",log_sleep:'Log sleep',min:'min'})[k];
+}
+const UI_CARDIO_IC={run:'run',walk:'walk',stairs:'stairs'};
+// sets / cardio started in this page session; one started before a reload or in another tab is "found", not "running here"
+const uiWkLiveIds=new Set();
+function uiFmtDur(sec){ sec=Math.max(0,Math.round(Number(sec)||0)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), x=sec%60, cs=uiLang()==='cs';
+  return h?`${h} h ${m} min`:m?`${m} min${x&&m<10?` ${x} s`:''}`:`${x} s`; }
+function uiWkStaleSet(w,now){ const a=workoutActiveSet(w); return a&&!uiWkLiveIds.has(a.st.id)&&now-a.st.startedAt>WK_SET_STALE_MS?a:null; }
+function uiWkStaleCardio(w,now){ const c=workoutRunningCardio(w); return c&&!uiWkLiveIds.has(c.id)&&now-c.startedAt>WK_CARDIO_STALE_MS?c:null; }
+function uiWkStaleWorkout(w,now){ return !uiWkLiveIds.has(w.id)&&!uiWkStaleSet(w,now)&&!uiWkStaleCardio(w,now)&&now-workoutLastActivity(w)>WK_STALE_MS; }
 function uiFmtNum(v){ return v==null||v===''?'':Number(v).toLocaleString(uiLocale(),{maximumFractionDigits:2}); }
 function uiPlanText(m,t){
   if(!t) return '';
@@ -7775,13 +8000,18 @@ function uiWkProgress(w){
   const planned=(w.entries||[]).reduce((a,en)=>a+en.sets.filter(s=>!s.warmup).length,0);
   return {done:workoutTotalSets(w),planned};
 }
+// The 1 s tick only rewrites the text of the running clocks ([data-elapsed]: workout, set, rest, cardio); it never renders,
+// never writes S or IndexedDB, and time always comes from the stored timestamps (a background tab / a reload loses nothing).
+function uiWkTick(){
+  const els=document.querySelectorAll('[data-elapsed]');
+  if(!els.length) return false;
+  const now=Date.now();
+  els.forEach(e=>{ const t=uiFmtSec((now-Number(e.dataset.elapsed))/1000); if(e.textContent!==t) e.textContent=t; });
+  return true;
+}
 function uiEnsureWkTimer(){
   if(uiWkTimer) return;
-  uiWkTimer=setInterval(()=>{
-    const els=document.querySelectorAll('[data-elapsed]');
-    if(!els.length){ clearInterval(uiWkTimer); uiWkTimer=null; return; }
-    els.forEach(e=>{ e.textContent=uiFmtSec((Date.now()-Number(e.dataset.elapsed))/1000); });
-  },1000);
+  uiWkTimer=setInterval(()=>{ if(!uiWkTick()){ clearInterval(uiWkTimer); uiWkTimer=null; } },1000);
 }
 // Core reliability (A3): every irreversible delete asks first in the app's own sheet (never the browser's
 // English confirm()) and says what goes, whether its history goes and what happens to linked data.
@@ -7866,25 +8096,42 @@ function uiWorkoutStartPanel(){
   const mk=c.querySelector('#wkMakeTpl'); if(mk) mk.onclick=()=>{ fitnessTab='templates'; render(); openTemplateForm(); };
   return c;
 }
-function uiWorkoutSetRow(w,en,st,workIdx,ph){
+function uiWorkoutSetRow(w,en,st,workIdx,ph,ctx){
   const fs=WS_FIELDS[en.measurement]||['reps'];
   const num=st.warmup?uiWkT('wu'):String(workIdx);
+  const state=workoutSetState(st), live=w.status==='active', c=ctx||{}, sec=workoutSetSec(st);
+  const stale=state==='active'&&c.stale&&c.stale.st.id===st.id;
+  const act=state==='active'
+    ?`<div class="ws-act is-active"><span class="ws-timer num">${stale?uiGymT('interrupted'):`<span data-elapsed="${st.startedAt}">${uiFmtSec((Date.now()-st.startedAt)/1000)}</span>`}</span>${stale?'':`<button type="button" class="btn wsFinish" aria-label="${uiGymT('finish_set')} ${num}: ${escapeHtml(en.name)}">${uiIcon('check',18)} ${uiGymT('finish_set')}</button>`}</div>`
+    :state==='ready'&&c.next&&live&&!c.busy?`<div class="ws-act"><button type="button" class="btn ws-start wsStart" aria-label="${uiGymT('start_set')} ${num}: ${escapeHtml(en.name)}">${uiIcon('play',18)} ${uiGymT('start_set')}</button></div>`
+    :state==='done'&&sec!=null?`<div class="ws-act is-done"><span class="sub ws-dur">${uiFmtSec(sec)}</span></div>`:'';
   const inputs=fs.map(f=>`<input type="number" inputmode="${f==='weight'||f==='distance'?'decimal':'numeric'}" min="0" step="any" class="ws-in" data-f="${f}"
     aria-label="${uiWkT('set')} ${num}: ${uiWkT(f==='weight'?'kg':f)}" value="${st[f]==null?'':st[f]}" placeholder="${ph&&ph[f]!=null?ph[f]:''}">`).join('');
-  const row=el(`<div class="ws-row ws-c${fs.length}${st.done?' is-done':''}${st.warmup?' is-wu':''}" data-set="${st.id}">
+  const row=el(`<div class="ws-row ws-c${fs.length}${st.done?' is-done':''}${st.warmup?' is-wu':''}${state==='active'?' is-active':''}" data-set="${st.id}" data-state="${state}">
     <button type="button" class="ws-num" aria-pressed="${st.warmup}" aria-label="${uiWkT('set')} ${num}: ${uiWkT('toggle_wu')}">${num}</button>
     ${inputs}
     <button type="button" class="ws-done" aria-pressed="${st.done}" aria-label="${uiWkT('set')} ${num}: ${uiWkT('mark_done')}">✓</button>
-    <button type="button" class="ws-rm" aria-label="${uiWkT('rm_set')} ${num}">✕</button></div>`);
+    <button type="button" class="ws-rm" aria-label="${uiWkT('rm_set')} ${num}">✕</button>${act}</div>`);
   row.querySelectorAll('.ws-in').forEach(inp=>inp.oninput=()=>{ workoutUpdateSet(w.id,en.id,st.id,{[inp.dataset.f]:inp.value}); scheduleSave(); });
   row.querySelector('.ws-num').onclick=()=>{ workoutUpdateSet(w.id,en.id,st.id,{warmup:!st.warmup}); scheduleSave(); uiRedrawEntry(w,en,'.ws-num',st.id); };
+  // Ticking an untouched set adopts the values shown as placeholders (plan or last time).
+  const adopt=()=>{ const patch={}; if(ph) fs.forEach(f=>{ if(st[f]==null&&ph[f]!=null) patch[f]=ph[f]; }); return patch; };
   row.querySelector('.ws-done').onclick=()=>{
-    const patch={done:!st.done};
-    // Ticking an untouched set adopts the values shown as placeholders (plan or last time).
-    if(!st.done&&ph) fs.forEach(f=>{ if(st[f]==null&&ph[f]!=null) patch[f]=ph[f]; });
-    workoutUpdateSet(w.id,en.id,st.id,patch); scheduleSave(); uiRedrawEntry(w,en,'.ws-done',st.id);
+    workoutTickSet(w.id,en.id,st.id,!st.done,Date.now(),st.done?null:adopt()); scheduleSave(); uiWkRedraw(w,'.ws-done',st.id);
   };
-  row.querySelector('.ws-rm').onclick=()=>{ workoutRemoveSet(w.id,en.id,st.id); scheduleSave(); uiRedrawEntry(w,en,null,null); };
+  const sb=row.querySelector('.wsStart'); if(sb) sb.onclick=()=>{
+    const r=workoutStartSet(w.id,en.id,st.id,Date.now());
+    if(!r.ok){ toast(uiGymT(r.reason==='cardio_running'?'busy_cd':'busy_set')); return; }
+    uiWkLiveIds.add(st.id); scheduleSave(); uiWkRedraw(w,'.wsFinish',st.id);
+  };
+  const fb=row.querySelector('.wsFinish'); if(fb) fb.onclick=()=>{
+    workoutFinishSet(w.id,en.id,st.id,Date.now(),adopt()); scheduleSave(); uiWkRedraw(w,'.wsStart',null);
+  };
+  row.querySelector('.ws-rm').onclick=()=>{
+    const rm=()=>{ workoutRemoveSet(w.id,en.id,st.id); scheduleSave(); uiWkRedraw(w,null,null); };
+    if(st.done) uiConfirmSheet({title:uiWkT('rm_set'),text:uiLang()==='cs'?'Dokončená série se odebere z tréninku. XP za trénink se nemění.':'The finished set is removed from the workout. Workout XP does not change.',ok:uiWkT('rm_set'),danger:true},rm);
+    else rm();
+  };
   return row;
 }
 function uiSuggestionText(sug){
@@ -7942,7 +8189,11 @@ function uiWorkoutEntryCard(w,en){
   }
   const list=card.querySelector('.ws-list');
   let wi=0;
-  en.sets.forEach(st=>{ const idx=st.warmup?0:++wi; list.appendChild(uiWorkoutSetRow(w,en,st,idx,st.warmup?null:phFor(idx-1))); });
+  const now=Date.now(), busy=!!(workoutActiveSet(w)||workoutRunningCardio(w)), stale=w.status==='active'?uiWkStaleSet(w,now):null;
+  const nextId=(en.sets.find(x=>workoutSetState(x)==='ready')||{}).id;
+  en.sets.forEach(st=>{ const idx=st.warmup?0:++wi; list.appendChild(uiWorkoutSetRow(w,en,st,idx,st.warmup?null:phFor(idx-1),{next:st.id===nextId,busy,stale})); });
+  const tm=w.status!=='active'?(workoutTiming(w,now).perEntry[en.id]||null):null;
+  if(tm&&tm.timedSets) card.querySelector('.wk-meta').insertAdjacentHTML('beforeend',`<div class="sub wk-en-time">${uiGymT('active')} ${uiFmtSec(tm.activeSec)} · ${uiGymT('pauses')} ${uiFmtSec(tm.restSec)}</div>`);
   card.querySelector('.wkAddSet').onclick=()=>{ workoutAddSet(w.id,en.id,{}); scheduleSave(); uiRedrawEntry(w,en,'.wkAddSet',null); };
   card.querySelector('.wkAddWu').onclick=()=>{
     const st=workoutAddSet(w.id,en.id,{warmup:true,weight:null,reps:null,seconds:null,distance:null});
@@ -7963,6 +8214,129 @@ function uiRedrawEntry(w,en,focusSel,setId){
   const p=uiWkProgress(fresh), pe=document.getElementById('wkProg');
   if(pe){ pe.textContent=`${p.done}/${p.planned}`; const bar=document.getElementById('wkBar'); if(bar) bar.style.width=uiPct(p.done,p.planned||1)+'%'; }
 }
+// Gym Workout Mode 3.0: a set / cardio state change redraws only the workout's own parts (phase bar, recovery banner,
+// exercise cards, cardio card) in place -- scroll and the rest of the app stay; the 1 s tick never comes here.
+function uiWkRedraw(w,focusSel,setId){
+  const fresh=workoutFindById(w.id), scr=document.querySelector('.wk-screen');
+  if(!fresh||!scr){ render(); return; }
+  if(fresh.status!=='active'&&!(uiWorkoutView&&uiWorkoutView.mode==='edit')){ render(); return; }
+  const swap=(sel,node)=>{ const o=scr.querySelector(sel); if(o&&node){ o.replaceWith(node); uiIconize(node); } };
+  swap('#wkPhase',uiWkPhaseBar(fresh)); swap('#wkStale',uiWkStaleBanner(fresh)); swap('#wkCardio',uiWkCardioCard(fresh));
+  (fresh.entries||[]).forEach(en=>swap(`[data-entry="${en.id}"]`,uiWorkoutEntryCard(fresh,en)));
+  const f=focusSel&&(setId?scr.querySelector(`[data-set="${setId}"] ${focusSel}`):scr.querySelector(focusSel)); if(f) f.focus({preventScroll:true});
+  const p=uiWkProgress(fresh), pe=document.getElementById('wkProg');
+  if(pe){ pe.textContent=`${p.done}/${p.planned}`; const bar=document.getElementById('wkBar'); if(bar) bar.style.width=uiPct(p.done,p.planned||1)+'%'; }
+  uiEnsureWkTimer();
+}
+function uiWkPhaseBar(w){
+  const now=Date.now(), t=w.status==='active'?workoutTiming(w,now):null, stale=w.status==='active'&&(uiWkStaleSet(w,now)||uiWkStaleCardio(w,now));
+  if(!t||stale||t.phase==='idle'||t.phase==='done') return el(`<div id="wkPhase" class="wk-phase" hidden></div>`);
+  if(t.phase==='set'){
+    const {en,st}=t.activeSet, idx=en.sets.filter(x=>!x.warmup).indexOf(st)+1;
+    const b=el(`<div id="wkPhase" class="wk-phase is-set"><div class="wk-ph-main"><span class="kicker">${uiGymT('set')} ${st.warmup?uiWkT('wu'):idx} · ${escapeHtml(en.name)}</span>
+      <span class="wk-ph-time num" data-elapsed="${st.startedAt}">${uiFmtSec((now-st.startedAt)/1000)}</span></div>
+      <button type="button" class="btn wkPhFinish">${uiIcon('check',18)} ${uiGymT('finish_set')}</button></div>`);
+    b.querySelector('.wkPhFinish').onclick=()=>{ workoutFinishSet(w.id,en.id,st.id,Date.now()); scheduleSave(); uiWkRedraw(w,null,null); };
+    return b;
+  }
+  if(t.phase==='cardio'){
+    const c=t.runningCardio;
+    const b=el(`<div id="wkPhase" class="wk-phase is-cardio"><div class="wk-ph-main"><span class="kicker">${uiIcon(UI_CARDIO_IC[c.type],15)} ${uiGymT('cardio')} · ${uiGymT(c.type)}</span>
+      <span class="wk-ph-time num" data-elapsed="${c.startedAt}">${uiFmtSec((now-c.startedAt)/1000)}</span></div>
+      <button type="button" class="btn wkPhCdFinish">${uiIcon('check',18)} ${uiGymT('finish_cd')}</button></div>`);
+    b.querySelector('.wkPhCdFinish').onclick=()=>{ workoutCardioFinish(w.id,c.id,Date.now()); scheduleSave(); uiWkRedraw(w,null,null); };
+    return b;
+  }
+  return el(`<div id="wkPhase" class="wk-phase is-rest"><div class="wk-ph-main"><span class="kicker">${uiGymT('rest')}</span>
+    <span class="wk-ph-time num" data-elapsed="${t.restFrom}">${uiFmtSec((now-t.restFrom)/1000)}</span></div></div>`);
+}
+function uiWkStaleBanner(w){
+  const now=Date.now(), none=el(`<div id="wkStale" hidden></div>`);
+  if(w.status!=='active') return none;
+  const ss=uiWkStaleSet(w,now), sc=!ss&&uiWkStaleCardio(w,now), sw=!ss&&!sc&&uiWkStaleWorkout(w,now);
+  if(ss){
+    const b=el(`<div id="wkStale" class="card wk-stale" role="region" aria-label="${uiGymT('stale_set')}"><b>${uiGymT('stale_set')}</b>
+      <div class="sub">${escapeHtml(ss.en.name)} · ${uiGymT('set')} ${ss.en.sets.filter(x=>!x.warmup).indexOf(ss.st)+1||uiWkT('wu')} · ${uiWkT('started')} ${new Date(ss.st.startedAt).toLocaleTimeString(uiLocale(),{hour:'2-digit',minute:'2-digit'})}. ${uiGymT('stale_set_d')}</div>
+      <div class="btn-row"><button type="button" class="btn" id="wkStaleFinish">${uiGymT('stale_finish')} · ${uiFmtSec((now-ss.st.startedAt)/1000)}</button><button type="button" class="btn ghost" id="wkStaleReset">${uiGymT('stale_reset')}</button></div></div>`);
+    b.querySelector('#wkStaleFinish').onclick=()=>{ workoutFinishSet(w.id,ss.en.id,ss.st.id,Date.now()); scheduleSave(); uiWkRedraw(w,null,null); };
+    b.querySelector('#wkStaleReset').onclick=()=>{ workoutResetSetTiming(w.id,ss.en.id,ss.st.id); scheduleSave(); uiWkRedraw(w,null,null); };
+    return b;
+  }
+  if(sc){
+    const b=el(`<div id="wkStale" class="card wk-stale"><b>${uiGymT('stale_cd')}</b><div class="sub">${uiGymT(sc.type)} · ${uiWkT('started')} ${new Date(sc.startedAt).toLocaleString(uiLocale(),{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}. ${uiGymT('stale_set_d')}</div>
+      <div class="btn-row"><button type="button" class="btn" id="wkStaleFinish">${uiGymT('stale_finish')} · ${uiFmtSec((now-sc.startedAt)/1000)}</button><button type="button" class="btn ghost" id="wkStaleReset">${uiGymT('stale_cd_reset')}</button></div></div>`);
+    b.querySelector('#wkStaleFinish').onclick=()=>{ workoutCardioFinish(w.id,sc.id,Date.now()); scheduleSave(); uiWkRedraw(w,null,null); };
+    // enter the real duration: the running timer is replaced by a manual entry of the same type (form opens prefilled)
+    b.querySelector('#wkStaleReset').onclick=()=>{ workoutCardioRemove(w.id,sc.id); scheduleSave(); uiWkRedraw(w,null,null); openCardioForm(workoutFindById(w.id),null,sc.type); };
+    return b;
+  }
+  if(sw){
+    const last=workoutLastActivity(w), f=t=>new Date(t).toLocaleString(uiLocale(),{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+    const b=el(`<div id="wkStale" class="card wk-stale"><b>${uiGymT('stale_w')}</b><div class="sub">${uiWkT('started')} ${f(w.startedAt)} · ${uiGymT('stale_w_d')} ${f(last)}</div>
+      <div class="btn-row"><button type="button" class="btn" id="wkStaleEnd">${uiGymT('stale_end')}</button><button type="button" class="btn ghost" id="wkStaleKeep">${uiGymT('stale_keep')}</button></div></div>`);
+    b.querySelector('#wkStaleEnd').onclick=()=>uiFinishWorkout(w,last);
+    b.querySelector('#wkStaleKeep').onclick=()=>{ uiWkLiveIds.add(w.id); uiWkRedraw(w,null,null); };
+    return b;
+  }
+  return none;
+}
+function uiWkCardioCard(w){
+  const live=w.status==='active', list=Array.isArray(w.cardio)?w.cardio:[], now=Date.now();
+  const card=el(`<div class="card wk-cardio" id="wkCardio"><div class="between"><div class="kicker">${uiIcon('activity',15)} ${uiGymT('cardio')}</div></div>
+    <div class="list cd-list">${list.map(c=>{ const run=c.startedAt&&!c.finishedAt;
+      return `<div class="cd-row" data-cardio="${c.id}"><span class="icon-circle" aria-hidden="true">${uiIcon(UI_CARDIO_IC[c.type]||'activity',18)}</span>
+        <span class="cd-main"><b>${uiGymT(c.type)}</b><span class="sub num">${run?`<span data-elapsed="${c.startedAt}">${uiFmtSec((now-c.startedAt)/1000)}</span> · ${uiGymT('running')}`:uiFmtDur(c.durationSec)}</span></span>
+        ${run&&live?`<button type="button" class="btn sm cdFinish" aria-label="${uiGymT('finish_cd')}: ${uiGymT(c.type)}">${uiGymT('finish_cd')}</button>`:''}
+        ${run?'':`<button type="button" class="iconbtn ghost-ic cdEdit" aria-label="${uiGymT('edit_cd')}: ${uiGymT(c.type)}">${uiIcon('edit',18)}</button>`}
+        <button type="button" class="delbtn cdDel" aria-label="${uiGymT('rm_cd')}: ${uiGymT(c.type)}">✕</button></div>`; }).join('')}</div>
+    <button type="button" class="btn ghost" id="cdAdd">${uiGymT('add_cardio')}</button></div>`);
+  card.querySelector('#cdAdd').onclick=()=>openCardioForm(workoutFindById(w.id),null);
+  card.querySelectorAll('.cd-row').forEach(r=>{
+    const c=list.find(x=>x.id===r.dataset.cardio);
+    const fb=r.querySelector('.cdFinish'); if(fb) fb.onclick=()=>{ workoutCardioFinish(w.id,c.id,Date.now()); scheduleSave(); uiWkRedraw(w,null,null); };
+    const eb=r.querySelector('.cdEdit'); if(eb) eb.onclick=()=>openCardioForm(workoutFindById(w.id),c);
+    r.querySelector('.cdDel').onclick=()=>uiConfirmSheet({title:uiGymT('rm_cd'),text:uiGymT('rm_cd_q'),ok:uiGymT('rm_cd'),danger:true},()=>{ workoutCardioRemove(w.id,c.id); scheduleSave(); uiWkRedraw(w,null,null); });
+  });
+  return card;
+}
+function openCardioForm(w,existing,presetType){
+  if(!w) return;
+  const c=existing, live=w.status==='active'&&!c, type0=c?c.type:(presetType||'run'), cs=uiLang()==='cs';
+  const inner=el(`<div class="cd-form"><h3>${c?uiGymT('edit_cd'):uiGymT('new_cd')}</h3>
+    <div class="kicker">${uiGymT('type')}</div><div class="cd-types" role="radiogroup" aria-label="${uiGymT('type')}">${CARDIO_TYPES.map(t=>`<button type="button" class="pill cd-type${t===type0?' on':''}" role="radio" aria-checked="${t===type0}" data-cd-type="${t}">${uiIcon(UI_CARDIO_IC[t],18)} ${uiGymT(t)}</button>`).join('')}</div>
+    <label for="cd_min">${uiGymT('dur_min')}</label><input type="number" id="cd_min" inputmode="decimal" min="0" step="any" value="${c&&c.durationSec!=null?Math.round(c.durationSec/6)/10:''}"><div class="field-error" data-err="durationSec" hidden></div>
+    <div class="btn-row"><button type="button" class="btn" id="cd_save">${uiGymT('save')}</button>${live?`<button type="button" class="btn ghost" id="cd_timer">${uiIcon('play',16)} ${uiGymT('timer')}</button>`:''}</div></div>`);
+  let type=type0;
+  inner.querySelectorAll('[data-cd-type]').forEach(b=>b.onclick=()=>{ type=b.dataset.cdType; inner.querySelectorAll('[data-cd-type]').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',String(on)); }); });
+  const bg=openSheet(inner), err=inner.querySelector('[data-err="durationSec"]');
+  inner.querySelector('#cd_save').onclick=()=>{
+    const v=Number(String(inner.querySelector('#cd_min').value).replace(',','.')), sec=Math.round(v*60);
+    if(!(v>0)||!(sec>0)||sec>86400){ err.hidden=false; err.textContent=uiGymT('e_dur'); inner.querySelector('#cd_min').setAttribute('aria-invalid','true'); inner.querySelector('#cd_min').focus(); return; }
+    const r=c?workoutCardioUpdate(w.id,c.id,{type,durationSec:sec}):workoutCardioAdd(w.id,{type,durationSec:sec});
+    if(!r.ok){ err.hidden=false; err.textContent=uiGymT('e_dur'); return; }
+    scheduleSave(); bg.remove(); uiWkRedraw(w,null,null);
+  };
+  const tb=inner.querySelector('#cd_timer'); if(tb) tb.onclick=()=>{
+    const r=workoutCardioStart(w.id,type,Date.now());
+    if(!r.ok){ toast(uiGymT(r.reason==='active_set'?'busy_set':'busy_cd')); return; }
+    uiWkLiveIds.add(r.cardio.id); scheduleSave(); bg.remove(); uiWkRedraw(w,null,null);
+  };
+}
+function uiWkTimingTiles(w){
+  const t=workoutTiming(w,Date.now()), tile=(k,v,id)=>`<div class="stat-card"${id?` data-time="${id}"`:''}><div class="stat-label">${k}</div><div class="stat-value">${v}</div></div>`;
+  return t.totalSec==null?'':`<div class="stat-grid cols-2 wk-times">${tile(uiGymT('total'),uiFmtDur(t.totalSec),'total')}${t.activeSec!=null?tile(uiGymT('active'),uiFmtDur(t.activeSec),'active'):''}
+    ${t.restSec!=null?tile(uiGymT('pauses'),uiFmtDur(t.restSec),'rest'):''}${t.cardioSec!=null?tile(uiGymT('cardio'),uiFmtDur(t.cardioSec),'cardio'):''}</div>`;
+}
+function uiReadinessCard(now){
+  const r=trainingReadiness(S,now), lv=r.level;
+  const c=el(`<section class="card fit-ready is-${lv}" id="fitReady" aria-labelledby="fitReadyH"><div class="between"><div><h3 id="fitReadyH" style="margin:0">${uiGymT('ready_t')}</h3><div class="sub">${uiGymT('ready_sub')}</div></div></div>
+    <div class="fr-level"><span class="fr-dot" aria-hidden="true"></span><b>${uiGymT(lv)}</b></div>
+    <div class="sub fr-rec">${uiGymT('rec_'+lv)}</div>
+    <div class="fr-why"><span class="kicker">${uiGymT('why')}</span><ul>${r.reasons.map(x=>`<li data-reason="${x.k}">${escapeHtml(x.text)}${x.effect?` <span class="sub">(${x.effect})</span>`:''}</li>`).join('')}</ul></div>
+    ${lv==='insufficient'?`<button type="button" class="btn ghost sm" id="frSleep">${uiIcon('moon',16)} ${uiGymT('log_sleep')}</button>`:''}</section>`);
+  const sb=c.querySelector('#frSleep'); if(sb) sb.onclick=()=>openSleepForm();
+  return c;
+}
 function renderWorkoutScreen(){
   const edit=uiWorkoutView&&uiWorkoutView.mode==='edit';
   const w=edit?workoutFindById(uiWorkoutView.id):activeWorkout();
@@ -7973,15 +8347,17 @@ function renderWorkoutScreen(){
         <div class="grid2"><div><label for="wk_date">${uiWkT('date')}</label><input type="date" id="wk_date" value="${w.date}"></div>
         <div><label for="wk_dur">${uiWkT('duration')}</label><input type="number" inputmode="numeric" min="0" id="wk_dur" value="${escapeHtml(String(w.duration||''))}"></div></div></div>`
     :`<div class="card wk-live" id="wkLive"><div class="between"><button class="btn ghost sm" id="wkBack" aria-label="${uiWkT('back')}">←</button>
-        <div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiWkT('live')} · <span data-elapsed="${w.startedAt}">${uiFmtSec((Date.now()-w.startedAt)/1000)}</span></div>
+        <div class="wk-live-k"><span class="live-dot" aria-hidden="true"></span>${uiGymT('workout')}&nbsp;<span class="num" id="wkClock" data-elapsed="${w.startedAt}">${uiFmtSec((Date.now()-w.startedAt)/1000)}</span></div>
         <button class="btn sm" id="wkFinishTop">${uiWkT('finish_sm')}</button></div>
         <h2 class="wk-title">${escapeHtml(w.name)}</h2>
         <div class="between sub"><span><b id="wkProg">${p.done}/${p.planned}</b> ${uiWkT('sets_done')}</span></div>
         <div class="bar${p.planned&&p.done>=p.planned?' is-success':''}"><i id="wkBar" style="width:${uiPct(p.done,p.planned||1)}%"></i></div></div>`;
   const wrap=el(`<div class="wk-screen">${head}
+    ${edit?`<div id="wkPhase" hidden></div><div id="wkStale" hidden></div>${uiWkTimingTiles(w)}`:'<div id="wkPhase" hidden></div><div id="wkStale" hidden></div>'}
     <div class="sub wk-hint">${uiWkT('wu_hint')}</div>
     <div class="list" id="wkEntries"></div>
     <button class="btn ghost" id="wkAddEx">${uiWkT('add_ex')}</button>
+    <div id="wkCardio"></div>
     ${edit?`<div class="card wk-edit-result">${uiWorkoutPlanLine(w)?`<div class="sub wk-plan-line">${uiWorkoutPlanLine(w)}</div>`:''}${uiPerformanceBlock(w.result&&w.result.performance)}${w.result&&w.result.performance?`<div class="sub" style="margin-top:6px">${uiPerfT('snap')}</div>`:''}${uiMuscleSummary(w.id)}${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}<div data-slot="feeling"></div></div>`:''}
     <div class="card wk-foot"><label for="wk_name">${uiWkT('name')}</label><input id="wk_name" value="${escapeHtml(w.name)}">
       <label for="wk_notes">${uiWkT('notes')}</label><textarea id="wk_notes" rows="2">${escapeHtml(w.notes||'')}</textarea></div>
@@ -7991,6 +8367,8 @@ function renderWorkoutScreen(){
   const list=wrap.querySelector('#wkEntries');
   if(!w.entries.length) list.appendChild(el(`<div class="card sub">${uiWkT('no_ex')}</div>`));
   w.entries.forEach(en=>list.appendChild(uiWorkoutEntryCard(w,en)));
+  wrap.querySelector('#wkCardio').replaceWith(uiWkCardioCard(w));
+  if(!edit){ wrap.querySelector('#wkPhase').replaceWith(uiWkPhaseBar(w)); wrap.querySelector('#wkStale').replaceWith(uiWkStaleBanner(w)); }
   const back=()=>{ uiWorkoutView=null; render(); window.scrollTo(0,0); };
   if(edit) wrap.querySelector('.wk-edit-result [data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkEditFeel'));
   wrap.querySelector('#wkBack').onclick=back;
@@ -8011,15 +8389,18 @@ function renderWorkoutScreen(){
   }
   return wrap;
 }
-function uiFinishWorkout(w){
+function uiFinishWorkout(w,at){
   const go=()=>{
-    const r=workoutFinish(w.id);
+    const r=workoutFinish(w.id,at);
     if(!r.ok) return;
     uiWorkoutView=null; scheduleSave(); render(); window.scrollTo(0,0);
     openWorkoutSummary(r.workout,r.granted);
   };
-  if(workoutTotalSets(w)===0) uiConfirmSheet({title:uiWkT('empty_t'),text:uiWkT('empty_q'),ok:uiWkT('finish_sm')},go);
-  else go();
+  const check=()=>{ if(workoutTotalSets(w)===0) uiConfirmSheet({title:uiWkT('empty_t'),text:uiWkT('empty_q'),ok:uiWkT('finish_sm')},go); else go(); };
+  // Gym Workout Mode 3.0: a running set is resolved first (finished now), never silently dropped or stretched
+  const as=!at&&workoutActiveSet(w);
+  if(as&&!uiWkStaleSet(w,Date.now())) uiConfirmSheet({title:uiGymT('set_running_t'),text:uiGymT('set_running_q'),ok:uiGymT('set_finish_all')},()=>{ workoutFinishSet(w.id,as.en.id,as.st.id,Date.now()); scheduleSave(); setTimeout(check,0); });
+  else check();
 }
 function uiPrTypeLabel(t){
   const cs=uiLang()==='cs';
@@ -8085,14 +8466,26 @@ function openWorkoutSummary(w,granted){
   const vol=workoutVolume(w), reps=workoutTotalReps(w);
   const tile=(k,v)=>`<div class="stat-card"><div class="stat-label">${k}</div><div class="stat-value">${v}</div></div>`;
   const inner=el(`<div class="wk-summary" id="wkSummary"><div class="wk-sum-top"><span class="wk-sum-ic" aria-hidden="true">💪</span><div><h3>${uiWkT('sum_t')}</h3><div class="sub">${escapeHtml(w.name)} · ${fmtDate(w.date)}</div></div></div>
-    <div class="stat-grid cols-2">${tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`)}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
+    ${uiWkTimingTiles(w)}
+    <div class="stat-grid cols-2">${workoutTiming(w,Date.now()).totalSec==null?tile(uiWkT('sum_dur'),`${escapeHtml(String(w.duration||0))}<small> ${uiWkT('min')}</small>`):''}${tile(uiWkT('sum_sets'),workoutTotalSets(w))}
       ${reps?tile(uiWkT('sum_reps'),reps):''}${vol?tile(uiWkT('sum_vol'),`${uiNum(vol)}<small> kg</small>`):''}${tile(uiWkT('sum_ex'),w.entries.filter(en=>workoutWorkingSets(en).length).length)}</div>
     ${granted?`<div class="chip wk-xp">+80 ${uiWkT('xp')}</div>`:''}
+    ${uiWkSummaryEntries(w)}
     <div data-slot="performance"${w.result&&w.result.performance?'':' hidden'}>${uiPerformanceBlock(w.result&&w.result.performance)}</div>${uiMuscleSummary(w.id)}<div data-slot="feeling"></div><div data-slot="prs"${(w.result&&w.result.prs||[]).length?'':' hidden'}>${(w.result&&w.result.prs||[]).length?uiPrList(w.result.prs):''}</div>
-    <button class="btn" id="wkSumOk" style="margin-top:14px">${uiWkT('ok')}</button></div>`);
+    <div class="btn-row" style="margin-top:14px"><button class="btn ghost" id="wkSumEdit">${uiIcon('edit',16)} ${uiGymT('fix_sets')}</button><button class="btn" id="wkSumOk">${uiWkT('ok')}</button></div></div>`);
   inner.querySelector('[data-slot="feeling"]').appendChild(uiFeelingPicker(w,'wkSumFeel'));
+  // correcting kg / reps right after the workout: the existing edit screen of the finished workout (no XP, timing kept)
+  inner.querySelector('#wkSumEdit').onclick=()=>{ closeSheets(); uiWorkoutView={mode:'edit',id:w.id}; fitnessTab='workouts'; view='fitness'; render(); window.scrollTo(0,0); };
   inner.querySelector('#wkSumOk').onclick=()=>{ closeSheets(); render(); };
   return openSheet(inner);
+}
+function uiWkSummaryEntries(w){
+  const t=workoutTiming(w,Date.now());
+  const rows=(w.entries||[]).filter(en=>workoutWorkingSets(en).length).map(en=>{ const ws=workoutWorkingSets(en), tm=t.perEntry[en.id];
+    return `<div class="wk-sum-ex"><div class="between"><b class="truncate">${escapeHtml(en.name)}</b><span class="sub">${ws.length} ${uiLang()==='cs'?(ws.length===1?'série':ws.length<=4?'série':'sérií'):(ws.length===1?'set':'sets')}</span></div>
+      <div class="sub num">${escapeHtml(uiSetsText(en.measurement,ws))}</div>${tm&&tm.timedSets?`<div class="sub">${uiGymT('active')} ${uiFmtSec(tm.activeSec)} · ${uiGymT('pauses')} ${uiFmtSec(tm.restSec)}</div>`:''}</div>`; }).join('');
+  const cd=(w.cardio||[]).filter(c=>c.durationSec!=null).map(c=>`<span class="chip" data-sum-cardio="${c.type}">${uiIcon(UI_CARDIO_IC[c.type],14)} ${uiGymT(c.type)} · ${uiFmtDur(c.durationSec)}</span>`).join('');
+  return (rows?`<div class="wk-sum-list">${rows}</div>`:'')+(cd?`<div class="wk-sum-cd"><div class="kicker">${uiGymT('cardio')}</div><div class="chips">${cd}</div></div>`:'');
 }
 function openWorkoutAddExercise(w){
   const inW=new Set(w.entries.map(en=>en.exerciseId));
@@ -8109,7 +8502,8 @@ function openWorkoutAddExercise(w){
   openSheet(inner);
 }
 function uiEntrySummaryRows(w){
-  return (w.entries||[]).map(en=>{ const ws=workoutWorkingSets(en);
+  // Gym Workout Mode 3.0 (found during implementation): an exercise with no finished working set is not listed as "0× ·"
+  return (w.entries||[]).filter(en=>workoutWorkingSets(en).length).map(en=>{ const ws=workoutWorkingSets(en);
     return `<div class="ex-row"><span class="truncate"><b>${escapeHtml(en.name||'—')}</b></span><span class="num sub">${ws.length}× · ${escapeHtml(uiSetsText(en.measurement,ws))}</span></div>`; }).join('');
 }
 function uiMuscT(k){
@@ -8171,6 +8565,10 @@ function renderFitness(){
       <div class="between"><div class="row" style="min-width:0"><span class="icon-circle" aria-hidden="true">💪</span><div style="min-width:0"><div class="item-title truncate">${escapeHtml(w.name)}</div><div class="item-meta">${fmtDate(w.date)}${w.date===todayStr()?' · '+uiT('today'):''}</div></div></div>
         <div class="item-actions"><button class="iconbtn ghost-ic editBtn" aria-label="${uiT('edit')}: ${escapeHtml(w.name)}">${uiIcon('edit',18)}</button><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
       <div class="wk-metrics"><span><b>${w.duration||0}</b> ${L.min}</span><span><b>${workoutTotalSets(w)}</b> ${L.sets}</span><span><b>${workoutTotalReps(w)}</b> ${L.reps}</span><span><b>${uiNum(vol)}</b> kg ${L.volume}</span></div>
+      ${(()=>{ const t=workoutTiming(w,Date.now()), cd=(w.cardio||[]).filter(c=>c.durationSec!=null);
+        const parts=[t.activeSec!=null?`<span data-hist="active">${uiGymT('active')} <b>${uiFmtDur(t.activeSec)}</b></span>`:'',t.restSec!=null?`<span data-hist="rest">${uiGymT('pauses')} <b>${uiFmtDur(t.restSec)}</b></span>`:'',
+          ...cd.map(c=>`<span data-hist="cardio">${uiIcon(UI_CARDIO_IC[c.type],14)} ${uiGymT(c.type)} <b>${uiFmtDur(c.durationSec)}</b></span>`)].filter(Boolean);
+        return parts.length?`<div class="wk-hist-time">${parts.join('')}</div>`:''; })()}
       ${exRows?`<div class="ex-list">${exRows}</div>`:''}
       ${w.result&&(w.result.performance&&w.result.performance.score!=null||w.result.feeling)?`<div class="chips wk-card-perf">${w.result.performance&&w.result.performance.score!=null?`<span class="chip">⚡ ${w.result.performance.score} · ${uiPerfT(w.result.performance.label)}</span>`:''}${w.result.feeling?`<span class="chip is-muted">${UI_FEELING_IC[w.result.feeling]} ${uiFeelingLabel(w.result.feeling)}</span>`:''}</div>`:''}
       ${Array.isArray(w.entries)?(()=>{ const mx=Object.values(workoutMuscleXp(w.id)).reduce((a,v)=>a+v,0), pl=uiWorkoutPlanLine(w); return mx||pl?`<div class="chips wk-card-perf">${mx?`<span class="chip is-muted" data-card-mxp>💪 +${mx} Muscle XP</span>`:''}${pl?`<span class="chip is-muted" data-card-plan>${pl}</span>`:''}</div>`:''; })():''}
@@ -8185,6 +8583,7 @@ function renderFitness(){
   });
   wrap.querySelector('#addW').onclick=()=>openWorkoutForm();
   wrap.querySelector('#wkPanel').appendChild(uiWorkoutStartPanel());
+  wrap.querySelector('#wkPanel').before(uiReadinessCard(Date.now()));
   uiBindFitnessTabs(wrap);
   return wrap;
 }
@@ -11541,6 +11940,23 @@ function uiEnhancePickers(root){
     inp.addEventListener('keydown',e=>{ if(e.altKey&&e.key==='ArrowDown'){ e.preventDefault(); uiPickerOpen(inp,b); } });
   });
 }
+/* Gym Workout Mode 3.0 (input UX): the tap or click that focuses a numeric field puts the caret after the value
+   (80| instead of |80). Only that first focusing tap: a later click inside the field, a drag selection, keyboard focus
+   (Tab keeps the browser's own behaviour), arrow keys and typing are never touched. One shared helper for every
+   numeric editor (type=number or inputmode decimal/numeric). */
+const uiCaret={down:null,fresh:null};
+function uiCaretIsNum(t){ return t&&t.tagName==='INPUT'&&(t.type==='number'||((t.type==='text'||t.type==='')&&/^(decimal|numeric)$/.test(t.inputMode||''))); }
+function uiCaretInstall(){
+  if(uiCaret.on) return; uiCaret.on=true;
+  document.addEventListener('pointerdown',e=>{ uiCaret.down={x:e.clientX,y:e.clientY,t:e.target}; },true);
+  document.addEventListener('focusin',e=>{ uiCaret.fresh=uiCaret.down&&uiCaret.down.t===e.target&&uiCaretIsNum(e.target)?e.target:null; },true);
+  document.addEventListener('click',e=>{
+    const t=e.target, d=uiCaret.down, ok=uiCaret.fresh===t&&d&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<=6; uiCaret.fresh=null;
+    if(!ok||document.activeElement!==t||!t.value) return;
+    if(t.type==='number'){ const v=t.value; t.value=''; t.value=v; } else { const n=t.value.length; t.setSelectionRange(n,n); }
+  },true);
+}
+uiCaretInstall();
 function uiPickerClose(focusBack){
   if(!uiPkOpen) return; const o=uiPkOpen; uiPkOpen=null;
   o.pop.remove(); document.removeEventListener('pointerdown',o.outside,true);
