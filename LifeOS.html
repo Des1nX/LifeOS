@@ -1735,6 +1735,18 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-we
 .fit-ready #frSleep{margin-top:10px;min-height:44px}
 @media(min-width:768px){.ws-act{justify-content:flex-end}.ws-act .btn{flex:0 1 340px}}
 @media(min-width:900px){.wk-phase{top:12px}}
+
+/* Apple Health Bridge 1.0 */
+.ah-pending{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:var(--shadow-card);border-left:3px solid var(--accent)}
+.ah-pending .btn-row{flex:none;flex-wrap:nowrap}.ah-pending .btn,.ah-pending .iconbtn{min-height:44px}
+@media(min-width:900px){.ah-pending{left:auto;right:24px;bottom:24px;max-width:460px}}
+.ah-card{margin-bottom:12px}.ah-k{margin:12px 0 6px}.ah-grid{margin:0}.ah-tile .stat-value{font-size:22px}.ah-src{display:flex;align-items:center;gap:4px;margin-top:4px}
+.ah-mini{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 14px}.ah-mini .sub{display:inline-flex;align-items:center;gap:6px}
+.ah-mini .btn{min-height:44px}#ahSyncH{min-height:44px;flex:none}
+.ah-set .stack .btn{min-height:44px}.ah-set h3{display:flex;align-items:center;gap:8px}
+.ah-paste textarea{width:100%;font-family:ui-monospace,monospace;font-size:13px}.ah-paste .btn,.ah-preview .btn{min-height:44px}
+.ah-rows{margin:12px 0}.ah-row{padding:8px 0;border-bottom:1px solid var(--line)}.ah-err{color:var(--danger);font-weight:650}.ah-warn{margin-top:4px}
+.danger-text{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -2859,6 +2871,7 @@ function render(){
   app.appendChild(map[view]());
   uiIconize(app);
   uiEnhancePickers(app);
+  uiAhBanner(); // Apple Health Bridge: "data may be ready" after the shortcut (only a button; never reads the clipboard)
   // Phase 8B presentation: entrance animation only when the screen actually changes (not on the
   // 60 s refresh or after a tap on the same screen), motion follows Settings → Animations.
   const viewChanged=uiLastView!==view; uiLastView=view;
@@ -5773,6 +5786,7 @@ function renderSettings(){
   dt.appendChild(tdBox);
   wrap.appendChild(dt);
 
+  wrap.appendChild(uiAhSettingsSection(sw)); // Apple Health Bridge
   // -- Data: export / import / reset (existing functions, unchanged) --
   const data=el(`<div><section class="card set-group"><h3>${tr('settings_data')}</h3>
     <div class="set-field stack">
@@ -7069,17 +7083,20 @@ function workoutTiming(w,now){
      trainingDays only adds a reason (plan context), it never changes the score. ---- */
 function trainingReadiness(st,now){
   st=st||S; const nd=new Date(now), D=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0'), cs=uiLang()==='cs';
-  const sleeps=(st.sleepLog||[]).filter(x=>x.date===D), best=sleeps.length?sleeps.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a):null;
+  const sleeps=(st.sleepLog||[]).filter(x=>x.date===D), manual=sleeps.length?sleeps.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a):null;
+  // Apple Health Bridge: while Apple Health is preferred, its sleep duration for today is used; quality stays the manual
+  // qualityPct (Apple Health has no quality score -- none is invented). HRV / resting HR / VO2 max never enter this score.
+  const ahs=ahPreferred(st)?ahSleep(D,st):null, best=ahs?{ah:ahs,q:manual}:manual;
   const done=(st.workouts||[]).filter(w=>isCompletedWorkout(w)&&w.date&&w.date<=D);
   let last=null, n3=0, n7=0; const d3=addDays(D,-2), d7=addDays(D,-6);
   done.forEach(w=>{ if(!last||w.date>last) last=w.date; if(w.date>=d3) n3++; if(w.date>=d7) n7++; });
   const daysSince=last?Math.round((new Date(D+'T00:00')-new Date(last+'T00:00'))/86400000):null;
   const td=st.settings&&Array.isArray(st.settings.trainingDays)?st.settings.trainingDays:null, isTd=td?td.includes(new Date(D+'T00:00').getDay()):null;
   const reasons=[];
-  const hrs=best?sleepDuration(best):null, q=best?sleepQualityPct(best):null;
-  if(best){ const h=Math.floor(hrs), m=Math.round((hrs-h)*60); reasons.push({k:'sleep',text:cs?`Spánek ${h} h ${String(m).padStart(2,'0')} min`:`Sleep ${h} h ${String(m).padStart(2,'0')} min`}); }
+  const hrs=ahs?Math.round(ahs.totalMin)/60:best?sleepDuration(best):null, q=ahs?(manual?sleepQualityPct(manual):null):best?sleepQualityPct(best):null;
+  if(best){ const tm=Math.round(hrs*60), h=Math.floor(tm/60), m=tm%60, src=ahs?' (Apple Health)':''; reasons.push({k:'sleep',text:cs?`Spánek ${h} h ${String(m).padStart(2,'0')} min${src}`:`Sleep ${h} h ${String(m).padStart(2,'0')} min${src}`}); }
   else reasons.push({k:'sleep',text:cs?'Dnešní spánek není zapsaný':"Today's sleep is not logged"});
-  if(best) reasons.push({k:'quality',text:q!=null?(cs?`Kvalita spánku ${q} %`:`Sleep quality ${q} %`):(cs?'Kvalita spánku nezadaná (počítá se jen délka)':'Sleep quality not entered (duration only)')});
+  if(best) reasons.push({k:'quality',text:q!=null?(cs?`Kvalita spánku ${q} %${ahs?' (zadaná ručně)':''}`:`Sleep quality ${q} %${ahs?' (entered by hand)':''}`):(cs?'Kvalita spánku nezadaná (počítá se jen délka)':'Sleep quality not entered (duration only)')});
   let load=0;
   if(daysSince===0){ load+=15; reasons.push({k:'last',text:cs?'Dnes už máš dokončený trénink':'You already finished a workout today',effect:-15}); }
   else if(daysSince===1){ load+=5; reasons.push({k:'last',text:cs?'Poslední trénink včera':'Last workout yesterday',effect:-5}); }
@@ -11641,6 +11658,211 @@ function dailyScore(D){
 }
 /* ---- Phase 7: Health/Sleep statistics — always computed fresh from the real logs, never
    cached, so editing/deleting a log entry is instantly reflected everywhere it's shown. ---- */
+/* ==== Apple Health Bridge 1.0 ====
+   Apple Health -> Apple Shortcuts ("LifeOS Health Sync") -> JSON in the clipboard -> LifeOS (this file) -> IndexedDB.
+   Nothing leaves the device: no fetch, no server. Apple Health is a read-only SOURCE layer kept apart from the manual
+   Health logs (sleepLog, weightLog, activeCaloriesLog, stepsLog stay untouched); read-only resolvers decide what is shown.
+   Imported data pays nothing: no XP, attributes, quests, achievements, Daily Score (see ahImport).
+   Store (created on the first import, absent in older states): S.appleHealth = {version:1, preferred:true,
+     lastSyncAt, lastPayloadGeneratedAt, lastRange:{from,to}, deviceTimezone, days:{'YYYY-MM-DD':{sleep:{totalMin,
+     awakeMin,coreMin,deepMin,remMin,asleepMin,stages,bedtime,wake}, steps, activeKcal, exerciseMin, distanceKm, flights,
+     weightKg, restingHr, hrvMs, vo2Max}}}  -- every metric optional; a missing value is absent, never 0.
+   Protocol v1 (JSON only, never evaluated): {protocol:'lifeos-apple-health', version:1, generatedAt:ISO with offset,
+     deviceTimezone?, range:{from,to}, metrics?:{steps|activeEnergy|exerciseTime|walkingRunningDistance|flightsClimbed|
+     restingHeartRate|heartRateVariability|vo2Max:[{date,value,unit?}], weight:[{date,time?,value,unit?}]},
+     sleep?:[{start,end,value}], days?:{D:{...store day fields...}}}
+   Daily metrics must arrive as one value per day (Shortcuts "Group By: Day", i.e. Health's own totals) -- the importer
+   never sums raw samples, so no source is counted twice. Sleep arrives as raw stage samples and is merged here. ==== */
+const AH_PROTOCOL='lifeos-apple-health', AH_MAJOR=1, AH_MAX_CHARS=5*1024*1024, AH_MAX_RANGE_DAYS=62, AH_SHORTCUT='LifeOS Health Sync';
+const AH_FIELDS={ // payload metric key -> store field, valid range (after unit conversion), units (lower-case, no spaces)
+  steps:{f:'steps',min:0,max:200000,int:true,count:true},
+  activeEnergy:{f:'activeKcal',min:0,max:20000,units:{kcal:1,cal:1,kilocalories:1,kilokalorie:1,kj:1/4.184}},
+  exerciseTime:{f:'exerciseMin',min:0,max:1440,units:{min:1,minutes:1,minut:1,minuty:1,h:60,hr:60,s:1/60}},
+  walkingRunningDistance:{f:'distanceKm',min:0,max:500,units:{km:1,mi:1.609344,m:0.001}},
+  flightsClimbed:{f:'flights',min:0,max:1000,int:true,count:true},
+  restingHeartRate:{f:'restingHr',min:20,max:250,units:{'count/min':1,bpm:1,'/min':1,'tepů/min':1,'tepu/min':1,'beats/min':1}},
+  heartRateVariability:{f:'hrvMs',min:1,max:500,units:{ms:1}},
+  vo2Max:{f:'vo2Max',min:5,max:100,units:{'ml/(kg·min)':1,'ml/(kg*min)':1,'ml/kg·min':1,'ml/kg/min':1,'ml/kg*min':1,'ml/(min·kg)':1}},
+  weight:{f:'weightKg',min:20,max:400,units:{kg:1,lb:0.45359237,lbs:0.45359237,g:0.001,st:6.35029318}} };
+const AH_DAY_FIELDS={steps:AH_FIELDS.steps,activeKcal:AH_FIELDS.activeEnergy,exerciseMin:AH_FIELDS.exerciseTime,distanceKm:AH_FIELDS.walkingRunningDistance,
+  flights:AH_FIELDS.flightsClimbed,restingHr:AH_FIELDS.restingHeartRate,hrvMs:AH_FIELDS.heartRateVariability,vo2Max:AH_FIELDS.vo2Max,weightKg:AH_FIELDS.weight};
+function ahIsDate(d){ if(typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false; const [y,m,x]=d.split('-').map(Number), t=new Date(Date.UTC(y,m-1,x));
+  return y>=1970&&y<=2200&&t.getUTCFullYear()===y&&t.getUTCMonth()===m-1&&t.getUTCDate()===x; }
+function ahNum(v){ if(v==null||v===''||typeof v==='boolean'||Array.isArray(v)||typeof v==='object') return null; const n=typeof v==='string'?Number(v.trim().replace(/\s/g,'').replace(',','.')):Number(v); return Number.isFinite(n)?n:null; }
+function ahUnitFactor(spec,unit){
+  if(spec.count) return 1; // a count has no other unit (localized labels like "kroky" are fine)
+  if(unit==null||unit==='') return 1; // the documented Shortcut sends the default unit
+  const u=String(unit).toLowerCase().replace(/\s/g,''); return Object.prototype.hasOwnProperty.call(spec.units,u)?spec.units[u]:null;
+}
+function ahValue(spec,raw,unit){
+  const n=ahNum(raw); if(n==null) return null; const k=ahUnitFactor(spec,unit); if(k==null) return null;
+  let v=n*k; v=spec.int?Math.round(v):Math.round(v*100)/100; return v>=spec.min&&v<=spec.max?v:null;
+}
+// ISO date-time with an offset -> {ms, date, minOfDay} on the device's own wall clock (the date written in the string),
+// so a night is filed under the local day it ended on in any time zone / DST; a 'Z' time uses deviceTimezone if valid.
+function ahParseIso(iso,tz){
+  if(typeof iso!=='string') return null;
+  const m=/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})$/.exec(iso.trim()); if(!m) return null;
+  const ms=Date.parse(iso.trim().replace(' ','T').replace(/([+-]\d{2})(\d{2})$/,'$1:$2')); if(!Number.isFinite(ms)||!ahIsDate(m[1])||+m[2]>23||+m[3]>59) return null;
+  if(m[5]==='Z'&&tz){ try{ const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(ms)).map(x=>[x.type,x.value]));
+    return {ms,date:`${p.year}-${p.month}-${p.day}`,minOfDay:+p.hour*60+ +p.minute}; }catch(e){} }
+  return {ms,date:m[1],minOfDay:+m[2]*60+ +m[3]};
+}
+function ahSleepKind(v){
+  if(typeof v==='number'&&Number.isInteger(v)) return ['inbed','asleep','awake','core','deep','rem'][v]||null; // HKCategoryValueSleepAnalysis
+  if(typeof v!=='string') return null;
+  const s=v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(/^[0-5]$/.test(s)) return ['inbed','asleep','awake','core','deep','rem'][+s];
+  if(/rem/.test(s)) return 'rem';
+  if(/deep|hlubok/.test(s)) return 'deep';
+  if(/core|jadr|lehk/.test(s)) return 'core';
+  if(/awake|vzhur|bdel|bden/.test(s)) return 'awake';
+  if(/inbed|vposteli|postel/.test(s)) return 'inbed';
+  if(/asleep|unspecified|spanek|spani|sleep/.test(s)) return 'asleep';
+  return null;
+}
+function ahUnionMin(iv){ // minutes covered by the union of [start,end] intervals (overlaps never counted twice)
+  const a=iv.slice().sort((x,y)=>x[0]-y[0]); let tot=0, cs=null, ce=null;
+  a.forEach(([s,e])=>{ if(cs==null){ cs=s; ce=e; } else if(s<=ce) ce=Math.max(ce,e); else { tot+=ce-cs; cs=s; ce=e; } });
+  if(cs!=null) tot+=ce-cs; return Math.round(tot/60000);
+}
+function ahHasBadKeys(o,depth){
+  if(depth>8) return true; if(!o||typeof o!=='object') return false;
+  for(const k of Object.keys(o)){ if(k==='__proto__'||k==='constructor'||k==='prototype') return true; if(ahHasBadKeys(o[k],depth+1)) return true; }
+  return false;
+}
+// Parse + validate a payload text. Read-only: returns {ok, errors[], warnings[], days{}, counts, generatedAt, range, tz}.
+function ahParse(text){
+  const err=c=>({ok:false,errors:[c],warnings:[]});
+  if(typeof text!=='string'||!text.trim()) return err('empty');
+  if(text.length>AH_MAX_CHARS) return err('too_large');
+  let p; try{ p=JSON.parse(text); }catch(e){ return err('json'); }
+  if(!p||typeof p!=='object'||Array.isArray(p)) return err('json');
+  if(ahHasBadKeys(p,0)) return err('keys');
+  if(p.protocol!==AH_PROTOCOL) return err('protocol');
+  const major=typeof p.version==='number'?Math.floor(p.version):typeof p.version==='string'?parseInt(p.version,10):NaN;
+  if(!Number.isFinite(major)||major<1) return err('version');
+  if(major>AH_MAJOR) return err('version_future');
+  const gen=ahParseIso(p.generatedAt,null); if(!gen) return err('generated');
+  const r=p.range||{}; if(!ahIsDate(r.from)||!ahIsDate(r.to)||r.from>r.to) return err('range');
+  const span=Math.round((new Date(r.to+'T12:00')-new Date(r.from+'T12:00'))/86400000)+1; if(span>AH_MAX_RANGE_DAYS) return err('range_long');
+  const tz=typeof p.deviceTimezone==='string'&&/^[A-Za-z_+\-/0-9]{1,64}$/.test(p.deviceTimezone)?p.deviceTimezone:null;
+  const inRange=d=>d>=r.from&&d<=r.to;
+  const days={}, warnings=[], counts={sleep:0,steps:0,activeKcal:0,exerciseMin:0,distanceKm:0,flights:0,weightKg:0,weighIns:0,restingHr:0,hrvMs:0,vo2Max:0};
+  const day=d=>days[d]||(days[d]={});
+  const warn=(k,n)=>{ const w=warnings.find(x=>x.k===k); if(w) w.n+=n||1; else warnings.push({k,n:n||1}); };
+  // 1) precomputed days (optional, store-shaped)
+  if(p.days!=null){
+    if(typeof p.days!=='object'||Array.isArray(p.days)) return err('days');
+    Object.keys(p.days).forEach(d=>{ const src=p.days[d];
+      if(!ahIsDate(d)||!inRange(d)||!src||typeof src!=='object'){ warn('bad_entry'); return; }
+      Object.keys(AH_DAY_FIELDS).forEach(f=>{ if(!(f in src)||src[f]==null) return; const v=ahValue(AH_DAY_FIELDS[f],src[f],null); if(v==null) warn('bad_value'); else day(d)[f]=v; });
+      if(src.sleep&&typeof src.sleep==='object'){ const sl={}; let ok=true;
+        ['totalMin','awakeMin','coreMin','deepMin','remMin'].forEach(k=>{ if(src.sleep[k]==null) return; const v=ahNum(src.sleep[k]); if(v==null||v<0||v>1440) ok=false; else sl[k]=Math.round(v); });
+        if(ok&&sl.totalMin>0){ sl.stages=['coreMin','deepMin','remMin'].some(k=>sl[k]>0); day(d).sleep=sl; } else warn('bad_value'); }
+    });
+  }
+  // 2) daily metric lists (one value per day; a repeated day keeps the last value, never a sum)
+  const M=p.metrics; if(M!=null&&(typeof M!=='object'||Array.isArray(M))) return err('metrics');
+  const weights={};
+  if(M) Object.keys(M).forEach(key=>{
+    const spec=AH_FIELDS[key], list=M[key]; if(!spec){ warn('unknown_metric'); return; }
+    if(list==null||list===''||(Array.isArray(list)&&!list.length)) return; // the shortcut found no samples of this type: simply absent
+    if(!Array.isArray(list)){ warn('bad_entry'); return; }
+    const seen={};
+    list.forEach((e,i)=>{
+      if(!e||typeof e!=='object'){ warn('bad_entry'); return; }
+      const dt=typeof e.date==='string'&&e.date.length>10?ahParseIso(e.date,tz):null, d=dt?dt.date:e.date;
+      if(!ahIsDate(d)){ warn('bad_date'); return; }
+      if(!inRange(d)){ warn('out_of_range'); return; }
+      const v=ahValue(spec,e.value,e.unit); if(v==null){ warn('bad_value'); return; }
+      if(key==='weight'){ const t=dt?dt.minOfDay:(typeof e.time==='string'&&/^\d{1,2}:\d{2}/.test(e.time)?(+e.time.split(':')[0])*60+ +e.time.split(':')[1].slice(0,2):-1);
+        (weights[d]=weights[d]||[]).push({t,i,v}); return; }
+      if(seen[d]) warn('duplicate'); seen[d]=1; day(d)[spec.f]=v;
+    });
+  });
+  Object.keys(weights).forEach(d=>{ const w=weights[d].sort((a,b)=>a.t-b.t||a.i-b.i); day(d).weightKg=w[w.length-1].v; counts.weighIns+=w.length; });
+  // 3) sleep samples -> nights. A night belongs to the local day it ends on; the day runs 18:00 -> 18:00 (as in Health),
+  //    so an evening nap counts for the next day. Asleep = Core + Deep + REM (+ unspecified "Asleep"), Awake / In bed are not sleep.
+  if(p.sleep!=null&&p.sleep!==''){
+    if(!Array.isArray(p.sleep)) return err('sleep');
+    const nights={};
+    p.sleep.forEach(x=>{
+      if(!x||typeof x!=='object'){ warn('bad_entry'); return; }
+      const a=ahParseIso(x.start,tz), b=ahParseIso(x.end,tz), k=ahSleepKind(x.value);
+      if(!a||!b){ warn('bad_date'); return; }
+      if(!(b.ms>a.ms)||b.ms-a.ms>24*3600000){ warn('bad_value'); return; }
+      if(!k){ warn('unknown_sleep'); return; }
+      const d=b.minOfDay>=18*60?addDays(b.date,1):b.date;
+      if(!inRange(d)) return; // a night outside the asked range (its other end) is simply not this import's
+      const n=nights[d]||(nights[d]={core:[],deep:[],rem:[],asleep:[],awake:[],inbed:[]}); n[k].push([a.ms,b.ms,a,b]);
+    });
+    Object.keys(nights).forEach(d=>{ const n=nights[d], iv=k=>n[k].map(z=>[z[0],z[1]]);
+      const sleepIv=[...iv('core'),...iv('deep'),...iv('rem'),...iv('asleep')]; const total=ahUnionMin(sleepIv); if(!(total>0)) return;
+      const stages=n.core.length+n.deep.length+n.rem.length>0;
+      const all=[...n.core,...n.deep,...n.rem,...n.asleep], first=all.reduce((m,z)=>z[0]<m[0]?z:m), last=all.reduce((m,z)=>z[1]>m[1]?z:m);
+      const hm=x=>String(Math.floor(x.minOfDay/60)).padStart(2,'0')+':'+String(x.minOfDay%60).padStart(2,'0');
+      const sl={totalMin:Math.min(1440,total),stages,bedtime:hm(first[2]),wake:hm(last[3])};
+      if(n.awake.length) sl.awakeMin=ahUnionMin(iv('awake'));
+      if(stages){ sl.coreMin=ahUnionMin(iv('core')); sl.deepMin=ahUnionMin(iv('deep')); sl.remMin=ahUnionMin(iv('rem')); }
+      day(d).sleep=sl;
+    });
+  }
+  Object.values(days).forEach(x=>{ Object.keys(counts).forEach(k=>{ if(k==='sleep'?x.sleep:k!=='weighIns'&&x[k]!=null) counts[k]++; }); });
+  const n=Object.keys(days).length;
+  if(!n) return {ok:false,errors:['no_data'],warnings};
+  return {ok:true,errors:[],warnings,days,counts,dayCount:n,generatedAt:p.generatedAt,generatedMs:gen.ms,range:{from:r.from,to:r.to},tz};
+}
+function ahStore(st){ const a=(st||S).appleHealth; return a&&typeof a==='object'&&a.days&&typeof a.days==='object'?a:null; }
+function ahIsOlder(parsed,st){ const a=ahStore(st); const t=a&&Date.parse(a.lastPayloadGeneratedAt); return !!(Number.isFinite(t)&&parsed&&parsed.generatedMs<t); }
+// Commit a parsed payload. Same payload again = no change (idempotent); an older payload is refused unless forced;
+// a newer one replaces, per day and per metric, only what it contains. Never touches the manual logs or any reward.
+function ahImport(parsed,opts){
+  const o=opts||{};
+  if(!tabActive) return {ok:false,reason:'locked'};
+  if(!parsed||!parsed.ok) return {ok:false,reason:'invalid'};
+  if(ahIsOlder(parsed)&&!o.force) return {ok:false,reason:'older'};
+  const cur=ahStore(); const a=cur||{version:1,preferred:true,lastSyncAt:null,lastPayloadGeneratedAt:null,lastRange:null,deviceTimezone:null,days:{}};
+  const before=JSON.stringify(a.days);
+  const days=Object.assign({},a.days);
+  Object.keys(parsed.days).forEach(d=>{ const src=parsed.days[d], next=Object.assign({},days[d]||{});
+    Object.keys(src).forEach(f=>{ next[f]=f==='sleep'?Object.assign({},src.sleep):src[f]; }); days[d]=next; });
+  const changed=JSON.stringify(days)!==before;
+  const newer=!a.lastPayloadGeneratedAt||parsed.generatedMs>Date.parse(a.lastPayloadGeneratedAt);
+  if(!changed&&!newer&&cur) return {ok:true,changed:false,days:0};
+  a.days=days; a.lastSyncAt=Date.now(); a.lastRange=parsed.range; a.deviceTimezone=parsed.tz||a.deviceTimezone||null;
+  if(newer) a.lastPayloadGeneratedAt=parsed.generatedAt;
+  if(a.preferred==null) a.preferred=true;
+  S.appleHealth=a;
+  return {ok:true,changed,days:parsed.dayCount};
+}
+function ahClear(){ if(!tabActive) return false; delete S.appleHealth; return true; }
+// ---- read-only resolvers: {value, source:'appleHealth'|'manual'} or null; Apple wins only while it is preferred ----
+function ahPreferred(st){ const a=ahStore(st); return !!(a&&a.preferred!==false); }
+function ahDay(D,st){ const a=ahStore(st); if(!a||!ahIsDate(D)||!Object.prototype.hasOwnProperty.call(a.days,D)) return null; const x=a.days[D]; return x&&typeof x==='object'?x:null; }
+function ahField(D,f,st){ const x=ahDay(D,st), spec=AH_DAY_FIELDS[f]; if(!x||!spec||x[f]==null) return null; const v=ahNum(x[f]); return v!=null&&v>=spec.min&&v<=spec.max?v:null; }
+function ahSleep(D,st){ const x=ahDay(D,st), s=x&&x.sleep; const t=s&&ahNum(s.totalMin); if(!(t>0&&t<=1440)) return null;
+  const g=k=>{ const v=ahNum(s[k]); return v!=null&&v>=0&&v<=1440?v:null; };
+  return {totalMin:t,awakeMin:g('awakeMin'),coreMin:g('coreMin'),deepMin:g('deepMin'),remMin:g('remMin'),stages:!!s.stages,
+    bedtime:typeof s.bedtime==='string'&&/^\d\d:\d\d$/.test(s.bedtime)?s.bedtime:null,wake:typeof s.wake==='string'&&/^\d\d:\d\d$/.test(s.wake)?s.wake:null}; }
+function ahManualSleep(D,st){ const e=((st||S).sleepLog||[]).filter(x=>x.date===D); return e.length?e.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a):null; }
+function getEffectiveSleep(D,st){
+  const m=ahManualSleep(D,st), q=m?sleepQualityPct(m):null, a=ahPreferred(st)?ahSleep(D,st):null;
+  if(a) return {value:a.totalMin,minutes:a.totalMin,source:'appleHealth',qualityPct:q,qualitySource:q!=null?'manual':null,stages:a};
+  if(m&&sleepDuration(m)>0) return {value:Math.round(sleepDuration(m)*60),minutes:Math.round(sleepDuration(m)*60),source:'manual',qualityPct:q,qualitySource:q!=null?'manual':null,entry:m};
+  return null;
+}
+function ahEffective(D,f,log,vf,st){
+  const a=ahPreferred(st)?ahField(D,f,st):null; if(a!=null) return {value:a,source:'appleHealth'};
+  const e=((st||S)[log]||[]).filter(x=>x.date===D), v=e.length?ahNum(e[e.length-1][vf]):null;
+  return v!=null&&v>=0?{value:v,source:'manual'}:null;
+}
+function getEffectiveActiveCalories(D,st){ return ahEffective(D,'activeKcal','activeCaloriesLog','calories',st); }
+function getEffectiveSteps(D,st){ return ahEffective(D,'steps','stepsLog','steps',st); }
+function getEffectiveWeight(D,st){ return ahEffective(D,'weightKg','weightLog','weight',st); }
+// the latest Apple value of a metric up to D (for Recovery / Body cards) -- {value, date} or null
+function ahLatest(f,D,st){ const a=ahStore(st); if(!a) return null; const ds=Object.keys(a.days).filter(d=>ahIsDate(d)&&d<=D).sort();
+  for(let i=ds.length-1;i>=0;i--){ const v=ahField(ds[i],f,st); if(v!=null) return {value:v,date:ds[i]}; } return null; }
 function sleepStats(period){
   const since = period ? periodStart(period) : null;
   const logs = (since ? S.sleepLog.filter(s=>s.date>=since) : S.sleepLog.slice()).sort((a,b)=>a.date.localeCompare(b.date));
@@ -11688,6 +11910,176 @@ function healthDashboardData(period){
   };
 }
 
+/* ---- Apple Health Bridge 1.0: UI ---- */
+function uiAhT(k){
+  const cs=uiLang()==='cs';
+  return (cs?{title:'Apple Health',bridge:'Apple Health Bridge',how:'Apple Health se synchronizuje přes Apple Shortcuts (zkratka „LifeOS Health Sync“).',
+    never:'Zatím nesynchronizováno.',last:'Poslední synchronizace',range:'Rozsah',sync:'Synchronizovat Apple Health',sync_sm:'Synchronizovat',read:'Načíst data ze schránky',
+    paste:'Vložit data ručně',clear:'Smazat importovaná Apple Health data',pref:'Preferovat Apple Health data',
+    pref_d:'Když je vypnuto, LifeOS dál používá ručně zadané hodnoty. Importovaná data se nesmažou.',
+    privacy:'Apple Health data se importují lokálně přes Apple Shortcuts a ukládají pouze v LifeOS na tomto zařízení. LifeOS je při synchronizaci neposílá na server.',
+    disclaimer:'Health metriky slouží pro osobní přehled, ne jako lékařská diagnóza.',guide:'Návod na vytvoření zkratky: docs/apple-health-shortcut.md v repozitáři LifeOS.',
+    ready_t:'Apple Health data mohou být připravena.',ready_d:'Po dokončení zkratky se vrať sem a načti data ze schránky.',load:'Načíst data',dismiss:'Zavřít',
+    clip_fail:'Schránku se nepodařilo přečíst. Vlož data ručně.',paste_t:'Vložit Apple Health data',paste_d:'Vlož text, který zkratka zkopírovala do schránky (JSON).',
+    check:'Zkontrolovat',prev_t:'Apple Health import',days:'dní',imp:'Importovat',cancel:'Zrušit',force:'Importovat i tak',
+    older:'Tato data jsou starší než poslední import. Ve výchozím stavu se ignorují, aby nepřepsala novější hodnoty.',
+    invalid:'Data nelze importovat',done:'Apple Health importováno',same:'Žádné nové údaje — data jsou stejná jako minule.',
+    clear_q:'Smažou se jen data importovaná z Apple Health. Ručně zadaný spánek, hmotnost a aktivní kalorie zůstanou.',cleared:'Apple Health data smazána',
+    locked:'LifeOS je otevřený v jiné záložce — import tady nejde.',
+    sleep:'Spánek',nights:'nocí',activeKcal:'Aktivní energie',exerciseMin:'Pohyb',steps:'Kroky',distanceKm:'Vzdálenost',flights:'Patra',
+    weightKg:'Hmotnost',weighIns:'měření',restingHr:'Klidový tep',hrvMs:'HRV',vo2Max:'VO2 max',beta:'beta',
+    warn:'přeskočeno neplatných položek',today:'Dnes',recovery:'Zotavení',body:'Tělo',source:'Apple Health',manual:'Ručně',
+    awake:'vzhůru',core:'jádrový',deep:'hluboký',rem:'REM',not_linked:'Apple Health není propojené.',setup:'Nastavit',min:'min',
+    steps_beta:'Kroky jsou zatím beta: ověř, že se shodují s aplikací Zdraví.',
+    e:{empty:'Schránka je prázdná.',too_large:'Data jsou příliš velká (max 5 MB).',json:'Text není platný JSON.',keys:'Data obsahují nepovolené klíče.',
+      protocol:'Nejde o data ze zkratky LifeOS Health Sync (špatný protokol).',version:'Neplatná verze protokolu.',version_future:'Tuto verzi protokolu LifeOS ještě nezná — aktualizuj LifeOS.',
+      generated:'Chybí nebo je neplatný čas vytvoření (generatedAt).',range:'Chybí nebo je neplatný rozsah dat (range).',range_long:'Rozsah je delší než 62 dní.',
+      days:'Neplatná sekce days.',metrics:'Neplatná sekce metrics.',sleep:'Neplatná sekce sleep.',no_data:'V datech nejsou žádné platné hodnoty.'}}
+  :{title:'Apple Health',bridge:'Apple Health Bridge',how:'Apple Health syncs through Apple Shortcuts (the "LifeOS Health Sync" shortcut).',
+    never:'Not synced yet.',last:'Last sync',range:'Range',sync:'Sync Apple Health',sync_sm:'Sync',read:'Read data from the clipboard',
+    paste:'Paste data manually',clear:'Delete imported Apple Health data',pref:'Prefer Apple Health data',
+    pref_d:'When off, LifeOS keeps using the values you entered by hand. Imported data is not deleted.',
+    privacy:'Apple Health data is imported locally through Apple Shortcuts and stored only in LifeOS on this device. LifeOS does not send it to a server when syncing.',
+    disclaimer:'Health metrics are for your personal overview, not a medical diagnosis.',guide:'How to build the shortcut: docs/apple-health-shortcut.md in the LifeOS repository.',
+    ready_t:'Apple Health data may be ready.',ready_d:'When the shortcut has finished, come back and read the data from the clipboard.',load:'Read data',dismiss:'Close',
+    clip_fail:'The clipboard could not be read. Paste the data manually.',paste_t:'Paste Apple Health data',paste_d:'Paste the text the shortcut copied to the clipboard (JSON).',
+    check:'Check',prev_t:'Apple Health import',days:'days',imp:'Import',cancel:'Cancel',force:'Import anyway',
+    older:'This data is older than your last import. By default it is ignored so it cannot overwrite newer values.',
+    invalid:'This data cannot be imported',done:'Apple Health imported',same:'Nothing new — the data is the same as last time.',
+    clear_q:'Only the data imported from Apple Health is deleted. Sleep, weight and active calories you entered by hand stay.',cleared:'Apple Health data deleted',
+    locked:'LifeOS is open in another tab — importing is not possible here.',
+    sleep:'Sleep',nights:'nights',activeKcal:'Active energy',exerciseMin:'Exercise',steps:'Steps',distanceKm:'Distance',flights:'Flights',
+    weightKg:'Weight',weighIns:'measurements',restingHr:'Resting heart rate',hrvMs:'HRV',vo2Max:'VO2 max',beta:'beta',
+    warn:'invalid entries skipped',today:'Today',recovery:'Recovery',body:'Body',source:'Apple Health',manual:'Manual',
+    awake:'awake',core:'core',deep:'deep',rem:'REM',not_linked:'Apple Health is not connected.',setup:'Set up',min:'min',
+    steps_beta:'Steps are beta for now: check they match the Health app.',
+    e:{empty:'The clipboard is empty.',too_large:'The data is too large (max 5 MB).',json:'The text is not valid JSON.',keys:'The data contains forbidden keys.',
+      protocol:'This is not data from the LifeOS Health Sync shortcut (wrong protocol).',version:'Invalid protocol version.',version_future:'LifeOS does not know this protocol version yet — update LifeOS.',
+      generated:'The creation time (generatedAt) is missing or invalid.',range:'The date range (range) is missing or invalid.',range_long:'The range is longer than 62 days.',
+      days:'Invalid days section.',metrics:'Invalid metrics section.',sleep:'Invalid sleep section.',no_data:'The data contains no valid values.'}})[k];
+}
+const AH_PENDING_KEY='lifeos-ah-sync-started'; // a per-device convenience (not app data): when the shortcut was opened
+function uiAhPendingGet(){ try{ const t=Number(localStorage.getItem(AH_PENDING_KEY)); return Number.isFinite(t)&&t>0&&Date.now()-t<30*60000?t:null; }catch(e){ return null; } }
+function uiAhPendingSet(on){ try{ if(on) localStorage.setItem(AH_PENDING_KEY,String(Date.now())); else localStorage.removeItem(AH_PENDING_KEY); }catch(e){} }
+function uiAhFmtMin(min){ min=Math.round(Number(min)||0); const h=Math.floor(min/60), m=min%60; return uiLang()==='cs'?`${h} h ${String(m).padStart(2,'0')} min`:`${h} h ${String(m).padStart(2,'0')} min`; }
+function uiAhSync(){
+  if(!tabActive){ toast(uiAhT('locked')); return; }
+  uiAhPendingSet(true); uiAhBanner();
+  // Shortcuts' documented URL scheme; returning to the Home Screen app afterwards is manual (iOS cannot reopen a PWA)
+  uiAhOpenUrl('shortcuts://run-shortcut?name='+encodeURIComponent(AH_SHORTCUT));
+}
+function uiAhOpenUrl(u){ try{ window.location.href=u; }catch(e){} }
+function uiAhBanner(){
+  const old=document.getElementById('ahPending'), want=!!(uiAhPendingGet()&&S&&tabActive);
+  if(old&&want) return; if(old) old.remove(); if(!want) return;
+  const b=el(`<div class="ah-pending card" id="ahPending" role="region" aria-label="${escapeHtml(uiAhT('ready_t'))}"><div style="min-width:0"><b>${uiAhT('ready_t')}</b><div class="sub">${uiAhT('ready_d')}</div></div>
+    <div class="btn-row"><button type="button" class="btn sm" id="ahLoad">${uiIcon('download',16)} ${uiAhT('load')}</button><button type="button" class="iconbtn ghost-ic" id="ahDismiss" aria-label="${uiAhT('dismiss')}">${uiIcon('x',18)}</button></div></div>`);
+  b.querySelector('#ahLoad').onclick=()=>uiAhReadClipboard();
+  b.querySelector('#ahDismiss').onclick=()=>{ uiAhPendingSet(false); b.remove(); };
+  document.body.appendChild(b);
+}
+// reading the clipboard only ever happens inside this click handler (the browser asks the person to allow Paste)
+async function uiAhReadClipboard(){
+  if(!tabActive){ toast(uiAhT('locked')); return; }
+  let text=null;
+  try{ if(!navigator.clipboard||!navigator.clipboard.readText) throw new Error('no clipboard'); text=await navigator.clipboard.readText(); }catch(e){ text=null; }
+  if(text==null){ toast(uiAhT('clip_fail')); uiAhPasteSheet(uiAhT('clip_fail')); return; }
+  uiAhPreview(text);
+}
+function uiAhPasteSheet(note){
+  const inner=el(`<div class="ah-paste"><h3>${uiAhT('paste_t')}</h3>${note?`<p class="sub ah-note" role="status">${escapeHtml(note)}</p>`:''}<label for="ah_paste">${uiAhT('paste_d')}</label>
+    <textarea id="ah_paste" rows="8" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="field-error" data-err="paste" hidden></div>
+    <button type="button" class="btn" id="ah_check">${uiAhT('check')}</button></div>`);
+  const bg=openSheet(inner);
+  inner.querySelector('#ah_check').onclick=()=>{ const t=inner.querySelector('#ah_paste').value; bg.remove(); uiAhPreview(t); };
+}
+function uiAhPreview(text){
+  closeSheets();
+  const r=ahParse(text), cs=uiLang()==='cs';
+  if(!r.ok){
+    const inner=el(`<div class="ah-preview" id="ahPreview"><h3>${uiAhT('invalid')}</h3><p class="ah-err" role="alert">${escapeHtml(uiAhT('e')[r.errors[0]]||r.errors[0])}</p>
+      <div class="btn-row"><button type="button" class="btn ghost" id="ah_retry">${uiAhT('paste')}</button><button type="button" class="btn" id="ah_cancel">${uiAhT('cancel')}</button></div></div>`);
+    openSheet(inner);
+    inner.querySelector('#ah_retry').onclick=()=>{ closeSheets(); uiAhPasteSheet(); };
+    inner.querySelector('#ah_cancel').onclick=()=>closeSheets();
+    return;
+  }
+  const c=r.counts, older=ahIsOlder(r), row=(k,v,beta)=>v?`<div class="between ah-row" data-ah-count="${k}"><span>${uiAhT(k)}${beta?` <span class="chip is-muted">${uiAhT('beta')}</span>`:''}</span><b>${v}</b></div>`:'';
+  const dn=n=>`${n} ${cs?(n===1?'den':n>=2&&n<=4?'dny':'dní'):(n===1?'day':'days')}`;
+  const span=Math.round((new Date(r.range.to+'T12:00')-new Date(r.range.from+'T12:00'))/86400000)+1;
+  const warnN=r.warnings.reduce((a,w)=>a+w.n,0);
+  const inner=el(`<div class="ah-preview" id="ahPreview"><h3>${uiAhT('prev_t')}</h3>
+    <div class="sub">${fmtDate(r.range.from)} – ${fmtDate(r.range.to)} · ${dn(span)}</div>
+    <div class="ah-rows">${row('sleep',c.sleep?`${c.sleep} ${uiAhT('nights')}`:'')}${row('activeKcal',c.activeKcal&&dn(c.activeKcal))}${row('exerciseMin',c.exerciseMin&&dn(c.exerciseMin))}
+      ${row('steps',c.steps&&dn(c.steps),true)}${row('distanceKm',c.distanceKm&&dn(c.distanceKm))}${row('flights',c.flights&&dn(c.flights))}
+      ${row('weightKg',c.weighIns?`${c.weighIns} ${uiAhT('weighIns')}`:'')}${row('restingHr',c.restingHr&&dn(c.restingHr))}${row('hrvMs',c.hrvMs&&dn(c.hrvMs))}${row('vo2Max',c.vo2Max&&dn(c.vo2Max))}</div>
+    ${warnN?`<p class="sub ah-warn">${warnN} ${uiAhT('warn')}</p>`:''}
+    ${older?`<p class="ah-err" role="alert">${uiAhT('older')}</p>`:''}
+    <div class="btn-row"><button type="button" class="btn ghost" id="ah_cancel">${uiAhT('cancel')}</button>${older?`<button type="button" class="btn ghost" id="ah_force">${uiAhT('force')}</button>`:`<button type="button" class="btn" id="ah_import">${uiAhT('imp')}</button>`}</div></div>`);
+  openSheet(inner);
+  inner.querySelector('#ah_cancel').onclick=()=>closeSheets();
+  const go=force=>{ const res=ahImport(r,{force}); closeSheets();
+    if(!res.ok){ toast(res.reason==='locked'?uiAhT('locked'):uiAhT('invalid')); return; }
+    uiAhPendingSet(false); const pb=document.getElementById('ahPending'); if(pb) pb.remove();
+    if(res.changed) scheduleSave(); toast(res.changed?`${uiAhT('done')} · ${dn(res.days)}`:uiAhT('same')); render(); };
+  const ib=inner.querySelector('#ah_import'); if(ib) ib.onclick=()=>go(false);
+  const fb=inner.querySelector('#ah_force'); if(fb) fb.onclick=()=>go(true);
+}
+function uiAhSettingsSection(sw){
+  const a=ahStore(), cs=uiLang()==='cs';
+  const last=a&&a.lastSyncAt?new Date(a.lastSyncAt).toLocaleString(uiLocale(),{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):null;
+  const sec=el(`<section class="card set-group ah-set" id="st_ah"><h3>${uiIcon('heart',18)} ${uiAhT('title')}</h3>
+    <div class="set-field"><b>${uiAhT('bridge')}</b><p class="sub" style="margin:2px 0 0">${uiAhT('how')}</p>
+      <p class="sub ah-status" style="margin:6px 0 0">${last?`${uiAhT('last')}: ${escapeHtml(last)}${a.lastRange?` · ${uiAhT('range')} ${fmtDate(a.lastRange.from)} – ${fmtDate(a.lastRange.to)}`:''}`:uiAhT('never')}</p></div>
+    <div class="set-field stack"><button type="button" class="btn" id="st_ahSync">${uiIcon('repeat',16)} ${uiAhT('sync')}</button>
+      <button type="button" class="btn ghost" id="st_ahRead">${uiIcon('download',16)} ${uiAhT('read')}</button>
+      <button type="button" class="btn ghost" id="st_ahPaste">${uiIcon('note',16)} ${uiAhT('paste')}</button></div>
+    ${a?`<div class="set-row"><span>${uiAhT('pref')}</span>${sw(a.preferred!==false,'id="st_ahPref" aria-label="'+uiAhT('pref')+'"')}</div><p class="helper-text">${uiAhT('pref_d')}</p>`:''}
+    <p class="helper-text">${uiAhT('privacy')}</p><p class="helper-text">${uiAhT('disclaimer')}</p><p class="helper-text">${uiAhT('guide')}</p>
+    ${a?`<div class="set-field"><button type="button" class="btn ghost danger-text" id="st_ahClear">${uiIcon('trash',16)} ${uiAhT('clear')}</button></div>`:''}</section>`);
+  sec.querySelector('#st_ahSync').onclick=uiAhSync;
+  sec.querySelector('#st_ahRead').onclick=()=>uiAhReadClipboard();
+  sec.querySelector('#st_ahPaste').onclick=()=>uiAhPasteSheet();
+  const pf=sec.querySelector('#st_ahPref'); if(pf) pf.onclick=()=>{ const s=ahStore(); if(!s||!tabActive) return; s.preferred=s.preferred===false; scheduleSave(); render(); };
+  const cl=sec.querySelector('#st_ahClear'); if(cl) cl.onclick=()=>uiConfirmSheet({title:uiAhT('clear'),text:uiAhT('clear_q'),ok:uiAhT('clear'),danger:true},()=>{ if(ahClear()){ scheduleSave(); render(); toast(uiAhT('cleared')); } });
+  return sec;
+}
+function uiAhHealthCard(){
+  const a=ahStore(), T=todayStr();
+  if(!a||!Object.keys(a.days).length){
+    const c=el(`<div class="card ah-mini" id="ahCard"><span class="sub">${uiIcon('heart',16)} ${uiAhT('not_linked')}</span><button type="button" class="btn sm ghost" id="ahSetup">${uiAhT('setup')}</button></div>`);
+    c.querySelector('#ahSetup').onclick=()=>{ view='settings'; render(); const x=document.getElementById('st_ah'); if(x) x.scrollIntoView({block:'start'}); };
+    return c;
+  }
+  const days=Object.keys(a.days).filter(d=>ahIsDate(d)&&d<=T).sort(), D=days.length?days[days.length-1]:T;
+  const tile=(k,v,extra,id)=>`<div class="stat-card ah-tile" data-ah="${id||k}"><div class="stat-label">${uiAhT(k)}${k==='steps'?` <span class="chip is-muted">${uiAhT('beta')}</span>`:''}</div><div class="stat-value">${v}</div>${extra?`<div class="sub">${extra}</div>`:''}<div class="sub ah-src">${uiIcon('heart',12)} ${uiAhT('source')}</div></div>`;
+  const sl=ahSleep(D), man=ahManualSleep(D);
+  const parts=[];
+  if(sl){ const st=sl.stages?[sl.coreMin!=null&&`${uiAhT('core')} ${uiAhFmtMin(sl.coreMin)}`,sl.deepMin!=null&&`${uiAhT('deep')} ${uiAhFmtMin(sl.deepMin)}`,sl.remMin!=null&&`${uiAhT('rem')} ${uiAhFmtMin(sl.remMin)}`].filter(Boolean).join(' · '):'';
+    parts.push(tile('sleep',uiAhFmtMin(sl.totalMin),[st,sl.awakeMin?`${uiAhT('awake')} ${uiAhFmtMin(sl.awakeMin)}`:'',man&&sleepDuration(man)>0?`${uiAhT('manual')}: ${uiAhFmtMin(Math.round(sleepDuration(man)*60))}`:''].filter(Boolean).map(escapeHtml).join('<br>'))); }
+  const num=(f,fmt)=>{ const v=ahField(D,f); return v==null?null:fmt(v); };
+  const ak=num('activeKcal',v=>`${uiNum(Math.round(v))} kcal`); if(ak) parts.push(tile('activeKcal',ak));
+  const ex=num('exerciseMin',v=>`${Math.round(v)} ${uiAhT('min')}`); if(ex) parts.push(tile('exerciseMin',ex));
+  const stp=num('steps',v=>uiNum(v)); if(stp) parts.push(tile('steps',stp));
+  const dk=num('distanceKm',v=>`${uiFmtNum(v)} km`); if(dk) parts.push(tile('distanceKm',dk));
+  const fl=num('flights',v=>uiNum(v)); if(fl) parts.push(tile('flights',fl));
+  const late=(f,fmt,k)=>{ const x=ahLatest(f,T); return x?tile(k,fmt(x.value),x.date!==T?fmtDate(x.date):''):''; };
+  const rec=[late('restingHr',v=>`${Math.round(v)} bpm`,'restingHr'),late('hrvMs',v=>`${Math.round(v)} ms`,'hrvMs')].join('');
+  const vo=(()=>{ const x=ahLatest('vo2Max',T); if(!x) return ''; const prev=ahLatest('vo2Max',addDays(x.date,-1)); const d=prev?Math.round((x.value-prev.value)*10)/10:null;
+    return tile('vo2Max',uiFmtNum(x.value),[x.date!==T?fmtDate(x.date):'',d!=null&&d!==0?`${d>0?'+':''}${uiFmtNum(d)} vs. ${fmtDate(prev.date)}`:''].filter(Boolean).join(' · ')); })();
+  const body=[late('weightKg',v=>`${uiFmtNum(v)} kg`,'weightKg'),vo].join('');
+  const last=a.lastSyncAt?new Date(a.lastSyncAt).toLocaleString(uiLocale(),{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  const c=el(`<section class="card ah-card" id="ahCard" aria-labelledby="ahCardH"><div class="between"><div><h3 id="ahCardH" style="margin:0">${uiIcon('heart',18)} ${uiAhT('title')}</h3>
+      <div class="sub">${last?`${uiAhT('last')}: ${escapeHtml(last)}`:''}${a.preferred===false?` · ${uiLang()==='cs'?'nepreferováno':'not preferred'}`:''}</div></div>
+      <button type="button" class="btn sm ghost" id="ahSyncH">${uiIcon('repeat',16)} ${uiAhT('sync_sm')}</button></div>
+    ${parts.length?`<div class="kicker ah-k">${D===T?uiAhT('today'):fmtDate(D)}</div><div class="stat-grid cols-2 ah-grid">${parts.join('')}</div>`:''}
+    ${rec?`<div class="kicker ah-k">${uiAhT('recovery')}</div><div class="stat-grid cols-2 ah-grid">${rec}</div>`:''}
+    ${body?`<div class="kicker ah-k">${uiAhT('body')}</div><div class="stat-grid cols-2 ah-grid">${body}</div>`:''}
+    ${stp?`<p class="helper-text">${uiAhT('steps_beta')}</p>`:''}<p class="helper-text">${uiAhT('disclaimer')}</p></section>`);
+  c.querySelector('#ahSyncH').onclick=uiAhSync;
+  return c;
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') uiAhBanner(); }); // shows a button only -- the clipboard is never read here
 let healthTab='sleep';
 function renderHealth(){
   const wrap=el(`<div>${uiPageHead(uiL('Health'))}<div class="period-selector" id="hTabs" role="tablist"></div><div id="hBody"></div></div>`);
@@ -11700,6 +12092,7 @@ function renderHealth(){
     tabs.appendChild(b);
   });
   const body=wrap.querySelector('#hBody');
+  tabs.before(uiAhHealthCard()); // Apple Health Bridge: sync status + imported metrics (only what exists)
   const data=healthDashboardData('month'); // dashboard summary always over a rolling month, per-tab lists show everything
   if(healthTab==='sleep') body.appendChild(renderHealthSleepTab(data));
   else if(healthTab==='weight') body.appendChild(renderHealthWeightTab(data));
