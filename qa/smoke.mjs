@@ -8385,9 +8385,12 @@ test('AH1 + AH2 + AH58 an old state (no appleHealth) boots unchanged: no store i
 test('AH3 + AH48 + AH8-AH22 a valid 30-day payload: preview counts; sleep nights (stages, awake out, across midnight, missing nights), every metric with units, weight = last of the day, missing metrics absent (never 0)', async ({ page }) => {
   const { parse: r } = await page.evaluate(txt => ({ parse: ahParse(txt) }), ahText());
   assert.equal(r.ok, true); assert.deepEqual(r.warnings, []);
-  assert.deepEqual(r.counts, { sleep: 28, steps: 27, activeKcal: 30, exerciseMin: 30, distanceKm: 30, flights: 20, weightKg: 4, weighIns: 8, restingHr: 30, hrvMs: 27, vo2Max: 5 });
+  assert.deepEqual(r.counts, { sleep: 28, steps: 27, activeKcal: 30, exerciseMin: 30, distanceKm: 30, flights: 20, weightKg: 4, weighIns: 8, restingHr: 30, hrvMs: 27, vo2Max: 5, workouts: 0 });
   const d = r.days['2026-09-23'];
-  assert.deepEqual(d.sleep, { totalMin: 444, stages: true, bedtime: '23:42', wake: '07:12', awakeMin: 18, coreMin: 292, deepMin: 55, remMin: 97 }, 'Core 292 + Deep 55 + REM 97 = 444; Awake 18 and In Bed are not sleep; filed under the wake-up day');
+  const { segments, ...dsl } = d.sleep;
+  assert.deepEqual(dsl, { totalMin: 444, stages: true, bedtime: '23:42', wake: '07:12', awakeMin: 18, coreMin: 292, deepMin: 55, remMin: 97 }, 'Core 292 + Deep 55 + REM 97 = 444; Awake 18 and In Bed are not sleep; filed under the wake-up day');
+  const segMin = st => segments.filter(x => st.includes(x.stage)).reduce((a, x) => a + (Date.parse(x.end) - Date.parse(x.start)) / 60000, 0);
+  assert.deepEqual([segMin(['core', 'deep', 'rem', 'asleep']), segMin(['core']), segMin(['deep']), segMin(['rem']), segMin(['awake']), segments.some(x => x.stage === 'inbed')], [444, 292, 55, 97, 18, false], 'the stage timeline adds up to the same totals; In Bed is never a segment');
   assert.deepEqual([d.steps, d.activeKcal, d.exerciseMin, d.distanceKm, d.flights, d.restingHr, d.hrvMs], [9973, 597.5, 49, 7.1, 7, 57, 57]);
   assert.equal(r.days['2026-09-01'].sleep, undefined, 'a night with no samples has no sleep (not 0)');
   assert.equal(r.days['2026-08-30'].steps, undefined, 'a day without steps has no steps (not 0)');
@@ -8420,7 +8423,7 @@ test('AH9-AH12 sleep rules: crossing midnight -> the wake-up day; an evening nap
       { start: '2026-09-23T06:50:00+02:00', end: '2026-09-23T07:00:00+02:00', value: 'Something new' },
       { start: '2026-09-23T07:00:00+02:00', end: '2026-09-23T06:00:00+02:00', value: 'Core' }]));                        // negative
     return { d21: x.days['2026-09-21'].sleep, d22: x.days['2026-09-22'].sleep, d23: x.days['2026-09-23'].sleep, w: x.warnings }; });
-  assert.deepEqual(r.d21, { totalMin: 477, stages: false, bedtime: '23:45', wake: '07:42' }, 'no stages: the asleep duration');
+  assert.deepEqual(r.d21, { totalMin: 477, stages: false, bedtime: '23:45', wake: '07:42', segments: [{ start: '2026-09-20T23:45:00+02:00', end: '2026-09-21T07:42:00+02:00', stage: 'asleep' }] }, 'no stages: the asleep duration (one neutral "asleep" segment, no invented stages)');
   assert.deepEqual([r.d22.totalMin, r.d22.coreMin, r.d22.deepMin, r.d22.remMin, r.d22.stages], [420, 240, 180, 0, true], 'union 23:00-06:00 = 420, the iPhone overlap is not added');
   assert.deepEqual([r.d23.totalMin, r.d23.deepMin, r.d23.coreMin, r.d23.awakeMin, r.d23.bedtime, r.d23.wake], [460, 420, 40, 20, '19:00', '06:30'], 'nap 40 + night 420; awake 20 not sleep');
   assert.deepEqual(r.w, [{ k: 'unknown_sleep', n: 1 }, { k: 'bad_value', n: 1 }]);
@@ -8495,7 +8498,7 @@ test('AH26-AH30 manual Health data is never touched; Apple preferred ON / OFF sw
   assert.equal(await page.evaluate(() => JSON.stringify([S.sleepLog, S.weightLog, S.activeCaloriesLog, S.stepsLog, S.heartRateLog])), manual0, 'manual logs exactly as before');
   // mixed sources on the Health screen
   await page.evaluate(() => { S.appleHealth.preferred = true; healthTab = 'sleep'; view = 'health'; render(); });
-  assert.match(await page.locator('[data-ah="sleep"]').innerText(), /7 h 24 min[\s\S]*Ručně: 7 h 15 min[\s\S]*Apple Health/);
+  assert.match(await page.locator('[data-ah="sleep"]').innerText(), /7 h 24 min[\s\S]*Apple Health/, 'the effective (Apple) value with its source badge');
   assert.match(await page.locator('#hBody').innerText(), /23\.09\.2026[\s\S]*7\.25h · 23:30–06:45/, 'the manual list is unchanged');
 }, { state: fixtureState() });
 
@@ -8612,7 +8615,7 @@ test('AH51-AH55 screens at 320-1440 px, dark + light: Settings (empty / synced),
     for (const [k, js] of Object.entries(scenes)) {
       const r = await page.evaluate(({ js, theme }) => { closeSheets(); uiAhPendingSet(false); S.settings.theme = theme; applyTheme(); eval(js);
         const ids = [...document.querySelectorAll('[id]')].map(n => n.id), sheet = document.querySelector('.sheet');
-        const ctl = [...document.querySelectorAll('#st_ah button:not(.switch), #ahCard button, .ah-preview button, .ah-paste button, #ahPending button')].filter(b => b.offsetParent);
+        const ctl = [...document.querySelectorAll('#st_ah button:not(.switch), #ahCard button:not(.switch), .ah-preview button, .ah-paste button, #ahPending button')].filter(b => b.offsetParent);
         const swRow = [...document.querySelectorAll('#st_ahPref')].every(b => b.closest('.set-row').getBoundingClientRect().height >= 44 && b.getBoundingClientRect().height >= 28);
         return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: sheet ? sheet.scrollWidth - sheet.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i),
           nan: /undefined|NaN|\[object/.test(document.body.innerText), small: ctl.filter(b => b.getBoundingClientRect().height < 44).map(b => b.id || b.className),
@@ -8708,7 +8711,7 @@ test('AH61-AH67 + AH72-AH75 the real Shortcuts serialization (stringified range 
   assert.deepEqual(r.norm, [{ to: '2026-09-23', from: '2026-08-25' }, true, 31, 31, 249, [], src.steps[0], 'string'], 'range / metrics / lists / sleep become objects and arrays; other strings stay strings');
   assert.equal(r.untouched, true, 'normalization never modifies its input');
   assert.equal(r.a.ok, true);
-  assert.deepEqual(r.a.counts, { sleep: 31, steps: 31, activeKcal: 31, exerciseMin: 0, distanceKm: 0, flights: 0, weightKg: 0, weighIns: 0, restingHr: 0, hrvMs: 0, vo2Max: 0 }, '31 daily records each (incl. the day before from), empty metrics simply absent');
+  assert.deepEqual(r.a.counts, { sleep: 31, steps: 31, activeKcal: 31, exerciseMin: 0, distanceKm: 0, flights: 0, weightKg: 0, weighIns: 0, restingHr: 0, hrvMs: 0, vo2Max: 0, workouts: 0 }, '31 daily records each (incl. the day before from), empty metrics simply absent');
   assert.deepEqual(r.a.warnings, [], 'the expected spillover (day before from, partial night two days back) raises no warning');
   assert.deepEqual([r.a.day.steps, r.a.day.activeKcal], [Number(src.steps.at(-1).value), kc(src.energy.at(-1).value)], 'numbers from strings; Cal -> kcal (not x1000)');
   assert.deepEqual([r.a.day.steps, r.a.day.activeKcal], [8596, 688], 'fixture sanity: "8596" steps, "688.0000000000006" Cal');
@@ -8813,6 +8816,256 @@ test('AH82-AH85 the real-format payload in the app: paste -> preview (31 days / 
   assert.equal(await page.evaluate(() => 'appleHealth' in S), false);
   await page.evaluate(() => { S.settings.onboarded = true; closeSheets(); }); await importFile(page, file); await settle(page);
   assert.deepEqual(await stateOf(page), before, 'export -> reset -> import');
+}, { state: fixtureState() });
+
+// ---------- Apple Health deep integration (AHD1-AHD9): effective data in the normal UI, sleep timeline, step sources, workouts ----------
+// Synthetic data only. T = the fixture's today (2026-09-23).
+function ahDeepPayload({ T = '2026-09-23', days = 7, weight = true, workouts = true, stepSources = true } = {}) {
+  const add = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  const from = add(T, -(days - 1)), iso = (d, hm) => `${d}T${hm}:00+02:00`;
+  const sleep = [], steps = [], energy = [], ex = [], dist = [], fl = [], hr = [], hrv = [], wt = [];
+  for (let i = 0; i < days; i++) { const d = add(from, i), p = add(d, -1);
+    [['In Bed', p, '23:20', d, '07:15'], ['Asleep', p, '23:35', d, '07:05'], ['Core', p, '23:40', d, '01:30'], ['Deep', d, '01:30', d, '02:40'], ['REM', d, '02:40', d, '04:00'],
+      ['Awake', d, '04:00', d, '04:10'], ['Core', d, '04:10', d, '06:00'], ['REM', d, '06:00', d, '07:10']].forEach(([v, a, x, b, y]) => sleep.push({ value: v, start: iso(a, x), end: iso(b, y) }));
+    steps.push({ date: d, value: String(8000 + i * 100), unit: 'count' });
+    if (stepSources) steps.push({ date: d, value: String(3000 + i), unit: 'count', source: 'iPhone' }, { date: d, value: String(7000 + i), unit: 'count', source: 'Apple Watch' });
+    energy.push({ date: d, value: String(500 + i * 10 + 0.2000000000002), unit: 'Cal' }); ex.push({ date: d, value: String(30 + i), unit: 'min' });
+    dist.push({ date: d, value: '4.25', unit: 'km' }); fl.push({ date: d, value: '7', unit: 'count' });
+    hr.push({ date: d, value: '54', unit: 'count/min' }); hrv.push({ date: d, value: '47.6', unit: 'ms' });
+    if (weight && i % 2 === 0) wt.push({ date: iso(d, '07:30'), value: String(80 + i / 10), unit: 'kg' }); }
+  const p = { protocol: 'lifeos-apple-health', version: 1, generatedAt: iso(T, '08:30'), deviceTimezone: 'Europe/Prague', range: { from, to: T },
+    metrics: { steps, activeEnergy: energy, exerciseTime: ex, walkingRunningDistance: dist, flightsClimbed: fl, restingHeartRate: hr, heartRateVariability: hrv, weight: wt, vo2Max: [{ date: T, value: '44.2', unit: 'ml/(kg·min)' }] }, sleep };
+  if (workouts) p.workouts = [
+    { id: 'E2A1-UUID-0001', type: 'Traditional Strength Training', start: iso(T, '06:04'), end: iso(T, '06:58'), durationSec: '3240', activeKcal: '412.4', source: 'Apple Watch' },
+    { type: 'Running', start: iso(add(T, -1), '16:20'), end: iso(add(T, -1), '16:58'), durationSec: 2280, activeKcal: 431, distanceKm: '6.2', source: 'Apple Watch' }];
+  return p;
+}
+const ahDeep = o => JSON.stringify(ahDeepPayload(o));
+const ahNoReward = page => page.evaluate(() => JSON.stringify([S.totalXp, S.xpLog, S.attrs, S.rpg, S.quests, S.questBoard, S.achievementsUnlocked, S.achievementUnlockedAt, S.dailyScores, S.sleepLog, S.weightLog, S.activeCaloriesLog, S.stepsLog, S.heartRateLog]));
+
+test('AHD1 effective data layer: one resolver per metric (steps, active kcal, exercise, distance, flights, weight, resting HR, HRV, VO2 max, sleep) -- Apple while preferred, manual fallback where a manual log exists, else null; manual records never touched', async ({ page }) => {
+  const r = await page.evaluate(txt => {
+    const T = todayStr(); S.sleepLog.find(x => x.date === T).qualityPct = 80; const man = JSON.stringify([S.sleepLog, S.weightLog, S.activeCaloriesLog, S.stepsLog, S.heartRateLog]);
+    const F = { steps: getEffectiveSteps, kcal: getEffectiveActiveCalories, ex: getEffectiveExerciseMinutes, dist: getEffectiveDistance, fl: getEffectiveFlights, wt: getEffectiveWeight, rhr: getEffectiveRestingHR, hrv: getEffectiveHRV, vo2: getEffectiveVO2Max };
+    const snap = D => Object.fromEntries(Object.entries(F).map(([k, f]) => [k, f(D)]));
+    const before = snap(T); ahImport(ahParse(txt)); const on = snap(T), sl = getEffectiveSleep(T);
+    const noWeightDay = addDays(T, -1); const fallbackWeight = getEffectiveWeight(noWeightDay); // Apple has no weigh-in that day, no manual either
+    S.appleHealth.preferred = false; const off = snap(T); S.appleHealth.preferred = true;
+    return { before, on, off, sl: [sl.source, sl.minutes, sl.qualityPct, sl.qualitySource], fallbackWeight, manualSame: man === JSON.stringify([S.sleepLog, S.weightLog, S.activeCaloriesLog, S.stepsLog, S.heartRateLog]) };
+  }, ahDeep({ weight: false }));
+  const A = v => ({ value: v, source: 'appleHealth' }), M = v => ({ value: v, source: 'manual' });
+  assert.deepEqual(r.before, { steps: M(4300), kcal: M(380), ex: null, dist: null, fl: null, wt: M(81.6), rhr: M(62), hrv: null, vo2: null }, 'no Apple data: manual where LifeOS has a log, else null (never 0)');
+  assert.deepEqual(r.on, { steps: A(8600), kcal: A(560.2), ex: A(36), dist: A(4.25), fl: A(7), wt: M(81.6), rhr: A(54), hrv: A(47.6), vo2: A(44.2) }, 'Apple preferred: Apple values (Cal = kcal, never x1000); weight [] -> manual fallback');
+  assert.deepEqual(r.off, r.before, 'preference OFF: exactly the manual / empty state');
+  assert.deepEqual(r.sl, ['appleHealth', 445, 80, 'manual'], 'Apple duration, the manual quality stays manual');
+  assert.equal(r.fallbackWeight, null);
+  assert.equal(r.manualSame, true, 'manual Health records unchanged');
+}, { state: fixtureState() });
+
+test('AHD2 Health UI: a status panel (no duplicate dashboard) + the normal Health overview with every Apple metric and its source badge; Weight / Active kcal / Sleep tabs read the effective data; preference OFF = the manual screens; manual records keep edit / delete', async ({ page }) => {
+  await page.evaluate(txt => { S.sleepLog.find(x => x.date === todayStr()).qualityPct = 80; ahImport(ahParse(txt)); healthTab = 'sleep'; view = 'health'; render(); }, ahDeep());
+  const r = await page.evaluate(() => {
+    const tile = id => { const t = document.querySelector(`#hOverview .ah-tile[data-ah="${id}"]`); return t ? [t.querySelector('.stat-value').textContent.replace(/\s/g, ' ').trim(), t.querySelector('.src-badge').dataset.src] : null; };
+    return { panelTiles: document.querySelectorAll('#ahCard .ah-tile').length, panel: !!document.querySelector('#ahCard #ahSyncH') && !!document.querySelector('#ahCard #ahPrefH[role="switch"]') && !!document.querySelector('#ahCard #ahDiagH'),
+      tiles: Object.fromEntries(['sleep', 'steps', 'activeKcal', 'exerciseMin', 'distanceKm', 'flights', 'restingHr', 'hrvMs', 'vo2Max', 'weightKg'].map(k => [k, tile(k)])),
+      beta: /beta/i.test(document.querySelector('#hOverview [data-ah="steps"] .stat-label').textContent), note: document.getElementById('ahStepNote').textContent,
+      sleepCard: !!document.getElementById('slToday'), last: document.querySelector('[data-eff="last"] .stat-value').textContent, q: (document.getElementById('slQuality') || {}).textContent };
+  });
+  assert.equal(r.panelTiles, 0, 'the Apple Health panel is only status / sync / preference / diagnostics');
+  assert.equal(r.panel, true);
+  assert.deepEqual(r.tiles, { sleep: ['7 h 25 min', 'apple'], steps: ['8 600', 'apple'], activeKcal: ['560 kcal', 'apple'], exerciseMin: ['36 min', 'apple'], distanceKm: ['4,25 km', 'apple'], flights: ['7', 'apple'],
+    restingHr: ['54 bpm', 'apple'], hrvMs: ['48 ms', 'apple'], vo2Max: ['44,2', 'apple'], weightKg: ['80,6 kg', 'apple'] }, 'today Apple has a weigh-in (80.6) and is preferred over the manual 81.6');
+  assert.equal(r.beta, true); assert.equal(r.note, 'Hodnota ze Zkratek se může lišit od souhrnu v aplikaci Zdraví při více zdrojích dat.');
+  assert.deepEqual([r.sleepCard, r.last, r.q], [true, '7 h 25 min', 'Kvalita spánku 80 % · zadaná ručně']);
+  // Weight tab: Apple history rows (read-only) + manual rows (editable); latest = newest effective value
+  const w = await page.evaluate(() => { healthTab = 'weight'; render(); return { latest: document.querySelector('[data-eff="weight"] .stat-value').textContent.replace(/\s/g, ' '), src: document.querySelector('[data-eff="weight"] .src-badge').dataset.src,
+    apple: [...document.querySelectorAll('#wtAhList .ah-hist')].map(x => x.dataset.ahHist), appleEdit: document.querySelectorAll('#wtAhList .editBtn, #wtAhList .delbtn').length, manual: document.querySelectorAll('#wtList .editBtn').length }; });
+  assert.deepEqual(w, { latest: '80,6 kg', src: 'apple', apple: ['2026-09-23', '2026-09-21', '2026-09-19', '2026-09-17'], appleEdit: 0, manual: 2 }, 'Apple history rows are read-only; both manual weigh-ins stay editable');
+  const w2 = await page.evaluate(() => { const man = JSON.stringify(S.weightLog); delete S.appleHealth.days[todayStr()].weightKg; render(); return [document.querySelector('[data-eff="weight"] .stat-value').textContent.replace(/\s/g, ' '), document.querySelector('[data-eff="weight"] .src-badge').dataset.src, man === JSON.stringify(S.weightLog)]; });
+  assert.deepEqual(w2, ['81,6 kg', 'manual', true], 'no Apple weigh-in that day: the manual weight (Manuálně)');
+  const k = await page.evaluate(() => { healthTab = 'activecal'; render(); return [document.querySelector('[data-eff="activeKcal"] .stat-value').textContent.replace(/\s/g, ' '), document.querySelector('[data-eff="activeKcal"] .src-badge').dataset.src, document.querySelectorAll('#acAhList .ah-hist').length, document.querySelectorAll('#acList .editBtn').length]; });
+  assert.deepEqual(k, ['560 kcal', 'apple', 7, 1], 'Apple active kcal in the normal lower UI; the manual 380 kcal entry stays listed and editable');
+  const off = await page.evaluate(() => { S.appleHealth.preferred = false; healthTab = 'sleep'; render(); return { card: !!document.getElementById('slToday'), last: document.querySelector('#hBody .stat-card .stat-value').textContent, tile: (document.querySelector('#hOverview [data-ah="activeKcal"] .src-badge') || {}).dataset }; });
+  assert.deepEqual([off.card, off.last, off.tile && off.tile.src], [false, '7.25h', 'manual'], 'preference OFF: manual sleep screen, manual values in the overview');
+}, { state: fixtureState() });
+
+test('AHD3 sleep stage timeline: Core / Deep / REM / Awake in chronological order across midnight; the overlapping Asleep and In Bed never become bars; segments add up to the totals; one segment, many segments, no REM, no Deep, coarse Asleep only ("Spánek", no invented stages)', async ({ page }) => {
+  const r = await page.evaluate(txt => {
+    const P = sleep => JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: '2026-09-23', to: '2026-09-23' }, sleep });
+    const S1 = (v, a, b) => ({ value: v, start: `2026-09-2${a}`, end: `2026-09-2${b}` });
+    const dom = () => { healthTab = 'sleep'; view = 'health'; render(); const c = document.getElementById('slToday'); if (!c) return null;
+      return { lanes: [...c.querySelectorAll('.sl-lane')].map(l => [l.dataset.lane, l.querySelectorAll('.sl-seg').length]), order: [...c.querySelectorAll('.sl-list li')].map(li => li.textContent.split(' ')[0]),
+        from: c.querySelector('.sl-from').textContent, to: c.querySelector('.sl-to').textContent, sum: Object.fromEntries([...c.querySelectorAll('[data-sum]')].map(x => [x.dataset.sum, x.querySelector('b').textContent])),
+        coarse: /nevymýšlí/.test(c.textContent), segs: ahSleep('2026-09-23').segments.map(x => x.stage) }; };
+    const out = {};
+    ahImport(ahParse(txt)); out.full = dom();
+    const sg = ahSleep('2026-09-23').segments, minOf = st => sg.filter(x => st.includes(x.stage)).reduce((a, x) => a + (x.e.ms - x.s.ms) / 60000, 0);
+    out.sums = [minOf(['core', 'deep', 'rem', 'asleep']), minOf(['awake']), ahSleep('2026-09-23').totalMin, sg.every((x, i) => !i || x.s.ms >= sg[i - 1].e.ms)];
+    const one = ahParse(P([S1('Core', '2T23:00:00+02:00', '3T06:00:00+02:00')])); delete S.appleHealth; ahImport(one); out.one = dom();
+    delete S.appleHealth; ahImport(ahParse(P([S1('Core', '2T23:00:00+02:00', '3T02:00:00+02:00'), S1('Deep', '3T02:00:00+02:00', '3T03:00:00+02:00'), S1('Core', '3T03:00:00+02:00', '3T06:30:00+02:00')]))); out.noRem = dom();
+    delete S.appleHealth; ahImport(ahParse(P([S1('Core', '2T23:00:00+02:00', '3T02:00:00+02:00'), S1('REM', '3T02:00:00+02:00', '3T03:00:00+02:00'), S1('Awake', '3T03:00:00+02:00', '3T03:05:00+02:00'), S1('Core', '3T03:05:00+02:00', '3T06:30:00+02:00')]))); out.noDeep = dom();
+    delete S.appleHealth; ahImport(ahParse(P([S1('In Bed', '2T22:50:00+02:00', '3T07:00:00+02:00'), S1('Asleep', '2T23:10:00+02:00', '3T03:00:00+02:00'), S1('Awake', '3T03:00:00+02:00', '3T03:20:00+02:00'), S1('Asleep', '3T03:20:00+02:00', '3T06:40:00+02:00')]))); out.coarse = dom();
+    const many = []; for (let i = 0; i < 60; i++) { const a = new Date(Date.parse('2026-09-22T22:00:00+02:00') + i * 8 * 60000), b = new Date(a.getTime() + 8 * 60000); many.push({ value: ['Core', 'Deep', 'REM', 'Awake'][i % 4], start: a.toISOString(), end: b.toISOString() }); }
+    delete S.appleHealth; ahImport(ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', deviceTimezone: 'Europe/Prague', range: { from: '2026-09-23', to: '2026-09-23' }, sleep: many }))); out.many = dom();
+    return out;
+  }, ahDeep());
+  assert.deepEqual(r.full.lanes, [['awake', 1], ['rem', 2], ['core', 2], ['deep', 1]], 'lanes Vzhůru / REM / Lehký / Hluboký; one bar per real segment, no Asleep / In Bed bars');
+  assert.deepEqual(r.full.order, ['Lehký', 'Hluboký', 'REM', 'Vzhůru', 'Lehký', 'REM'], 'chronological');
+  assert.deepEqual([r.full.from, r.full.to], ['23:40', '07:10'], 'across midnight: bedtime -> final wake');
+  assert.deepEqual(r.full.sum, { tl_total: '7 h 25 min', tl_core: '3 h 40 min', tl_deep: '1 h 10 min', tl_rem: '2 h 30 min', tl_awake: '0 h 10 min' });
+  assert.equal(r.full.segs.includes('inbed'), false);
+  assert.deepEqual(r.sums, [445, 10, 445, true], 'the timeline adds up to the totals (Asleep only fills 23:35-23:40, Awake 10 min subtracted), no overlap');
+  assert.deepEqual(r.one.lanes, [['awake', 0], ['rem', 0], ['core', 1], ['deep', 0]]);
+  assert.deepEqual([r.noRem.lanes, r.noRem.sum.tl_rem], [[['awake', 0], ['rem', 0], ['core', 2], ['deep', 1]], '0 h 00 min']);
+  assert.deepEqual([r.noDeep.lanes, r.noDeep.sum.tl_awake], [[['awake', 1], ['rem', 1], ['core', 2], ['deep', 0]], '0 h 05 min']);
+  assert.deepEqual([r.coarse.lanes, r.coarse.coarse, r.coarse.sum.tl_total, r.coarse.sum.tl_core], [[['asleep', 2], ['awake', 1]], true, '7 h 10 min', undefined], 'coarse Asleep only: a neutral "Spánek" lane, Awake subtracted, no Core / Deep / REM invented');
+  assert.deepEqual(r.many.lanes, [['awake', 15], ['rem', 15], ['core', 15], ['deep', 15]], 'many segments (UTC times + deviceTimezone)');
+}, { state: fixtureState() });
+
+test('AHD4 steps stay Beta and source-aware: the optional source field is stored per day (never summed into the total, no correction factor); one source alone is the total; "Zdroj kroků" shows the sources and an explicit choice; no source field = unchanged behaviour', async ({ page }) => {
+  const r = await page.evaluate(txt => {
+    const T = todayStr(), p = ahParse(txt), d = p.days[T];
+    const plain = ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: T, to: T }, metrics: { steps: [{ date: T, value: '460', unit: 'count' }] } })).days[T];
+    const single = ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: T, to: T }, metrics: { steps: [{ date: T, value: '348', unit: 'count', source: 'iPhone' }] } })).days[T];
+    const multi = ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: T, to: T }, metrics: { steps: [{ date: T, value: '348', unit: 'count', source: 'iPhone' }, { date: T, value: '120', unit: 'count', source: 'Apple Watch' }] } })).days[T];
+    ahImport(p); const auto = getEffectiveSteps(T);
+    view = 'health'; render(); document.getElementById('ahStepSrc').click();
+    const sheet = { picks: [...document.querySelectorAll('#ahStepSheet .ah-src-pick')].map(b => [b.dataset.src, b.getAttribute('aria-checked')]), day: document.querySelector(`#ahStepSheet [data-day="${T}"]`).textContent.replace(/\s+/g, ' ').trim() };
+    document.querySelector('#ahStepSheet .ah-src-pick[data-src="Apple Watch"]').click();
+    const watch = getEffectiveSteps(T), tileWatch = document.querySelector('#hOverview [data-ah="steps"] .stat-value').textContent.replace(/\s/g, ' ');
+    S.appleHealth.stepSource = 'Garmin'; const missing = getEffectiveSteps(T); delete S.appleHealth.stepSource;
+    return { plain, single, multi, d: [d.steps, d.stepSources], auto, sheet, watch, tileWatch, missing, prefPersist: null };
+  }, ahDeep());
+  assert.deepEqual(r.plain, { steps: 460 }, 'no source: exactly the old behaviour');
+  assert.deepEqual(r.single, { steps: 348, stepSources: { iPhone: 348 } }, 'one source only: it is the day total');
+  assert.deepEqual(r.multi, { stepSources: { iPhone: 348, 'Apple Watch': 120 } }, 'several sources without a summary: no total is guessed or summed');
+  assert.deepEqual(r.d, [8600, { iPhone: 3006, 'Apple Watch': 7006 }], 'the summary stays the summary');
+  assert.deepEqual(r.auto, { value: 8600, source: 'appleHealth' });
+  assert.deepEqual(r.sheet.picks, [['auto', 'true'], ['Apple Watch', 'false'], ['iPhone', 'false']]);
+  assert.match(r.sheet.day, /Souhrn zkratky: 8 600 Apple Watch: 7 006 · iPhone: 3 006/);
+  assert.deepEqual([r.watch, r.tileWatch], [{ value: 7006, source: 'appleHealth', stepSource: 'Apple Watch' }, '7 006'], 'an explicit source choice uses that source total');
+  assert.deepEqual(r.missing, { value: 8600, source: 'appleHealth' }, 'a chosen source missing that day falls back to the summary');
+}, { state: fixtureState() });
+
+test('AHD5 workout protocol: optional workouts as an array or the Shortcuts NDJSON string; stable ids (provider UUID, else deterministic source + type + start + end); strict validation skips a malformed workout with a warning; units; a workouts-only payload is valid; v1 unchanged', async ({ page }) => {
+  const r = await page.evaluate(txt => {
+    const base = JSON.parse(txt), T = todayStr();
+    const a = ahParse(txt), nd = ahParse(JSON.stringify({ ...base, workouts: base.workouts.map(w => JSON.stringify(w)).join('\n') }));
+    const again = ahParse(txt), ids = Object.keys(a.workouts).sort();
+    const W = (o, extra) => ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: T, to: T }, workouts: [Object.assign({ type: 'Walking', start: T + 'T10:00:00+02:00', end: T + 'T10:30:00+02:00' }, o)], ...extra }));
+    const bad = [{ end: T + 'T09:00:00+02:00' }, { durationSec: 4000 }, { activeKcal: 'abc' }, { activeKcal: '-5' }, { distanceKm: '12abc' }, { type: 'x'.repeat(81) }, { id: 'bad id!' }, { start: 'yesterday' }, { energyUnit: 'parsecs', activeKcal: 5 }]
+      .map(o => { const p = W(o); return [p.ok, p.errors && p.errors[0], p.warnings]; });
+    const units = W({ activeKcal: '1000', energyUnit: 'kJ', distanceKm: '2', distanceUnit: 'mi', durationMin: '25' }).workouts;
+    const arr = W({}, { workouts: 'not ndjson' }), notList = ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: T, to: T }, workouts: { a: 1 } }));
+    const old = W({ start: '2026-09-01T10:00:00+02:00', end: '2026-09-01T10:30:00+02:00' });
+    return { ids, same: JSON.stringify(a.workouts) === JSON.stringify(nd.workouts) && JSON.stringify(a.workouts) === JSON.stringify(again.workouts), w: a.workouts, count: a.counts.workouts, bad, units, arr: [arr.ok, arr.errors[0]], notList: [notList.ok, notList.errors[0]], old: [old.ok, old.errors && old.errors[0], old.warnings] };
+  }, ahDeep());
+  assert.equal(r.count, 2); assert.equal(r.same, true, 'array and NDJSON give the same workouts; parsing twice gives the same ids');
+  assert.equal(r.ids[0], 'E2A1-UUID-0001', 'the provider UUID is the identity'); assert.match(r.ids[1], /^ahw-[0-9a-z]+$/, 'otherwise a deterministic key');
+  assert.deepEqual(r.w['E2A1-UUID-0001'], { id: 'E2A1-UUID-0001', start: '2026-09-23T06:04:00+02:00', end: '2026-09-23T06:58:00+02:00', date: '2026-09-23', type: 'Traditional Strength Training', durationSec: 3240, source: 'Apple Watch', activeKcal: 412.4 });
+  assert.deepEqual(r.w[r.ids[1]], { id: r.ids[1], start: '2026-09-22T16:20:00+02:00', end: '2026-09-22T16:58:00+02:00', date: '2026-09-22', type: 'Running', durationSec: 2280, source: 'Apple Watch', activeKcal: 431, distanceKm: 6.2 });
+  for (const b of r.bad) assert.deepEqual(b, [false, 'no_data', [{ k: 'bad_workout', n: 1 }]], 'a malformed workout is never imported (here it was the only data -> nothing to import)');
+  assert.deepEqual(Object.values(r.units).map(w => [w.activeKcal, w.distanceKm, w.durationSec]), [[239, 3.219, 1500]], 'kJ -> kcal, mi -> km, minutes');
+  assert.deepEqual(r.arr, [false, 'ndjson']); assert.deepEqual(r.notList, [false, 'ndjson']);
+  assert.deepEqual(r.old, [false, 'no_data', [{ k: 'out_of_range', n: 1 }]]);
+}, { state: fixtureState() });
+
+test('AHD6 workout import (blocker for rewards): a candidate is never a LifeOS workout until "Add to LifeOS"; adding creates exactly one completed record with the exact kcal / duration / distance; no duplicate after re-adding, 5 re-syncs, reload, export -> reset -> import; 0 XP / attributes / quests / achievements / Daily Score / readiness change; deleting the copy leaves Apple Health data and makes it available again', async ({ page }) => {
+  await page.evaluate(() => { finalizeDailyScores(); checkQuests(); checkAchievements(); });
+  const txt = ahDeep();
+  await page.evaluate(txt => { ahImport(ahParse(txt)); }, txt); await persist(page);
+  const r0 = await ahNoReward(page), rd0 = await page.evaluate(() => JSON.stringify(trainingReadiness(S, Date.now())));
+  const a = await page.evaluate(() => { const n = S.workouts.length, c = ahWorkoutCandidates().map(x => [x.id, x.state]);
+    const add = ahWorkoutAdd('E2A1-UUID-0001'), again = ahWorkoutAdd('E2A1-UUID-0001');
+    checkQuests(); checkAchievements(); finalizeDailyScores(); render();
+    const w = S.workouts.find(x => x.healthWorkoutId === 'E2A1-UUID-0001');
+    return { before: n, cands: c, add: add.ok, again: again.reason, after: S.workouts.length, w: { name: w.name, date: w.date, status: w.status, source: w.source, durationSec: w.durationSec, duration: w.duration, activeKcal: w.activeKcal, healthSource: w.healthSource, startAt: w.startAt },
+      completed: completedWorkouts(S).some(x => x.id === w.id), history: fitnessHistoryWorkouts(S).some(x => x.id === w.id), states: ahWorkoutCandidates().map(x => [x.id, x.state]) }; });
+  assert.deepEqual(a.cands.map(x => x[1]), ['new', 'new']);
+  assert.deepEqual([a.add, a.again, a.after - a.before], [true, 'exists', 1]);
+  assert.deepEqual(a.w, { name: 'Silový trénink', date: '2026-09-23', status: 'done', source: 'appleHealth', durationSec: 3240, duration: 54, activeKcal: 412.4, healthSource: 'Apple Watch', startAt: '2026-09-23T06:04:00+02:00' }, 'the workout-specific active kcal, never the daily total');
+  assert.deepEqual([a.completed, a.history], [false, true], 'shown in the Fitness history, never counted as a LifeOS completion');
+  assert.equal(a.states[0][1], 'added');
+  await persist(page);
+  assert.equal(await ahNoReward(page), r0, '0 XP, attributes, quests, achievements, Daily Score; manual Health unchanged');
+  assert.equal(await page.evaluate(() => JSON.stringify(trainingReadiness(S, Date.now()))), rd0, 'readiness as implemented (Apple workouts are not LifeOS sessions)');
+  // re-sync 5x + reload: still one copy, the candidate stays "added"
+  for (let i = 0; i < 5; i++) await page.evaluate(txt => ahImport(ahParse(txt), { force: true }), txt);
+  await persist(page); await reload(page);
+  assert.deepEqual(await page.evaluate(() => [S.workouts.filter(w => w.healthWorkoutId === 'E2A1-UUID-0001').length, ahWorkoutCandidates()[0].state]), [1, 'added']);
+  // export -> reset -> import keeps the linkage; a re-sync afterwards still adds nothing
+  const exp = await page.evaluate(() => JSON.stringify(S));
+  const b = await page.evaluate(exp => { S = migrate(JSON.parse(exp)); ahImport(ahParse(JSON.stringify(Object.assign(JSON.parse(exp).appleHealth ? {} : {}, {}))), {}); return [S.workouts.filter(w => w.healthWorkoutId === 'E2A1-UUID-0001').length, ahWorkoutCandidates().map(x => x.state)]; }, exp);
+  assert.deepEqual(b, [1, ['added', 'new']]);
+  // delete the LifeOS copy: Apple Health data untouched, the candidate is available again (marked), and can be re-added once
+  const d = await page.evaluate(() => { const src = JSON.stringify(S.appleHealth.workouts), w = S.workouts.find(x => x.healthWorkoutId === 'E2A1-UUID-0001');
+    view = 'fitness'; render(); document.querySelector(`.ah-wk-card[data-hw="E2A1-UUID-0001"] .delbtn`).click(); document.getElementById('cf_ok').click();
+    const st = ahWorkoutCandidates()[0].state, gone = !S.workouts.some(x => x.id === w.id), same = JSON.stringify(S.appleHealth.workouts) === src;
+    const re = ahWorkoutAdd('E2A1-UUID-0001'); return { st, gone, same, re: re.ok, n: S.workouts.filter(x => x.healthWorkoutId === 'E2A1-UUID-0001').length, after: ahWorkoutCandidates()[0].state }; });
+  assert.deepEqual(d, { st: 'removed', gone: true, same: true, re: true, n: 1, after: 'added' });
+  assert.equal(await ahNoReward(page), r0, 'still no reward after delete + re-add');
+}, { state: fixtureState() });
+
+test('AHD7 Fitness UX: "Přidat trénink z Apple Health" -> the list of recent workouts (type, date + start, duration, kcal, distance, source, "Už přidáno") -> preview (type, date, start, end, duration, active kcal, distance, source) -> Zrušit / Přidat do LifeOS -> the history shows "Spáleno: 412 kcal" with the Apple Health source', async ({ page }) => {
+  await page.evaluate(txt => { ahImport(ahParse(txt)); view = 'fitness'; render(); }, ahDeep());
+  await page.click('#ahWkAdd'); await page.waitForSelector('#ahWkSheet');
+  const list = await page.$$eval('#ahWkSheet .ah-wk-item', bs => bs.map(b => b.textContent.replace(/\s+/g, ' ').trim()));
+  assert.deepEqual(list, ['Silový trénink Dnes 06:04 · 54 min · 412 kcal · Apple Watch', 'Běh Včera 16:20 · 38 min · 431 kcal · 6,2 km · Apple Watch']);
+  await page.click('#ahWkSheet .ah-wk-item[data-wk="E2A1-UUID-0001"]'); await page.waitForSelector('#ahWkPreview');
+  const prev = await page.$$eval('#ahWkPreview [data-wkf]', rs => rs.map(x => [x.dataset.wkf, x.querySelector('b').textContent]));
+  assert.deepEqual(prev, [['wk_type', 'Traditional Strength Training'], ['wk_date', '23.09.2026'], ['wk_start', '06:04'], ['wk_end', '06:58'], ['wk_dur', '54 min'], ['wk_kcal', '412 kcal'], ['wk_src', 'Apple Watch']]);
+  await page.click('#ahWk_cancel'); assert.equal(await page.evaluate(() => S.workouts.some(w => w.source === 'appleHealth')), false, 'Zrušit adds nothing');
+  await page.click('#ahWkAdd'); await page.click('#ahWkSheet .ah-wk-item[data-wk="E2A1-UUID-0001"]'); await page.click('#ahWk_add'); await settle(page);
+  const card = await page.$eval('.ah-wk-card[data-hw="E2A1-UUID-0001"]', c => [c.querySelector('[data-burned]').textContent.trim(), c.querySelector('.src-badge').dataset.src, c.querySelectorAll('.editBtn').length, c.textContent.includes('Apple Watch')]);
+  assert.deepEqual(card, ['Spáleno: 412 kcal', 'apple', 0, true]);
+  await page.click('#ahWkAdd');
+  assert.deepEqual(await page.$eval('#ahWkSheet .ah-wk-item[data-wk="E2A1-UUID-0001"]', b => [b.getAttribute('aria-disabled'), b.querySelector('[data-state]').textContent]), ['true', 'Už přidáno']);
+  await page.click('#ahWkSheet .ah-wk-item[data-wk="E2A1-UUID-0001"]', { force: true });
+  assert.equal(await page.locator('#ahWk_add').count(), 0, 'an added workout cannot be added again');
+  await page.evaluate(() => closeSheets());
+}, { state: fixtureState() });
+
+test('AHD8 screens 320-1440 px, dark + light: Health with the overview + timeline (sleep / weight / active kcal), step-source sheet, diagnostics, Fitness with the import list + preview + Apple workout card -- no overflow, duplicate ids, NaN / undefined; 44 px targets; named controls', async ({ page }) => {
+  const scenes = {
+    sleep: "healthTab='sleep';view='health';render()", weight: "healthTab='weight';view='health';render()", kcal: "healthTab='activecal';view='health';render()",
+    steps: "healthTab='sleep';view='health';render();uiAhStepSheet()", diag: "view='health';render();uiAhDiagSheet()",
+    fitness: "if(!ahLinkedWorkout('E2A1-UUID-0001')) ahWorkoutAdd('E2A1-UUID-0001');view='fitness';render()", wkList: "view='fitness';render();uiAhWorkoutSheet()", wkPrev: "view='fitness';render();uiAhWorkoutPreview(ahWorkoutCandidates()[1].id)" };
+  await page.evaluate(txt => ahImport(ahParse(txt)), ahDeep());
+  const bad = [];
+  for (const theme of ['dark', 'light']) for (const width of AH_WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [k, js] of Object.entries(scenes)) {
+      const r = await page.evaluate(({ js, theme }) => { closeSheets(); S.settings.theme = theme; applyTheme(); eval(js);
+        const ids = [...document.querySelectorAll('[id]')].map(n => n.id), sheet = document.querySelector('.sheet');
+        const ctl = [...document.querySelectorAll('#ahCard button:not(.switch), #hOverview button, .sl-list summary, #ahStepSheet button, #ahDiag button, #ahWkAdd, #ahWkSheet button, #ahWkPreview button, .ah-wk-card button')].filter(b => b.offsetParent);
+        return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, sheetOver: sheet ? sheet.scrollWidth - sheet.clientWidth : 0, dup: ids.filter((x, i) => ids.indexOf(x) !== i),
+          nan: /undefined|NaN|\[object/.test(document.body.innerText), small: ctl.filter(b => b.getBoundingClientRect().height < 44).map(b => b.id || b.className),
+          unnamed: ctl.filter(b => !(b.getAttribute('aria-label') || b.textContent).trim()).length, sw: [...document.querySelectorAll('#ahPrefH')].every(b => b.getAttribute('role') === 'switch' && b.closest('.ah-pref').getBoundingClientRect().height >= 44) }; }, { js, theme });
+      const issues = [r.over > 0 && 'overflow ' + r.over, r.sheetOver > 0 && 'sheet overflow', r.dup.length && 'dup ' + r.dup, r.nan && 'NaN', r.small.length && '<44px ' + r.small, r.unnamed && 'unnamed', !r.sw && 'switch'].filter(Boolean);
+      if (issues.length) bad.push(`${theme}/${width}/${k}: ${issues.join('; ')}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+  await page.evaluate(() => closeSheets());
+}, { state: fixtureState() });
+
+test('AHD9 performance: 62 nights with full stage timelines + 500 workouts parse and import fast; only the selected night is rendered (Health render, Fitness render within budget)', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const T = todayStr(), from = addDays(T, -61), iso = (d, hm) => `${d}T${hm}:00+02:00`, sleep = [], workouts = [];
+    for (let i = 0; i < 62; i++) { const d = addDays(from, i), p = addDays(d, -1); let t = Date.parse(iso(p, '22:30'));
+      for (let k = 0; k < 120; k++) { const a = new Date(t), b = new Date(t + 4 * 60000); sleep.push({ value: ['Core', 'Deep', 'REM', 'Awake', 'Asleep'][k % 5], start: a.toISOString(), end: b.toISOString() }); t += 4 * 60000; } }
+    for (let i = 0; i < 500; i++) { const d = addDays(from, i % 62), h = String(6 + (i % 14)).padStart(2, '0'); workouts.push({ type: 'Running', start: iso(d, h + ':0' + (i % 6)), end: iso(d, h + ':4' + (i % 6)), activeKcal: 300 + i, source: 'Apple Watch' }); }
+    const txt = JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: iso(T, '09:00'), deviceTimezone: 'Europe/Prague', range: { from, to: T }, sleep, workouts });
+    let t0 = performance.now(); const p = ahParse(txt); const parse = performance.now() - t0; t0 = performance.now(); ahImport(p); const imp = performance.now() - t0;
+    const times = k => { const a = []; for (let i = 0; i < 5; i++) { const t = performance.now(); k(); a.push(performance.now() - t); } return a.sort((x, y) => x - y)[2]; };
+    const health = times(() => { healthTab = 'sleep'; view = 'health'; render(); }), fitness = times(() => { view = 'fitness'; render(); });
+    view = 'health'; healthTab = 'sleep'; render();
+    return { ok: p.ok, nights: p.counts.sleep, wk: p.counts.workouts, parse, imp, health, fitness, mb: txt.length / 1e6, segs: document.querySelectorAll('.sl-seg').length };
+  });
+  console.log(`      AHD9 ${r.mb.toFixed(2)} MB: parse ${r.parse.toFixed(0)} ms, import ${r.imp.toFixed(0)} ms, Health render ${r.health.toFixed(1)} ms, Fitness render ${r.fitness.toFixed(1)} ms, timeline bars ${r.segs}`);
+  assert.deepEqual([r.ok, r.nights, r.wk], [true, 62, 500]);
+  assert.ok(r.segs > 0 && r.segs <= 120, 'only one night of segments in the DOM');
+  assert.ok(r.parse < 600 && r.imp < 500 && r.health < 150 && r.fitness < 250, 'fast');
 }, { state: fixtureState() });
 
 // ---------- screenshots ----------

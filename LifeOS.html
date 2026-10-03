@@ -1745,6 +1745,31 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="time"]::-we
 .ah-mini .btn{min-height:44px}#ahSyncH{min-height:44px;flex:none}
 .ah-set .stack .btn{min-height:44px}.ah-set h3{display:flex;align-items:center;gap:8px}
 .ah-paste textarea{width:100%;font-family:ui-monospace,monospace;font-size:13px}.ah-paste .btn,.ah-preview .btn{min-height:44px}
+/* Apple Health deep integration: source badges, Health overview, sleep stage timeline. Stage colours: one blue ramp
+   light -> dark for REM -> Core -> Deep (sleep depth is ordinal; validated monotone in both themes) + a warm Awake;
+   every lane also carries its text label, so identity never depends on colour alone. */
+:root{--sl-rem:#a9c8ff;--sl-core:#5b8cff;--sl-deep:#3a4fd6;--sl-awake:#f08a4b;--sl-asleep:#8a93a8}
+:root[data-theme="light"]{--sl-rem:#7aa7f5;--sl-core:#3d6ee6;--sl-deep:#2a3aa8;--sl-awake:#c0580f;--sl-asleep:#8d8aa3}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]):not([data-theme="light"]){--sl-rem:#7aa7f5;--sl-core:#3d6ee6;--sl-deep:#2a3aa8;--sl-awake:#c0580f;--sl-asleep:#8d8aa3}}
+.src-badge{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-micro);font-weight:600;color:var(--color-text-secondary);border:1px solid var(--line);border-radius:var(--radius-pill);padding:2px 8px;white-space:nowrap}
+.ah-pref{margin:10px 0 8px;gap:10px;min-height:var(--touch)}.ah-overview{margin-bottom:12px}
+.ah-tile .stat-label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.ah-info{width:var(--touch);height:var(--touch);margin:-12px -10px -12px auto;flex:none}
+.ah-step-btn{margin-top:6px;padding-left:10px;padding-right:10px}
+#ahCard .btn.sm,.ah-overview .btn.ah-step-btn,#ahStepSheet button.chip.ah-src-pick{min-height:var(--touch)}.ah-step-day{display:block}
+.sl-card{margin-bottom:12px}.sl-card .between{gap:8px}
+.sl-tl{margin:14px 0 4px}
+.sl-lane,.sl-axis{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:8px}
+.sl-lane{min-height:26px}.sl-lab{font-size:var(--fs-caption);color:var(--color-text-secondary)}
+.sl-track{position:relative;height:20px;background:var(--color-surface-muted);border-radius:6px;overflow:hidden}
+.sl-seg{position:absolute;top:2px;bottom:2px;border-radius:4px;min-width:2px;box-shadow:0 0 0 1px var(--card)}
+.sl-rem{background:var(--sl-rem)}.sl-core{background:var(--sl-core)}.sl-deep{background:var(--sl-deep)}.sl-awake{background:var(--sl-awake)}.sl-asleep{background:var(--sl-asleep)}
+.sl-ticks{position:relative;height:16px;font-size:var(--fs-micro);color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+.sl-tick{position:absolute;transform:translateX(-50%)}.sl-end{position:absolute;font-weight:650;color:var(--color-text-secondary)}.sl-from{left:0}.sl-to{right:0}
+.sl-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px;margin-top:12px}
+.sl-sum-i{display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.sl-list{margin-top:6px}.sl-list summary{min-height:var(--touch);display:flex;align-items:center;cursor:pointer;color:var(--color-text-secondary);font-size:var(--fs-body-sm)}
+.sl-list ol{margin:4px 0 0;padding-left:20px;font-size:var(--fs-body-sm)}
+.wk-ah-src{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.ah-wk-item{width:100%;text-align:left}.ah-wk-item[aria-disabled="true"]{opacity:.7}
 .ah-rows{margin:12px 0}.ah-row{padding:8px 0;border-bottom:1px solid var(--line)}.ah-err{color:var(--danger);font-weight:650}.ah-warn{margin-top:4px}
 .danger-text{color:var(--danger)}
 </style>
@@ -3570,6 +3595,7 @@ const UI_ICONS={
   mood4:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 14.5c1.7 1.5 4.3 1.5 6 0"/>',
   down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   repeat:'<path d="M4 11.5a8 8 0 0 1 13.7-5.2L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12.5a8 8 0 0 1-13.7 5.2L4 15.5"/><path d="M4 20v-4.5h4.5"/>',
+  info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6h.01"/>',
   mood5:'<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M8.5 14c2 3 5 3 7 0"/>',
 };
 UI_ICONS.flame=UI_ICONS.habits; UI_ICONS.shield=UI_ICONS.character; UI_ICONS.gear=UI_ICONS.settings;
@@ -6897,7 +6923,11 @@ function renderFinance(){
             notes,sets:[{id,weight,reps,seconds,distance,rpe,warmup,done}]}
    name/measurement/target are copies taken at start, so editing or deleting the library
    exercise or the template later never rewrites history. ---- */
-function isCompletedWorkout(w){ return !!w&&w.status!=='active'; }
+// A workout added from Apple Health (source:'appleHealth') is an external, already-finished record shown in the Fitness
+// history -- not a LifeOS completion: it never counts for quests, achievements, Daily Score, readiness or statistics
+// (so importing old workouts can never farm rewards). See ahWorkoutAdd / fitnessHistoryWorkouts.
+function isCompletedWorkout(w){ return !!w&&w.status!=='active'&&w.source!=='appleHealth'; }
+function isHealthWorkout(w){ return !!w&&w.source==='appleHealth'; }
 function completedWorkouts(s){ return ((s||S).workouts||[]).filter(isCompletedWorkout); }
 function activeWorkout(){ return (S.workouts||[]).find(w=>w.status==='active')||null; }
 function workoutWorkingSets(en){ return ((en&&en.sets)||[]).filter(st=>st.done&&!st.warmup); }
@@ -8053,6 +8083,8 @@ function uiDelConfirm(kind,o,onOk){
     investment:[cs?'Smazat investici?':'Delete investment?',cs?`Investice ${q} bude smazána i se všemi vklady a oceněními.`:`The investment ${q} will be deleted with all its contributions and valuations.`,[cs?'Transakce na účtech zůstanou beze změny.':'Account transactions stay unchanged.']],
     food:[cs?'Smazat oblíbené jídlo?':'Delete favourite food?',cs?`Oblíbené jídlo ${q} bude smazáno ze seznamu.`:`The favourite food ${q} will be removed from the list.`,[cs?'Už zapsaná jídla zůstanou beze změny.':'Meals already logged stay unchanged.']],
     meal:[cs?'Smazat jídlo?':'Delete meal?',cs?`Jídlo ${q} bude trvale smazáno ze záznamu.`:`The meal ${q} will be permanently deleted from your log.`,[xp]],
+    ahWorkout:[cs?'Odebrat trénink z LifeOS?':'Remove workout from LifeOS?',cs?`Trénink ${q} se odebere jen z LifeOS.`:`The workout ${q} is removed from LifeOS only.`,
+      [cs?'V Apple Health zůstane beze změny (LifeOS do Zdraví nikdy nezapisuje) a půjde ho znovu přidat.':'It stays unchanged in Apple Health (LifeOS never writes to Health) and can be added again.']],
     note:[cs?'Smazat poznámku?':'Delete note?',cs?`Poznámka ${q} bude trvale smazána.`:`The note ${q} will be permanently deleted.`,[]],
     journal:[cs?'Smazat zápis?':'Delete entry?',cs?`Zápis z ${o.name} bude trvale smazán.`:`The journal entry for ${o.name} will be permanently deleted.`,[]],
     vehicle:[cs?'Smazat vozidlo?':'Delete vehicle?',cs?`Vozidlo ${q} bude trvale smazáno.`:`The vehicle ${q} will be permanently deleted.`,
@@ -8573,9 +8605,11 @@ function renderFitness(){
     prs.slice(0,8).forEach(pr=>{ const [v,u,d]=uiPrValue(pr); prList.appendChild(el(`<div class="pr-card" data-pr="${escapeHtml(pr.exerciseId)}:${pr.type}"><div class="kicker truncate">${escapeHtml(pr.name)}</div><div class="pr-v">${escapeHtml(v)}${u?`<small> ${escapeHtml(u)}</small>`:''}</div><div class="sub">${uiPrTypeLabel(pr.type)}${d?' · '+escapeHtml(d):''} · ${fmtDate(pr.date)}</div></div>`)); });
   }
   const list=wrap.querySelector('#wList');
-  const sorted=[...done].sort((a,b)=>workoutChronoCmp(b,a));
+  const sorted=fitnessHistoryWorkouts(S).sort((a,b)=>workoutChronoCmp(b,a)); // + workouts added from Apple Health (shown, never counted)
+  if(ahStore()){ const ab=el(`<button type="button" class="btn ghost" id="ahWkAdd" style="margin:0 0 12px">${uiIcon('heart',16)} ${uiAhT('wk_add')}</button>`); ab.onclick=uiAhWorkoutSheet; list.before(ab); }
   if(!sorted.length){ const e=el(`<div class="card">${uiEmpty('🏋️',L.none,L.none_d,'＋ '+L.add)}</div>`); e.querySelector('.emptyCta').onclick=()=>openWorkoutForm(); list.appendChild(e); }
   sorted.forEach(w=>{
+    if(isHealthWorkout(w)){ list.appendChild(uiAhWorkoutCard(w)); return; }
     const vol=workoutVolume(w);
     const exRows=Array.isArray(w.entries)?uiEntrySummaryRows(w):(w.exercises||[]).map(ex=>`<div class="ex-row"><span class="truncate"><b>${escapeHtml(ex.name||'—')}</b>${ex.muscle?` <span class="sub">· ${escapeHtml(ex.muscle)}</span>`:''}</span><span class="num sub">${ex.sets||0}×${ex.reps||0}${Number(ex.weight)?` · ${ex.weight} kg`:''}${ex.rpe?` · RPE ${escapeHtml(String(ex.rpe))}`:''}</span></div>`).join('');
     const it=el(`<div class="card workout-card">
@@ -8603,6 +8637,51 @@ function renderFitness(){
   wrap.querySelector('#wkPanel').before(uiReadinessCard(Date.now()));
   uiBindFitnessTabs(wrap);
   return wrap;
+}
+// ---- Fitness: workouts from Apple Health (candidates -> preview -> explicit "Add to LifeOS"; never automatic) ----
+const UI_AH_WK_IC={strength:'dumbbell',hiit:'bolt',run:'run',walk:'walk',hike:'walk',stairs:'stairs',cycle:'activity',swim:'activity',yoga:'activity',row:'activity',elliptical:'activity',core:'dumbbell',cardio:'activity',dance:'activity',other:'activity'};
+function uiAhWkWhen(date,iso){ const t=todayStr(), o=ahParseIso(iso,null), cs=uiLang()==='cs';
+  const d=date===t?(cs?'Dnes':'Today'):date===addDays(t,-1)?(cs?'Včera':'Yesterday'):fmtDate(date); return o?`${d} ${uiAhClock(o)}`:d; }
+function uiAhWkFacts(c){ return [uiFmtDur(c.durationSec),c.activeKcal!=null?`${uiNum(Math.round(c.activeKcal))} kcal`:'',c.distanceKm!=null?`${uiFmtNum(Math.round(c.distanceKm*100)/100)} km`:''].filter(Boolean); }
+function uiAhWorkoutSheet(){
+  const list=ahWorkoutCandidates();
+  const chip=c=>c.state==='added'?`<span class="chip is-muted" data-state="added">${uiAhT('wk_added')}</span>`:c.state==='removed'?`<span class="chip is-muted" data-state="removed">${uiAhT('wk_removed')}</span>`:'';
+  const inner=el(`<div class="ah-wk" id="ahWkSheet"><h3>${uiAhT('wk_t')}</h3>
+    ${list.length?`<div class="list">${list.map(c=>`<button type="button" class="item ah-wk-item" data-wk="${escapeHtml(c.id)}"${c.state==='added'?' aria-disabled="true"':''}>
+      <span class="icon-circle" aria-hidden="true">${uiIcon(UI_AH_WK_IC[ahWorkoutKind(c.type)],18)}</span><span style="flex:1;min-width:0"><span class="item-title truncate" style="display:block">${escapeHtml(ahWorkoutLabel(c))}</span>
+      <span class="item-meta" style="display:block">${escapeHtml(uiAhWkWhen(c.date,c.start))} · ${escapeHtml(uiAhWkFacts(c).join(' · '))}${c.source?` · ${escapeHtml(c.source)}`:''}</span>${chip(c)}</span></button>`).join('')}</div>`
+      :`<p class="sub">${uiAhT('wk_none')}</p>`}
+    <button type="button" class="btn ghost" id="ahWkClose">${uiAhT('dismiss')}</button></div>`);
+  openSheet(inner);
+  inner.querySelector('#ahWkClose').onclick=()=>closeSheets();
+  inner.querySelectorAll('.ah-wk-item').forEach(b=>b.onclick=()=>{ const c=list.find(x=>x.id===b.dataset.wk); if(c){ closeSheets(); uiAhWorkoutPreview(c.id); } });
+}
+function uiAhWorkoutPreview(id){
+  const c=ahWorkoutCandidates().find(x=>x.id===id); if(!c) return;
+  const s=ahParseIso(c.start,null), e=ahParseIso(c.end,null), added=c.state==='added';
+  const row=(k,v)=>v!=null&&v!==''?`<div class="between ah-row" data-wkf="${k}"><span>${uiAhT(k)}</span><b>${escapeHtml(String(v))}</b></div>`:'';
+  const inner=el(`<div class="ah-wk-prev" id="ahWkPreview"><h3>${escapeHtml(ahWorkoutLabel(c))}</h3><div class="ah-rows">
+    ${row('wk_type',c.type||ahWorkoutLabel(c))}${row('wk_date',fmtDate(c.date))}${row('wk_start',s&&uiAhClock(s))}${row('wk_end',e&&uiAhClock(e))}${row('wk_dur',uiFmtDur(c.durationSec))}
+    ${row('wk_kcal',c.activeKcal!=null?`${uiNum(Math.round(c.activeKcal))} kcal`:null)}${row('wk_total',c.totalKcal!=null?`${uiNum(Math.round(c.totalKcal))} kcal`:null)}
+    ${row('wk_dist',c.distanceKm!=null?`${uiFmtNum(Math.round(c.distanceKm*100)/100)} km`:null)}${row('wk_src',c.source)}</div>
+    <p class="helper-text">${added?uiAhT('wk_exists'):uiAhT('wk_noxp')}</p>
+    <div class="btn-row"><button type="button" class="btn ghost" id="ahWk_cancel">${uiAhT('cancel')}</button>${added?'':`<button type="button" class="btn" id="ahWk_add">${uiAhT('wk_addbtn')}</button>`}</div></div>`);
+  openSheet(inner);
+  inner.querySelector('#ahWk_cancel').onclick=()=>closeSheets();
+  const ab=inner.querySelector('#ahWk_add');
+  if(ab) ab.onclick=()=>{ const r=ahWorkoutAdd(c.id); closeSheets();
+    if(!r.ok){ toast(r.reason==='locked'?uiAhT('locked'):r.reason==='exists'?uiAhT('wk_exists'):uiAhT('invalid')); return; }
+    scheduleSave(); render(); toast(uiAhT('wk_done')); };
+}
+// a workout added from Apple Health in the Fitness history (no sets / XP; its own calories, distance, source)
+function uiAhWorkoutCard(w){
+  const c=el(`<div class="card workout-card ah-wk-card" data-hw="${escapeHtml(w.healthWorkoutId||'')}">
+    <div class="between"><div class="row" style="min-width:0"><span class="icon-circle" aria-hidden="true">${uiIcon(UI_AH_WK_IC[ahWorkoutKind(w.healthType)],18)}</span><div style="min-width:0"><div class="item-title truncate">${escapeHtml(w.name)}</div><div class="item-meta">${escapeHtml(uiAhWkWhen(w.date,w.startAt))}</div></div></div>
+      <div class="item-actions"><button class="delbtn" aria-label="${uiT('delete')}: ${escapeHtml(w.name)}">✕</button></div></div>
+    <div class="wk-metrics"><span><b>${escapeHtml(uiFmtDur(w.durationSec!=null?w.durationSec:(Number(w.duration)||0)*60))}</b></span>${w.activeKcal!=null?`<span data-burned>${uiAhT('wk_burned')}: <b>${uiNum(Math.round(w.activeKcal))} kcal</b></span>`:''}${w.distanceKm!=null?`<span><b>${uiFmtNum(Math.round(w.distanceKm*100)/100)}</b> km</span>`:''}</div>
+    <div class="wk-ah-src">${uiAhSrc('appleHealth')}${w.healthSource?`<span class="chip is-muted">${escapeHtml(w.healthSource)}</span>`:''}</div></div>`);
+  c.querySelector('.delbtn').onclick=()=>uiDelConfirm('ahWorkout',{name:w.name,ok:uiLang()==='cs'?'Odebrat':'Remove'},()=>{ if(ahWorkoutRemove(w.id)){ scheduleSave(); render(); } });
+  return c;
 }
 function openWorkoutForm(existing){
   const w=existing;
@@ -11734,6 +11813,7 @@ function ahNormalizeShortcutPayload(p){
     for(const k of Object.keys(mt.value)){ const l=ahParseNDJSONList(mt.value[k]); if(!l.ok) return {ok:false,error:l.error==='keys'?'keys':'ndjson'}; m[k]=l.list; }
     out.metrics=m; }
   if(p.sleep!=null){ const l=ahParseNDJSONList(p.sleep); if(!l.ok) return {ok:false,error:l.error==='keys'?'keys':'ndjson'}; out.sleep=l.list; }
+  if(p.workouts!=null){ const l=ahParseNDJSONList(p.workouts); if(!l.ok) return {ok:false,error:l.error==='keys'?'keys':'ndjson'}; out.workouts=l.list; }
   return {ok:true,payload:out};
 }
 function ahUnitFactor(spec,unit){
@@ -11747,11 +11827,13 @@ function ahValue(spec,raw,unit){
 }
 // ISO date-time with an offset -> {ms, date, minOfDay} on the device's own wall clock (the date written in the string),
 // so a night is filed under the local day it ended on in any time zone / DST; a 'Z' time uses deviceTimezone if valid.
+const AH_DTF=Object.create(null); // one formatter per time zone (building it is the slow part of parsing UTC times)
 function ahParseIso(iso,tz){
   if(typeof iso!=='string') return null;
   const m=/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})$/.exec(iso.trim()); if(!m) return null;
   const ms=Date.parse(iso.trim().replace(' ','T').replace(/([+-]\d{2})(\d{2})$/,'$1:$2')); if(!Number.isFinite(ms)||!ahIsDate(m[1])||+m[2]>23||+m[3]>59) return null;
-  if(m[5]==='Z'&&tz){ try{ const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(ms)).map(x=>[x.type,x.value]));
+  if(m[5]==='Z'&&tz){ try{ const f=AH_DTF[tz]||(AH_DTF[tz]=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}));
+    const p=Object.fromEntries(f.formatToParts(new Date(ms)).map(x=>[x.type,x.value]));
     return {ms,date:`${p.year}-${p.month}-${p.day}`,minOfDay:+p.hour*60+ +p.minute}; }catch(e){} }
   return {ms,date:m[1],minOfDay:+m[2]*60+ +m[3]};
 }
@@ -11778,6 +11860,63 @@ function ahSubtract(iv,cut){
   const c=cut.slice().sort((x,y)=>x[0]-y[0]); const out=[];
   iv.forEach(([s,e])=>{ let a=s; for(const [cs,ce] of c){ if(ce<=a||cs>=e) continue; if(cs>a) out.push([a,cs]); a=Math.max(a,ce); if(a>=e) break; } if(a<e) out.push([a,e]); });
   return out;
+}
+// a parsed instant -> local ISO with its own offset ("2026-09-22T23:40:00+02:00"); the offset is exact (whole minutes)
+function ahLocalIso(o){
+  const sec=Math.floor(o.ms/1000)%60, hh=Math.floor(o.minOfDay/60), mm=o.minOfDay%60, [y,m,d]=o.date.split('-').map(Number);
+  const off=Math.round((Date.UTC(y,m-1,d,hh,mm,sec)-Math.floor(o.ms/1000)*1000)/60000), a=Math.abs(off), p=n=>String(n).padStart(2,'0');
+  return `${o.date}T${p(hh)}:${p(mm)}:${p(sec)}${off<0?'-':'+'}${p(Math.floor(a/60))}:${p(a%60)}`;
+}
+/* Sleep stage timeline of one night: one chronological, non-overlapping list of segments. Where samples overlap, the
+   most specific one wins (deep > rem > core > awake > coarse asleep), so an iPhone "Asleep" spanning the Watch stages
+   never becomes a second bar and only fills time no stage covers; "In bed" is never a segment. The non-awake segments
+   add up to exactly the night's totalMin (same union rules). n: {core,deep,rem,awake,asleep:[[ms,ms,from,to]]} */
+const AH_SEG_PRI={deep:5,rem:4,core:3,awake:2,asleep:1}, AH_MAX_SEGMENTS=400;
+function ahSleepSegments(n){
+  const ev=[]; Object.keys(AH_SEG_PRI).forEach(k=>(n[k]||[]).forEach(z=>{ ev.push([z[0],1,k,z[2]]); ev.push([z[1],-1,k,z[3]]); }));
+  ev.sort((a,b)=>a[0]-b[0]);
+  const cnt={deep:0,rem:0,core:0,awake:0,asleep:0}, out=[]; let i=0, pt=null, po=null;
+  const top=()=>{ let best=null; for(const k in cnt) if(cnt[k]>0&&(!best||AH_SEG_PRI[k]>AH_SEG_PRI[best])) best=k; return best; };
+  while(i<ev.length){ const t=ev[i][0], o=ev[i][3];
+    if(pt!=null&&t>pt){ const st=top(); if(st){ const last=out[out.length-1]; if(last&&last.stage===st&&last.e===pt){ last.e=t; last.eo=o; } else out.push({stage:st,s:pt,so:po,e:t,eo:o}); } }
+    while(i<ev.length&&ev[i][0]===t){ cnt[ev[i][2]]+=ev[i][1]; i++; }
+    pt=t; po=o; }
+  return out.length>AH_MAX_SEGMENTS?null:out.map(x=>({start:ahLocalIso(x.so),end:ahLocalIso(x.eo),stage:x.stage}));
+}
+// stored segments, validated on every read (they may come from an imported backup); [] when absent or not trustworthy
+function ahSegmentsOf(sl){
+  const a=sl&&sl.segments; if(!Array.isArray(a)||!a.length||a.length>AH_MAX_SEGMENTS) return [];
+  const out=[]; for(const x of a){ const s=x&&ahParseIso(x.start,null), e=x&&ahParseIso(x.end,null);
+    if(!s||!e||!(e.ms>s.ms)||!Object.prototype.hasOwnProperty.call(AH_SEG_PRI,x.stage)) return []; out.push({stage:x.stage,s,e}); }
+  return out.sort((x,y)=>x.s.ms-y.s.ms);
+}
+/* Workouts (optional, protocol v1): completed Health workouts as external records -- e.g. from the "Find Workout" action of
+   the free Actions app (native Shortcuts cannot be relied on to list workouts). Each is validated on its own: a malformed
+   workout is skipped with a visible warning, never imported half-broken. Identity: the provider's UUID when given, else a
+   deterministic key from source + type + start + end (never random), so a re-sync can never create a second copy. */
+const AH_MAX_WORKOUTS=500;
+function ahHash(t){ let a=0x811c9dc5, b=0x9e3779b9; for(let i=0;i<t.length;i++){ const c=t.charCodeAt(i); a=Math.imul(a^c,16777619)>>>0; b=Math.imul(b^c,2246822519)>>>0; } return a.toString(36)+b.toString(36); }
+function ahWorkoutKey(source,type,s,e){ return 'ahw-'+ahHash([source||'',type||'',s,e].join('|')); }
+function ahWorkoutParse(x,tz){
+  const bad={ok:false};
+  if(!x||typeof x!=='object'||Array.isArray(x)) return bad;
+  const str=(v,max)=>v==null||v===''?null:typeof v==='string'&&v.trim().length<=max&&!/[\u0000-\u001f]/.test(v)?(v.trim()||null):undefined;
+  const type=str(x.type,80), name=str(x.name,80), source=str(x.source,80), rid=str(x.id,128);
+  if(type===undefined||name===undefined||source===undefined||rid===undefined||(rid&&!/^[A-Za-z0-9._:-]+$/.test(rid))) return bad;
+  const a=ahParseIso(x.start,tz), b=ahParseIso(x.end,tz); if(!a||!b||!(b.ms>a.ms)||b.ms-a.ms>24*3600000) return bad;
+  const span=(b.ms-a.ms)/1000, has=v=>v!=null&&v!=='';
+  let dur=span;
+  if(has(x.durationSec)){ dur=ahNum(x.durationSec); if(dur==null) return bad; }
+  else if(has(x.durationMin)){ const m=ahNum(x.durationMin); if(m==null) return bad; dur=m*60; }
+  if(!(dur>0)||dur>span+60) return bad; // moving time can be shorter than end - start (pauses), never longer
+  const unit=(spec,u)=>!has(u)?1:typeof u==='string'?spec.units[u.toLowerCase().replace(/\s/g,'')]:undefined;
+  const kcal=v=>{ if(!has(v)) return null; const n=ahNum(v), f=unit(AH_FIELDS.activeEnergy,x.energyUnit); if(n==null||f==null) return undefined; const k=n*f; return k>=0&&k<=20000?Math.round(k*10)/10:undefined; };
+  const ak=kcal(x.activeKcal), tk=kcal(x.totalKcal); if(ak===undefined||tk===undefined) return bad;
+  let km=null;
+  if(has(x.distanceKm)){ const n=ahNum(x.distanceKm), f=unit(AH_FIELDS.walkingRunningDistance,x.distanceUnit); if(n==null||f==null) return bad; km=n*f; if(!(km>=0&&km<=1000)) return bad; km=Math.round(km*1000)/1000; }
+  const w={id:rid||ahWorkoutKey(source,type,a.ms,b.ms),start:ahLocalIso(a),end:ahLocalIso(b),date:a.date,type:type||'',durationSec:Math.round(dur)};
+  if(name) w.name=name; if(source) w.source=source; if(ak!=null) w.activeKcal=ak; if(tk!=null) w.totalKcal=tk; if(km!=null) w.distanceKm=km;
+  return {ok:true,w};
 }
 function ahHasBadKeys(o,depth){
   if(depth>8) return true; if(!o||typeof o!=='object') return false;
@@ -11806,7 +11945,7 @@ function ahParse(text){
   // to `to`; sleep nights (wake-up day) from (from - 1) to `to`. The partial night two days back and the evening that
   // already belongs to (to + 1) are expected and dropped silently; anything older or later is skipped with a warning.
   const lo=addDays(r.from,-1), inRange=d=>d>=lo&&d<=r.to, quietNight=d=>d===addDays(r.from,-2)||d===addDays(r.to,1);
-  const days={}, warnings=[], counts={sleep:0,steps:0,activeKcal:0,exerciseMin:0,distanceKm:0,flights:0,weightKg:0,weighIns:0,restingHr:0,hrvMs:0,vo2Max:0};
+  const days={}, warnings=[], counts={sleep:0,steps:0,activeKcal:0,exerciseMin:0,distanceKm:0,flights:0,weightKg:0,weighIns:0,restingHr:0,hrvMs:0,vo2Max:0,workouts:0};
   const day=d=>days[d]||(days[d]={});
   const warn=(k,n)=>{ const w=warnings.find(x=>x.k===k); if(w) w.n+=n||1; else warnings.push({k,n:n||1}); };
   // 1) precomputed days (optional, store-shaped)
@@ -11822,7 +11961,7 @@ function ahParse(text){
   }
   // 2) daily metric lists (one value per day; a repeated day keeps the last value, never a sum)
   const M=p.metrics; if(M!=null&&(typeof M!=='object'||Array.isArray(M))) return err('metrics');
-  const weights={};
+  const weights={}, stepSrc={};
   if(M) Object.keys(M).forEach(key=>{
     const spec=AH_FIELDS[key], list=M[key]; if(!spec){ warn('unknown_metric'); return; }
     if(list==null||list===''||(Array.isArray(list)&&!list.length)) return; // the shortcut found no samples of this type: simply absent
@@ -11836,9 +11975,16 @@ function ahParse(text){
       const v=ahValue(spec,e.value,e.unit); if(v==null){ warn('bad_value'); return; }
       if(key==='weight'){ const t=dt?dt.minOfDay:(typeof e.time==='string'&&/^\d{1,2}:\d{2}/.test(e.time)?(+e.time.split(':')[0])*60+ +e.time.split(':')[1].slice(0,2):-1);
         (weights[d]=weights[d]||[]).push({t,i,v}); return; }
+      // Steps may carry an optional `source` (e.g. "Apple Watch"): such a record is a per-source total kept for the
+      // diagnostics / an explicit source choice, never added to the summary (that would count steps twice)
+      if(key==='steps'&&e.source!=null&&e.source!==''&&!/^(auto|summary|souhrn)$/i.test(String(e.source).trim())){
+        const src=typeof e.source==='string'?e.source.trim():''; if(!src||src.length>64||/[\u0000-\u001f]/.test(src)){ warn('bad_entry'); return; }
+        const m=stepSrc[d]||(stepSrc[d]={}); if(Object.keys(m).length>=8&&!(src in m)){ warn('bad_entry'); return; } m[src]=v; return; }
       if(seen[d]) warn('duplicate'); seen[d]=1; day(d)[spec.f]=v;
     });
   });
+  Object.keys(stepSrc).forEach(d=>{ const m=stepSrc[d], ks=Object.keys(m); day(d).stepSources=m;
+    if(day(d).steps==null&&ks.length===1) day(d).steps=m[ks[0]]; }); // one source only: it is the day's total
   Object.keys(weights).forEach(d=>{ const w=weights[d].sort((a,b)=>a.t-b.t||a.i-b.i); day(d).weightKg=w[w.length-1].v; counts.weighIns+=w.length; });
   // 3) sleep samples -> nights. A night belongs to the local day it ends on; the day runs 18:00 -> 18:00 (as in Health),
   //    so an evening nap counts for the next day. Asleep = Core + Deep + REM (+ unspecified "Asleep"), Awake / In bed are not sleep.
@@ -11865,13 +12011,24 @@ function ahParse(text){
       const sl={totalMin:Math.min(1440,total),stages,bedtime:hm(first[2]),wake:hm(last[3])};
       if(n.awake.length) sl.awakeMin=ahUnionMin(iv('awake'));
       if(stages){ sl.coreMin=ahUnionMin(iv('core')); sl.deepMin=ahUnionMin(iv('deep')); sl.remMin=ahUnionMin(iv('rem')); }
+      const seg=ahSleepSegments({core:n.core,deep:n.deep,rem:n.rem,awake:n.awake,asleep:n.asleep});
+      if(seg&&seg.length) sl.segments=seg;
       day(d).sleep=sl;
     });
   }
-  Object.values(days).forEach(x=>{ Object.keys(counts).forEach(k=>{ if(k==='sleep'?x.sleep:k!=='weighIns'&&x[k]!=null) counts[k]++; }); });
+  // 4) workouts (optional)
+  const workouts={};
+  if(p.workouts!=null&&p.workouts!==''){
+    if(!Array.isArray(p.workouts)||p.workouts.length>AH_MAX_WORKOUTS) return err('workouts');
+    p.workouts.forEach(x=>{ const r2=ahWorkoutParse(x,tz); if(!r2.ok){ warn('bad_workout'); return; }
+      if(!inRange(r2.w.date)){ warn('out_of_range'); return; }
+      if(workouts[r2.w.id]) warn('duplicate'); workouts[r2.w.id]=r2.w; });
+  }
+  Object.values(days).forEach(x=>{ Object.keys(counts).forEach(k=>{ if(k==='sleep'?x.sleep:k!=='weighIns'&&k!=='workouts'&&x[k]!=null) counts[k]++; }); });
+  counts.workouts=Object.keys(workouts).length;
   const n=Object.keys(days).length;
-  if(!n) return {ok:false,errors:['no_data'],warnings};
-  return {ok:true,errors:[],warnings,days,counts,dayCount:n,generatedAt:p.generatedAt,generatedMs:gen.ms,range:{from:r.from,to:r.to},tz};
+  if(!n&&!counts.workouts) return {ok:false,errors:['no_data'],warnings};
+  return {ok:true,errors:[],warnings,days,workouts,counts,dayCount:n,generatedAt:p.generatedAt,generatedMs:gen.ms,range:{from:r.from,to:r.to},tz};
 }
 function ahStore(st){ const a=(st||S).appleHealth; return a&&typeof a==='object'&&a.days&&typeof a.days==='object'?a:null; }
 function ahIsOlder(parsed,st){ const a=ahStore(st); const t=a&&Date.parse(a.lastPayloadGeneratedAt); return !!(Number.isFinite(t)&&parsed&&parsed.generatedMs<t); }
@@ -11883,20 +12040,25 @@ function ahImport(parsed,opts){
   if(!parsed||!parsed.ok) return {ok:false,reason:'invalid'};
   if(ahIsOlder(parsed)&&!o.force) return {ok:false,reason:'older'};
   const cur=ahStore(); const a=cur||{version:1,preferred:true,lastSyncAt:null,lastPayloadGeneratedAt:null,lastRange:null,deviceTimezone:null,days:{}};
-  const before=JSON.stringify(a.days);
+  const before=JSON.stringify(a.days), wBefore=JSON.stringify(a.workouts||{});
   const days=Object.assign({},a.days);
   Object.keys(parsed.days).forEach(d=>{ const src=parsed.days[d], next=Object.assign({},days[d]||{});
-    Object.keys(src).forEach(f=>{ next[f]=f==='sleep'?Object.assign({},src.sleep):src[f]; }); days[d]=next; });
-  const changed=JSON.stringify(days)!==before;
+    Object.keys(src).forEach(f=>{ next[f]=f==='sleep'?Object.assign({},src.sleep):f==='stepSources'?Object.assign({},src.stepSources):src[f]; }); days[d]=next; });
+  // Health workouts are candidates only (S.appleHealth.workouts, keyed by their stable id): a re-sync replaces the same
+  // id, never adds a second one; nothing here creates a LifeOS workout (that needs the person's "Add to LifeOS")
+  const wk=Object.assign({},ahStoreWorkouts(a),parsed.workouts||{});
+  const changed=JSON.stringify(days)!==before||JSON.stringify(wk)!==wBefore;
   const newer=!a.lastPayloadGeneratedAt||parsed.generatedMs>Date.parse(a.lastPayloadGeneratedAt);
   if(!changed&&!newer&&cur) return {ok:true,changed:false,days:0};
-  a.days=days; a.lastSyncAt=Date.now(); a.lastRange=parsed.range; a.deviceTimezone=parsed.tz||a.deviceTimezone||null;
+  a.days=days; if(Object.keys(wk).length) a.workouts=wk;
+  a.lastSyncAt=Date.now(); a.lastRange=parsed.range; a.deviceTimezone=parsed.tz||a.deviceTimezone||null;
   if(newer) a.lastPayloadGeneratedAt=parsed.generatedAt;
   if(a.preferred==null) a.preferred=true;
   S.appleHealth=a;
   return {ok:true,changed,days:parsed.dayCount};
 }
-function ahClear(){ if(!tabActive) return false; delete S.appleHealth; return true; }
+function ahClear(){ if(!tabActive) return false; delete S.appleHealth; return true; } // workouts already added to LifeOS are LifeOS records and stay
+function ahStoreWorkouts(a){ const w=a&&a.workouts; return w&&typeof w==='object'&&!Array.isArray(w)?w:{}; }
 // ---- read-only resolvers: {value, source:'appleHealth'|'manual'} or null; Apple wins only while it is preferred ----
 function ahPreferred(st){ const a=ahStore(st); return !!(a&&a.preferred!==false); }
 function ahDay(D,st){ const a=ahStore(st); if(!a||!ahIsDate(D)||!Object.prototype.hasOwnProperty.call(a.days,D)) return null; const x=a.days[D]; return x&&typeof x==='object'?x:null; }
@@ -11904,7 +12066,8 @@ function ahField(D,f,st){ const x=ahDay(D,st), spec=AH_DAY_FIELDS[f]; if(!x||!sp
 function ahSleep(D,st){ const x=ahDay(D,st), s=x&&x.sleep; const t=s&&ahNum(s.totalMin); if(!(t>0&&t<=1440)) return null;
   const g=k=>{ const v=ahNum(s[k]); return v!=null&&v>=0&&v<=1440?v:null; };
   return {totalMin:t,awakeMin:g('awakeMin'),coreMin:g('coreMin'),deepMin:g('deepMin'),remMin:g('remMin'),stages:!!s.stages,
-    bedtime:typeof s.bedtime==='string'&&/^\d\d:\d\d$/.test(s.bedtime)?s.bedtime:null,wake:typeof s.wake==='string'&&/^\d\d:\d\d$/.test(s.wake)?s.wake:null}; }
+    bedtime:typeof s.bedtime==='string'&&/^\d\d:\d\d$/.test(s.bedtime)?s.bedtime:null,wake:typeof s.wake==='string'&&/^\d\d:\d\d$/.test(s.wake)?s.wake:null,
+    segments:ahSegmentsOf(s)}; }
 function ahManualSleep(D,st){ const e=((st||S).sleepLog||[]).filter(x=>x.date===D); return e.length?e.reduce((a,b)=>sleepDuration(b)>sleepDuration(a)?b:a):null; }
 function getEffectiveSleep(D,st){
   const m=ahManualSleep(D,st), q=m?sleepQualityPct(m):null, a=ahPreferred(st)?ahSleep(D,st):null;
@@ -11912,17 +12075,80 @@ function getEffectiveSleep(D,st){
   if(m&&sleepDuration(m)>0) return {value:Math.round(sleepDuration(m)*60),minutes:Math.round(sleepDuration(m)*60),source:'manual',qualityPct:q,qualitySource:q!=null?'manual':null,entry:m};
   return null;
 }
-function ahEffective(D,f,log,vf,st){
+// The one place that picks a source: Apple while preferred and present, else the manual log (when the metric has one),
+// else null (the UI shows its empty state, never a fake 0). Manual records are only read, never written.
+function ahEffective(D,f,log,vf,st,keep){
   const a=ahPreferred(st)?ahField(D,f,st):null; if(a!=null) return {value:a,source:'appleHealth'};
-  const e=((st||S)[log]||[]).filter(x=>x.date===D), v=e.length?ahNum(e[e.length-1][vf]):null;
+  if(!log) return null;
+  const e=((st||S)[log]||[]).filter(x=>x.date===D&&(!keep||keep(x))), x=e.length?e[e.length-1]:null, v=x?ahNum(x[vf]):null;
   return v!=null&&v>=0?{value:v,source:'manual'}:null;
 }
 function getEffectiveActiveCalories(D,st){ return ahEffective(D,'activeKcal','activeCaloriesLog','calories',st); }
-function getEffectiveSteps(D,st){ return ahEffective(D,'steps','stepsLog','steps',st); }
+// Steps (beta): the Shortcut's day summary, or -- only when chosen in "Zdroj kroků" and present that day -- one source's
+// own total. Never a sum of sources and never a correction factor.
+function ahStepSource(st){ const a=ahStore(st), v=a&&a.stepSource; return typeof v==='string'&&v&&v!=='auto'?v:null; }
+function ahStepSources(D,st){ const x=ahDay(D,st), m=x&&x.stepSources; if(!m||typeof m!=='object'||Array.isArray(m)) return null;
+  const out={}; Object.keys(m).forEach(k=>{ const v=ahNum(m[k]); if(v!=null&&v>=0&&v<=200000&&k.length<=64) out[k]=v; }); return Object.keys(out).length?out:null; }
+function getEffectiveSteps(D,st){
+  const src=ahPreferred(st)?ahStepSource(st):null, m=src?ahStepSources(D,st):null;
+  if(m&&Object.prototype.hasOwnProperty.call(m,src)) return {value:m[src],source:'appleHealth',stepSource:src};
+  return ahEffective(D,'steps','stepsLog','steps',st);
+}
 function getEffectiveWeight(D,st){ return ahEffective(D,'weightKg','weightLog','weight',st); }
+function getEffectiveExerciseMinutes(D,st){ return ahEffective(D,'exerciseMin',null,null,st); }
+function getEffectiveDistance(D,st){ return ahEffective(D,'distanceKm',null,null,st); }
+function getEffectiveFlights(D,st){ return ahEffective(D,'flights',null,null,st); }
+function getEffectiveRestingHR(D,st){ return ahEffective(D,'restingHr','heartRateLog','value',st,x=>x.type==='resting'); }
+function getEffectiveHRV(D,st){ return ahEffective(D,'hrvMs',null,null,st); }
+function getEffectiveVO2Max(D,st){ return ahEffective(D,'vo2Max',null,null,st); }
+// the newest effective value on or before D, looking back at most `back` days -- {value, source, date} or null
+function getEffectiveLatest(fn,D,back,st){ for(let i=0;i<=back;i++){ const d=addDays(D,-i), r=fn(d,st); if(r) return Object.assign({date:d},r); } return null; }
+// one effective value per day over [from,to] (charts, averages, history) -- [{date, value, source}]
+function getEffectiveSeries(fn,from,to,st){ const out=[]; for(let d=from;d<=to;d=addDays(d,1)){ const r=fn(d,st); if(r) out.push(Object.assign({date:d},r)); } return out; }
 // the latest Apple value of a metric up to D (for Recovery / Body cards) -- {value, date} or null
 function ahLatest(f,D,st){ const a=ahStore(st); if(!a) return null; const ds=Object.keys(a.days).filter(d=>ahIsDate(d)&&d<=D).sort();
   for(let i=ds.length-1;i>=0;i--){ const v=ahField(ds[i],f,st); if(v!=null) return {value:v,date:ds[i]}; } return null; }
+// ---- Apple Health workouts -> LifeOS (only on the person's explicit "Add to LifeOS"; 0 XP, nothing else changes) ----
+const AH_WK_KINDS=[['strength',/strength|silov|weight|vzpir|posil/],['hiit',/hiit|highintensity|interval/],['run',/run|beh/],['walk',/walk|chuze|chodz/],
+  ['hike',/hik|turist/],['cycle',/cycl|bik|kolo|cyklist/],['swim',/swim|plav/],['yoga',/yoga|joga/],['row',/row|vesl/],['elliptical',/ellip/],
+  ['stairs',/stair|schod/],['core',/core|stred/],['cardio',/cardio|kardio/],['dance',/danc|tanec/]];
+function ahWorkoutKind(type){ const s=String(type||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,''); const k=AH_WK_KINDS.find(x=>x[1].test(s)); return k?k[0]:'other'; }
+function ahWorkoutLabel(c){
+  const k=ahWorkoutKind(c&&c.type), cs=uiLang()==='cs';
+  const L=(cs?{strength:'Silový trénink',hiit:'HIIT',run:'Běh',walk:'Chůze',hike:'Turistika',cycle:'Cyklistika',swim:'Plavání',yoga:'Jóga',row:'Veslování',elliptical:'Eliptický trenažér',stairs:'Schody',core:'Trénink středu těla',cardio:'Kardio',dance:'Tanec'}
+    :{strength:'Strength training',hiit:'HIIT',run:'Run',walk:'Walk',hike:'Hike',cycle:'Cycling',swim:'Swim',yoga:'Yoga',row:'Rowing',elliptical:'Elliptical',stairs:'Stairs',core:'Core training',cardio:'Cardio',dance:'Dance'})[k];
+  return L||(c&&(c.name||c.type))||(cs?'Trénink':'Workout');
+}
+// validated candidates from the store, newest first, each with its state: 'new' | 'added' (a LifeOS copy exists) | 'removed'
+function ahWorkoutCandidates(st){
+  const a=ahStore(st), m=ahStoreWorkouts(a), out=[], removed=a&&Array.isArray(a.removedWorkoutIds)?a.removedWorkoutIds:[];
+  Object.keys(m).forEach(id=>{ const c=m[id]; if(!c||typeof c!=='object'||c.id!==id) return;
+    const s=ahParseIso(c.start,null), e=ahParseIso(c.end,null), d=ahNum(c.durationSec); if(!s||!e||!(e.ms>s.ms)||!(d>0)) return;
+    out.push(Object.assign({},c,{startMs:s.ms,endMs:e.ms,startMin:s.minOfDay,state:ahLinkedWorkout(id,st)?'added':removed.includes(id)?'removed':'new'})); });
+  return out.sort((x,y)=>y.startMs-x.startMs||String(x.id).localeCompare(String(y.id)));
+}
+function ahLinkedWorkout(id,st){ return ((st||S).workouts||[]).find(w=>isHealthWorkout(w)&&w.healthWorkoutId===id)||null; }
+function ahWorkoutAdd(id){
+  if(!tabActive) return {ok:false,reason:'locked'};
+  const c=ahWorkoutCandidates().find(x=>x.id===id); if(!c) return {ok:false,reason:'missing'};
+  if(ahLinkedWorkout(id)) return {ok:false,reason:'exists'};
+  const w={id:uid(),name:c.name||ahWorkoutLabel(c),date:c.date,status:'done',source:'appleHealth',healthWorkoutId:c.id,healthType:c.type||'',
+    startAt:c.start,endAt:c.end,durationSec:Math.round(c.durationSec),duration:Math.round(c.durationSec/60),exercises:[],notes:'',createdAt:Date.now()};
+  if(c.activeKcal!=null) w.activeKcal=c.activeKcal; if(c.totalKcal!=null) w.totalKcal=c.totalKcal; if(c.distanceKm!=null) w.distanceKm=c.distanceKm; if(c.source) w.healthSource=c.source;
+  S.workouts.push(w); // no grantXp / checkQuests / checkAchievements: an import is not a LifeOS completion
+  const a=ahStore(); if(a&&Array.isArray(a.removedWorkoutIds)) a.removedWorkoutIds=a.removedWorkoutIds.filter(x=>x!==id);
+  return {ok:true,workout:w};
+}
+// deleting the LifeOS copy never touches Apple Health (read-only); the candidate becomes available again, marked as such
+function ahWorkoutRemove(wid){
+  if(!tabActive) return false;
+  const w=(S.workouts||[]).find(x=>x.id===wid); if(!w) return false;
+  S.workouts=S.workouts.filter(x=>x.id!==wid);
+  const a=ahStore(); if(a&&isHealthWorkout(w)&&w.healthWorkoutId){ const r=Array.isArray(a.removedWorkoutIds)?a.removedWorkoutIds.filter(x=>x!==w.healthWorkoutId):[]; r.push(w.healthWorkoutId); a.removedWorkoutIds=r.slice(-AH_MAX_WORKOUTS); }
+  return true;
+}
+// the Fitness history: LifeOS-completed workouts + the ones added from Apple Health
+function fitnessHistoryWorkouts(st){ return ((st||S).workouts||[]).filter(w=>isCompletedWorkout(w)||isHealthWorkout(w)); }
 function sleepStats(period){
   const since = period ? periodStart(period) : null;
   const logs = (since ? S.sleepLog.filter(s=>s.date>=since) : S.sleepLog.slice()).sort((a,b)=>a.date.localeCompare(b.date));
@@ -11991,11 +12217,23 @@ function uiAhT(k){
     warn:'přeskočeno neplatných položek',today:'Dnes',recovery:'Zotavení',body:'Tělo',source:'Apple Health',manual:'Ručně',
     awake:'vzhůru',core:'jádrový',deep:'hluboký',rem:'REM',not_linked:'Apple Health není propojené.',setup:'Nastavit',min:'min',
     steps_beta:'Kroky jsou zatím beta: ověř, že se shodují s aplikací Zdraví.',
+    manual_src:'Manuálně',connected:'Propojeno přes zkratku',diag:'Diagnostika dat',diag_t:'Apple Health – diagnostika',generated:'Data vytvořena',tz:'Časové pásmo zařízení',
+    stored:'Uložené dny',with_seg:'nocí s časovou osou fází',workouts:'Tréninky',wk_cands:'tréninků z Apple Health',none_yet:'žádná',
+    overview:'Přehled',activity:'Aktivita',step_src:'Zdroj kroků',step_info:'Hodnota ze Zkratek se může lišit od souhrnu v aplikaci Zdraví při více zdrojích dat.',
+    step_auto:'Automaticky (souhrn zkratky)',step_none:'Zkratka zatím neposílá zdroje kroků. Volitelné pole source u kroků je popsané v návodu (docs/apple-health-shortcut.md).',
+    step_pick:'Kroky zobrazovat podle',step_sum:'Souhrn zkratky',step_days:'Posledních 7 dní',info:'Informace',
+    tl_today:'Dnešní spánek',tl_last:'Poslední spánek',tl_total:'Celkem',tl_core:'Lehký',tl_deep:'Hluboký',tl_rem:'REM',tl_awake:'Vzhůru',tl_asleep:'Spánek',
+    tl_list:'Zobrazit fáze jako seznam',tl_noseg:'Časová osa fází bude k dispozici po další synchronizaci.',tl_coarse:'Zdraví má pro tuto noc jen „Spím“ bez fází — LifeOS fáze nevymýšlí.',
+    q_manual:'zadaná ručně',quality:'Kvalita spánku',night_of:'noc na',
+    wk_add:'Přidat trénink z Apple Health',wk_t:'Tréninky z Apple Health',wk_none:'Zatím tu nejsou žádné tréninky z Apple Health. Zkratka je posílá jen s volitelnou akcí Find Workout z aplikace Actions (viz návod).',
+    wk_added:'Už přidáno',wk_removed:'Odebráno z LifeOS — lze přidat znovu',wk_new:'Nový',wk_type:'Typ',wk_date:'Datum',wk_start:'Začátek',wk_end:'Konec',wk_dur:'Délka',
+    wk_kcal:'Aktivní kcal',wk_total:'Celkem kcal',wk_dist:'Vzdálenost',wk_src:'Zdroj',wk_addbtn:'Přidat do LifeOS',wk_done:'Trénink přidán do LifeOS',wk_burned:'Spáleno',
+    wk_noxp:'Trénink z Apple Health se uloží jako záznam — nedává XP, atributy ani questy.',wk_exists:'Tento trénink už v LifeOS je.',
     e:{empty:'Schránka je prázdná.',too_large:'Data jsou příliš velká (max 5 MB).',json:'Text není platný JSON.',keys:'Data obsahují nepovolené klíče.',
       protocol:'Nejde o data ze zkratky LifeOS Health Sync (špatný protokol).',version:'Neplatná verze protokolu.',version_future:'Tuto verzi protokolu LifeOS ještě nezná — aktualizuj LifeOS.',
       generated:'Chybí nebo je neplatný čas vytvoření (generatedAt).',range:'Chybí nebo je neplatný rozsah dat (range).',range_long:'Rozsah je delší než 62 dní.',
       days:'Neplatná sekce days.',metrics:'Neplatná sekce metrics.',sleep:'Neplatná sekce sleep.',no_data:'V datech nejsou žádné platné hodnoty.',
-      ndjson:'Seznam ze zkratky obsahuje neplatný řádek — nic se neimportovalo.'}}
+      ndjson:'Seznam ze zkratky obsahuje neplatný řádek — nic se neimportovalo.',workouts:'Neplatná sekce workouts.'}}
   :{title:'Apple Health',bridge:'Apple Health Bridge',how:'Apple Health syncs through Apple Shortcuts (the "LifeOS Health Sync" shortcut).',
     never:'Not synced yet.',last:'Last sync',range:'Range',sync:'Sync Apple Health',sync_sm:'Sync',read:'Read data from the clipboard',
     paste:'Paste data manually',clear:'Delete imported Apple Health data',pref:'Prefer Apple Health data',
@@ -12014,11 +12252,23 @@ function uiAhT(k){
     warn:'invalid entries skipped',today:'Today',recovery:'Recovery',body:'Body',source:'Apple Health',manual:'Manual',
     awake:'awake',core:'core',deep:'deep',rem:'REM',not_linked:'Apple Health is not connected.',setup:'Set up',min:'min',
     steps_beta:'Steps are beta for now: check they match the Health app.',
+    manual_src:'Manual',connected:'Connected through the Shortcut',diag:'Data diagnostics',diag_t:'Apple Health – diagnostics',generated:'Data generated',tz:'Device time zone',
+    stored:'Stored days',with_seg:'nights with a stage timeline',workouts:'Workouts',wk_cands:'workouts from Apple Health',none_yet:'none',
+    overview:'Overview',activity:'Activity',step_src:'Step source',step_info:'The Shortcut value can differ from the Health app summary when there are several data sources.',
+    step_auto:'Automatic (Shortcut summary)',step_none:'The Shortcut does not send step sources yet. The optional source field for steps is described in the guide (docs/apple-health-shortcut.md).',
+    step_pick:'Show steps from',step_sum:'Shortcut summary',step_days:'Last 7 days',info:'Information',
+    tl_today:"Today's sleep",tl_last:'Latest sleep',tl_total:'Total',tl_core:'Core',tl_deep:'Deep',tl_rem:'REM',tl_awake:'Awake',tl_asleep:'Asleep',
+    tl_list:'Show the stages as a list',tl_noseg:'The stage timeline will be available after the next sync.',tl_coarse:'Health only has "Asleep" without stages for this night — LifeOS does not invent stages.',
+    q_manual:'entered by hand',quality:'Sleep quality',night_of:'night to',
+    wk_add:'Add workout from Apple Health',wk_t:'Workouts from Apple Health',wk_none:'No workouts from Apple Health yet. The Shortcut only sends them with the optional Find Workout action from the Actions app (see the guide).',
+    wk_added:'Already added',wk_removed:'Removed from LifeOS — can be added again',wk_new:'New',wk_type:'Type',wk_date:'Date',wk_start:'Start',wk_end:'End',wk_dur:'Duration',
+    wk_kcal:'Active kcal',wk_total:'Total kcal',wk_dist:'Distance',wk_src:'Source',wk_addbtn:'Add to LifeOS',wk_done:'Workout added to LifeOS',wk_burned:'Burned',
+    wk_noxp:'A workout from Apple Health is saved as a record — it gives no XP, attributes or quests.',wk_exists:'This workout is already in LifeOS.',
     e:{empty:'The clipboard is empty.',too_large:'The data is too large (max 5 MB).',json:'The text is not valid JSON.',keys:'The data contains forbidden keys.',
       protocol:'This is not data from the LifeOS Health Sync shortcut (wrong protocol).',version:'Invalid protocol version.',version_future:'LifeOS does not know this protocol version yet — update LifeOS.',
       generated:'The creation time (generatedAt) is missing or invalid.',range:'The date range (range) is missing or invalid.',range_long:'The range is longer than 62 days.',
       days:'Invalid days section.',metrics:'Invalid metrics section.',sleep:'Invalid sleep section.',no_data:'The data contains no valid values.',
-      ndjson:'A list from the shortcut contains an invalid line — nothing was imported.'}})[k];
+      ndjson:'A list from the shortcut contains an invalid line — nothing was imported.',workouts:'Invalid workouts section.'}})[k];
 }
 const AH_PENDING_KEY='lifeos-ah-sync-started'; // a per-device convenience (not app data): when the shortcut was opened
 function uiAhPendingGet(){ try{ const t=Number(localStorage.getItem(AH_PENDING_KEY)); return Number.isFinite(t)&&t>0&&Date.now()-t<30*60000?t:null; }catch(e){ return null; } }
@@ -12106,39 +12356,125 @@ function uiAhSettingsSection(sw){
   const cl=sec.querySelector('#st_ahClear'); if(cl) cl.onclick=()=>uiConfirmSheet({title:uiAhT('clear'),text:uiAhT('clear_q'),ok:uiAhT('clear'),danger:true},()=>{ if(ahClear()){ scheduleSave(); render(); toast(uiAhT('cleared')); } });
   return sec;
 }
+// a concise source badge next to a value: "Apple Health" or "Manuálně"
+function uiAhSrc(src){ const a=src==='appleHealth'; return `<span class="src-badge ${a?'is-apple':'is-manual'}" data-src="${a?'apple':'manual'}">${a?uiIcon('heart',12)+' ':''}${a?uiAhT('source'):uiAhT('manual_src')}</span>`; }
+// Apple Health status panel on Health: connection, last sync, preference, sync, diagnostics -- no copy of the metrics
+// (those live in the normal Health UI below through the effective resolvers)
 function uiAhHealthCard(){
-  const a=ahStore(), T=todayStr();
-  if(!a||!Object.keys(a.days).length){
+  const a=ahStore();
+  if(!a||(!Object.keys(a.days).length&&!Object.keys(ahStoreWorkouts(a)).length)){
     const c=el(`<div class="card ah-mini" id="ahCard"><span class="sub">${uiIcon('heart',16)} ${uiAhT('not_linked')}</span><button type="button" class="btn sm ghost" id="ahSetup">${uiAhT('setup')}</button></div>`);
     c.querySelector('#ahSetup').onclick=()=>{ view='settings'; render(); const x=document.getElementById('st_ah'); if(x) x.scrollIntoView({block:'start'}); };
     return c;
   }
-  const days=Object.keys(a.days).filter(d=>ahIsDate(d)&&d<=T).sort(), D=days.length?days[days.length-1]:T;
-  const tile=(k,v,extra,id)=>`<div class="stat-card ah-tile" data-ah="${id||k}"><div class="stat-label">${uiAhT(k)}${k==='steps'?` <span class="chip is-muted">${uiAhT('beta')}</span>`:''}</div><div class="stat-value">${v}</div>${extra?`<div class="sub">${extra}</div>`:''}<div class="sub ah-src">${uiIcon('heart',12)} ${uiAhT('source')}</div></div>`;
-  const sl=ahSleep(D), man=ahManualSleep(D);
-  const parts=[];
-  if(sl){ const st=sl.stages?[sl.coreMin!=null&&`${uiAhT('core')} ${uiAhFmtMin(sl.coreMin)}`,sl.deepMin!=null&&`${uiAhT('deep')} ${uiAhFmtMin(sl.deepMin)}`,sl.remMin!=null&&`${uiAhT('rem')} ${uiAhFmtMin(sl.remMin)}`].filter(Boolean).join(' · '):'';
-    parts.push(tile('sleep',uiAhFmtMin(sl.totalMin),[st,sl.awakeMin?`${uiAhT('awake')} ${uiAhFmtMin(sl.awakeMin)}`:'',man&&sleepDuration(man)>0?`${uiAhT('manual')}: ${uiAhFmtMin(Math.round(sleepDuration(man)*60))}`:''].filter(Boolean).map(escapeHtml).join('<br>'))); }
-  const num=(f,fmt)=>{ const v=ahField(D,f); return v==null?null:fmt(v); };
-  const ak=num('activeKcal',v=>`${uiNum(Math.round(v))} kcal`); if(ak) parts.push(tile('activeKcal',ak));
-  const ex=num('exerciseMin',v=>`${Math.round(v)} ${uiAhT('min')}`); if(ex) parts.push(tile('exerciseMin',ex));
-  const stp=num('steps',v=>uiNum(v)); if(stp) parts.push(tile('steps',stp));
-  const dk=num('distanceKm',v=>`${uiFmtNum(v)} km`); if(dk) parts.push(tile('distanceKm',dk));
-  const fl=num('flights',v=>uiNum(v)); if(fl) parts.push(tile('flights',fl));
-  const late=(f,fmt,k)=>{ const x=ahLatest(f,T); return x?tile(k,fmt(x.value),x.date!==T?fmtDate(x.date):''):''; };
-  const rec=[late('restingHr',v=>`${Math.round(v)} bpm`,'restingHr'),late('hrvMs',v=>`${Math.round(v)} ms`,'hrvMs')].join('');
-  const vo=(()=>{ const x=ahLatest('vo2Max',T); if(!x) return ''; const prev=ahLatest('vo2Max',addDays(x.date,-1)); const d=prev?Math.round((x.value-prev.value)*10)/10:null;
-    return tile('vo2Max',uiFmtNum(x.value),[x.date!==T?fmtDate(x.date):'',d!=null&&d!==0?`${d>0?'+':''}${uiFmtNum(d)} vs. ${fmtDate(prev.date)}`:''].filter(Boolean).join(' · ')); })();
-  const body=[late('weightKg',v=>`${uiFmtNum(v)} kg`,'weightKg'),vo].join('');
+  const on=a.preferred!==false;
   const last=a.lastSyncAt?new Date(a.lastSyncAt).toLocaleString(uiLocale(),{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-  const c=el(`<section class="card ah-card" id="ahCard" aria-labelledby="ahCardH"><div class="between"><div><h3 id="ahCardH" style="margin:0">${uiIcon('heart',18)} ${uiAhT('title')}</h3>
-      <div class="sub">${last?`${uiAhT('last')}: ${escapeHtml(last)}`:''}${a.preferred===false?` · ${uiLang()==='cs'?'nepreferováno':'not preferred'}`:''}</div></div>
+  const c=el(`<section class="card ah-card" id="ahCard" aria-labelledby="ahCardH"><div class="between"><div style="min-width:0"><h3 id="ahCardH" style="margin:0">${uiIcon('heart',18)} ${uiAhT('title')}</h3>
+      <div class="sub">${uiAhT('connected')}${last?` · ${uiAhT('last')}: ${escapeHtml(last)}`:''}</div></div>
       <button type="button" class="btn sm ghost" id="ahSyncH">${uiIcon('repeat',16)} ${uiAhT('sync_sm')}</button></div>
-    ${parts.length?`<div class="kicker ah-k">${D===T?uiAhT('today'):fmtDate(D)}</div><div class="stat-grid cols-2 ah-grid">${parts.join('')}</div>`:''}
-    ${rec?`<div class="kicker ah-k">${uiAhT('recovery')}</div><div class="stat-grid cols-2 ah-grid">${rec}</div>`:''}
-    ${body?`<div class="kicker ah-k">${uiAhT('body')}</div><div class="stat-grid cols-2 ah-grid">${body}</div>`:''}
-    ${stp?`<p class="helper-text">${uiAhT('steps_beta')}</p>`:''}<p class="helper-text">${uiAhT('disclaimer')}</p></section>`);
+    <div class="between ah-pref"><span>${uiAhT('pref')}</span><button type="button" class="switch ${on?'on':''}" role="switch" aria-checked="${on}" id="ahPrefH" aria-label="${escapeHtml(uiAhT('pref'))}"><span class="hide">${on?'on':'off'}</span></button></div>
+    <button type="button" class="btn sm ghost" id="ahDiagH">${uiIcon('info',16)} ${uiAhT('diag')}</button></section>`);
   c.querySelector('#ahSyncH').onclick=uiAhSync;
+  c.querySelector('#ahPrefH').onclick=()=>{ const s=ahStore(); if(!s||!tabActive) return; s.preferred=s.preferred===false; scheduleSave(); render(); };
+  c.querySelector('#ahDiagH').onclick=uiAhDiagSheet;
+  return c;
+}
+function uiAhDiagSheet(){
+  const a=ahStore(); if(!a) return;
+  const ds=Object.keys(a.days).filter(ahIsDate).sort(), F=Object.keys(AH_DAY_FIELDS), cnt={};
+  let nights=0, seg=0; const srcs=new Set();
+  ds.forEach(d=>{ F.forEach(f=>{ if(ahField(d,f)!=null) cnt[f]=(cnt[f]||0)+1; }); const sl=ahSleep(d); if(sl){ nights++; if(sl.segments.length) seg++; } const m=ahStepSources(d); if(m) Object.keys(m).forEach(k=>srcs.add(k)); });
+  const fmtT=t=>{ const x=Date.parse(t); return Number.isFinite(x)?new Date(x).toLocaleString(uiLocale(),{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'; };
+  const row=(k,v)=>`<div class="between ah-row"><span>${escapeHtml(k)}</span><b>${escapeHtml(String(v))}</b></div>`;
+  const inner=el(`<div class="ah-diag" id="ahDiag"><h3>${uiAhT('diag_t')}</h3><div class="ah-rows">
+    ${row(uiAhT('last'),a.lastSyncAt?fmtT(new Date(a.lastSyncAt).toISOString()):'—')}${row(uiAhT('generated'),a.lastPayloadGeneratedAt?fmtT(a.lastPayloadGeneratedAt):'—')}
+    ${row(uiAhT('range'),a.lastRange?`${fmtDate(a.lastRange.from)} – ${fmtDate(a.lastRange.to)}`:'—')}${row(uiAhT('tz'),a.deviceTimezone||'—')}
+    ${row(uiAhT('stored'),ds.length)}${row(uiAhT('sleep'),`${nights} ${uiAhT('nights')} · ${seg} ${uiAhT('with_seg')}`)}
+    ${F.filter(f=>f!=='weightKg'||cnt[f]).map(f=>row(uiAhT(f),cnt[f]||0)).join('')}
+    ${row(uiAhT('step_src'),srcs.size?[...srcs].join(', '):uiAhT('none_yet'))}${row(uiAhT('workouts'),`${ahWorkoutCandidates().length} ${uiAhT('wk_cands')}`)}</div>
+    <p class="helper-text">${uiAhT('privacy')}</p><button type="button" class="btn" id="ahDiagClose">${uiAhT('dismiss')}</button></div>`);
+  openSheet(inner); inner.querySelector('#ahDiagClose').onclick=()=>closeSheets();
+}
+// The normal Health overview: every Apple metric that exists, through the effective resolvers (Apple while preferred,
+// else manual where LifeOS has a manual log), each with its source. Missing metrics are left out -- never a fake 0.
+function uiHealthOverview(){
+  if(!ahStore()) return null; // without Apple Health the Health screen stays exactly as before
+  const T=todayStr(), cs=uiLang()==='cs';
+  const tile=(id,label,r,fmt,extra)=>r?`<div class="stat-card ah-tile" data-ah="${id}"><div class="stat-label">${label}</div><div class="stat-value">${fmt(r.value)}</div>
+    ${r.date&&r.date!==T?`<div class="sub">${fmtDate(r.date)}</div>`:''}${extra||''}<div class="ah-src">${uiAhSrc(r.source)}</div></div>`:'';
+  const L=(fn,back)=>getEffectiveLatest(fn,T,back);
+  const sl=L(getEffectiveSleep,1), st=L(getEffectiveSteps,1);
+  const act=[tile('sleep',uiAhT('sleep'),sl,v=>uiAhFmtMin(v)),
+    tile('steps',`${uiAhT('steps')} <span class="chip is-muted">${uiAhT('beta')}</span><button type="button" class="iconbtn ghost-ic ah-info" id="ahStepInfo" aria-label="${escapeHtml(uiAhT('info'))}: ${escapeHtml(uiAhT('step_info'))}" title="${escapeHtml(uiAhT('step_info'))}">${uiIcon('info',16)}</button>`,st,v=>uiNum(Math.round(v)),
+      `<button type="button" class="btn sm ghost ah-step-btn" id="ahStepSrc">${uiAhT('step_src')}</button>`),
+    tile('activeKcal',uiAhT('activeKcal'),L(getEffectiveActiveCalories,1),v=>`${uiNum(Math.round(v))} kcal`),
+    tile('exerciseMin',uiAhT('exerciseMin'),L(getEffectiveExerciseMinutes,1),v=>`${Math.round(v)} ${uiAhT('min')}`),
+    tile('distanceKm',uiAhT('distanceKm'),L(getEffectiveDistance,1),v=>`${uiFmtNum(Math.round(v*100)/100)} km`),
+    tile('flights',uiAhT('flights'),L(getEffectiveFlights,1),v=>uiNum(Math.round(v)))].join('');
+  const rec=[tile('restingHr',uiAhT('restingHr'),L(getEffectiveRestingHR,7),v=>`${Math.round(v)} bpm`),
+    tile('hrvMs',`${uiAhT('hrvMs')} <span class="sub">SDNN</span>`,L(getEffectiveHRV,7),v=>`${Math.round(v)} ms`),
+    tile('vo2Max',uiAhT('vo2Max'),L(getEffectiveVO2Max,60),v=>uiFmtNum(Math.round(v*10)/10)),
+    tile('weightKg',uiAhT('weightKg'),L(getEffectiveWeight,60),v=>`${uiFmtNum(Math.round(v*10)/10)} kg`)].join('');
+  if(!act&&!rec) return null;
+  const c=el(`<section class="card ah-overview" id="hOverview" aria-labelledby="hOverviewH"><h3 id="hOverviewH" style="margin:0 0 4px">${uiAhT('overview')}</h3>
+    ${act?`<div class="kicker ah-k">${uiAhT('activity')}</div><div class="stat-grid cols-2 ah-grid">${act}</div>`:''}
+    ${rec?`<div class="kicker ah-k">${uiAhT('recovery')} · ${uiAhT('body')}</div><div class="stat-grid cols-2 ah-grid">${rec}</div>`:''}
+    ${st?`<p class="helper-text" id="ahStepNote">${uiAhT('step_info')}</p>`:''}</section>`);
+  const sb=c.querySelector('#ahStepSrc'); if(sb) sb.onclick=uiAhStepSheet;
+  const ib=c.querySelector('#ahStepInfo'); if(ib) ib.onclick=()=>toast(uiAhT('step_info'));
+  return c;
+}
+// "Zdroj kroků": what the Shortcut sent per source (only when it sends the optional `source`), and an explicit choice
+// between the Shortcut summary (default) and one detected source. Nothing is estimated or corrected.
+function uiAhStepSheet(){
+  const a=ahStore(); if(!a) return;
+  const T=todayStr(), days=[]; for(let i=0;i<7;i++) days.push(addDays(T,-i));
+  const all=new Set(); Object.keys(a.days).forEach(d=>{ const m=ahStepSources(d); if(m) Object.keys(m).forEach(k=>all.add(k)); });
+  const cur=ahStepSource()||'auto', srcs=[...all].sort();
+  const rows=days.map(d=>{ const sum=ahField(d,'steps'), m=ahStepSources(d); if(sum==null&&!m) return '';
+    return `<div class="ah-row ah-step-day" data-day="${d}"><div class="between"><b>${fmtDate(d)}</b><span>${uiAhT('step_sum')}: <b>${sum!=null?uiNum(sum):'—'}</b></span></div>
+      ${m?`<div class="sub">${Object.keys(m).sort().map(k=>`${escapeHtml(k)}: ${uiNum(m[k])}`).join(' · ')}</div>`:''}</div>`; }).join('');
+  const inner=el(`<div class="ah-steps" id="ahStepSheet"><h3>${uiAhT('step_src')} <span class="chip is-muted">${uiAhT('beta')}</span></h3>
+    <p class="sub">${uiAhT('step_info')}</p>
+    ${srcs.length>=2?`<div class="set-field"><b>${uiAhT('step_pick')}</b><div class="chips" role="radiogroup" aria-label="${escapeHtml(uiAhT('step_pick'))}">
+      ${['auto',...srcs].map(k=>`<button type="button" class="chip ah-src-pick ${cur===k?'on':''}" role="radio" aria-checked="${cur===k}" data-src="${escapeHtml(k)}">${escapeHtml(k==='auto'?uiAhT('step_auto'):k)}</button>`).join('')}</div></div>`
+      :`<p class="helper-text">${uiAhT('step_none')}</p>`}
+    <div class="kicker ah-k">${uiAhT('step_days')}</div><div class="ah-rows">${rows||`<p class="sub">${uiL('No data')}</p>`}</div>
+    <button type="button" class="btn" id="ahStepClose">${uiAhT('dismiss')}</button></div>`);
+  openSheet(inner);
+  inner.querySelector('#ahStepClose').onclick=()=>closeSheets();
+  inner.querySelectorAll('.ah-src-pick').forEach(b=>b.onclick=()=>{ const s=ahStore(); if(!s||!tabActive) return; const v=b.dataset.src;
+    if(v==='auto') delete s.stepSource; else s.stepSource=v; scheduleSave(); closeSheets(); render(); });
+}
+// ---- "Dnešní spánek": the chronological stage timeline of one night (only the selected night is ever rendered) ----
+const UI_SL_LANES=[['awake','tl_awake'],['rem','tl_rem'],['core','tl_core'],['deep','tl_deep']];
+function uiAhClock(o){ return String(Math.floor(o.minOfDay/60)).padStart(2,'0')+':'+String(o.minOfDay%60).padStart(2,'0'); }
+function uiSleepTimelineCard(){
+  if(!ahPreferred()) return null;
+  const T=todayStr(); let D=null, sl=null;
+  for(let i=0;i<=2&&!sl;i++){ const d=addDays(T,-i), x=ahSleep(d); if(x){ D=d; sl=x; } }
+  if(!sl) return null;
+  const m=ahManualSleep(D), q=m?sleepQualityPct(m):null, segs=sl.segments, staged=segs.some(x=>x.stage!=='asleep'&&x.stage!=='awake');
+  const show=staged?segs.filter(x=>x.stage!=='asleep'):segs; // with stages, a coarse "Asleep" only fills totals, never its own bar
+  const title=D===T?uiAhT('tl_today'):`${uiAhT('tl_last')} · ${fmtDate(D)}`;
+  let body='';
+  if(show.length){
+    const t0=show[0].s.ms, t1=show.reduce((a,x)=>Math.max(a,x.e.ms),0), span=Math.max(1,t1-t0), pc=v=>(Math.round(v*10000)/100);
+    const lanes=staged?UI_SL_LANES:[['asleep','tl_asleep'],['awake','tl_awake']];
+    const lab=x=>`${uiAhT(UI_SL_LANES.concat([['asleep','tl_asleep']]).find(l=>l[0]===x.stage)[1])} ${uiAhClock(x.s)}–${uiAhClock(x.e)} (${Math.round((x.e.ms-x.s.ms)/60000)} min)`;
+    const lane=([k,lk])=>`<div class="sl-lane" data-lane="${k}"><span class="sl-lab">${uiAhT(lk)}</span><div class="sl-track">${show.filter(x=>x.stage===k).map(x=>
+      `<i class="sl-seg sl-${k}" style="left:${pc((x.s.ms-t0)/span)}%;width:${Math.max(.4,pc((x.e.ms-x.s.ms)/span))}%" title="${escapeHtml(lab(x))}"></i>`).join('')}</div></div>`;
+    const first=show[0].s, h0=Math.floor(first.minOfDay/60), step=span>6*3600000?2:1, ticks=[];
+    for(let k=1;;k++){ const tm=t0+((k*60-first.minOfDay%60)*60000)-(first.ms%60000); if(tm>=t1) break; const hr=(h0+k)%24; const pos=(tm-t0)/span; if(hr%step===0&&pos>.15&&pos<.85) ticks.push(`<span class="sl-tick" style="left:${pc((tm-t0)/span)}%">${String(hr).padStart(2,'0')}</span>`); }
+    body=`<div class="sl-tl" role="img" aria-label="${escapeHtml(`${title}: ${uiAhClock(show[0].s)}–${uiAhClock(show[show.length-1].e)}`)}">${lanes.map(lane).join('')}
+      <div class="sl-axis"><span class="sl-lab"></span><div class="sl-ticks"><span class="sl-end sl-from">${uiAhClock(show[0].s)}</span>${ticks.join('')}<span class="sl-end sl-to">${uiAhClock(show.reduce((a,x)=>x.e.ms>=a.ms?x.e:a,show[0].e))}</span></div></div></div>
+      ${staged?'':`<p class="helper-text">${uiAhT('tl_coarse')}</p>`}
+      <details class="sl-list"><summary>${uiAhT('tl_list')}</summary><ol>${show.map(x=>`<li>${escapeHtml(lab(x))}</li>`).join('')}</ol></details>`;
+  } else body=`<p class="helper-text">${uiAhT('tl_noseg')}</p>`;
+  const sm=(k,v)=>v!=null?`<div class="sl-sum-i" data-sum="${k}"><span class="sub">${uiAhT(k)}</span><b>${uiAhFmtMin(v)}</b></div>`:'';
+  const c=el(`<section class="card sl-card" id="slToday" aria-labelledby="slTodayH"><div class="between"><h3 id="slTodayH" style="margin:0">${escapeHtml(title)}</h3>${uiAhSrc('appleHealth')}</div>
+    ${body}<div class="sl-sum">${sm('tl_total',sl.totalMin)}${sl.stages?sm('tl_core',sl.coreMin)+sm('tl_deep',sl.deepMin)+sm('tl_rem',sl.remMin):''}${sm('tl_awake',sl.awakeMin)}</div>
+    ${q!=null?`<p class="sub" id="slQuality">${uiAhT('quality')} ${q} % · ${uiAhT('q_manual')}</p>`:''}</section>`);
   return c;
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') uiAhBanner(); }); // shows a button only -- the clipboard is never read here
@@ -12154,15 +12490,67 @@ function renderHealth(){
     tabs.appendChild(b);
   });
   const body=wrap.querySelector('#hBody');
-  tabs.before(uiAhHealthCard()); // Apple Health Bridge: sync status + imported metrics (only what exists)
+  tabs.before(uiAhHealthCard()); // Apple Health Bridge: sync status only (the values are in the normal UI below)
+  const ov=uiHealthOverview(); if(ov) tabs.before(ov);
   const data=healthDashboardData('month'); // dashboard summary always over a rolling month, per-tab lists show everything
-  if(healthTab==='sleep') body.appendChild(renderHealthSleepTab(data));
-  else if(healthTab==='weight') body.appendChild(renderHealthWeightTab(data));
-  else body.appendChild(renderHealthActiveCalTab(data));
+  const eff=uiAhUseEffective(); // Apple Health connected + preferred: the tabs read the effective resolvers
+  if(healthTab==='sleep') body.appendChild(eff?renderHealthSleepEff():renderHealthSleepTab(data));
+  else if(healthTab==='weight') body.appendChild(eff?renderHealthWeightEff():renderHealthWeightTab(data));
+  else body.appendChild(eff?renderHealthActiveCalEff():renderHealthActiveCalTab(data));
   return wrap;
 }
-function renderHealthSleepTab(data){
+/* Health tabs while Apple Health is connected and preferred: the same screens, fed by the effective resolvers (Apple
+   first, manual fallback), one value per day. Manual records keep their own edit / delete; Apple rows are read-only. */
+function uiAhUseEffective(){ return !!(ahStore()&&ahPreferred()); }
+function uiEffSeries(fn){ const T=todayStr(); return getEffectiveSeries(fn,addDays(T,-29),T); }
+function uiEffChart(title,ser,valFn,type){ return chartCard(title,chartValuesForLog(ser,'month',valFn),null,type?{type}:{}); }
+function uiEffHistRow(r,fmt,icon){ return `<div class="item ah-hist" data-ah-hist="${r.date}"><span class="icon-circle" aria-hidden="true">${icon}</span><div style="flex:1;min-width:0"><div class="item-title">${fmtDate(r.date)}</div><div class="item-meta">${fmt(r.value)}</div></div>${uiAhSrc('appleHealth')}</div>`; }
+function renderHealthSleepEff(){
+  const wrap=el(`<div></div>`), T=todayStr();
+  const tl=uiSleepTimelineCard(); if(tl) wrap.appendChild(tl);
+  const ser=uiEffSeries(getEffectiveSleep), hrs=ser.map(x=>x.value/60);
+  wrap.appendChild(el(uiEffChart(uiL('Sleep duration trend (30d)'),ser,x=>Math.round(x.value/6)/10))); // bars: a night without data stays an empty bar, never a dip to 0
+  const last=getEffectiveSleep(T), avg=hrs.length?hrs.reduce((a,b)=>a+b,0)/hrs.length:0;
+  let consistency=null; if(hrs.length>=2){ const v=hrs.reduce((a,d)=>a+Math.pow(d-avg,2),0)/hrs.length; consistency=Math.max(0,Math.min(100,Math.round(100-Math.sqrt(v)*20))); }
+  const h1=v=>(Math.round(v*10)/10)+'h';
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card" data-eff="last"><div class="stat-label">${uiL('Last night')}</div><div class="stat-value">${last?uiAhFmtMin(last.minutes):'—'}</div>${last?`<div class="ah-src">${uiAhSrc(last.source)}</div>`:''}</div>
+    <div class="stat-card" data-eff="avg"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${avg?h1(avg):'—'}</div></div></div>`));
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">${uiL('Shortest / Longest')}</div><div class="stat-value" style="font-size:17px">${hrs.length?h1(Math.min(...hrs))+' / '+h1(Math.max(...hrs)):uiL('No data')}</div></div>
+    <div class="stat-card"><div class="stat-label">${uiL('Consistency')}</div><div class="stat-value" style="font-size:17px">${consistency!=null?consistency+'/100':uiL('Need 2+ nights')}</div></div></div>`));
+  // manual sleep records (and their quality) stay editable exactly as before
+  const legacy=renderHealthSleepTab(healthDashboardData('month'),true); while(legacy.firstChild) wrap.appendChild(legacy.firstChild);
+  return wrap;
+}
+function renderHealthWeightEff(){
+  const wrap=el(`<div></div>`), T=todayStr(), ser=uiEffSeries(getEffectiveWeight);
+  const last=getEffectiveLatest(getEffectiveWeight,T,365), unitOf=r=>{ if(!r||r.source==='appleHealth') return 'kg'; const e=S.weightLog.filter(x=>x.date===r.date); return (e.length&&e[e.length-1].unit)||'kg'; };
+  const trend=ser.length>=2?ser[ser.length-1].value-ser[0].value:null;
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card" data-eff="weight"><div class="stat-label">${uiL('Latest')}</div><div class="stat-value">${last?uiFmtNum(Math.round(last.value*10)/10)+' '+unitOf(last):'—'}</div>${last?`${last.date!==T?`<div class="sub">${fmtDate(last.date)}</div>`:''}<div class="ah-src">${uiAhSrc(last.source)}</div>`:''}</div>
+    <div class="stat-card"><div class="stat-label">${uiL('Trend (30d)')}</div><div class="stat-value" style="color:${trend>0?'var(--warn)':trend<0?'var(--accent2)':'var(--text)'}">${trend!=null?(trend>0?'+':'')+trend.toFixed(1):'—'}</div></div></div>`));
+  wrap.appendChild(el(chartCard(uiL('Weight trend (30d)'),ser.map(x=>Math.round(x.value*10)/10),null,{type:'line'}))); // weigh-ins only: no dip to 0 on days without one
+  const a=ahStore(), apple=Object.keys(a.days).filter(ahIsDate).sort().reverse().map(d=>({date:d,value:ahField(d,'weightKg')})).filter(x=>x.value!=null).slice(0,30);
+  if(apple.length) wrap.appendChild(el(`<div><div class="section-header"><h3>${uiAhT('source')}</h3></div><div class="list" id="wtAhList">${apple.map(r=>uiEffHistRow(r,v=>`${uiFmtNum(Math.round(v*10)/10)} kg`,'⚖️')).join('')}</div></div>`));
+  const legacy=renderHealthWeightTab(healthDashboardData('month'),true); while(legacy.firstChild) wrap.appendChild(legacy.firstChild);
+  return wrap;
+}
+function renderHealthActiveCalEff(){
+  const wrap=el(`<div></div>`), T=todayStr(), ser=uiEffSeries(getEffectiveActiveCalories), today=getEffectiveActiveCalories(T);
+  const avg=ser.length?ser.reduce((x,r)=>x+r.value,0)/ser.length:0;
+  wrap.appendChild(el(`<div class="stat-grid">
+    <div class="stat-card" data-eff="activeKcal"><div class="stat-label">${uiL('Today')}</div><div class="stat-value">${today?uiNum(Math.round(today.value))+' kcal':'—'}</div>${today?`<div class="ah-src">${uiAhSrc(today.source)}</div>`:''}</div>
+    <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${avg?uiNum(Math.round(avg)):'—'}</div></div></div>`));
+  wrap.appendChild(el(uiEffChart(uiL('Active calories trend (30d)'),ser,x=>Math.round(x.value))));
+  const a=ahStore(), apple=Object.keys(a.days).filter(ahIsDate).sort().reverse().map(d=>({date:d,value:ahField(d,'activeKcal')})).filter(x=>x.value!=null).slice(0,30);
+  if(apple.length) wrap.appendChild(el(`<div><div class="section-header"><h3>${uiAhT('source')}</h3></div><div class="list" id="acAhList">${apple.map(r=>uiEffHistRow(r,v=>`${uiNum(Math.round(v))} kcal`,'🔥')).join('')}</div></div>`));
+  const legacy=renderHealthActiveCalTab(healthDashboardData('month'),true); while(legacy.firstChild) wrap.appendChild(legacy.firstChild);
+  return wrap;
+}
+function renderHealthSleepTab(data,listOnly){
   const wrap=el(`<div></div>`);
+  if(!listOnly){
   wrap.appendChild(el(`<div class="stat-grid">
     <div class="stat-card"><div class="stat-label">${uiL('Last night')}</div><div class="stat-value">${data.sleepToday?sleepDuration(data.sleepToday)+'h':'—'}</div></div>
     <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.sleep.avg?data.sleep.avg.toFixed(1)+'h':'—'}</div></div>
@@ -12174,6 +12562,7 @@ function renderHealthSleepTab(data){
   if(data.sleep.avgQualityPct!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${Math.round(data.sleep.avgQualityPct)} %</div></div>`));
   else if(data.sleep.avgQuality!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${data.sleep.avgQuality.toFixed(1)}/5</div></div>`));
   wrap.appendChild(el(chartCard(uiL('Sleep duration trend (30d)'), chartValuesForLog(S.sleepLog,'month',sleepDuration), null, {type:'line'})));
+  } else if(data.sleep.avgQualityPct!=null) wrap.appendChild(el(`<div class="stat-card"><div class="stat-label">${uiL('Average quality')}</div><div class="stat-value">${Math.round(data.sleep.avgQualityPct)} %</div><div class="ah-src">${uiAhSrc('manual')}</div></div>`));
   wrap.appendChild(el(`<button class="btn ghost" id="addSleep" style="margin:4px 0 12px">＋ ${uiL('Log Sleep')}</button>`));
   wrap.querySelector('#addSleep').onclick=()=>openSleepForm();
   const sl=el(`<div class="list" id="slList"></div>`);
@@ -12188,13 +12577,15 @@ function renderHealthSleepTab(data){
   wrap.appendChild(sl);
   return wrap;
 }
-function renderHealthWeightTab(data){
+function renderHealthWeightTab(data,listOnly){
   const wrap=el(`<div></div>`);
+  if(!listOnly){
   wrap.appendChild(el(`<div class="stat-grid">
     <div class="stat-card"><div class="stat-label">${uiL('Latest')}</div><div class="stat-value">${data.latestWeight?data.latestWeight.weight+(data.latestWeight.unit||'kg'):'—'}</div></div>
     <div class="stat-card"><div class="stat-label">${uiL('Trend (30d)')}</div><div class="stat-value" style="color:${data.weight.trend>0?'var(--warn)':data.weight.trend<0?'var(--accent2)':'var(--text)'}">${data.weight.trend!=null?(data.weight.trend>0?'+':'')+data.weight.trend.toFixed(1):'—'}</div></div>
   </div>`));
   wrap.appendChild(el(chartCard(uiL('Weight trend (30d)'), chartValuesForLog(S.weightLog,'month',w=>Number(w.weight)||0), null, {type:'line'})));
+  } else wrap.appendChild(el(`<div class="section-header"><h3>${uiAhT('manual_src')}</h3></div>`));
   wrap.appendChild(el(`<button class="btn ghost" id="addW" style="margin:4px 0 12px">＋ ${uiL('Log Weight')}</button>`));
   wrap.querySelector('#addW').onclick=()=>openWeightForm();
   const list=el(`<div class="list" id="wtList"></div>`);
@@ -12209,13 +12600,15 @@ function renderHealthWeightTab(data){
   wrap.appendChild(list);
   return wrap;
 }
-function renderHealthActiveCalTab(data){
+function renderHealthActiveCalTab(data,listOnly){
   const wrap=el(`<div></div>`);
+  if(!listOnly){
   wrap.appendChild(el(`<div class="stat-grid">
     <div class="stat-card"><div class="stat-label">${uiL('Today')}</div><div class="stat-value">${data.activeCaloriesToday?Number(data.activeCaloriesToday.calories).toLocaleString():'—'}</div></div>
     <div class="stat-card"><div class="stat-label">${uiL('Avg (30d)')}</div><div class="stat-value">${data.activeCalories.avg?Math.round(data.activeCalories.avg).toLocaleString():'—'}</div></div>
   </div>`));
   wrap.appendChild(el(chartCard(uiL('Active calories trend (30d)'), chartValuesForLog(S.activeCaloriesLog,'month',x=>Number(x.calories)||0), null, {})));
+  } else wrap.appendChild(el(`<div class="section-header"><h3>${uiAhT('manual_src')}</h3></div>`));
   wrap.appendChild(el(`<button class="btn ghost" id="addAc" style="margin:4px 0 12px">＋ ${uiL('Log Active Calories')}</button>`));
   wrap.querySelector('#addAc').onclick=()=>openActiveCaloriesForm();
   const list=el(`<div class="list" id="acList"></div>`);
