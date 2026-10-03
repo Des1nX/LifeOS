@@ -8651,6 +8651,170 @@ test('AH54 data safety (blocker): a realistic pre-Apple-Health state saved by th
   assert.deepEqual(await stateOf(page), b1, 'export -> reset -> import: identical');
 }, { state: fixtureState() });
 
+// ---------- Apple Health Bridge: real-device payload compatibility (AH61-AH85) ----------
+// Synthetic fixture reproducing how iOS Shortcuts really serialized the payload on a real iPhone (no real data):
+// "range" and "metrics" are JSON strings; steps / activeEnergy are NDJSON strings (one JSON object per line, numbers as
+// strings, "Cal" for kcal) that include the day before range.from; the other metrics are []; "sleep" is an NDJSON string
+// from a 31-day query (starts in the night two days before range.from) with Asleep / Awake / Core / Deep / In Bed / REM,
+// where an iPhone "Asleep" interval overlaps the Watch stages and spans an Awake segment.
+function ahRealSource({ to = '2026-09-23', days = 30 } = {}) {
+  const add = (d, n) => { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  const from = add(to, -(days - 1)), iso = (d, hm) => `${d}T${hm}:00+02:00`;
+  const steps = [], energy = [], sleep = [];
+  for (let i = -1; i < days; i++) { const d = add(from, i);
+    steps.push({ value: String(3000 + ((i + 7) * 2711) % 23000), date: d, unit: 'count' });
+    energy.push({ value: String(400 + (i + 1) * 9.6 + 0.0000000000002 * ((i % 3) + 1)), date: d, unit: 'Cal' }); }
+  // the tail of the night two days before `from` (a 31-day query starts inside it): expected spillover
+  sleep.push({ value: 'Core', start: iso(add(from, -2), '05:00'), end: iso(add(from, -2), '06:30') });
+  for (let i = -1; i < days; i++) { const d = add(from, i), p = add(d, -1);
+    sleep.push({ value: 'In Bed', start: iso(p, '23:20'), end: iso(d, '07:15') });
+    sleep.push({ value: 'Asleep', start: iso(p, '23:35'), end: iso(d, '07:05') });
+    sleep.push({ value: 'Core', start: iso(p, '23:40'), end: iso(d, '01:30') });
+    sleep.push({ value: 'Deep', start: iso(d, '01:30'), end: iso(d, '02:40') });
+    sleep.push({ value: 'REM', start: iso(d, '02:40'), end: iso(d, '04:00') });
+    sleep.push({ value: 'Awake', start: iso(d, '04:00'), end: iso(d, '04:10') });
+    sleep.push({ value: 'Core', start: iso(d, '04:10'), end: iso(d, '06:00') });
+    sleep.push({ value: 'REM', start: iso(d, '06:00'), end: iso(d, '07:10') }); }
+  return { from, to, steps, energy, sleep };
+}
+const ndjson = list => list.map(o => JSON.stringify(o)).join('\n');
+// the payload exactly as the real Shortcut produced it (strings inside strings)
+function ahRealPayload(o) {
+  const s = ahRealSource(o);
+  const metrics = { exerciseTime: [], weight: [], vo2Max: [], restingHeartRate: [], heartRateVariability: [], flightsClimbed: [], walkingRunningDistance: [], steps: ndjson(s.steps), activeEnergy: ndjson(s.energy) };
+  return { protocol: 'lifeos-apple-health', version: 1, generatedAt: s.to + 'T08:30:00+02:00', deviceTimezone: 'Europe/Prague',
+    range: JSON.stringify({ to: s.to, from: s.from }), metrics: JSON.stringify(metrics), sleep: ndjson(s.sleep) };
+}
+// the same data as canonical JSON (objects, arrays, numbers)
+function ahCanonicalOf(o) {
+  const s = ahRealSource(o), num = l => l.map(x => ({ ...x, value: Number(x.value) }));
+  return { protocol: 'lifeos-apple-health', version: 1, generatedAt: s.to + 'T08:30:00+02:00', deviceTimezone: 'Europe/Prague', range: { from: s.from, to: s.to },
+    metrics: { exerciseTime: [], weight: [], vo2Max: [], restingHeartRate: [], heartRateVariability: [], flightsClimbed: [], walkingRunningDistance: [], steps: num(s.steps), activeEnergy: num(s.energy) }, sleep: s.sleep };
+}
+const ahReal = o => JSON.stringify(ahRealPayload(o));
+
+test('AH61-AH67 + AH72-AH75 the real Shortcuts serialization (stringified range / metrics, NDJSON steps / active energy / sleep, numbers as strings, Cal) normalizes to exactly the canonical result', async ({ page }) => {
+  const r = await page.evaluate(({ real, canon }) => {
+    const raw = JSON.parse(real), n = ahNormalizeShortcutPayload(raw);
+    const a = ahParse(real), b = ahParse(canon);
+    return { types: [typeof raw.range, typeof raw.metrics, typeof JSON.parse(raw.metrics).steps, typeof raw.sleep],
+      norm: n.ok && [n.payload.range, Array.isArray(n.payload.metrics.steps), n.payload.metrics.steps.length, n.payload.metrics.activeEnergy.length, n.payload.sleep.length, n.payload.metrics.exerciseTime, n.payload.metrics.steps[0], typeof n.payload.generatedAt],
+      untouched: JSON.stringify(raw) === real,
+      a: { ok: a.ok, counts: a.counts, warnings: a.warnings, day: a.days['2026-09-23'], d0: a.days['2026-08-24'] }, same: JSON.stringify(a.days) === JSON.stringify(b.days) && JSON.stringify(a.counts) === JSON.stringify(b.counts),
+      num: [ahNum('12045'), ahNum('667.2000000000002'), ahNum(123), ahNum(123.45), ahNum('123.45'), ahNum(''), ahNum('abc'), ahNum('12abc'), ahNum('NaN'), ahNum('Infinity'), ahNum('-Infinity'), ahNum(NaN), ahNum(Infinity), ahNum(' 12 '), ahNum('1,5')] };
+  }, { real: ahReal(), canon: JSON.stringify(ahCanonicalOf()) });
+  assert.deepEqual(r.types, ['string', 'string', 'string', 'string'], 'the fixture really is the stringified Shortcuts format');
+  const src = ahRealSource(), kc = v => Math.round(Number(v) * 100) / 100;
+  assert.deepEqual(r.norm, [{ to: '2026-09-23', from: '2026-08-25' }, true, 31, 31, 249, [], src.steps[0], 'string'], 'range / metrics / lists / sleep become objects and arrays; other strings stay strings');
+  assert.equal(r.untouched, true, 'normalization never modifies its input');
+  assert.equal(r.a.ok, true);
+  assert.deepEqual(r.a.counts, { sleep: 31, steps: 31, activeKcal: 31, exerciseMin: 0, distanceKm: 0, flights: 0, weightKg: 0, weighIns: 0, restingHr: 0, hrvMs: 0, vo2Max: 0 }, '31 daily records each (incl. the day before from), empty metrics simply absent');
+  assert.deepEqual(r.a.warnings, [], 'the expected spillover (day before from, partial night two days back) raises no warning');
+  assert.deepEqual([r.a.day.steps, r.a.day.activeKcal], [Number(src.steps.at(-1).value), kc(src.energy.at(-1).value)], 'numbers from strings; Cal -> kcal (not x1000)');
+  assert.deepEqual([r.a.day.steps, r.a.day.activeKcal], [8596, 688], 'fixture sanity: "8596" steps, "688.0000000000006" Cal');
+  assert.deepEqual([r.a.d0.steps, r.a.d0.activeKcal, r.a.d0.sleep.totalMin], [Number(src.steps[0].value), 400, 445], 'the day before range.from is imported');
+  assert.equal(r.same, true, 'real format and canonical format give identical internal data');
+  assert.deepEqual(r.num, [12045, 667.2000000000002, 123, 123.45, 123.45, null, null, null, null, null, null, null, null, 12, null], 'strict numbers');
+  // Cal is the kilocalorie Health shows: 667.2000000000002 Cal -> 667.2 kcal
+  assert.equal(await page.evaluate(() => ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: '{"to":"2026-09-23","from":"2026-09-23"}',
+    metrics: JSON.stringify({ activeEnergy: '{"value":"667.2000000000002","date":"2026-09-23","unit":"Cal"}' }) })).days['2026-09-23'].activeKcal), 667.2);
+  // the canonical payload of the first version still works unchanged
+  const c = await page.evaluate(txt => { const p = ahParse(txt); return [p.ok, p.counts.sleep, p.days['2026-09-23'].sleep.totalMin, p.warnings.length]; }, ahText());
+  assert.deepEqual(c, [true, 28, 444, 0]);
+}, { state: fixtureState() });
+
+test('AH76-AH79 sleep from the real format: Asleep, Awake, Core, Deep, In Bed and REM all recognized; the iPhone "Asleep" overlapping the stages is not counted twice and does not count the Awake segment; In Bed never counts; a large NDJSON sleep list stays fast', async ({ page }) => {
+  const r = await page.evaluate(real => { const p = ahParse(real), d = p.days['2026-09-23'].sleep;
+    const kinds = ['Asleep', 'Awake', 'Core', 'Deep', 'In Bed', 'REM'].map(ahSleepKind);
+    // a night with only the coarse Asleep + Awake (no stages): Awake still excluded
+    const only = ahParse(JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: { from: '2026-09-23', to: '2026-09-23' },
+      sleep: ['{"value":"In Bed","start":"2026-09-22T22:00:00+02:00","end":"2026-09-23T08:00:00+02:00"}', '{"value":"Asleep","start":"2026-09-22T23:00:00+02:00","end":"2026-09-23T07:00:00+02:00"}',
+        '{"value":"Awake","start":"2026-09-23T03:00:00+02:00","end":"2026-09-23T03:30:00+02:00"}'].join('\n') })).days['2026-09-23'].sleep;
+    return { kinds, d, only }; }, ahReal());
+  assert.deepEqual(r.kinds, ['asleep', 'awake', 'core', 'deep', 'inbed', 'rem']);
+  // stages 23:40-04:00 + 04:10-07:10 = 440; Asleep 23:35-07:05 adds only 23:35-23:40 (its 04:00-04:10 is Awake) -> 445
+  assert.deepEqual([r.d.totalMin, r.d.coreMin, r.d.deepMin, r.d.remMin, r.d.awakeMin, r.d.stages, r.d.bedtime, r.d.wake], [445, 220, 70, 150, 10, true, '23:35', '07:10']);
+  assert.deepEqual([r.only.totalMin, r.only.awakeMin, r.only.stages], [450, 30, false], 'Asleep 480 - Awake 30; In Bed (600) never counts');
+  // large NDJSON sleep list (~10 000 lines) parses quickly
+  const big = await page.evaluate(() => { const lines = []; const T = '2026-09-23';
+    for (let i = 0; i < 10000; i++) { const m = i % 400; lines.push(JSON.stringify({ value: ['Core', 'Deep', 'REM', 'Awake', 'Asleep', 'In Bed'][i % 6], start: `2026-09-22T23:${String(m % 60).padStart(2, '0')}:00+02:00`, end: `2026-09-23T0${m % 7}:30:00+02:00` })); }
+    const txt = JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: '{"to":"2026-09-23","from":"2026-09-23"}', metrics: '{}', sleep: lines.join('\n') });
+    const t = performance.now(); const p = ahParse(txt); return { ms: performance.now() - t, ok: p.ok, total: p.days[T].sleep.totalMin, size: txt.length }; });
+  console.log(`      AH76 sleep NDJSON 10 000 lines (${(big.size / 1e6).toFixed(1)} MB): ${big.ms.toFixed(1)} ms`);
+  assert.ok(big.ok && big.total > 0 && big.total <= 1440 && big.ms < 1500);
+}, { state: fixtureState() });
+
+test('AH68-AH71 malformed real-format payloads are refused as a whole (no partial import): a broken NDJSON line, one bad line among 31, primitive / array lines, unparsable range / metrics strings, prototype keys inside strings', async ({ page }) => {
+  const r = await page.evaluate(() => { const base = { protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: '{"to":"2026-09-23","from":"2026-09-20"}' };
+    const good = d => JSON.stringify({ value: '1000', date: d, unit: 'count' }); const e = p => { const x = ahParse(JSON.stringify(p)); return x.ok ? 'ok' : x.errors[0]; };
+    const lines31 = Array.from({ length: 31 }, (_, i) => good('2026-09-2' + (i % 4)));
+    const oneBad = lines31.slice(); oneBad[17] = '{"value":"1000","date":"2026-09-21"';
+    return {
+      broken: e({ ...base, metrics: JSON.stringify({ steps: '{"value":"1","date":"2026-09-21"' }) }),
+      oneBad: e({ ...base, metrics: JSON.stringify({ steps: oneBad.join('\n') }) }),
+      allGood: e({ ...base, metrics: JSON.stringify({ steps: lines31.join('\n') }) }),
+      prim: ['42', '"text"', 'null', 'true', '[1,2]', '[{"value":"1","date":"2026-09-21"}]'].map(l => e({ ...base, metrics: JSON.stringify({ steps: good('2026-09-21') + '\n' + l }) })),
+      sleepBad: e({ ...base, sleep: '{"value":"Core","start":"2026-09-21T01:00:00+02:00","end":"2026-09-21T02:00:00+02:00"}\nnot json' }),
+      rangeBad: e({ ...base, range: '{"to":"2026-09-23",' }), rangeArr: e({ ...base, range: '["2026-09-20","2026-09-23"]' }), metricsBad: e({ ...base, metrics: '{steps:' }), metricsNum: e({ ...base, metrics: JSON.stringify({ steps: 5 }) }),
+      protoLine: e({ ...base, metrics: JSON.stringify({ steps: '{"__proto__":{"polluted":1},"value":"1","date":"2026-09-21"}' }) }),
+      ctorLine: e({ ...base, sleep: '{"constructor":{"x":1},"value":"Core","start":"2026-09-21T01:00:00+02:00","end":"2026-09-21T02:00:00+02:00"}' }),
+      protoRange: e({ ...base, range: '{"to":"2026-09-23","from":"2026-09-20","__proto__":{"polluted":1}}' }), protoMetrics: e({ ...base, metrics: '{"prototype":{},"steps":[]}' }),
+      polluted: ({}).polluted, store: 'appleHealth' in S };
+  });
+  assert.deepEqual([r.broken, r.oneBad, r.allGood], ['ndjson', 'ndjson', 'ok'], 'one bad line among 31 rejects the whole payload');
+  assert.deepEqual(r.prim, ['ndjson', 'ndjson', 'ndjson', 'ndjson', 'ndjson', 'ndjson'], 'every line must be a JSON object');
+  assert.deepEqual([r.sleepBad, r.rangeBad, r.rangeArr, r.metricsBad, r.metricsNum], ['ndjson', 'range', 'range', 'metrics', 'ndjson']);
+  assert.deepEqual([r.protoLine, r.ctorLine, r.protoRange, r.protoMetrics, r.polluted, r.store], ['keys', 'keys', 'range', 'metrics', undefined, false]);
+  // in the UI: the error, nothing imported
+  await page.evaluate(() => { view = 'settings'; render(); }); await page.click('#st_ahPaste');
+  await page.fill('#ah_paste', JSON.stringify({ protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: '{"to":"2026-09-23","from":"2026-09-20"}', metrics: JSON.stringify({ steps: '{"value":"1","date":"2026-09-21","unit":"count"}\n{oops}' }) }));
+  await page.click('#ah_check');
+  assert.match(await page.locator('#ahPreview').innerText(), /Data nelze importovat[\s\S]*neplatný řádek — nic se neimportovalo/);
+  assert.equal(await page.evaluate(() => 'appleHealth' in S), false);
+}, { state: fixtureState() });
+
+test('AH80 + AH81 date spillover is bounded: the day before range.from is imported and the partial night two days back is dropped quietly; older samples and anything after range.to are skipped with a warning; strings that only look like JSON (date, unit, sleep value) are never parsed', async ({ page }) => {
+  const r = await page.evaluate(() => { const base = { protocol: 'lifeos-apple-health', version: 1, generatedAt: '2026-09-23T09:00:00+02:00', range: '{"to":"2026-09-23","from":"2026-09-20"}' };
+    const st = (d, v) => JSON.stringify({ value: String(v), date: d, unit: 'count' }), sl = (a, b, v) => JSON.stringify({ value: v, start: a, end: b });
+    const p = ahParse(JSON.stringify({ ...base, metrics: JSON.stringify({ steps: [st('2026-09-19', 1), st('2026-09-18', 2), st('2026-09-10', 3), st('2026-09-23', 4), st('2026-09-24', 5)].join('\n') }),
+      sleep: [sl('2026-09-18T23:00:00+02:00', '2026-09-19T07:00:00+02:00', 'Core'), sl('2026-09-17T23:00:00+02:00', '2026-09-18T07:00:00+02:00', 'Core'), sl('2026-09-14T23:00:00+02:00', '2026-09-15T07:00:00+02:00', 'Core'),
+        sl('2026-09-23T19:00:00+02:00', '2026-09-23T20:00:00+02:00', 'Core'), sl('2026-09-26T01:00:00+02:00', '2026-09-26T07:00:00+02:00', 'Core')].join('\n') }));
+    const tricky = ahParse(JSON.stringify({ ...base, metrics: { steps: [{ date: '2026-09-21', value: '10', unit: '{"x":1}' }] }, sleep: [{ value: '{"x":"y"}', start: '2026-09-21T01:00:00+02:00', end: '2026-09-21T02:00:00+02:00' }] }));
+    const tn = ahNormalizeShortcutPayload({ ...base, generatedAt: '{"a":1}', metrics: { steps: '{"date":"2026-09-21","value":"10","unit":"{\\"x\\":1}"}' }, sleep: '{"value":"{\\"x\\":\\"y\\"}","start":"2026-09-21T01:00:00+02:00","end":"2026-09-21T02:00:00+02:00"}' });
+    return { days: Object.keys(p.days).sort(), steps: Object.fromEntries(Object.entries(p.days).filter(([, x]) => x.steps != null).map(([d, x]) => [d, x.steps])), sleepDays: Object.keys(p.days).filter(d => p.days[d].sleep).sort(), warnings: p.warnings,
+      tricky: [tricky.ok, tricky.days['2026-09-21'] && tricky.days['2026-09-21'].steps, tricky.warnings],
+      tn: tn.ok && [tn.payload.generatedAt, tn.payload.metrics.steps[0].unit, tn.payload.sleep[0].value] }; });
+  assert.deepEqual(r.steps, { '2026-09-19': 1, '2026-09-23': 4 }, 'day before from in; two / thirteen days before and after to out');
+  assert.deepEqual(r.sleepDays, ['2026-09-19'], 'night of from - 1 in; the partial night of from - 2 and the evening of to + 1 quietly out; older / later nights out');
+  assert.deepEqual(r.warnings, [{ k: 'out_of_range', n: 5 }], '2 old steps + 1 later step + 1 old night + 1 later night');
+  assert.deepEqual(r.tricky, [true, 10, [{ k: 'unknown_sleep', n: 1 }]], 'unit / sleep value are plain text (a count unit is ignored; "{...}" is not a sleep value)');
+  assert.deepEqual(r.tn, ['{"a":1}', '{"x":1}', '{"x":"y"}'], 'normalization leaves generatedAt / unit / sleep value as strings');
+}, { state: fixtureState() });
+
+test('AH82-AH85 the real-format payload in the app: paste -> preview (31 days / nights) -> import; 5 more imports change nothing; no XP / attributes / quests / achievements / Daily Score; export -> reset -> import keeps it', async ({ page }) => {
+  await page.evaluate(() => { finalizeDailyScores(); checkQuests(); checkAchievements(); }); await persist(page);
+  const r0 = await ahRewards(page);
+  await page.evaluate(() => { view = 'settings'; render(); }); await page.click('#st_ahPaste'); await page.fill('#ah_paste', ahReal()); await page.click('#ah_check');
+  assert.match(await page.locator('#ahPreview').innerText(), /25\.08\.2026 – 23\.09\.2026 · 30 dní[\s\S]*Spánek\s*31 nocí[\s\S]*Aktivní energie\s*31 dní[\s\S]*Kroky\s*beta\s*31 dní/);
+  assert.equal(await page.locator('#ahPreview .ah-warn').count(), 0, 'no "skipped" note for the real format');
+  await page.click('#ah_import');
+  const s1 = await page.evaluate(() => JSON.stringify(S.appleHealth));
+  assert.deepEqual(await page.evaluate(() => [Object.keys(S.appleHealth.days).length, S.appleHealth.days['2026-09-23'].sleep.totalMin, S.appleHealth.days['2026-09-23'].activeKcal, S.appleHealth.lastRange]), [31, 445, 688, { from: '2026-08-25', to: '2026-09-23' }]);
+  for (let i = 0; i < 5; i++) assert.deepEqual((await ahDo(page, ahReal())).imp, { ok: true, changed: false, days: 0 });
+  assert.equal(await page.evaluate(() => JSON.stringify(S.appleHealth)), s1, 'idempotent');
+  // the canonical twin changes nothing either (same internal data)
+  assert.deepEqual((await ahDo(page, JSON.stringify(ahCanonicalOf()))).imp, { ok: true, changed: false, days: 0 });
+  await page.evaluate(() => { checkQuests(); checkAchievements(); finalizeDailyScores(); for (const v of ['home', 'health', 'fitness', 'quests', 'character']) { view = v; render(); } checkQuests(); });
+  assert.equal(await ahRewards(page), r0, 'no XP, attributes, quests, achievements, Daily Score, workouts or manual Health changed');
+  await persist(page); const before = await stateOf(page);
+  await page.click('#settingsBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#st_exp')]); const file = await dl.path();
+  await page.click('#settingsBtn'); await page.click('#st_reset'); await page.click('#cf_ok'); await page.click('#cf_ok');
+  assert.equal(await page.evaluate(() => 'appleHealth' in S), false);
+  await page.evaluate(() => { S.settings.onboarded = true; closeSheets(); }); await importFile(page, file); await settle(page);
+  assert.deepEqual(await stateOf(page), before, 'export -> reset -> import');
+}, { state: fixtureState() });
+
 // ---------- screenshots ----------
 // Phase 8B QA matrix: phones 375/390/430 and desktop 1280/1440, each dark + light.
 // The original pre-8B set (mobile-dark/mobile-light/desktop-dark) lives in baseline/screens.

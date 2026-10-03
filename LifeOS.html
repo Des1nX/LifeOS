@@ -11688,7 +11688,54 @@ const AH_DAY_FIELDS={steps:AH_FIELDS.steps,activeKcal:AH_FIELDS.activeEnergy,exe
   flights:AH_FIELDS.flightsClimbed,restingHr:AH_FIELDS.restingHeartRate,hrvMs:AH_FIELDS.heartRateVariability,vo2Max:AH_FIELDS.vo2Max,weightKg:AH_FIELDS.weight};
 function ahIsDate(d){ if(typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false; const [y,m,x]=d.split('-').map(Number), t=new Date(Date.UTC(y,m-1,x));
   return y>=1970&&y<=2200&&t.getUTCFullYear()===y&&t.getUTCMonth()===m-1&&t.getUTCDate()===x; }
-function ahNum(v){ if(v==null||v===''||typeof v==='boolean'||Array.isArray(v)||typeof v==='object') return null; const n=typeof v==='string'?Number(v.trim().replace(/\s/g,'').replace(',','.')):Number(v); return Number.isFinite(n)?n:null; }
+// strict number: a finite number, or a string that is exactly a decimal number ("12045", "667.2000000000002", "-3", "1e3");
+// "", "abc", "12abc", "NaN", "Infinity" and anything else are not numbers (Shortcuts sends numbers as strings)
+function ahNum(v){
+  if(typeof v==='number') return Number.isFinite(v)?v:null;
+  if(typeof v!=='string') return null;
+  const t=v.trim(); if(!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(t)) return null;
+  const n=Number(t); return Number.isFinite(n)?n:null;
+}
+/* Real-device finding (iOS Shortcuts): a Dictionary nested in a Dictionary can arrive as a JSON *string*
+   ("range":"{\"to\":...}", "metrics":"{...}"), and a list built with Repeat + Add to Variable can arrive as a string
+   of JSON objects separated by new lines (NDJSON). This read-only layer turns exactly those protocol fields back into
+   objects / arrays -- never any other string (protocol, generatedAt, deviceTimezone, date, unit, sleep value stay text).
+   One bad line rejects the whole payload (never a silent partial import). */
+function ahParseNDJSONList(v){
+  if(Array.isArray(v)) return {ok:true,list:v};
+  if(v==null||v==='') return {ok:true,list:[]};
+  if(typeof v!=='string') return {ok:false,error:'ndjson'};
+  const out=[];
+  for(const raw of v.split(/\r\n|\r|\n/)){
+    const line=raw.trim(); if(!line) continue;
+    let o; try{ o=JSON.parse(line); }catch(e){ return {ok:false,error:'ndjson'}; }
+    if(!o||typeof o!=='object'||Array.isArray(o)) return {ok:false,error:'ndjson'};
+    if(ahHasBadKeys(o,0)) return {ok:false,error:'keys'};
+    out.push(o);
+  }
+  return {ok:true,list:out};
+}
+function ahParseJSONObjectField(v){
+  if(v==null) return {ok:true,value:v};
+  if(typeof v==='object'&&!Array.isArray(v)) return {ok:true,value:v};
+  if(typeof v!=='string') return {ok:false};
+  let o; try{ o=JSON.parse(v); }catch(e){ return {ok:false}; }
+  if(!o||typeof o!=='object'||Array.isArray(o)||ahHasBadKeys(o,0)) return {ok:false};
+  return {ok:true,value:o};
+}
+// canonical payload -> unchanged content; real Shortcuts payload -> the same canonical shape. Pure (input never modified).
+function ahNormalizeShortcutPayload(p){
+  if(!p||typeof p!=='object'||Array.isArray(p)) return {ok:false,error:'json'};
+  if(ahHasBadKeys(p,0)) return {ok:false,error:'keys'};
+  const out={}; Object.keys(p).forEach(k=>{ out[k]=p[k]; }); // keys checked above: no __proto__ / constructor / prototype
+  const rg=ahParseJSONObjectField(p.range); if(!rg.ok) return {ok:false,error:'range'}; out.range=rg.value;
+  const mt=ahParseJSONObjectField(p.metrics); if(!mt.ok) return {ok:false,error:'metrics'};
+  if(mt.value){ const m={};
+    for(const k of Object.keys(mt.value)){ const l=ahParseNDJSONList(mt.value[k]); if(!l.ok) return {ok:false,error:l.error==='keys'?'keys':'ndjson'}; m[k]=l.list; }
+    out.metrics=m; }
+  if(p.sleep!=null){ const l=ahParseNDJSONList(p.sleep); if(!l.ok) return {ok:false,error:l.error==='keys'?'keys':'ndjson'}; out.sleep=l.list; }
+  return {ok:true,payload:out};
+}
 function ahUnitFactor(spec,unit){
   if(spec.count) return 1; // a count has no other unit (localized labels like "kroky" are fine)
   if(unit==null||unit==='') return 1; // the documented Shortcut sends the default unit
@@ -11726,6 +11773,12 @@ function ahUnionMin(iv){ // minutes covered by the union of [start,end] interval
   a.forEach(([s,e])=>{ if(cs==null){ cs=s; ce=e; } else if(s<=ce) ce=Math.max(ce,e); else { tot+=ce-cs; cs=s; ce=e; } });
   if(cs!=null) tot+=ce-cs; return Math.round(tot/60000);
 }
+// [s,e] intervals minus [s,e] intervals (both lists; result sorted, non-empty pieces only)
+function ahSubtract(iv,cut){
+  const c=cut.slice().sort((x,y)=>x[0]-y[0]); const out=[];
+  iv.forEach(([s,e])=>{ let a=s; for(const [cs,ce] of c){ if(ce<=a||cs>=e) continue; if(cs>a) out.push([a,cs]); a=Math.max(a,ce); if(a>=e) break; } if(a<e) out.push([a,e]); });
+  return out;
+}
 function ahHasBadKeys(o,depth){
   if(depth>8) return true; if(!o||typeof o!=='object') return false;
   for(const k of Object.keys(o)){ if(k==='__proto__'||k==='constructor'||k==='prototype') return true; if(ahHasBadKeys(o[k],depth+1)) return true; }
@@ -11739,6 +11792,7 @@ function ahParse(text){
   let p; try{ p=JSON.parse(text); }catch(e){ return err('json'); }
   if(!p||typeof p!=='object'||Array.isArray(p)) return err('json');
   if(ahHasBadKeys(p,0)) return err('keys');
+  const norm=ahNormalizeShortcutPayload(p); if(!norm.ok) return err(norm.error); p=norm.payload;
   if(p.protocol!==AH_PROTOCOL) return err('protocol');
   const major=typeof p.version==='number'?Math.floor(p.version):typeof p.version==='string'?parseInt(p.version,10):NaN;
   if(!Number.isFinite(major)||major<1) return err('version');
@@ -11747,7 +11801,11 @@ function ahParse(text){
   const r=p.range||{}; if(!ahIsDate(r.from)||!ahIsDate(r.to)||r.from>r.to) return err('range');
   const span=Math.round((new Date(r.to+'T12:00')-new Date(r.from+'T12:00'))/86400000)+1; if(span>AH_MAX_RANGE_DAYS) return err('range_long');
   const tz=typeof p.deviceTimezone==='string'&&/^[A-Za-z_+\-/0-9]{1,64}$/.test(p.deviceTimezone)?p.deviceTimezone:null;
-  const inRange=d=>d>=r.from&&d<=r.to;
+  // Real Shortcuts spill a little over the asked range: "Group By Day" over "the last N days" also returns the day
+  // before `from`, and a 31-day sleep query starts in the night before that. Accepted: daily values from (from - 1)
+  // to `to`; sleep nights (wake-up day) from (from - 1) to `to`. The partial night two days back and the evening that
+  // already belongs to (to + 1) are expected and dropped silently; anything older or later is skipped with a warning.
+  const lo=addDays(r.from,-1), inRange=d=>d>=lo&&d<=r.to, quietNight=d=>d===addDays(r.from,-2)||d===addDays(r.to,1);
   const days={}, warnings=[], counts={sleep:0,steps:0,activeKcal:0,exerciseMin:0,distanceKm:0,flights:0,weightKg:0,weighIns:0,restingHr:0,hrvMs:0,vo2Max:0};
   const day=d=>days[d]||(days[d]={});
   const warn=(k,n)=>{ const w=warnings.find(x=>x.k===k); if(w) w.n+=n||1; else warnings.push({k,n:n||1}); };
@@ -11794,11 +11852,13 @@ function ahParse(text){
       if(!(b.ms>a.ms)||b.ms-a.ms>24*3600000){ warn('bad_value'); return; }
       if(!k){ warn('unknown_sleep'); return; }
       const d=b.minOfDay>=18*60?addDays(b.date,1):b.date;
-      if(!inRange(d)) return; // a night outside the asked range (its other end) is simply not this import's
+      if(!inRange(d)){ if(!quietNight(d)) warn('out_of_range'); return; }
       const n=nights[d]||(nights[d]={core:[],deep:[],rem:[],asleep:[],awake:[],inbed:[]}); n[k].push([a.ms,b.ms,a,b]);
     });
     Object.keys(nights).forEach(d=>{ const n=nights[d], iv=k=>n[k].map(z=>[z[0],z[1]]);
-      const sleepIv=[...iv('core'),...iv('deep'),...iv('rem'),...iv('asleep')]; const total=ahUnionMin(sleepIv); if(!(total>0)) return;
+      // a coarse "Asleep" interval (e.g. from the iPhone) can span the Awake segments of a detailed night: only its parts
+      // outside Awake count ("valid Asleep"); Core / Deep / REM are taken as they are; the union never counts a minute twice
+      const sleepIv=[...iv('core'),...iv('deep'),...iv('rem'),...ahSubtract(iv('asleep'),iv('awake'))]; const total=ahUnionMin(sleepIv); if(!(total>0)) return;
       const stages=n.core.length+n.deep.length+n.rem.length>0;
       const all=[...n.core,...n.deep,...n.rem,...n.asleep], first=all.reduce((m,z)=>z[0]<m[0]?z:m), last=all.reduce((m,z)=>z[1]>m[1]?z:m);
       const hm=x=>String(Math.floor(x.minOfDay/60)).padStart(2,'0')+':'+String(x.minOfDay%60).padStart(2,'0');
@@ -11934,7 +11994,8 @@ function uiAhT(k){
     e:{empty:'Schránka je prázdná.',too_large:'Data jsou příliš velká (max 5 MB).',json:'Text není platný JSON.',keys:'Data obsahují nepovolené klíče.',
       protocol:'Nejde o data ze zkratky LifeOS Health Sync (špatný protokol).',version:'Neplatná verze protokolu.',version_future:'Tuto verzi protokolu LifeOS ještě nezná — aktualizuj LifeOS.',
       generated:'Chybí nebo je neplatný čas vytvoření (generatedAt).',range:'Chybí nebo je neplatný rozsah dat (range).',range_long:'Rozsah je delší než 62 dní.',
-      days:'Neplatná sekce days.',metrics:'Neplatná sekce metrics.',sleep:'Neplatná sekce sleep.',no_data:'V datech nejsou žádné platné hodnoty.'}}
+      days:'Neplatná sekce days.',metrics:'Neplatná sekce metrics.',sleep:'Neplatná sekce sleep.',no_data:'V datech nejsou žádné platné hodnoty.',
+      ndjson:'Seznam ze zkratky obsahuje neplatný řádek — nic se neimportovalo.'}}
   :{title:'Apple Health',bridge:'Apple Health Bridge',how:'Apple Health syncs through Apple Shortcuts (the "LifeOS Health Sync" shortcut).',
     never:'Not synced yet.',last:'Last sync',range:'Range',sync:'Sync Apple Health',sync_sm:'Sync',read:'Read data from the clipboard',
     paste:'Paste data manually',clear:'Delete imported Apple Health data',pref:'Prefer Apple Health data',
@@ -11956,7 +12017,8 @@ function uiAhT(k){
     e:{empty:'The clipboard is empty.',too_large:'The data is too large (max 5 MB).',json:'The text is not valid JSON.',keys:'The data contains forbidden keys.',
       protocol:'This is not data from the LifeOS Health Sync shortcut (wrong protocol).',version:'Invalid protocol version.',version_future:'LifeOS does not know this protocol version yet — update LifeOS.',
       generated:'The creation time (generatedAt) is missing or invalid.',range:'The date range (range) is missing or invalid.',range_long:'The range is longer than 62 days.',
-      days:'Invalid days section.',metrics:'Invalid metrics section.',sleep:'Invalid sleep section.',no_data:'The data contains no valid values.'}})[k];
+      days:'Invalid days section.',metrics:'Invalid metrics section.',sleep:'Invalid sleep section.',no_data:'The data contains no valid values.',
+      ndjson:'A list from the shortcut contains an invalid line — nothing was imported.'}})[k];
 }
 const AH_PENDING_KEY='lifeos-ah-sync-started'; // a per-device convenience (not app data): when the shortcut was opened
 function uiAhPendingGet(){ try{ const t=Number(localStorage.getItem(AH_PENDING_KEY)); return Number.isFinite(t)&&t>0&&Date.now()-t<30*60000?t:null; }catch(e){ return null; } }
